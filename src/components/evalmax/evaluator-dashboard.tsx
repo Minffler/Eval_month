@@ -72,7 +72,7 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
 
   const groupWithinCategory = (employees: EvaluationResult[]) => {
     return employees.reduce((acc, emp) => {
-      const groupKey = emp.title || emp.growthLevel || '기타';
+      const groupKey = emp.detailedGroup2 || '기타';
       if (!acc[groupKey]) {
         acc[groupKey] = [];
       }
