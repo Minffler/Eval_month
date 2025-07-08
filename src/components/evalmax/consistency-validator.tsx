@@ -33,7 +33,9 @@ export function ConsistencyValidator({ results }: ConsistencyValidatorProps) {
         return acc;
       }, {} as Record<string, string[]>);
 
-      const gradeDataString = JSON.stringify(gradeDataByEvaluator, null, 2);
+      const gradeDataString = Object.entries(gradeDataByEvaluator)
+        .map(([evaluator, grades]) => `${evaluator}: ${grades.join(', ')}`)
+        .join('\n');
 
       const expectedDistribution =
         '대부분의 직원은 B 또는 B+ 등급을 받아야 하며, S 또는 D 등급을 받는 직원은 소수여야 합니다. 등급 분포는 평가자 간에 비교적 균등해야 하며, 특정 평가자가 유독 후하거나 박한 점수를 주는 경향이 없어야 합니다.';
@@ -132,7 +134,7 @@ export function ConsistencyValidator({ results }: ConsistencyValidatorProps) {
                     report.findings.map((finding, index) => (
                       <div key={index} className="p-3 border rounded-md bg-muted/50">
                         <div className="flex items-center gap-2 mb-1">
-                          <Badge variant={getBadgeVariant(finding.type)}>{finding.type}</Badge>
+                          <Badge variant={getBadgeVariant(finding.type)} className="whitespace-nowrap">{finding.type}</Badge>
                           <p className="font-semibold text-sm">{finding.description}</p>
                         </div>
                         <p className="text-xs text-muted-foreground pl-2 border-l-2 ml-1.5">{finding.evidence}</p>
