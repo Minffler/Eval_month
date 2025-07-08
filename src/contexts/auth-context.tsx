@@ -21,11 +21,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUserState(currentUser);
   }, [role]);
 
-  const setUser = (newRole: Role) => {
+  const setUser = React.useCallback((newRole: Role) => {
     setRole(newRole);
-  };
+  }, []);
   
-  const value = { user, role, setUser };
+  const value = React.useMemo(() => ({ user, role, setUser }), [user, role, setUser]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
