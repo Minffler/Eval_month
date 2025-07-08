@@ -22,9 +22,9 @@ export default function Header() {
   };
 
   const notifications = [
-    { message: '2025년 6월 평가대상자가 업로드 되었습니다. 평가를 진행해주세요.' },
-    { message: '평가마감 기한이 3일 남았습니다. 근무율을 최종적으로 확인해주세요.' },
-    { message: '평가가 마감되었습니다. 마감 이후 수정은 불가합니다.' },
+    { date: '2025.07.07 14:00', message: '2025년 6월 평가대상자가 업로드 되었습니다. 평가를 진행해주세요.' },
+    { date: '2025.07.15 09:00', message: '평가마감 기한이 3일 남았습니다. 근무율을 최종적으로 확인해주세요.' },
+    { date: '2025.07.18 18:00', message: '평가가 마감되었습니다. 마감 이후 수정은 불가합니다.' },
   ];
 
   if (!user || !role) {
@@ -66,6 +66,7 @@ export default function Header() {
                   {notifications.map((notification, index) => (
                     <li key={index} className="p-2 rounded-md hover:bg-muted">
                         <p className="text-sm">{notification.message}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{notification.date}</p>
                     </li>
                   ))}
                 </ul>
