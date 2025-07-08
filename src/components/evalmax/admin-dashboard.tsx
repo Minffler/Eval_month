@@ -211,7 +211,7 @@ export default function AdminDashboard({
   };
 
   const handleOpenNotificationDialog = () => {
-    setNotificationMessage(`안녕하세요, <평가자이름>님. <평가년월> 평가가 얼마 남지 않았습니다. 현재 진행률은 <%>입니다. 조속한 평가 진행 부탁드립니다.`);
+    setNotificationMessage(`<평가년월> 평가가 얼마 남지 않았습니다. 현재 진행률은 <%>입니다. 조속한 평가 진행 부탁드립니다.`);
     setIsNotificationDialogOpen(true);
   };
   
@@ -547,7 +547,7 @@ export default function AdminDashboard({
                         <SelectContent>
                             {evaluatorStats.map(stat => (
                                 <SelectItem key={stat.evaluatorId} value={stat.evaluatorId}>
-                                    {stat.evaluatorName}
+                                    {stat.evaluatorName} {stat.evaluatorUniqueId}
                                 </SelectItem>
                             ))}
                         </SelectContent>

@@ -228,17 +228,30 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
       const allGroupMembers = Object.values(groups).flatMap(group => 
           group.members.map(member => ({...member, detailedGroup2: group.name}))
       );
+
       const allMemberIds = new Set(allGroupMembers.map(m => m.id));
-      const unGroupedEmployees = visibleEmployees.filter(e => !allMemberIds.has(e.id));
-      return [...allGroupMembers, ...unGroupedEmployees];
+      const myEmployeeIds = new Set(myEmployees.map(e => e.id));
+      
+      const updatedResultsInScope = allResults.map(res => {
+          if (!myEmployeeIds.has(res.id)) return res;
+          const updatedMember = allGroupMembers.find(m => m.id === res.id);
+          if (updatedMember) {
+              return updatedMember;
+          }
+           // If member was in visibleEmployees but not in any group (e.g. newly added)
+          const originalVisibleEmployee = visibleEmployees.find(e => e.id === res.id);
+          if (originalVisibleEmployee && !allMemberIds.has(res.id)) {
+              return originalVisibleEmployee;
+          }
+          return res;
+      });
+
+      return updatedResultsInScope;
   };
   
   const handleSave = () => {
-    const updatedMyResults = flattenGroupsToResults();
-    const myEmployeeIds = new Set(myEmployees.map(e => e.id));
-    const otherResults = allResults.filter(r => !myEmployeeIds.has(r.id));
-    
-    handleResultsUpdate([...otherResults, ...updatedMyResults]);
+    const updatedResults = flattenGroupsToResults();
+    handleResultsUpdate(updatedResults);
     
     toast({
       title: '성공!',
@@ -402,22 +415,22 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
         </div>
 
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">평가 진행 현황</CardTitle>
-            <CardDescription>{selectedDate.year}년 {selectedDate.month}월 성과평가 ({(selectedDate.month % 12) + 1}월 급여반영)</CardDescription>
+          <CardHeader className="flex flex-col sm:flex-row justify-between sm:items-start gap-4">
+              <div>
+                  <CardTitle className="flex items-center gap-2">평가 진행 현황</CardTitle>
+                  <CardDescription>{selectedDate.year}년 {selectedDate.month}월 성과평가 ({(selectedDate.month % 12) + 1}월 급여반영)</CardDescription>
+              </div>
+              <div className="w-full sm:w-64 space-y-1">
+                  <div className='flex justify-between items-baseline'>
+                      <h4 className="font-semibold text-sm">종합 진행률</h4>
+                      <span className="font-bold text-base text-primary">{totalCompletionRate.toFixed(1)}%</span>
+                  </div>
+                  <Progress value={totalCompletionRate} className="h-2" />
+                  <p className="text-xs text-muted-foreground text-right">{totalMyCompleted} / {totalMyEmployees} 명 완료</p>
+              </div>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
-            <div className="md:col-span-3">
-              <GradeHistogram data={gradeDistribution} gradingScale={gradingScale} title={`${activeTab} 등급 분포`} />
-            </div>
-            <div className="md:col-span-2 space-y-2">
-                <div className='flex justify-between items-baseline'>
-                    <h4 className="font-semibold">종합 진행률</h4>
-                    <span className="font-bold text-lg text-primary">{totalCompletionRate.toFixed(1)}%</span>
-                </div>
-                <Progress value={totalCompletionRate} />
-                <p className="text-sm text-muted-foreground text-right">{totalMyCompleted} / {totalMyEmployees} 명 완료</p>
-            </div>
+          <CardContent>
+            <GradeHistogram data={gradeDistribution} gradingScale={gradingScale} title={`${activeTab} 등급 분포`} />
           </CardContent>
         </Card>
 
