@@ -48,8 +48,9 @@ export default function Home() {
     });
   };
 
-  const handleEvaluationUpload = (year: number, month: number, uploadedEvals: Pick<Evaluation, 'employeeId' | 'grade' | 'memo'>[]) => {
+  const handleEvaluationUpload = (year: number, month: number, uploadedEvals: (Pick<Evaluation, 'employeeId' | 'grade' | 'memo'> & { baseAmount?: number })[]) => {
       const key = `${year}-${month}`;
+      
       setEvaluations(prev => {
           const newEvalsForMonth = [...(prev[key] || [])];
           uploadedEvals.forEach(uploadedEval => {
@@ -63,6 +64,22 @@ export default function Home() {
               }
           });
           return {...prev, [key]: newEvalsForMonth};
+      });
+
+      setEmployees(prev => {
+        const newEmpsForMonth = [...(prev[key] || [])];
+        uploadedEvals.forEach(uploadedData => {
+            if (uploadedData.baseAmount !== undefined && !isNaN(uploadedData.baseAmount)) {
+                const empIndex = newEmpsForMonth.findIndex(e => e.id === uploadedData.employeeId);
+                if (empIndex > -1) {
+                    newEmpsForMonth[empIndex] = {
+                        ...newEmpsForMonth[empIndex],
+                        baseAmount: uploadedData.baseAmount,
+                    };
+                }
+            }
+        });
+        return {...prev, [key]: newEmpsForMonth};
       });
   };
 
@@ -105,6 +122,10 @@ export default function Home() {
         return `B. ${ratePercent}%`;
     }
 
+    const getDetailedGroup2 = (employee: Employee): string => {
+        return employee.group || '기타';
+    }
+
     const getFullEvaluationResults = (
         currentEmployees: Employee[],
         currentEvaluations: Evaluation[],
@@ -125,7 +146,7 @@ export default function Home() {
         const evaluator = mockUsers.find(u => u.id === employee.evaluatorId);
 
         const detailedGroup1 = getDetailedGroup1(employee.workRate);
-        const detailedGroup2 = employee.title || employee.growthLevel;
+        const detailedGroup2 = getDetailedGroup2(employee);
 
         return {
           ...employee,

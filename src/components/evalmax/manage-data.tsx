@@ -8,16 +8,17 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import type { Employee, Evaluation, Grade } from '@/lib/types';
+import type { Employee, Evaluation, EvaluationResult, Grade } from '@/lib/types';
 import { MonthSelector } from './month-selector';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 
 interface ManageDataProps {
+  results: EvaluationResult[];
   onEmployeeUpload: (year: number, month: number, employees: Employee[]) => void;
-  onEvaluationUpload: (year: number, month: number, evaluations: Pick<Evaluation, 'employeeId' | 'grade' | 'memo'>[]) => void;
+  onEvaluationUpload: (year: number, month: number, evaluations: (Pick<Evaluation, 'employeeId' | 'grade' | 'memo'> & { baseAmount?: number })[]) => void;
 }
 
-export default function ManageData({ onEmployeeUpload, onEvaluationUpload }: ManageDataProps) {
+export default function ManageData({ onEmployeeUpload, onEvaluationUpload, results }: ManageDataProps) {
   const { toast } = useToast();
   const employeeFileInputRef = React.useRef<HTMLInputElement>(null);
   const evaluationFileInputRef = React.useRef<HTMLInputElement>(null);
@@ -103,6 +104,7 @@ export default function ManageData({ onEmployeeUpload, onEvaluationUpload }: Man
                         employeeId: `E${uniqueId}`,
                         grade: (String(row['등급'] || '') || null) as Grade,
                         memo: String(row['비고'] || ''),
+                        baseAmount: Number(String(row['기준금액'] || '0').replace(/,/g, '')),
                     };
                 });
 
@@ -129,21 +131,64 @@ export default function ManageData({ onEmployeeUpload, onEvaluationUpload }: Man
   };
 
   const handleDownloadBaseTemplate = () => {
-    const headers = [
-      '고유사번', '이름', '회사', '소속부서', '직책', '호칭', '성장레벨', 
-      '실근무율', '평가그룹', '평가자사번', '평가자이름', '개인별 기준금액'
-    ];
-    const worksheet = XLSX.utils.aoa_to_sheet([headers]);
+    const dataForSheet = results.map(r => ({
+        '고유사번': r.uniqueId,
+        '사번': r.id,
+        '이름': r.name,
+        '회사': r.company,
+        '소속부서': r.department,
+        '호칭': r.position,
+        '직책': r.title,
+        '성장레벨': r.growthLevel,
+        '실근무율': r.workRate,
+        '평가그룹': r.group,
+        '평가자사번': r.evaluatorId,
+        '평가자이름': r.evaluatorName,
+        '개인별 기준금액': r.baseAmount,
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(dataForSheet.length > 0 ? dataForSheet : [{}], {
+        header: [
+            '고유사번', '사번', '이름', '회사', '소속부서', '호칭', '직책', '성장레벨', 
+            '실근무율', '평가그룹', '평가자사번', '평가자이름', '개인별 기준금액'
+        ]
+    });
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, '대상자 양식');
     XLSX.writeFile(workbook, 'evaluation_base_template.xlsx');
   };
 
   const handleDownloadEvalTemplate = () => {
+    const dataForSheet = results.map(r => ({
+        '고유사번': r.uniqueId,
+        '사번': r.id,
+        '이름': r.name,
+        '회사': r.company,
+        '소속부서': r.department,
+        '호칭': r.position,
+        '직책': r.title,
+        '성장레벨': r.growthLevel,
+        '실근무율': r.workRate,
+        '평가그룹': r.group,
+        '세부구분1': r.detailedGroup1,
+        '세부구분2': r.detailedGroup2,
+        '평가자사번': r.evaluatorId,
+        '평가자이름': r.evaluatorName,
+        '점수': r.score,
+        '등급': r.grade,
+        '기준금액': r.baseAmount,
+        '등급금액': r.gradeAmount,
+        '최종금액': r.finalAmount,
+        '비고': r.memo,
+    }));
+
     const headers = [
-      '고유사번', '등급', '비고'
+        '고유사번', '사번', '이름', '회사', '소속부서', '호칭', '직책', '성장레벨', 
+        '실근무율', '평가그룹', '세부구분1', '세부구분2', '평가자사번', '평가자이름', 
+        '점수', '등급', '기준금액', '등급금액', '최종금액', '비고'
     ];
-    const worksheet = XLSX.utils.aoa_to_sheet([headers]);
+
+    const worksheet = XLSX.utils.json_to_sheet(dataForSheet.length > 0 ? dataForSheet : [{}], { header: headers });
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, '평가데이터 양식');
     XLSX.writeFile(workbook, 'evaluation_data_template.xlsx');

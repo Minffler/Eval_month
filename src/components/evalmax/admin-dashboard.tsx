@@ -2,8 +2,7 @@
 
 import * as React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { StatsCard } from './stats-card';
-import { Users, FileCheck, AlertTriangle, CheckCircle, Bot, Upload, LayoutDashboard, Settings, Download } from 'lucide-react';
+import { Users, FileCheck, Bot, Upload, LayoutDashboard, Settings, Download } from 'lucide-react';
 import { GradeHistogram } from './grade-histogram';
 import {
   Table,
@@ -30,11 +29,13 @@ import GradeManagement from './grade-management';
 import { MonthSelector } from './month-selector';
 import { calculateFinalAmount } from '@/lib/data';
 import * as XLSX from 'xlsx';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Progress } from '../ui/progress';
 
 interface AdminDashboardProps {
   results: EvaluationResult[];
   onEmployeeUpload: (year: number, month: number, employees: Employee[]) => void;
-  onEvaluationUpload: (year: number, month: number, evaluations: Pick<Evaluation, 'employeeId' | 'grade' | 'memo'>[]) => void;
+  onEvaluationUpload: (year: number, month: number, evaluations: (Pick<Evaluation, 'employeeId' | 'grade' | 'memo'> & { baseAmount?: number | undefined })[]) => void;
   gradingScale: Record<NonNullable<Grade>, GradeInfo>;
   setGradingScale: React.Dispatch<React.SetStateAction<Record<NonNullable<Grade>, GradeInfo>>>;
   selectedDate: { year: number; month: number };
@@ -70,16 +71,34 @@ export default function AdminDashboard({
   }, [initialResults]);
 
   const visibleResults = categorizedResults[activeTab];
-
-  const totalEmployees = visibleResults.length;
-  const completedEvaluations = visibleResults.filter(r => r.grade !== null).length;
-  const completionRate = totalEmployees > 0 ? (completedEvaluations / totalEmployees) * 100 : 0;
-  const missingEvaluations = totalEmployees - completedEvaluations;
-
-  const gradeDistribution = Object.keys(gradingScale).map(grade => ({
+  
+  const overallGradeDistribution = Object.keys(gradingScale).map(grade => ({
     name: grade,
-    value: visibleResults.filter(r => r.grade === grade).length,
+    value: initialResults.filter(r => r.grade === grade).length,
   }));
+  
+  const evaluatorStats = React.useMemo(() => {
+    const statsByName: Record<string, { total: number; completed: number, evaluatorId: string }> = {};
+
+    initialResults.forEach(r => {
+      const name = r.evaluatorName || "미지정";
+      if (!statsByName[name]) {
+        statsByName[name] = { total: 0, completed: 0, evaluatorId: r.evaluatorId };
+      }
+      statsByName[name].total++;
+      if (r.grade) {
+        statsByName[name].completed++;
+      }
+    });
+
+    return Object.entries(statsByName).map(([name, data]) => ({
+      evaluatorName: name,
+      total: data.total,
+      completed: data.completed,
+      pending: data.total - data.completed,
+      rate: data.total > 0 ? (data.completed / data.total) * 100 : 0,
+    }));
+  }, [initialResults]);
 
   const formatCurrency = (value: number) => {
     if (isNaN(value) || value === null) return '0';
@@ -97,7 +116,9 @@ export default function AdminDashboard({
 
     const updatedResults = results.map(r => {
       if (r.id === employeeId) {
-        const gradeAmount = newAmount * r.payoutRate;
+        const gradeInfo = r.grade ? gradingScale[r.grade] : { payoutRate: 0 };
+        const payoutRate = (gradeInfo?.payoutRate || 0) / 100;
+        const gradeAmount = newAmount * payoutRate;
         const finalAmount = calculateFinalAmount(gradeAmount, r.workRate);
         return { ...r, baseAmount: newAmount, gradeAmount, finalAmount };
       }
@@ -187,121 +208,130 @@ export default function AdminDashboard({
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="dashboard" className="space-y-4 pt-4">
-          <Tabs defaultValue="전체" onValueChange={(val) => setActiveTab(val as EvaluationGroupCategory)}>
-            <TabsList className="grid w-full grid-cols-4">
-              {Object.keys(categorizedResults).map(category => (
-                  <TabsTrigger key={category} value={category}>{category} ({categorizedResults[category as EvaluationGroupCategory].length})</TabsTrigger>
-              ))}
-            </TabsList>
-            <TabsContent value={activeTab} className="space-y-4 pt-4">
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <StatsCard
-                  title="전체 직원"
-                  value={totalEmployees}
-                  description="평가 대상 전체 직원 수"
-                  icon={<Users className="h-4 w-4" />}
-                />
-                <StatsCard
-                  title="완료율"
-                  value={`${completionRate.toFixed(1)}%`}
-                  description={`${completedEvaluations} / ${totalEmployees} 명 완료`}
-                  icon={<CheckCircle className="h-4 w-4 text-green-500" />}
-                />
-                <StatsCard
-                  title="미제출"
-                  value={missingEvaluations}
-                  description="제출 대기중인 평가"
-                  icon={<AlertTriangle className="h-4 w-4 text-destructive" />}
-                />
-                <StatsCard
-                  title="총 지급액"
-                  value={`${formatCurrency(visibleResults.reduce((acc, r) => acc + r.finalAmount, 0))} 원`}
-                  description="예상 총 성과급 지급액"
-                  icon={<FileCheck className="h-4 w-4" />}
-                />
+        <TabsContent value="dashboard" className="space-y-6 pt-6">
+          <GradeHistogram data={overallGradeDistribution} title="전체 등급 분포" />
+          <Card>
+            <CardHeader>
+              <CardTitle>평가자별 진행 현황</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="border rounded-lg overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="whitespace-nowrap">평가자</TableHead>
+                      <TableHead className="whitespace-nowrap text-center">대상 인원</TableHead>
+                      <TableHead className="whitespace-nowrap text-center">완료</TableHead>
+                      <TableHead className="whitespace-nowrap text-center">미입력</TableHead>
+                      <TableHead className="whitespace-nowrap text-center w-[200px]">완료율</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {evaluatorStats.map(stat => (
+                      <TableRow key={stat.evaluatorName}>
+                        <TableCell className="font-medium whitespace-nowrap">{stat.evaluatorName}</TableCell>
+                        <TableCell className="text-center whitespace-nowrap">{stat.total}</TableCell>
+                        <TableCell className="text-center whitespace-nowrap">{stat.completed}</TableCell>
+                        <TableCell className="text-center whitespace-nowrap">{stat.pending}</TableCell>
+                        <TableCell className="text-center whitespace-nowrap">
+                          <div className="flex items-center justify-center gap-2">
+                            <Progress value={stat.rate} className="w-full h-2" />
+                            <span className="text-muted-foreground text-xs w-16 text-right">{stat.rate.toFixed(1)}%</span>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
-              <GradeHistogram data={gradeDistribution} title={`${activeTab} 등급 분포`} />
-            </TabsContent>
-          </Tabs>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="results" className="pt-4">
-          <div className="flex justify-end mb-4">
-            <Button onClick={handleDownloadExcel} variant="outline">
-              <Download className="mr-2 h-4 w-4" />
-              엑셀 다운로드
-            </Button>
-          </div>
-          <div className="border rounded-lg overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="whitespace-nowrap">고유사번</TableHead>
-                <TableHead className="whitespace-nowrap">회사</TableHead>
-                <TableHead className="whitespace-nowrap">소속부서</TableHead>
-                <TableHead className="whitespace-nowrap">이름</TableHead>
-                <TableHead className="whitespace-nowrap">직책급</TableHead>
-                <TableHead className="whitespace-nowrap">근무율</TableHead>
-                <TableHead className="whitespace-nowrap">점수</TableHead>
-                <TableHead className="whitespace-nowrap">등급</TableHead>
-                <TableHead className="whitespace-nowrap">기준금액</TableHead>
-                <TableHead className="whitespace-nowrap">등급금액</TableHead>
-                <TableHead className="whitespace-nowrap">최종금액</TableHead>
-                <TableHead className="whitespace-nowrap">평가자</TableHead>
-                <TableHead className="whitespace-nowrap min-w-[200px]">비고</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {initialResults.map(r => (
-                  <TableRow key={r.id}>
-                    <TableCell className="whitespace-nowrap">{r.uniqueId}</TableCell>
-                    <TableCell className="whitespace-nowrap">{r.company}</TableCell>
-                    <TableCell className="whitespace-nowrap">{r.department}</TableCell>
-                    <TableCell className="font-medium whitespace-nowrap">{r.name}</TableCell>
-                    <TableCell className="whitespace-nowrap">{r.title || r.growthLevel}</TableCell>
-                    <TableCell className="whitespace-nowrap">{(r.workRate * 100).toFixed(1)}%</TableCell>
-                    <TableCell className="whitespace-nowrap">{r.score}</TableCell>
-                    <TableCell className="whitespace-nowrap">
-                      <Select value={r.grade || ''} onValueChange={(g) => handleGradeChange(r.id, g)}>
-                          <SelectTrigger className="w-[100px]">
-                              <SelectValue placeholder="선택" />
-                          </SelectTrigger>
-                          <SelectContent>
-                          {Object.keys(gradingScale).map(grade => (
-                              <SelectItem key={grade} value={grade}>{grade}</SelectItem>
-                          ))}
-                          </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap">
-                      <Input 
-                        type="text"
-                        defaultValue={formatCurrency(r.baseAmount)}
-                        onBlur={(e) => handleBaseAmountChange(r.id, e.target.value)}
-                        className="w-32 text-right"
-                      />
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap text-right">{formatCurrency(r.gradeAmount)}</TableCell>
-                    <TableCell className="whitespace-nowrap text-right">{formatCurrency(r.finalAmount)}</TableCell>
-                    <TableCell className="whitespace-nowrap">{r.evaluatorName}</TableCell>
-                    <TableCell className="whitespace-nowrap">
-                      <Input
-                        defaultValue={r.memo || ''}
-                        onBlur={(e) => handleMemoChange(r.id, e.target.value)}
-                        placeholder="비고 입력"
-                        className="w-full"
-                      />
-                    </TableCell>
-                  </TableRow>
-                )
-              )}
-            </TableBody>
-          </Table>
-          </div>
+          <Tabs defaultValue="전체" onValueChange={(val) => setActiveTab(val as EvaluationGroupCategory)}>
+            <TabsList className="grid w-full grid-cols-4 mb-4">
+                {Object.keys(categorizedResults).map(category => (
+                    <TabsTrigger key={category} value={category}>{category} ({categorizedResults[category as EvaluationGroupCategory].length})</TabsTrigger>
+                ))}
+            </TabsList>
+            
+            <div className="flex justify-end mb-4">
+              <Button onClick={handleDownloadExcel} variant="outline">
+                <Download className="mr-2 h-4 w-4" />
+                엑셀 다운로드
+              </Button>
+            </div>
+            <div className="border rounded-lg overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="whitespace-nowrap">고유사번</TableHead>
+                  <TableHead className="whitespace-nowrap">회사</TableHead>
+                  <TableHead className="whitespace-nowrap">소속부서</TableHead>
+                  <TableHead className="whitespace-nowrap">이름</TableHead>
+                  <TableHead className="whitespace-nowrap">직책급</TableHead>
+                  <TableHead className="whitespace-nowrap">근무율</TableHead>
+                  <TableHead className="whitespace-nowrap">점수</TableHead>
+                  <TableHead className="whitespace-nowrap">등급</TableHead>
+                  <TableHead className="whitespace-nowrap">기준금액</TableHead>
+                  <TableHead className="whitespace-nowrap">등급금액</TableHead>
+                  <TableHead className="whitespace-nowrap">최종금액</TableHead>
+                  <TableHead className="whitespace-nowrap">평가자</TableHead>
+                  <TableHead className="whitespace-nowrap min-w-[200px]">비고</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {visibleResults.map(r => (
+                    <TableRow key={r.id}>
+                      <TableCell className="whitespace-nowrap">{r.uniqueId}</TableCell>
+                      <TableCell className="whitespace-nowrap">{r.company}</TableCell>
+                      <TableCell className="whitespace-nowrap">{r.department}</TableCell>
+                      <TableCell className="font-medium whitespace-nowrap">{r.name}</TableCell>
+                      <TableCell className="whitespace-nowrap">{r.title || r.growthLevel}</TableCell>
+                      <TableCell className="whitespace-nowrap">{(r.workRate * 100).toFixed(1)}%</TableCell>
+                      <TableCell className="whitespace-nowrap">{r.score}</TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        <Select value={r.grade || ''} onValueChange={(g) => handleGradeChange(r.id, g)}>
+                            <SelectTrigger className="w-[100px]">
+                                <SelectValue placeholder="선택" />
+                            </SelectTrigger>
+                            <SelectContent>
+                            {Object.keys(gradingScale).map(grade => (
+                                <SelectItem key={grade} value={grade}>{grade}</SelectItem>
+                            ))}
+                            </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        <Input 
+                          type="text"
+                          defaultValue={formatCurrency(r.baseAmount)}
+                          onBlur={(e) => handleBaseAmountChange(r.id, e.target.value)}
+                          className="w-32 text-right"
+                        />
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-right">{formatCurrency(r.gradeAmount)}</TableCell>
+                      <TableCell className="whitespace-nowrap text-right">{formatCurrency(r.finalAmount)}</TableCell>
+                      <TableCell className="whitespace-nowrap">{r.evaluatorName}</TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        <Input
+                          defaultValue={r.memo || ''}
+                          onBlur={(e) => handleMemoChange(r.id, e.target.value)}
+                          placeholder="비고 입력"
+                          className="w-full"
+                        />
+                      </TableCell>
+                    </TableRow>
+                  )
+                )}
+              </TableBody>
+            </Table>
+            </div>
+          </Tabs>
         </TabsContent>
         <TabsContent value="manage-data" className="pt-4">
-          <ManageData onEmployeeUpload={onEmployeeUpload} onEvaluationUpload={onEvaluationUpload} />
+          <ManageData onEmployeeUpload={onEmployeeUpload} onEvaluationUpload={onEvaluationUpload} results={initialResults} />
         </TabsContent>
         <TabsContent value="grade-management" className="pt-4">
            <GradeManagement gradingScale={gradingScale} setGradingScale={setGradingScale} />
