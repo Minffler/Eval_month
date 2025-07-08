@@ -28,7 +28,7 @@ import { Button } from '../ui/button';
 import { useToast } from '@/hooks/use-toast';
 import GradeManagement from './grade-management';
 import { MonthSelector } from './month-selector';
-import { calculateFinalAmount } from '@/lib/data';
+import { calculateFinalAmount, mockUsers } from '@/lib/data';
 import * as XLSX from 'xlsx';
 
 interface AdminDashboardProps {
@@ -53,18 +53,42 @@ export default function AdminDashboard({
   const [results, setResults] = React.useState<EvaluationResult[]>(initialResults);
   const { toast } = useToast();
 
+  const [selectedEvaluatorId, setSelectedEvaluatorId] = React.useState<string>('all');
+  const [selectedGroup, setSelectedGroup] = React.useState<string>('all');
+
   React.useEffect(() => {
     setResults(initialResults);
+    setSelectedEvaluatorId('all');
+    setSelectedGroup('all');
   }, [initialResults]);
 
-  const totalEmployees = results.length;
-  const completedEvaluations = results.filter(r => r.grade !== null).length;
+  const evaluators = React.useMemo(() => {
+    const evaluatorIds = new Set(initialResults.map(r => r.evaluatorId));
+    return mockUsers.filter(u => evaluatorIds.has(u.id));
+  }, [initialResults]);
+
+  const evaluationGroups = React.useMemo(() => {
+      const mainGroups = new Set(initialResults.map(r => r.group).filter(Boolean).map(g => `평가그룹: ${g}`));
+      const subGroups = new Set(initialResults.map(r => r.detailedGroup2).filter(Boolean).map(g => `직책급: ${g}`));
+      return Array.from(new Set([...mainGroups, ...subGroups])).sort();
+  }, [initialResults]);
+
+  const filteredResults = React.useMemo(() => {
+    return results.filter(r => {
+      const evaluatorMatch = selectedEvaluatorId === 'all' || r.evaluatorId === selectedEvaluatorId;
+      const groupMatch = selectedGroup === 'all' || `평가그룹: ${r.group}` === selectedGroup || `직책급: ${r.detailedGroup2}` === selectedGroup;
+      return evaluatorMatch && groupMatch;
+    });
+  }, [results, selectedEvaluatorId, selectedGroup]);
+
+  const totalEmployees = filteredResults.length;
+  const completedEvaluations = filteredResults.filter(r => r.grade !== null).length;
   const completionRate = totalEmployees > 0 ? (completedEvaluations / totalEmployees) * 100 : 0;
   const missingEvaluations = totalEmployees - completedEvaluations;
 
   const gradeDistribution = Object.keys(gradingScale).map(grade => ({
     name: grade,
-    value: results.filter(r => r.grade === grade).length,
+    value: filteredResults.filter(r => r.grade === grade).length,
   }));
 
   const formatCurrency = (value: number) => {
@@ -125,7 +149,7 @@ export default function AdminDashboard({
   }
 
   const handleDownloadExcel = () => {
-    const dataToExport = results.map(r => ({
+    const dataToExport = filteredResults.map(r => ({
       '고유사번': r.uniqueId,
       '회사': r.company,
       '소속부서': r.department,
@@ -148,9 +172,33 @@ export default function AdminDashboard({
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h2 className="text-3xl font-bold tracking-tight">관리자 개요</h2>
-        <MonthSelector selectedDate={selectedDate} onDateChange={setSelectedDate} />
+        <div className="flex flex-wrap items-center gap-2">
+            <Select value={selectedEvaluatorId} onValueChange={setSelectedEvaluatorId}>
+              <SelectTrigger className="w-auto min-w-[150px]">
+                <SelectValue placeholder="평가자 선택" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">모든 평가자</SelectItem>
+                {evaluators.map(e => (
+                  <SelectItem key={e.id} value={e.id}>{e.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={selectedGroup} onValueChange={setSelectedGroup}>
+              <SelectTrigger className="w-auto min-w-[180px]">
+                <SelectValue placeholder="그룹 선택" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">모든 그룹</SelectItem>
+                {evaluationGroups.map(g => (
+                  <SelectItem key={g} value={g}>{g}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          <MonthSelector selectedDate={selectedDate} onDateChange={setSelectedDate} />
+        </div>
       </div>
       <Tabs defaultValue="dashboard">
         <TabsList className="grid w-full grid-cols-5">
@@ -192,12 +240,12 @@ export default function AdminDashboard({
             />
             <StatsCard
               title="총 지급액"
-              value={`${formatCurrency(results.reduce((acc, r) => acc + r.finalAmount, 0))} 원`}
+              value={`${formatCurrency(filteredResults.reduce((acc, r) => acc + r.finalAmount, 0))} 원`}
               description="예상 총 성과급 지급액"
               icon={<FileCheck className="h-4 w-4" />}
             />
           </div>
-          <GradeHistogram data={gradeDistribution} title="전체 등급 분포" />
+          <GradeHistogram data={gradeDistribution} title="등급 분포" />
         </TabsContent>
         <TabsContent value="results" className="pt-4">
           <div className="flex justify-end mb-4">
@@ -226,7 +274,7 @@ export default function AdminDashboard({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {results.map(r => (
+              {filteredResults.map(r => (
                   <TableRow key={r.id}>
                     <TableCell className="whitespace-nowrap">{r.uniqueId}</TableCell>
                     <TableCell className="whitespace-nowrap">{r.company}</TableCell>
