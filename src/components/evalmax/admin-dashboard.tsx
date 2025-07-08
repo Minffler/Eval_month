@@ -3,8 +3,8 @@
 import * as React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StatsCard } from './stats-card';
-import { Users, FileCheck, AlertTriangle, CheckCircle, BarChart3, Bot, Upload, LayoutDashboard, UserCheckIcon } from 'lucide-react';
-import { getFullEvaluationResults, gradingScale, calculateFinalAmount, mockEvaluationGroups } from '@/lib/data';
+import { Users, FileCheck, AlertTriangle, CheckCircle, BarChart3, Bot, Upload, LayoutDashboard, Settings } from 'lucide-react';
+import { mockEvaluationGroups, gradingScale as initialGradingScale } from '@/lib/data';
 import { GradeHistogram } from './grade-histogram';
 import {
   Table,
@@ -21,21 +21,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { ConsistencyValidator } from './consistency-validator';
 import ManageData from './manage-data';
-import type { EvaluationResult, Grade, EvaluationGroup } from '@/lib/types';
+import type { EvaluationResult, Grade, EvaluationGroup, Employee, GradeInfo } from '@/lib/types';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { useToast } from '@/hooks/use-toast';
+import GradeManagement from './grade-management';
 
-export default function AdminDashboard() {
-  const [results, setResults] = React.useState<EvaluationResult[]>([]);
+interface AdminDashboardProps {
+  results: EvaluationResult[];
+  setEmployees: React.Dispatch<React.SetStateAction<Employee[]>>;
+  gradingScale: Record<NonNullable<Grade>, GradeInfo>;
+  setGradingScale: React.Dispatch<React.SetStateAction<Record<NonNullable<Grade>, GradeInfo>>>;
+}
+
+export default function AdminDashboard({ results: initialResults, setEmployees, gradingScale, setGradingScale }: AdminDashboardProps) {
+  const [results, setResults] = React.useState<EvaluationResult[]>(initialResults);
   const { toast } = useToast();
 
   React.useEffect(() => {
-    setResults(getFullEvaluationResults());
-  }, []);
+    setResults(initialResults);
+  }, [initialResults]);
   
   const employeeGroupMap = React.useMemo(() => {
     const map = new Map<string, EvaluationGroup>();
@@ -62,20 +69,12 @@ export default function AdminDashboard() {
   }
 
   const handleBaseAmountChange = (employeeId: string, newAmountStr: string) => {
-    const newAmount = Number(newAmountStr);
+    const newAmount = Number(newAmountStr.replace(/,/g, ''));
     if (isNaN(newAmount)) return;
 
     setResults(prevResults => prevResults.map(r => {
       if (r.id === employeeId) {
-        const payoutRate = r.grade ? gradingScale[r.grade].payoutRate : 0;
-        const newGradeAmount = newAmount * payoutRate;
-        const newFinalAmount = calculateFinalAmount(newGradeAmount, r.workRate);
-        return { 
-          ...r, 
-          baseAmount: newAmount,
-          gradeAmount: newGradeAmount,
-          finalAmount: newFinalAmount,
-        };
+        return { ...r, baseAmount: newAmount };
       }
       return r;
     }));
@@ -85,25 +84,20 @@ export default function AdminDashboard() {
     const newGrade = newGradeStr as Grade;
     setResults(prevResults => prevResults.map(r => {
       if (r.id === employeeId) {
-        const score = newGrade ? gradingScale[newGrade].score : 0;
-        const payoutRate = newGrade ? gradingScale[newGrade].payoutRate : 0;
-        const gradeAmount = r.baseAmount * payoutRate;
-        const finalAmount = calculateFinalAmount(gradeAmount, r.workRate);
-        return { 
-          ...r,
-          grade: newGrade,
-          score,
-          gradeAmount,
-          finalAmount,
-        };
+        return { ...r, grade: newGrade };
       }
       return r;
     }));
   };
   
   const handleSaveChanges = () => {
-    // In a real app, you would send this data to a server.
-    console.log("Saving updated results:", results);
+    // This would typically update state in a parent component or context
+    const updatedEmployees = results.map(r => {
+      const { grade, score, payoutRate, gradeAmount, finalAmount, evaluatorName, detailedGroup1, detailedGroup2, ...employeeData } = r;
+      return employeeData;
+    });
+    setEmployees(updatedEmployees);
+
     toast({
       title: "변경사항 저장됨",
       description: "기준금액 및 등급 변경사항이 성공적으로 저장되었습니다."
@@ -112,7 +106,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-3xl font-bold font-headline tracking-tight">관리자 개요</h2>
+      <h2 className="text-3xl font-bold tracking-tight">관리자 개요</h2>
       <Tabs defaultValue="dashboard">
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="dashboard">
@@ -124,8 +118,8 @@ export default function AdminDashboard() {
            <TabsTrigger value="manage-data">
             <Upload className="mr-2 h-4 w-4" /> 데이터 관리
           </TabsTrigger>
-          <TabsTrigger value="matcher">
-            <UserCheckIcon className="mr-2 h-4 w-4" /> 평가자 매칭
+          <TabsTrigger value="grade-management">
+            <Settings className="mr-2 h-4 w-4" /> 등급/점수 관리
           </TabsTrigger>
           <TabsTrigger value="consistency">
             <Bot className="mr-2 h-4 w-4" /> AI 일관성 검토
@@ -168,7 +162,7 @@ export default function AdminDashboard() {
                 <TableHead>고유사번</TableHead>
                 <TableHead>사번</TableHead>
                 <TableHead>이름</TableHead>
-                <TableHead>직책/레벨</TableHead>
+                <TableHead>직책급</TableHead>
                 <TableHead>근무율</TableHead>
                 <TableHead>그룹 총점</TableHead>
                 <TableHead>점수</TableHead>
@@ -187,7 +181,7 @@ export default function AdminDashboard() {
                     <TableCell>{r.uniqueId}</TableCell>
                     <TableCell>{r.id}</TableCell>
                     <TableCell className="font-medium">{r.name}</TableCell>
-                    <TableCell>{`${r.title} / ${r.growthLevel}`}</TableCell>
+                    <TableCell>{r.title || r.growthLevel}</TableCell>
                     <TableCell>{(r.workRate * 100).toFixed(1)}%</TableCell>
                     <TableCell>{group ? group.totalScore : 'N/A'}</TableCell>
                     <TableCell>{r.score}</TableCell>
@@ -205,8 +199,8 @@ export default function AdminDashboard() {
                     </TableCell>
                     <TableCell>
                       <Input 
-                        type="number"
-                        value={r.baseAmount}
+                        type="text"
+                        value={formatCurrency(r.baseAmount)}
                         onChange={(e) => handleBaseAmountChange(r.id, e.target.value)}
                         className="w-32"
                       />
@@ -225,13 +219,10 @@ export default function AdminDashboard() {
           </div>
         </TabsContent>
         <TabsContent value="manage-data" className="pt-4">
-          <ManageData />
+          <ManageData setEmployees={setEmployees} />
         </TabsContent>
-         <TabsContent value="matcher" className="pt-4">
-          <div className="p-4 border rounded-lg">
-            <h3 className="text-lg font-semibold">평가자 매칭</h3>
-            <p className="text-muted-foreground mt-2">이곳에서 피평가자와 평가자를 연결하고 관리할 수 있습니다. (기능 구현 예정)</p>
-          </div>
+        <TabsContent value="grade-management" className="pt-4">
+           <GradeManagement gradingScale={gradingScale} setGradingScale={setGradingScale} />
         </TabsContent>
         <TabsContent value="consistency" className="pt-4">
           <ConsistencyValidator />

@@ -2,112 +2,122 @@
 
 import * as React from 'react';
 import { useAuth } from '@/contexts/auth-context';
-import { getFullEvaluationResults } from '@/lib/data';
 import type { EvaluationResult } from '@/lib/types';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
-export default function EmployeeDashboard() {
+interface EmployeeDashboardProps {
+  allResults: EvaluationResult[];
+}
+
+export default function EmployeeDashboard({ allResults }: EmployeeDashboardProps) {
   const { user } = useAuth();
-  const [selectedPeriod, setSelectedPeriod] = React.useState('2025-07');
-  const [result, setResult] = React.useState<EvaluationResult | null>(null);
+  const [selectedYear, setSelectedYear] = React.useState(new Date().getFullYear().toString());
+  const [employeeResults, setEmployeeResults] = React.useState<EvaluationResult[]>([]);
 
   React.useEffect(() => {
     if (user) {
-      const allResults = getFullEvaluationResults();
       // In a real app, you would use the logged-in user's ID.
       // For this demo, we find the mock user with the 'employee' role.
-      const employeeUser = allResults.find(r => r.id === 'E003');
-      setResult(employeeUser || null);
+      const employeeUser = allResults.filter(r => r.id === 'E003');
+      setEmployeeResults(employeeUser);
     }
-  }, [user]);
+  }, [user, allResults]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('ko-KR').format(value);
   }
 
-  if (!user || !result) {
+  const handleYearChange = (year: string) => {
+    setSelectedYear(year);
+    // Here you would typically fetch data for the selected year.
+    // For this demo, we'll just filter the existing mock data.
+    if (user) {
+      const filteredResults = allResults.filter(r => 
+        r.id === 'E003' && new Date(r.year, r.month -1).getFullYear().toString() === year
+      );
+      setEmployeeResults(filteredResults);
+    }
+  };
+  
+  const availableYears = React.useMemo(() => {
+      const years = new Set(allResults.map(r => new Date(r.year, r.month -1).getFullYear()));
+      return Array.from(years).sort((a,b) => b - a);
+  }, [allResults]);
+
+  if (!user || !employeeResults) {
     return <div>결과를 불러오는 중입니다...</div>;
   }
+  
+  const currentResult = employeeResults[0]; // Assuming one result per month for simplicity
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold font-headline tracking-tight">내 성과 리뷰</h2>
-        <Select defaultValue={selectedPeriod} onValueChange={setSelectedPeriod}>
+        <h2 className="text-3xl font-bold tracking-tight">내 성과 리뷰</h2>
+         <Select value={selectedYear} onValueChange={handleYearChange}>
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="기간 선택" />
+            <SelectValue placeholder="연도 선택" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="2025-07">2025년 7월</SelectItem>
-            <SelectItem value="2025-06" disabled>2025년 6월</SelectItem>
-            <SelectItem value="2025-05" disabled>2025년 5월</SelectItem>
+            {availableYears.map(year => (
+                <SelectItem key={year} value={year.toString()}>{year}년</SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
 
-      <Card className="w-full max-w-3xl mx-auto">
+      <Card>
         <CardHeader>
-          <CardTitle className="font-headline text-2xl">평가 결과: {selectedPeriod}</CardTitle>
+          <CardTitle className="text-2xl">{selectedYear}년 평가 결과</CardTitle>
           <CardDescription>
-            선택한 기간의 성과 평가 및 보상 요약입니다.
+            선택한 연도의 월별 성과 평가 및 보상 요약입니다.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-                <h3 className="font-semibold font-headline">내 정보</h3>
-                <InfoItem label="이름" value={result.name} />
-                <InfoItem label="사번" value={result.id} />
-                <InfoItem label="소속부서" value={result.department} />
-                <InfoItem label="직책" value={result.title} />
-                <InfoItem label="평가자" value={result.evaluatorName} />
-            </div>
-            <div className="space-y-4">
-                <h3 className="font-semibold font-headline">성과 상세</h3>
-                <InfoItem label="등급" value={<span className="font-bold text-primary text-2xl">{result.grade}</span>} />
-                <InfoItem label="점수" value={`${result.score} / 150`} />
-                <InfoItem label="근무율" value={`${(result.workRate * 100).toFixed(1)}%`} />
-            </div>
+        <CardContent>
+          {employeeResults.length > 0 ? (
+          <div className="border rounded-lg overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>평가월</TableHead>
+                <TableHead>사번</TableHead>
+                <TableHead>이름</TableHead>
+                <TableHead>소속부서</TableHead>
+                <TableHead>근무율</TableHead>
+                <TableHead>평가자</TableHead>
+                <TableHead>등급</TableHead>
+                <TableHead>점수</TableHead>
+                <TableHead>기준금액</TableHead>
+                <TableHead>등급금액</TableHead>
+                <TableHead>최종금액</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {employeeResults.map((result) => (
+                <TableRow key={`${result.year}-${result.month}`}>
+                  <TableCell>{result.year}년 {result.month}월</TableCell>
+                  <TableCell>{result.id}</TableCell>
+                  <TableCell>{result.name}</TableCell>
+                  <TableCell>{result.department}</TableCell>
+                  <TableCell>{(result.workRate * 100).toFixed(1)}%</TableCell>
+                  <TableCell>{result.evaluatorName}</TableCell>
+                  <TableCell>{result.grade}</TableCell>
+                  <TableCell>{result.score}</TableCell>
+                  <TableCell>{formatCurrency(result.baseAmount)} 원</TableCell>
+                  <TableCell>{formatCurrency(result.gradeAmount)} 원</TableCell>
+                  <TableCell className="font-bold">{formatCurrency(result.finalAmount)} 원</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
           </div>
-          <Separator className="my-6"/>
-          <div>
-            <h3 className="font-semibold font-headline mb-4">보상 내역</h3>
-            <div className="space-y-2 text-sm">
-                <CalculationRow label="개인별 기준금액" value={`${formatCurrency(result.baseAmount)} 원`} />
-                <CalculationRow label={`내 지급률 (${result.grade} 등급)`} value={`${result.payoutRate * 100}%`} />
-                <CalculationRow label="산출 등급 금액" value={`${formatCurrency(result.gradeAmount)} 원`} isSubtotal/>
-                <CalculationRow label={`근무율 조정`} value={`x ${(result.workRate).toFixed(2)}`} />
-            </div>
-          </div>
+          ) : (
+             <p className="text-center text-muted-foreground py-8">선택한 연도에 해당하는 평가 결과가 없습니다.</p>
+          )}
         </CardContent>
-        <CardFooter className="bg-muted/50 p-6 rounded-b-lg">
-            <div className="flex justify-between items-center w-full">
-                <span className="font-bold text-lg font-headline">최종 성과급</span>
-                <span className="font-bold text-2xl text-primary">{formatCurrency(result.finalAmount)} 원</span>
-            </div>
-        </CardFooter>
       </Card>
     </div>
   );
-}
-
-function InfoItem({ label, value }: { label: string; value: string | React.ReactNode }) {
-    return (
-        <div className="flex justify-between items-center text-sm">
-            <p className="text-muted-foreground">{label}</p>
-            <p className="font-medium">{value}</p>
-        </div>
-    );
-}
-
-
-function CalculationRow({ label, value, isSubtotal = false }: { label: string; value: string | React.ReactNode, isSubtotal?: boolean }) {
-    return (
-        <div className={`flex justify-between items-center py-1 ${isSubtotal ? 'border-t border-b my-2 py-2' : ''}`}>
-            <p className="text-muted-foreground">{label}</p>
-            <p className={`font-mono ${isSubtotal ? 'font-semibold' : ''}`}>{value}</p>
-        </div>
-    );
 }

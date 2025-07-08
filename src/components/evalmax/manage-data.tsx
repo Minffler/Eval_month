@@ -6,20 +6,66 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Download } from 'lucide-react';
+import { Download, Upload } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import type { Employee } from '@/lib/types';
 
-export default function ManageData() {
+interface ManageDataProps {
+  setEmployees: React.Dispatch<React.SetStateAction<Employee[]>>;
+}
+
+export default function ManageData({ setEmployees }: ManageDataProps) {
   const { toast } = useToast();
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      toast({
-        title: '파일 업로드 성공',
-        description: `${file.name} 파일이 업로드되었습니다.`,
-      });
-      // 여기에 파일 처리 로직을 추가할 수 있습니다.
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target?.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          const json = XLSX.utils.sheet_to_json<any>(worksheet);
+
+          const newEmployees: Employee[] = json.map(row => ({
+            id: row['사번'],
+            uniqueId: row['고유사번'],
+            name: row['이름'],
+            company: row['회사'],
+            department: row['소속부서'],
+            title: row['직책'],
+            position: row['호칭'],
+            growthLevel: row['성장레벨'],
+            workRate: parseFloat(row['실근무율']),
+            group: row['평가그룹'],
+            evaluatorId: row['평가자사번'],
+            baseAmount: Number(row['개인별 기준금액']),
+            // These are calculated or default values
+            deductionHours: { attendance: 0, shortened: 0, total: 0 }, 
+          }));
+
+          setEmployees(newEmployees);
+          toast({
+            title: '파일 업로드 성공',
+            description: `${file.name} 파일의 데이터가 성공적으로 반영되었습니다.`,
+          });
+        } catch (error) {
+          console.error("Error parsing Excel file:", error);
+          toast({
+            variant: "destructive",
+            title: '파일 처리 오류',
+            description: '엑셀 파일을 처리하는 중 오류가 발생했습니다. 파일 형식을 확인해주세요.',
+          });
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+    // Reset file input
+    if(fileInputRef.current) {
+        fileInputRef.current.value = "";
     }
   };
 
@@ -39,7 +85,7 @@ export default function ManageData() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="font-headline">평가 대상자 데이터 관리</CardTitle>
+          <CardTitle>평가 대상자 데이터 관리</CardTitle>
           <CardDescription>
             엑셀 파일을 업로드하여 평가 대상자 정보를 업데이트하세요. 양식에 맞는 파일을 사용해주세요.
           </CardDescription>
@@ -47,7 +93,7 @@ export default function ManageData() {
         <CardContent className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
           <div className="grid w-full max-w-sm items-center gap-1.5">
             <Label htmlFor="employee-data">엑셀 파일 업로드</Label>
-            <Input id="employee-data" type="file" accept=".xlsx, .xls, .csv" onChange={handleFileUpload} />
+            <Input id="employee-data" type="file" accept=".xlsx, .xls, .csv" onChange={handleFileUpload} ref={fileInputRef} />
           </div>
            <Button onClick={handleDownloadTemplate} variant="outline" className="w-full sm:w-auto sm:mt-auto">
             <Download className="mr-2 h-4 w-4" /> 양식 다운로드

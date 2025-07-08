@@ -1,14 +1,14 @@
 import type { User, Role, Employee, Grade, Evaluation, EvaluationGroup, GradeInfo, EvaluationResult, Company } from './types';
 
 export const gradingScale: Record<NonNullable<Grade>, GradeInfo> = {
-  'S': { score: 150, payoutRate: 1.5, description: '최고 성과' },
-  'A+': { score: 130, payoutRate: 1.3, description: '우수 성과' },
-  'A': { score: 115, payoutRate: 1.15, description: '좋은 성과' },
-  'B+': { score: 105, payoutRate: 1.05, description: '기대 이상' },
-  'B': { score: 100, payoutRate: 1.0, description: '기대치 충족 (기준)' },
-  'B-': { score: 95, payoutRate: 0.95, description: '기대 이하' },
-  'BC': { score: 85, payoutRate: 0.85, description: '개선 필요' },
-  'C-': { score: 70, payoutRate: 0.7, description: '상당한 개선 필요' },
+  'S': { score: 150, payoutRate: 150, description: '최고 성과' },
+  'A+': { score: 130, payoutRate: 130, description: '우수 성과' },
+  'A': { score: 115, payoutRate: 115, description: '좋은 성과' },
+  'B+': { score: 105, payoutRate: 105, description: '기대 이상' },
+  'B': { score: 100, payoutRate: 100, description: '기대치 충족 (기준)' },
+  'B-': { score: 95, payoutRate: 95, description: '기대 이하' },
+  'BC': { score: 85, payoutRate: 85, description: '개선 필요' },
+  'C-': { score: 70, payoutRate: 70, description: '상당한 개선 필요' },
   'D': { score: 0, payoutRate: 0, description: '미흡' },
 };
 
@@ -43,7 +43,8 @@ export const mockEvaluations: Evaluation[] = [
 export const mockEvaluationGroups: EvaluationGroup[] = [
     { id: 'group-1', name: 'Lv.1 그룹', evaluatorId: 'user-2', memberIds: ['E004'], totalScore: 100 },
     { id: 'group-2', name: 'Lv.2-3 그룹', evaluatorId: 'user-2', memberIds: ['E003', 'E005', 'E007'], totalScore: 300 },
-    { id: 'group-3', name: 'Lv.4+ 그룹', evaluatorId: 'user-1', memberIds: ['E001', 'E002', 'E006', 'E008'], totalScore: 400 },
+    { id: 'group-3', name: 'Lv.4+ 그룹', evaluatorId: 'user-1', memberIds: ['E001', 'E002', 'E006'], totalScore: 300 },
+    { id: 'group-4', name: '별도평가 그룹', evaluatorId: 'user-1', memberIds: ['E008'], totalScore: 100 },
 ];
 
 export const calculateFinalAmount = (gradeAmount: number, workRate: number): number => {
@@ -54,45 +55,4 @@ export const calculateFinalAmount = (gradeAmount: number, workRate: number): num
     return gradeAmount * workRate;
   }
   return 0;
-};
-
-const getDetailedGroup1 = (workRate: number): string => {
-    if (workRate >= 0.7) return 'A. 70% 이상';
-    if (workRate < 0.25) return 'C. 25% 미만';
-    
-    const ratePercent = Math.floor(workRate * 100);
-    const lowerBound = Math.floor(ratePercent/5) * 5;
-    const upperBound = lowerBound + 4;
-    if (lowerBound === 65) return 'B. 69~65%';
-    if (lowerBound < 65 && lowerBound >= 25) return `B. ${upperBound}~${lowerBound}%`;
-    return `B. ${ratePercent}%`;
-}
-
-
-export const getFullEvaluationResults = (): EvaluationResult[] => {
-  return mockEmployees.map(employee => {
-    const evaluation = mockEvaluations.find(e => e.employeeId === employee.id);
-    const grade = evaluation?.grade || null;
-    const score = grade ? gradingScale[grade].score : 0;
-    const payoutRate = grade ? gradingScale[grade].payoutRate : 0;
-    
-    const gradeAmount = employee.baseAmount * payoutRate;
-    const finalAmount = calculateFinalAmount(gradeAmount, employee.workRate);
-    const evaluator = mockUsers.find(u => u.id === employee.evaluatorId);
-
-    const detailedGroup1 = getDetailedGroup1(employee.workRate);
-    const detailedGroup2 = `${employee.title} / ${employee.growthLevel}`;
-
-    return {
-      ...employee,
-      grade,
-      score,
-      payoutRate,
-      gradeAmount,
-      finalAmount,
-      evaluatorName: evaluator?.name || 'N/A',
-      detailedGroup1,
-      detailedGroup2,
-    };
-  });
 };

@@ -4,10 +4,7 @@ import * as React from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import {
   mockEvaluationGroups,
-  mockEmployees,
   gradingScale,
-  calculateFinalAmount,
-  mockEvaluations,
 } from '@/lib/data';
 import type { EvaluationResult, Grade } from '@/lib/types';
 import {
@@ -33,13 +30,19 @@ import { AlertCircle, Check } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
 import { Progress } from '../ui/progress';
 
-export default function EvaluatorDashboard() {
+interface EvaluatorDashboardProps {
+  allResults: EvaluationResult[];
+}
+
+export default function EvaluatorDashboard({ allResults }: EvaluatorDashboardProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [evaluations, setEvaluations] = React.useState<Record<string, Grade>>(() => {
     const initialState: Record<string, Grade> = {};
-    mockEvaluations.forEach(ev => {
-      initialState[ev.employeeId] = ev.grade;
+    allResults.forEach(ev => {
+        if(ev.grade) {
+            initialState[ev.id] = ev.grade;
+        }
     });
     return initialState;
   });
@@ -89,27 +92,18 @@ export default function EvaluatorDashboard() {
     });
   };
 
-  const getGroupMembers = (groupId: string): (EvaluationResult & {payoutRate: number})[] => {
+  const getGroupMembers = (groupId: string): EvaluationResult[] => {
     const group = evaluatorGroups.find(g => g.id === groupId);
     if (!group) return [];
     return group.memberIds.map(id => {
-      const employee = mockEmployees.find(e => e.id === id)!;
+      const employeeResult = allResults.find(e => e.id === id)!;
       const grade = evaluations[id] || null;
       const score = grade ? gradingScale[grade].score : 0;
-      const payoutRate = grade ? gradingScale[grade].payoutRate : 0;
-      const gradeAmount = employee.baseAmount * payoutRate;
-      const finalAmount = calculateFinalAmount(gradeAmount, employee.workRate);
       
       return {
-        ...employee,
+        ...employeeResult,
         grade,
         score,
-        gradeAmount,
-        finalAmount,
-        evaluatorName: user?.name || 'N/A',
-        detailedGroup1: '',
-        detailedGroup2: '',
-        payoutRate,
       }
     });
   };
@@ -128,19 +122,15 @@ export default function EvaluatorDashboard() {
   const totalMyCompleted = summary.reduce((acc, s) => acc + s.completedCount, 0);
   const totalCompletionRate = totalMyEmployees > 0 ? (totalMyCompleted / totalMyEmployees) * 100 : 0;
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('ko-KR').format(value);
-  }
-
   if (!user) return <div>로딩중...</div>;
 
   return (
     <div className="space-y-6">
-      <h2 className="text-3xl font-bold font-headline tracking-tight">평가 허브</h2>
+      <h2 className="text-3xl font-bold tracking-tight">평가 허브</h2>
 
       <Card>
         <CardHeader>
-          <CardTitle className="font-headline flex items-center gap-2">평가 진행 현황</CardTitle>
+          <CardTitle className="flex items-center gap-2">평가 진행 현황</CardTitle>
           <CardDescription>25년 7월 성과평가 (8월 급여반영)</CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-1 lg:grid-cols-5 gap-6">
@@ -193,26 +183,23 @@ export default function EvaluatorDashboard() {
       <div className="space-y-6">
         {evaluatorGroups.map(group => (
              <Card key={group.id}>
-                <CardHeader><CardTitle className="font-headline">{group.name} - 평가 시트 (총점: {group.totalScore})</CardTitle></CardHeader>
+                <CardHeader><CardTitle>{group.name} - 평가 시트 (총점: {group.totalScore})</CardTitle></CardHeader>
                 <CardContent className="overflow-x-auto">
                     <Table>
                     <TableHeader><TableRow>
                         <TableHead>사번</TableHead>
                         <TableHead>이름</TableHead>
-                        <TableHead>직책/레벨</TableHead>
+                        <TableHead>직책급</TableHead>
                         <TableHead>근무율</TableHead>
                         <TableHead>등급</TableHead>
                         <TableHead>점수</TableHead>
-                        <TableHead>기준금액</TableHead>
-                        <TableHead>등급금액</TableHead>
-                        <TableHead>최종 지급액</TableHead>
                     </TableRow></TableHeader>
                     <TableBody>
                         {getGroupMembers(group.id).map(emp => (
                             <TableRow key={emp.id}>
                                 <TableCell>{emp.id}</TableCell>
                                 <TableCell className="font-medium">{emp.name}</TableCell>
-                                <TableCell>{`${emp.title} / ${emp.growthLevel}`}</TableCell>
+                                <TableCell>{emp.title || emp.growthLevel}</TableCell>
                                 <TableCell>{(emp.workRate * 100).toFixed(1)}%</TableCell>
                                 <TableCell>
                                 <Select value={evaluations[emp.id] || ''} onValueChange={(g: Grade) => handleGradeChange(emp.id, g)}>
@@ -227,9 +214,6 @@ export default function EvaluatorDashboard() {
                                 </Select>
                                 </TableCell>
                                 <TableCell>{emp.score}</TableCell>
-                                <TableCell>{formatCurrency(emp.baseAmount)}</TableCell>
-                                <TableCell>{formatCurrency(emp.gradeAmount)}</TableCell>
-                                <TableCell>{formatCurrency(emp.finalAmount)}</TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
