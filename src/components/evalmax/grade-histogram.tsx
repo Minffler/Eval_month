@@ -1,5 +1,6 @@
 'use client';
 
+import * as React from 'react';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, LabelList } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
@@ -49,22 +50,34 @@ const CustomXAxisTick = (props: any) => {
 export function GradeHistogram({
   data,
   gradingScale,
-  title = '등급 분포',
+  title,
   description
 }: GradeHistogramProps) {
 
-  const sortedData = [...data]
+  const totalCount = React.useMemo(() => {
+    return data.reduce((acc, curr) => acc + curr.value, 0);
+  }, [data]);
+
+  const sortedData = React.useMemo(() => 
+    [...data]
     .filter(d => gradingScale[d.name as Grade] !== undefined)
     .sort((a,b) => {
       const scoreA = gradingScale[a.name as Grade]?.score ?? -1;
       const scoreB = gradingScale[b.name as Grade]?.score ?? -1;
       return scoreB - scoreA;
-    });
+    })
+    .map(item => ({
+        ...item,
+        percentage: totalCount > 0 ? (item.value / totalCount) * 100 : 0,
+    })),
+    [data, gradingScale, totalCount]
+  );
+
 
   return (
     <Card className="h-full flex flex-col">
       <CardHeader>
-        <CardTitle className="font-headline">{title}</CardTitle>
+        {title && <CardTitle className="font-headline">{title}</CardTitle>}
         {description && <CardDescription>{description}</CardDescription>}
       </CardHeader>
       <CardContent className="flex-1 flex flex-col justify-center">
@@ -98,7 +111,15 @@ export function GradeHistogram({
                   fill="var(--color-value)"
                   radius={[4, 4, 0, 0]}
                 >
-                    <LabelList dataKey="value" position="top" offset={5} fontSize={12} />
+                    <LabelList dataKey="value" position="top" offset={5} fontSize={12} formatter={(value: number) => value > 0 ? value : ''} />
+                    <LabelList 
+                        dataKey="percentage" 
+                        position="insideTop"
+                        offset={4}
+                        fill="hsl(var(--primary-foreground))"
+                        fontSize={11}
+                        formatter={(value: number) => value > 0 ? `${value.toFixed(1)}%` : ''}
+                    />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
