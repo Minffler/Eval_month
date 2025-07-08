@@ -303,7 +303,7 @@ export default function AdminDashboard({
       '회사': r.company,
       '소속부서': r.department,
       '이름': r.name,
-      '직책/성장레벨': r.title || r.growthLevel,
+      '직책/성장레벨': ['팀장', '지점장', '센터장', '지부장'].includes(r.position) ? r.title : r.growthLevel,
       '근무율': `${(r.workRate * 100).toFixed(1)}%`,
       '점수': r.score,
       '등급': r.grade,
@@ -483,16 +483,20 @@ export default function AdminDashboard({
               <TableBody>
                 {sortedVisibleResults.map(r => (
                     <TableRow key={r.id}>
-                      <TableCell className="whitespace-nowrap">{r.uniqueId}</TableCell>
-                      <TableCell className="whitespace-nowrap">{r.company}</TableCell>
-                      <TableCell className="whitespace-nowrap">{r.department}</TableCell>
-                      <TableCell className="font-medium whitespace-nowrap">{r.name}</TableCell>
-                      <TableCell className="whitespace-nowrap">{r.title || r.growthLevel}</TableCell>
-                      <TableCell className="whitespace-nowrap">{(r.workRate * 100).toFixed(1)}%</TableCell>
-                      <TableCell className="whitespace-nowrap">{r.score}</TableCell>
-                      <TableCell className="whitespace-nowrap">
+                      <TableCell className="whitespace-nowrap py-1 px-2">{r.uniqueId}</TableCell>
+                      <TableCell className="whitespace-nowrap py-1 px-2">{r.company}</TableCell>
+                      <TableCell className="whitespace-nowrap py-1 px-2">{r.department}</TableCell>
+                      <TableCell className="font-medium whitespace-nowrap py-1 px-2">{r.name}</TableCell>
+                      <TableCell className="whitespace-nowrap py-1 px-2">
+                        {['팀장', '지점장', '센터장', '지부장'].includes(r.position)
+                          ? r.title
+                          : r.growthLevel}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap py-1 px-2">{(r.workRate * 100).toFixed(1)}%</TableCell>
+                      <TableCell className="whitespace-nowrap py-1 px-2">{r.score}</TableCell>
+                      <TableCell className="whitespace-nowrap py-1 px-2">
                         <Select value={r.grade || ''} onValueChange={(g) => handleGradeChange(r.id, g)}>
-                            <SelectTrigger className="w-[100px] h-8">
+                            <SelectTrigger className="w-[90px] h-8">
                                 <SelectValue placeholder="선택" />
                             </SelectTrigger>
                             <SelectContent>
@@ -502,7 +506,7 @@ export default function AdminDashboard({
                             </SelectContent>
                         </Select>
                       </TableCell>
-                      <TableCell className="whitespace-nowrap">
+                      <TableCell className="whitespace-nowrap py-1 px-2">
                         <Input 
                           type="text"
                           defaultValue={formatCurrency(r.baseAmount)}
@@ -510,10 +514,10 @@ export default function AdminDashboard({
                           className="w-28 text-right h-8"
                         />
                       </TableCell>
-                      <TableCell className="whitespace-nowrap text-right">{formatCurrency(r.gradeAmount)}</TableCell>
-                      <TableCell className="whitespace-nowrap text-right">{formatCurrency(r.finalAmount)}</TableCell>
-                      <TableCell className="whitespace-nowrap">{r.evaluatorName}</TableCell>
-                      <TableCell className="whitespace-nowrap">
+                      <TableCell className="whitespace-nowrap text-right py-1 px-2">{formatCurrency(r.gradeAmount)}</TableCell>
+                      <TableCell className="whitespace-nowrap text-right py-1 px-2">{formatCurrency(r.finalAmount)}</TableCell>
+                      <TableCell className="whitespace-nowrap py-1 px-2">{r.evaluatorName}</TableCell>
+                      <TableCell className="whitespace-nowrap py-1 px-2">
                         <Input
                           defaultValue={r.memo || ''}
                           onBlur={(e) => handleMemoChange(r.id, e.target.value)}
@@ -604,3 +608,5 @@ export default function AdminDashboard({
     </div>
   );
 }
+
+    
