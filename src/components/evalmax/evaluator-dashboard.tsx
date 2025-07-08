@@ -4,6 +4,26 @@ import * as React from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import type { EvaluationResult, Grade, GradeInfo, EvaluationGroupCategory, User } from '@/lib/types';
 import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragStartEvent,
+  DragOverlay,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  arrayMove,
+} from '@dnd-kit/sortable';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+import {
   Table,
   TableBody,
   TableCell,
@@ -21,13 +41,14 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Check, Download, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Check, Download, ArrowUpDown, ArrowUp, ArrowDown, Edit2, GripVertical } from 'lucide-react';
 import { Progress } from '../ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { MonthSelector } from './month-selector';
 import { GradeHistogram } from './grade-histogram';
 import { Input } from '../ui/input';
 import * as XLSX from 'xlsx';
+import { Checkbox } from '../ui/checkbox';
 
 interface EvaluatorDashboardProps {
   allResults: EvaluationResult[];
@@ -43,23 +64,103 @@ type SortConfig = {
   direction: 'ascending' | 'descending';
 } | null;
 
+type Groups = Record<string, { name: string; members: EvaluationResult[] }>;
+
+
+// Helper component for a single draggable table row
+const DraggableTableRow = ({ employee, gradingScale, selected, onSelect, onGradeChange, onMemoChange, onSave }: {
+    employee: EvaluationResult,
+    gradingScale: Record<NonNullable<Grade>, GradeInfo>,
+    selected: boolean,
+    onSelect: (id: string, checked: boolean) => void,
+    onGradeChange: (id: string, grade: Grade) => void,
+    onMemoChange: (id: string, memo: string) => void,
+    onSave: () => void,
+}) => {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+    } = useSortable({ id: employee.id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+    };
+
+    return (
+        <TableRow ref={setNodeRef} style={style} data-state={selected ? "selected" : "unselected"}>
+            <TableCell className="py-2 px-2 w-[80px]">
+                <div className='flex items-center gap-1'>
+                  <Checkbox
+                      checked={selected}
+                      onCheckedChange={(checked) => onSelect(employee.id, Boolean(checked))}
+                      aria-label={`Select ${employee.name}`}
+                  />
+                  <Button variant="ghost" size="icon" className="cursor-grab" {...attributes} {...listeners}>
+                      <GripVertical className="h-4 w-4" />
+                  </Button>
+                </div>
+            </TableCell>
+            <TableCell className="whitespace-nowrap py-2">{employee.uniqueId}</TableCell>
+            <TableCell className="whitespace-nowrap py-2">{employee.company}</TableCell>
+            <TableCell className="font-medium whitespace-nowrap py-2">{employee.name}</TableCell>
+            <TableCell className="whitespace-nowrap py-2">{(employee.workRate * 100).toFixed(1)}%</TableCell>
+            <TableCell className="whitespace-nowrap py-2">
+                <Select value={employee.grade || ''} onValueChange={(g: Grade) => onGradeChange(employee.id, g)}>
+                    <SelectTrigger className="w-[100px] h-9">
+                        <SelectValue placeholder="등급 선택" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {Object.keys(gradingScale).map(grade => (
+                            <SelectItem key={grade} value={grade}>{grade}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </TableCell>
+            <TableCell className="whitespace-nowrap py-2">{employee.score}</TableCell>
+            <TableCell className="py-2">
+                <Input
+                    value={employee.memo || ''}
+                    onChange={(e) => onMemoChange(employee.id, e.target.value)}
+                    onBlur={onSave}
+                    placeholder="메모 입력"
+                    className="h-9"
+                />
+            </TableCell>
+        </TableRow>
+    );
+};
+
+
 export default function EvaluatorDashboard({ allResults, gradingScale, selectedDate, setSelectedDate, handleResultsUpdate, evaluatorUser }: EvaluatorDashboardProps) {
   const { user: authUser } = useAuth();
   const user = evaluatorUser || authUser;
   const { toast } = useToast();
-  const [localResults, setLocalResults] = React.useState<EvaluationResult[]>(allResults);
+  
   const [activeTab, setActiveTab] = React.useState<EvaluationGroupCategory>('전체');
   const [sortConfig, setSortConfig] = React.useState<SortConfig>(null);
 
-  React.useEffect(() => {
-    setLocalResults(allResults);
-  }, [allResults]);
+  const [groups, setGroups] = React.useState<Groups>({});
+  const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
+  const [activeId, setActiveId] = React.useState<string | null>(null);
+  const [editingGroupId, setEditingGroupId] = React.useState<string | null>(null);
+  const [editingGroupName, setEditingGroupName] = React.useState('');
 
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+  
   const myEmployees = React.useMemo(() => {
     if (!user) return [];
-    return localResults.filter(r => r.evaluatorId === user.id);
-  }, [user, localResults]);
-  
+    return allResults.filter(r => r.evaluatorId === user.id);
+  }, [user, allResults]);
+
   const categorizedEmployees = React.useMemo(() => {
     const categories: Record<EvaluationGroupCategory, EvaluationResult[]> = {
       '전체': myEmployees,
@@ -70,36 +171,66 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
     return categories;
   }, [myEmployees]);
 
-  const groupWithinCategory = (employees: EvaluationResult[]) => {
-    return employees.reduce((acc, emp) => {
-      const groupKey = emp.detailedGroup2 || '기타';
-      if (!acc[groupKey]) {
-        acc[groupKey] = [];
-      }
-      acc[groupKey].push(emp);
-      return acc;
-    }, {} as Record<string, EvaluationResult[]>);
-  };
-  
+  const visibleEmployees = categorizedEmployees[activeTab];
+
+  React.useEffect(() => {
+    const groupWithinCategory = (employees: EvaluationResult[]): Groups => {
+        return employees.reduce((acc, emp) => {
+            const groupKey = emp.detailedGroup2 || '기타';
+            if (!acc[groupKey]) {
+                acc[groupKey] = { name: groupKey, members: [] };
+            }
+            acc[groupKey].members.push(emp);
+            return acc;
+        }, {} as Groups);
+    };
+
+    setGroups(groupWithinCategory(visibleEmployees));
+    setSelectedIds(new Set()); // Reset selection when tab changes
+  }, [visibleEmployees]);
+
+
   const handleGradeChange = (employeeId: string, newGrade: Grade) => {
-    setLocalResults(prev => prev.map(res => {
-      if (res.id === employeeId) {
-        const score = newGrade ? gradingScale[newGrade]?.score || 0 : 0;
-        return { ...res, grade: newGrade, score };
-      }
-      return res;
-    }));
+    setGroups(prevGroups => {
+        const newGroups = JSON.parse(JSON.stringify(prevGroups));
+        for (const key in newGroups) {
+            const memberIndex = newGroups[key].members.findIndex((m: EvaluationResult) => m.id === employeeId);
+            if (memberIndex !== -1) {
+                const score = newGrade ? gradingScale[newGrade]?.score || 0 : 0;
+                newGroups[key].members[memberIndex].grade = newGrade;
+                newGroups[key].members[memberIndex].score = score;
+                break;
+            }
+        }
+        return newGroups;
+    });
   };
 
   const handleMemoChange = (employeeId: string, memo: string) => {
-    setLocalResults(prev => prev.map(res => res.id === employeeId ? {...res, memo} : res));
+     setGroups(prevGroups => {
+        const newGroups = JSON.parse(JSON.stringify(prevGroups));
+        for (const key in newGroups) {
+            const memberIndex = newGroups[key].members.findIndex((m: EvaluationResult) => m.id === employeeId);
+            if (memberIndex !== -1) {
+                newGroups[key].members[memberIndex].memo = memo;
+                break;
+            }
+        }
+        return newGroups;
+    });
   }
   
+  const flattenGroupsToResults = (): EvaluationResult[] => {
+      return Object.values(groups).flatMap(group => 
+          group.members.map(member => ({...member, detailedGroup2: group.name}))
+      );
+  };
+  
   const handleSave = () => {
-    const myEmployeeIds = new Set(myEmployees.map(e => e.id));
+    const updatedMyResults = flattenGroupsToResults();
+    const myEmployeeIds = new Set(updatedMyResults.map(e => e.id));
     const otherResults = allResults.filter(r => !myEmployeeIds.has(r.id));
-    const updatedMyResults = localResults.filter(r => myEmployeeIds.has(r.id));
-
+    
     handleResultsUpdate([...otherResults, ...updatedMyResults]);
     
     toast({
@@ -107,36 +238,115 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
       description: '평가가 성공적으로 저장되었습니다.',
     });
   };
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
+    if (!over || active.id === over.id) return;
+
+    const activeId = active.id as string;
+    const isBulkDrag = selectedIds.has(activeId) && selectedIds.size > 1;
+    const movedIds = isBulkDrag ? Array.from(selectedIds) : [activeId];
+
+    setGroups(prev => {
+      const newGroups = JSON.parse(JSON.stringify(prev));
+      
+      const findItemAndGroup = (id: string) => {
+        for (const key in newGroups) {
+          const memberIndex = newGroups[key].members.findIndex((m: EvaluationResult) => m.id === id);
+          if (memberIndex > -1) {
+            return { groupKey: key, index: memberIndex, member: newGroups[key].members[memberIndex] };
+          }
+        }
+        return null;
+      }
+      
+      const overGroupKey = Object.keys(newGroups).find(key => key === over.id || newGroups[key].members.some((m: EvaluationResult) => m.id === over.id));
+      if (!overGroupKey) return prev;
+
+      let overIndex = newGroups[overGroupKey].members.findIndex((m: EvaluationResult) => m.id === over.id);
+      if (overIndex === -1) overIndex = newGroups[overGroupKey].members.length;
+
+      const movedItems: EvaluationResult[] = [];
+      movedIds.forEach(id => {
+          const itemInfo = findItemAndGroup(id);
+          if (itemInfo) {
+              movedItems.push(itemInfo.member);
+              newGroups[itemInfo.groupKey].members.splice(itemInfo.index, 1);
+          }
+      });
+      
+      newGroups[overGroupKey].members.splice(overIndex, 0, ...movedItems);
+      
+      return newGroups;
+    });
+  };
+
+  const handleToggleSelection = (id: string, checked: boolean) => {
+      setSelectedIds(prev => {
+          const newSelection = new Set(prev);
+          if (checked) {
+              newSelection.add(id);
+          } else {
+              newSelection.delete(id);
+          }
+          return newSelection;
+      });
+  };
+
+  const handleToggleGroupSelection = (group: {name: string, members: EvaluationResult[]}, checked: boolean) => {
+    setSelectedIds(prev => {
+        const newSelection = new Set(prev);
+        const memberIds = group.members.map(m => m.id);
+        if (checked) {
+            memberIds.forEach(id => newSelection.add(id));
+        } else {
+            memberIds.forEach(id => newSelection.delete(id));
+        }
+        return newSelection;
+    });
+  };
   
+  const handleStartEditing = (groupId: string, currentName: string) => {
+    setEditingGroupId(groupId);
+    setEditingGroupName(currentName);
+  };
+  
+  const handleCancelEditing = () => {
+    setEditingGroupId(null);
+    setEditingGroupName('');
+  };
+
+  const handleUpdateGroupName = () => {
+    if (!editingGroupId || !editingGroupName.trim()) {
+        handleCancelEditing();
+        return;
+    }
+    setGroups(prev => {
+        const newGroups = {...prev};
+        if (newGroups[editingGroupId]) {
+            newGroups[editingGroupId].name = editingGroupName;
+        }
+        // If key was the name, we might need to update the key as well. Assuming keys are stable.
+        return newGroups;
+    });
+    handleCancelEditing();
+  };
+
+
   const totalMyEmployees = myEmployees.length;
   const totalMyCompleted = myEmployees.filter(e => e.grade).length;
   const totalCompletionRate = totalMyEmployees > 0 ? (totalMyCompleted / totalMyEmployees) * 100 : 0;
   
-  const visibleEmployees = categorizedEmployees[activeTab];
-
   const gradeDistribution = Object.keys(gradingScale)
     .map(grade => ({
       name: grade,
       value: visibleEmployees.filter(g => g.grade === grade).length,
     }));
-
-  const requestSort = (key: keyof EvaluationResult) => {
-    let direction: 'ascending' | 'descending' = 'ascending';
-    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
-      direction = 'descending';
-    }
-    setSortConfig({ key, direction });
-  };
-  
-  const getSortIcon = (key: keyof EvaluationResult) => {
-    if (!sortConfig || sortConfig.key !== key) {
-        return <ArrowUpDown className="ml-2 h-4 w-4 opacity-30" />;
-    }
-    if (sortConfig.direction === 'ascending') {
-        return <ArrowUp className="ml-2 h-4 w-4 text-primary" />;
-    }
-    return <ArrowDown className="ml-2 h-4 w-4 text-primary" />;
-  };
 
   const handleDownloadExcel = () => {
     const dataToExport = visibleEmployees.map(r => ({
@@ -157,156 +367,178 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
 
   if (!user) return <div>로딩중...</div>;
 
+  const activeEmployee = activeId ? myEmployees.find(emp => emp.id === activeId) : null;
+
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold tracking-tight">평가 허브</h2>
-        {!evaluatorUser && <MonthSelector selectedDate={selectedDate} onDateChange={setSelectedDate} />}
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">평가 진행 현황</CardTitle>
-          <CardDescription>{selectedDate.year}년 {selectedDate.month}월 성과평가 ({(selectedDate.month % 12) + 1}월 급여반영)</CardDescription>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-          <div className="lg:col-span-2 space-y-4">
-              <div className='space-y-2'>
-                <div className='flex justify-between items-baseline'>
-                    <h4 className="font-semibold">종합 진행률</h4>
-                    <span className="font-bold text-lg text-primary">{totalCompletionRate.toFixed(1)}%</span>
-                </div>
-                <Progress value={totalCompletionRate} />
-                <p className="text-sm text-muted-foreground text-right">{totalMyCompleted} / {totalMyEmployees} 명 완료</p>
-              </div>
-          </div>
-          <div className="lg:col-span-3">
-             <GradeHistogram data={gradeDistribution} title={`${activeTab} 등급 분포`} />
-          </div>
-        </CardContent>
-      </Card>
-
-      <Tabs defaultValue="전체" onValueChange={(val) => setActiveTab(val as EvaluationGroupCategory)}>
-        <TabsList className="w-full grid grid-cols-4">
-            {Object.keys(categorizedEmployees).map(category => (
-                <TabsTrigger key={category} value={category}>{category} ({categorizedEmployees[category as EvaluationGroupCategory].length})</TabsTrigger>
-            ))}
-        </TabsList>
-
-        <div className="flex justify-end my-4">
-            <Button onClick={handleDownloadExcel} variant="outline">
-              <Download className="mr-2 h-4 w-4" />
-              현재 탭 엑셀 다운로드
-            </Button>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h2 className="text-3xl font-bold tracking-tight">평가 허브</h2>
+          {!evaluatorUser && <MonthSelector selectedDate={selectedDate} onDateChange={setSelectedDate} />}
         </div>
 
-        {Object.entries(categorizedEmployees).map(([category, employees]) => (
-            <TabsContent key={category} value={category} className="pt-4">
-                {employees.length > 0 ? Object.entries(groupWithinCategory(employees)).map(([groupName, groupMembers]) => {
-                  const sortedGroupMembers = [...groupMembers].sort((a, b) => {
-                    if (!sortConfig) return 0;
-                    const aValue = a[sortConfig.key] ?? '';
-                    const bValue = b[sortConfig.key] ?? '';
-                    if (aValue < bValue) {
-                      return sortConfig.direction === 'ascending' ? -1 : 1;
-                    }
-                    if (aValue > bValue) {
-                      return sortConfig.direction === 'ascending' ? 1 : -1;
-                    }
-                    return 0;
-                  });
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">평가 진행 현황</CardTitle>
+            <CardDescription>{selectedDate.year}년 {selectedDate.month}월 성과평가 ({(selectedDate.month % 12) + 1}월 급여반영)</CardDescription>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+            <div className="lg:col-span-2 space-y-4">
+                <div className='space-y-2'>
+                  <div className='flex justify-between items-baseline'>
+                      <h4 className="font-semibold">종합 진행률</h4>
+                      <span className="font-bold text-lg text-primary">{totalCompletionRate.toFixed(1)}%</span>
+                  </div>
+                  <Progress value={totalCompletionRate} />
+                  <p className="text-sm text-muted-foreground text-right">{totalMyCompleted} / {totalMyEmployees} 명 완료</p>
+                </div>
+            </div>
+            <div className="lg:col-span-3">
+              <GradeHistogram data={gradeDistribution} title={`${activeTab} 등급 분포`} />
+            </div>
+          </CardContent>
+        </Card>
 
-                  const availableScore = groupMembers.length * 100;
-                  const usedScore = groupMembers.reduce((acc, curr) => acc + (curr.score || 0), 0);
-                  
-                  return (
-                    <Card key={groupName} className="mb-6">
-                        <CardHeader>
-                          <div className="flex justify-between items-center">
-                            <CardTitle>{groupName}</CardTitle>
-                            <div className="text-sm">
-                              <span className="font-semibold">그룹 점수 현황: </span>
-                              <span className={usedScore > availableScore ? 'text-destructive font-bold' : ''}>{usedScore}</span>
-                               / {availableScore} 점
+        <Tabs defaultValue="전체" onValueChange={(val) => setActiveTab(val as EvaluationGroupCategory)}>
+          <TabsList className="w-full grid grid-cols-4">
+              {Object.keys(categorizedEmployees).map(category => (
+                  <TabsTrigger key={category} value={category}>{category} ({categorizedEmployees[category as EvaluationGroupCategory].length})</TabsTrigger>
+              ))}
+          </TabsList>
+
+          <div className="flex justify-end my-4">
+              <Button onClick={handleDownloadExcel} variant="outline">
+                <Download className="mr-2 h-4 w-4" />
+                현재 탭 엑셀 다운로드
+              </Button>
+          </div>
+
+          <TabsContent value={activeTab} className="pt-4">
+            {Object.keys(groups).length > 0 ? Object.entries(groups).map(([groupKey, group]) => {
+                const availableScore = group.members.length * 100;
+                const usedScore = group.members.reduce((acc, curr) => acc + (curr.score || 0), 0);
+                const allSelected = group.members.length > 0 && group.members.every(m => selectedIds.has(m.id));
+                const someSelected = group.members.some(m => selectedIds.has(m.id));
+
+                return (
+                  <Card key={groupKey} className="mb-6">
+                      <CardHeader>
+                        <div className="flex justify-between items-center">
+                          <div className='flex items-center gap-2'>
+                          {editingGroupId === groupKey ? (
+                            <div className='flex items-center gap-2'>
+                              <Input 
+                                value={editingGroupName}
+                                onChange={(e) => setEditingGroupName(e.target.value)}
+                                onBlur={handleUpdateGroupName}
+                                onKeyDown={(e) => e.key === 'Enter' && handleUpdateGroupName()}
+                                autoFocus
+                                className="h-8"
+                              />
+                               <Button size="sm" onClick={handleUpdateGroupName}>저장</Button>
+                               <Button size="sm" variant="ghost" onClick={handleCancelEditing}>취소</Button>
                             </div>
+                           ) : (
+                            <>
+                              <CardTitle>{group.name}</CardTitle>
+                              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleStartEditing(groupKey, group.name)}>
+                                <Edit2 className="h-4 w-4" />
+                              </Button>
+                            </>
+                           )}
                           </div>
-                        </CardHeader>
-                        <CardContent className="overflow-x-auto">
-                            <Table>
-                                <TableHeader><TableRow>
-                                    <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('uniqueId')}>
-                                        <div className="flex items-center">고유사번 {getSortIcon('uniqueId')}</div>
-                                    </TableHead>
-                                    <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('company')}>
-                                        <div className="flex items-center">회사 {getSortIcon('company')}</div>
-                                    </TableHead>
-                                    <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('department')}>
-                                        <div className="flex items-center">소속부서 {getSortIcon('department')}</div>
-                                    </TableHead>
-                                    <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('name')}>
-                                        <div className="flex items-center">이름 {getSortIcon('name')}</div>
-                                    </TableHead>
-                                    <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('workRate')}>
-                                        <div className="flex items-center">근무율 {getSortIcon('workRate')}</div>
-                                    </TableHead>
-                                    <TableHead className="whitespace-nowrap">등급</TableHead>
-                                    <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('score')}>
-                                        <div className="flex items-center">점수 {getSortIcon('score')}</div>
-                                    </TableHead>
-                                    <TableHead className="whitespace-nowrap w-[200px]">비고</TableHead>
-                                </TableRow></TableHeader>
-                                <TableBody>
-                                    {sortedGroupMembers.map(emp => (
-                                        <TableRow key={emp.id}>
-                                            <TableCell className="whitespace-nowrap">{emp.uniqueId}</TableCell>
-                                            <TableCell className="whitespace-nowrap">{emp.company}</TableCell>
-                                            <TableCell className="whitespace-nowrap">{emp.department}</TableCell>
-                                            <TableCell className="font-medium whitespace-nowrap">{emp.name}</TableCell>
-                                            <TableCell className="whitespace-nowrap">{(emp.workRate * 100).toFixed(1)}%</TableCell>
-                                            <TableCell className="whitespace-nowrap">
-                                            <Select value={emp.grade || ''} onValueChange={(g: Grade) => handleGradeChange(emp.id, g)}>
-                                                <SelectTrigger className="w-[100px]">
-                                                    <SelectValue placeholder="등급 선택" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                {Object.keys(gradingScale).map(grade => (
-                                                    <SelectItem key={grade} value={grade}>{grade}</SelectItem>
-                                                ))}
-                                                </SelectContent>
-                                            </Select>
-                                            </TableCell>
-                                            <TableCell className="whitespace-nowrap">{emp.score}</TableCell>
-                                            <TableCell>
-                                              <Input 
-                                                value={emp.memo || ''}
-                                                onChange={(e) => handleMemoChange(emp.id, e.target.value)}
-                                                onBlur={handleSave}
-                                                placeholder="메모 입력"
-                                              />
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                    </Card>
-                  )
-                }) : (
-                    <Card>
-                        <CardContent className="pt-6">
-                            <p className="text-center text-muted-foreground">이 분류에 해당하는 평가 대상자가 없습니다.</p>
-                        </CardContent>
-                    </Card>
-                )}
-            </TabsContent>
-        ))}
-      </Tabs>
+                          <div className="text-sm">
+                            <span className="font-semibold">그룹 점수 현황: </span>
+                            <span className={usedScore > availableScore ? 'text-destructive font-bold' : ''}>{usedScore}</span>
+                             / {availableScore} 점
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="overflow-x-auto">
+                        <SortableContext items={group.members.map(m => m.id)} strategy={verticalListSortingStrategy}>
+                          <Table>
+                              <TableHeader><TableRow>
+                                  <TableHead className="py-2 px-2 w-[80px]">
+                                    <Checkbox 
+                                      checked={allSelected}
+                                      onCheckedChange={(checked) => handleToggleGroupSelection(group, Boolean(checked))}
+                                      aria-label={`Select all in ${group.name}`}
+                                    />
+                                  </TableHead>
+                                  <TableHead className="whitespace-nowrap py-2">고유사번</TableHead>
+                                  <TableHead className="whitespace-nowrap py-2">회사</TableHead>
+                                  <TableHead className="whitespace-nowrap py-2">이름</TableHead>
+                                  <TableHead className="whitespace-nowrap py-2">근무율</TableHead>
+                                  <TableHead className="whitespace-nowrap py-2">등급</TableHead>
+                                  <TableHead className="whitespace-nowrap py-2">점수</TableHead>
+                                  <TableHead className="whitespace-nowrap w-[200px] py-2">비고</TableHead>
+                              </TableRow></TableHeader>
+                              <TableBody>
+                                  {group.members.map(emp => (
+                                      <DraggableTableRow
+                                          key={emp.id}
+                                          employee={emp}
+                                          gradingScale={gradingScale}
+                                          selected={selectedIds.has(emp.id)}
+                                          onSelect={handleToggleSelection}
+                                          onGradeChange={handleGradeChange}
+                                          onMemoChange={handleMemoChange}
+                                          onSave={handleSave}
+                                      />
+                                  ))}
+                              </TableBody>
+                          </Table>
+                          </SortableContext>
+                      </CardContent>
+                  </Card>
+                )
+            }) : (
+                  <Card>
+                      <CardContent className="pt-6">
+                          <p className="text-center text-muted-foreground">이 분류에 해당하는 평가 대상자가 없습니다.</p>
+                      </CardContent>
+                  </Card>
+              )}
+          </TabsContent>
+        </Tabs>
 
-      <div className="flex justify-end mt-4">
-        <Button onClick={handleSave} size="lg">
-            <Check className="mr-2"/> 모든 평가 저장
-        </Button>
+        <div className="flex justify-end mt-4">
+          <Button onClick={handleSave} size="lg">
+              <Check className="mr-2"/> 모든 평가 저장
+          </Button>
+        </div>
       </div>
-    </div>
+       <DragOverlay>
+        {activeId && activeEmployee ? (
+            <Table className="bg-background shadow-lg">
+                <TableBody>
+                     <TableRow>
+                        <TableCell className="py-2 px-2 w-[80px]">
+                           <div className='flex items-center gap-1'>
+                            <Checkbox checked={selectedIds.has(activeId)} />
+                            <Button variant="ghost" size="icon" className="cursor-grabbing">
+                                <GripVertical className="h-4 w-4" />
+                            </Button>
+                           </div>
+                           {isBulkDrag && <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">{selectedIds.size}</div>}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap py-2">{activeEmployee.uniqueId}</TableCell>
+                        <TableCell className="whitespace-nowrap py-2">{activeEmployee.company}</TableCell>
+                        <TableCell className="font-medium whitespace-nowrap py-2">{activeEmployee.name}</TableCell>
+                        <TableCell className="whitespace-nowrap py-2">{(activeEmployee.workRate * 100).toFixed(1)}%</TableCell>
+                        <TableCell className="whitespace-nowrap py-2">{activeEmployee.grade}</TableCell>
+                        <TableCell className="whitespace-nowrap py-2">{activeEmployee.score}</TableCell>
+                        <TableCell className="py-2">{activeEmployee.memo}</TableCell>
+                    </TableRow>
+                </TableBody>
+            </Table>
+        ) : null}
+    </DragOverlay>
+    </DndContext>
   );
 }
