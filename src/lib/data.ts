@@ -7,7 +7,7 @@ export const gradingScale: Record<NonNullable<Grade>, GradeInfo> = {
   'B+': { score: 105, payoutRate: 105, description: '기대 이상' },
   'B': { score: 100, payoutRate: 100, description: '기대치 충족 (기준)' },
   'B-': { score: 95, payoutRate: 95, description: '기대 이하' },
-  'BC': { score: 85, payoutRate: 85, description: '개선 필요' },
+  'C': { score: 85, payoutRate: 85, description: '개선 필요' },
   'C-': { score: 70, payoutRate: 70, description: '상당한 개선 필요' },
   'D': { score: 0, payoutRate: 0, description: '미흡' },
 };

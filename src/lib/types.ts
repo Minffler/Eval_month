@@ -27,7 +27,7 @@ export type Employee = {
   group: string; // 평가그룹
 };
 
-export type Grade = 'S' | 'A+' | 'A' | 'B+' | 'B' | 'B-' | 'BC' | 'C-' | 'D' | null;
+export type Grade = 'S' | 'A+' | 'A' | 'B+' | 'B' | 'B-' | 'C' | 'C-' | 'D' | null;
 
 export type GradeInfo = {
   score: number;
