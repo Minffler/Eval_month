@@ -42,7 +42,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Check, Download, ArrowUpDown, ArrowUp, ArrowDown, Edit2, GripVertical } from 'lucide-react';
+import { Check, Download, ArrowUpDown, ArrowUp, ArrowDown, Edit2, GripVertical, ChevronUp, ChevronDown } from 'lucide-react';
 import { Progress } from '../ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { MonthSelector } from './month-selector';
@@ -50,6 +50,11 @@ import { GradeHistogram } from './grade-histogram';
 import { Input } from '../ui/input';
 import * as XLSX from 'xlsx';
 import { Checkbox } from '../ui/checkbox';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 
 interface EvaluatorDashboardProps {
   allResults: EvaluationResult[];
@@ -151,6 +156,7 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
   const [activeId, setActiveId] = React.useState<string | null>(null);
   const [editingGroupId, setEditingGroupId] = React.useState<string | null>(null);
   const [editingGroupName, setEditingGroupName] = React.useState('');
+  const [isChartOpen, setIsChartOpen] = React.useState(true);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -420,23 +426,37 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
         )}
 
         <Card>
-           <CardHeader className="flex flex-col sm:flex-row justify-between sm:items-start gap-4 p-4">
-              <div>
-                  <CardTitle className="flex items-center gap-2">평가 진행 현황</CardTitle>
-                  <CardDescription>{selectedDate.year}년 {selectedDate.month}월 성과평가 ({(selectedDate.month % 12) + 1}월 급여반영)</CardDescription>
-              </div>
-              <div className="w-full sm:w-64 space-y-1">
-                  <div className='flex justify-between items-baseline'>
-                      <h4 className="font-semibold text-sm">종합 진행률</h4>
-                      <span className="font-bold text-base text-primary">{totalCompletionRate.toFixed(1)}%</span>
-                  </div>
-                  <Progress value={totalCompletionRate} className="h-2" />
-                  <p className="text-xs text-muted-foreground text-right">{totalMyCompleted} / {totalMyEmployees} 명 완료</p>
-              </div>
-          </CardHeader>
-          <CardContent className='p-4 pt-0'>
-            <GradeHistogram data={gradeDistribution} gradingScale={gradingScale} title={`${activeTab} 등급 분포`} />
-          </CardContent>
+          <Collapsible
+            open={isChartOpen}
+            onOpenChange={setIsChartOpen}
+          >
+            <CardHeader className="flex flex-col sm:flex-row justify-between sm:items-start gap-4 p-4">
+                <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                        <CardTitle>평가 진행 현황</CardTitle>
+                        <CollapsibleTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-6 w-6">
+                                {isChartOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                            </Button>
+                        </CollapsibleTrigger>
+                    </div>
+                    <CardDescription>{selectedDate.year}년 {selectedDate.month}월 성과평가 ({(selectedDate.month % 12) + 1}월 급여반영)</CardDescription>
+                </div>
+                <div className="w-full sm:w-64 space-y-1">
+                    <div className='flex justify-between items-baseline'>
+                        <h4 className="font-semibold text-sm">종합 진행률</h4>
+                        <span className="font-bold text-base text-primary">{totalCompletionRate.toFixed(1)}%</span>
+                    </div>
+                    <Progress value={totalCompletionRate} className="h-2" />
+                    <p className="text-xs text-muted-foreground text-right">{totalMyCompleted} / {totalMyEmployees} 명 완료</p>
+                </div>
+            </CardHeader>
+            <CollapsibleContent>
+              <CardContent className='p-4 pt-0'>
+                <GradeHistogram data={gradeDistribution} gradingScale={gradingScale} title={`${activeTab} 등급 분포`} />
+              </CardContent>
+            </CollapsibleContent>
+          </Collapsible>
         </Card>
 
         <Tabs defaultValue="전체" onValueChange={(val) => setActiveTab(val as EvaluationGroupCategory)}>
