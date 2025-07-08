@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, FileCheck, Bot, Upload, LayoutDashboard, Settings, Download, Bell, ArrowUpDown, ArrowUp, ArrowDown, Eye } from 'lucide-react';
+import { Users, FileCheck, Bot, Upload, LayoutDashboard, Settings, Download, Bell, ArrowUpDown, ArrowUp, ArrowDown, Eye, ClipboardX } from 'lucide-react';
 import { GradeHistogram } from './grade-histogram';
 import {
   Table,
@@ -188,6 +188,24 @@ export default function AdminDashboard({
     setSelectedEvaluators(newSelection);
   };
   
+  const handleSelectIncompleteEvaluators = () => {
+    const incompleteEvaluatorIds = evaluatorStats
+      .filter(stat => stat.rate < 100)
+      .map(stat => stat.evaluatorId);
+    setSelectedEvaluators(new Set(incompleteEvaluatorIds));
+    if (incompleteEvaluatorIds.length > 0) {
+      toast({
+          title: "선택 완료",
+          description: `완료율이 100%가 아닌 ${incompleteEvaluatorIds.length}명의 평가자가 선택되었습니다.`,
+      });
+    } else {
+      toast({
+          title: "모두 완료",
+          description: `모든 평가자가 평가를 완료했습니다.`,
+      });
+    }
+  };
+
   const handleOpenNotificationDialog = () => {
     setNotificationMessage(`안녕하세요, <평가자이름>님. <평가년월> 평가가 얼마 남지 않았습니다. 현재 진행률은 <%>입니다. 조속한 평가 진행 부탁드립니다.`);
     setIsNotificationDialogOpen(true);
@@ -377,7 +395,14 @@ export default function AdminDashboard({
                   </TableBody>
                 </Table>
               </div>
-              <div className="flex justify-end mt-4">
+              <div className="flex justify-end mt-4 gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleSelectIncompleteEvaluators}
+                >
+                  <ClipboardX className="mr-2 h-4 w-4" />
+                  미완료 평가자 선택
+                </Button>
                 <Button
                   disabled={selectedEvaluators.size === 0}
                   onClick={handleOpenNotificationDialog}
