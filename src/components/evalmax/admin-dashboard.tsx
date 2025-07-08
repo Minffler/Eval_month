@@ -132,6 +132,9 @@ export default function AdminDashboard({
     })).sort((a, b) => a.evaluatorName.localeCompare(b.evaluatorName));
   }, [initialResults]);
   
+  const isAllEvaluatorsSelected = evaluatorStats.length > 0 && selectedEvaluators.size === evaluatorStats.length;
+  const isIndeterminateEvaluatorSelection = selectedEvaluators.size > 0 && !isAllEvaluatorsSelected;
+
   const selectedEvaluator = React.useMemo(() => {
     if (!selectedEvaluatorId) return null;
     return mockUsers.find(u => u.id === selectedEvaluatorId) || null;
@@ -362,7 +365,7 @@ export default function AdminDashboard({
                     <TableRow>
                       <TableHead className="w-[50px]">
                         <Checkbox
-                          checked={selectedEvaluators.size === evaluatorStats.length && evaluatorStats.length > 0}
+                          checked={isIndeterminateEvaluatorSelection ? 'indeterminate' : isAllEvaluatorsSelected}
                           onCheckedChange={(checked) => handleSelectAllEvaluators(Boolean(checked))}
                           aria-label="모든 평가자 선택"
                         />

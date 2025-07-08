@@ -96,7 +96,7 @@ const DraggableTableRow = ({ employee, gradingScale, selected, onSelect, onGrade
 
     return (
         <TableRow ref={setNodeRef} style={style} data-state={selected ? "selected" : "unselected"} className={cn(isBulkDrag && "opacity-50")}>
-            <TableCell className="p-1 w-[80px]">
+            <TableCell className="p-2 w-[80px]">
                 <div className='flex items-center gap-1'>
                   <Checkbox
                       checked={selected}
@@ -455,9 +455,12 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
 
           <TabsContent value={activeTab} className="pt-0">
             {Object.keys(groups).length > 0 ? Object.entries(groups).map(([groupKey, group]) => {
+                const selectedInGroupCount = group.members.filter(m => selectedIds.has(m.id)).length;
+                const allSelectedInGroup = group.members.length > 0 && selectedInGroupCount === group.members.length;
+                const isIndeterminate = selectedInGroupCount > 0 && !allSelectedInGroup;
                 const availableScore = group.members.length * 100;
                 const usedScore = group.members.reduce((acc, curr) => acc + (curr.score || 0), 0);
-                const allSelected = group.members.length > 0 && group.members.every(m => selectedIds.has(m.id));
+                
 
                 return (
                   <Card key={groupKey} className="mb-4">
@@ -499,7 +502,7 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
                               <TableHeader><TableRow>
                                   <TableHead className="w-[80px] p-2">
                                     <Checkbox 
-                                      checked={allSelected}
+                                      checked={isIndeterminate ? 'indeterminate' : allSelectedInGroup}
                                       onCheckedChange={(checked) => handleToggleGroupSelection(group, Boolean(checked))}
                                       aria-label={`Select all in ${group.name}`}
                                     />
