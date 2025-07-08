@@ -27,7 +27,7 @@ import { Button } from '../ui/button';
 import { useToast } from '@/hooks/use-toast';
 import GradeManagement from './grade-management';
 import { MonthSelector } from './month-selector';
-import { calculateFinalAmount, mockUsers } from '@/lib/data';
+import { calculateFinalAmount, mockUsers, mockEmployees } from '@/lib/data';
 import * as XLSX from 'xlsx';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Progress } from '../ui/progress';
@@ -101,16 +101,19 @@ export default function AdminDashboard({
   }));
   
   const evaluatorStats = React.useMemo(() => {
-    const statsById: Record<string, { total: number; completed: number; evaluatorName: string }> = {};
+    const statsById: Record<string, { total: number; completed: number; evaluatorName: string; evaluatorUniqueId: string }> = {};
 
     initialResults.forEach(r => {
       if (!r.evaluatorId) return;
 
       const id = r.evaluatorId;
-      const name = r.evaluatorName || "미지정";
+      const name = r.evaluatorName || '미지정';
 
       if (!statsById[id]) {
-        statsById[id] = { total: 0, completed: 0, evaluatorName: name };
+        const evaluatorUser = mockUsers.find(u => u.id === id);
+        const evaluatorEmployee = evaluatorUser ? mockEmployees.find(e => e.id === evaluatorUser.employeeId) : null;
+        const uniqueId = evaluatorEmployee ? evaluatorEmployee.uniqueId : 'N/A';
+        statsById[id] = { total: 0, completed: 0, evaluatorName: name, evaluatorUniqueId: uniqueId };
       }
       statsById[id].total++;
       if (r.grade) {
@@ -120,12 +123,13 @@ export default function AdminDashboard({
 
     return Object.entries(statsById).map(([id, data]) => ({
       evaluatorId: id,
+      evaluatorUniqueId: data.evaluatorUniqueId,
       evaluatorName: data.evaluatorName,
       total: data.total,
       completed: data.completed,
       pending: data.total - data.completed,
       rate: data.total > 0 ? (data.completed / data.total) * 100 : 0,
-    })).sort((a,b) => a.evaluatorName.localeCompare(b.evaluatorName));
+    })).sort((a, b) => a.evaluatorName.localeCompare(b.evaluatorName));
   }, [initialResults]);
   
   const selectedEvaluator = React.useMemo(() => {
@@ -299,7 +303,7 @@ export default function AdminDashboard({
       '회사': r.company,
       '소속부서': r.department,
       '이름': r.name,
-      '직책급': r.title || r.growthLevel,
+      '직책/성장레벨': r.title || r.growthLevel,
       '근무율': `${(r.workRate * 100).toFixed(1)}%`,
       '점수': r.score,
       '등급': r.grade,
@@ -363,6 +367,7 @@ export default function AdminDashboard({
                           aria-label="모든 평가자 선택"
                         />
                       </TableHead>
+                      <TableHead className="whitespace-nowrap">평가자사번</TableHead>
                       <TableHead className="whitespace-nowrap">평가자</TableHead>
                       <TableHead className="whitespace-nowrap text-center">대상 인원</TableHead>
                       <TableHead className="whitespace-nowrap text-center">완료</TableHead>
@@ -380,6 +385,7 @@ export default function AdminDashboard({
                             aria-label={`${stat.evaluatorName} 선택`}
                           />
                         </TableCell>
+                        <TableCell className="whitespace-nowrap font-mono text-xs">{stat.evaluatorUniqueId}</TableCell>
                         <TableCell className="font-medium whitespace-nowrap">{stat.evaluatorName}</TableCell>
                         <TableCell className="text-center whitespace-nowrap">{stat.total}</TableCell>
                         <TableCell className="text-center whitespace-nowrap">{stat.completed}</TableCell>
@@ -448,7 +454,7 @@ export default function AdminDashboard({
                     <div className="flex items-center">이름 {getSortIcon('name')}</div>
                   </TableHead>
                   <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('title')}>
-                    <div className="flex items-center">직책급 {getSortIcon('title')}</div>
+                    <div className="flex items-center">직책/성장레벨 {getSortIcon('title')}</div>
                   </TableHead>
                   <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('workRate')}>
                     <div className="flex items-center">근무율 {getSortIcon('workRate')}</div>
