@@ -18,39 +18,34 @@ export default function EmployeeDashboard({ allResults }: EmployeeDashboardProps
 
   React.useEffect(() => {
     if (user) {
-      // In a real app, you would use the logged-in user's ID.
-      // For this demo, we find the mock user with the 'employee' role.
-      const employeeUser = allResults.filter(r => r.id === 'E003');
-      setEmployeeResults(employeeUser);
+      const employeeUserResults = allResults.filter(r => r.id === user.employeeId);
+      setEmployeeResults(employeeUserResults);
     }
   }, [user, allResults]);
 
   const formatCurrency = (value: number) => {
+    if (isNaN(value)) return '0';
     return new Intl.NumberFormat('ko-KR').format(value);
   }
 
   const handleYearChange = (year: string) => {
     setSelectedYear(year);
-    // Here you would typically fetch data for the selected year.
-    // For this demo, we'll just filter the existing mock data.
-    if (user) {
-      const filteredResults = allResults.filter(r => 
-        r.id === 'E003' && new Date(r.year, r.month -1).getFullYear().toString() === year
-      );
-      setEmployeeResults(filteredResults);
-    }
   };
   
   const availableYears = React.useMemo(() => {
-      const years = new Set(allResults.map(r => new Date(r.year, r.month -1).getFullYear()));
+      if (!allResults) return [];
+      const years = new Set(allResults.map(r => r.year));
       return Array.from(years).sort((a,b) => b - a);
   }, [allResults]);
 
-  if (!user || !employeeResults) {
+  const filteredResults = React.useMemo(() => {
+    return employeeResults.filter(r => r.year.toString() === selectedYear);
+  }, [employeeResults, selectedYear]);
+
+
+  if (!user) {
     return <div>결과를 불러오는 중입니다...</div>;
   }
-  
-  const currentResult = employeeResults[0]; // Assuming one result per month for simplicity
 
   return (
     <div className="space-y-6">
@@ -76,38 +71,40 @@ export default function EmployeeDashboard({ allResults }: EmployeeDashboardProps
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {employeeResults.length > 0 ? (
+          {filteredResults.length > 0 ? (
           <div className="border rounded-lg overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>평가월</TableHead>
-                <TableHead>사번</TableHead>
-                <TableHead>이름</TableHead>
-                <TableHead>소속부서</TableHead>
-                <TableHead>근무율</TableHead>
-                <TableHead>평가자</TableHead>
-                <TableHead>등급</TableHead>
-                <TableHead>점수</TableHead>
-                <TableHead>기준금액</TableHead>
-                <TableHead>등급금액</TableHead>
-                <TableHead>최종금액</TableHead>
+                <TableHead className="whitespace-nowrap">평가월</TableHead>
+                <TableHead className="whitespace-nowrap">고유사번</TableHead>
+                <TableHead className="whitespace-nowrap">회사</TableHead>
+                <TableHead className="whitespace-nowrap">이름</TableHead>
+                <TableHead className="whitespace-nowrap">소속부서</TableHead>
+                <TableHead className="whitespace-nowrap">근무율</TableHead>
+                <TableHead className="whitespace-nowrap">평가자</TableHead>
+                <TableHead className="whitespace-nowrap">등급</TableHead>
+                <TableHead className="whitespace-nowrap">점수</TableHead>
+                <TableHead className="whitespace-nowrap">기준금액</TableHead>
+                <TableHead className="whitespace-nowrap">등급금액</TableHead>
+                <TableHead className="whitespace-nowrap">최종금액</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {employeeResults.map((result) => (
+              {filteredResults.sort((a, b) => b.month - a.month).map((result) => (
                 <TableRow key={`${result.year}-${result.month}`}>
-                  <TableCell>{result.year}년 {result.month}월</TableCell>
-                  <TableCell>{result.id}</TableCell>
-                  <TableCell>{result.name}</TableCell>
-                  <TableCell>{result.department}</TableCell>
-                  <TableCell>{(result.workRate * 100).toFixed(1)}%</TableCell>
-                  <TableCell>{result.evaluatorName}</TableCell>
-                  <TableCell>{result.grade}</TableCell>
-                  <TableCell>{result.score}</TableCell>
-                  <TableCell>{formatCurrency(result.baseAmount)} 원</TableCell>
-                  <TableCell>{formatCurrency(result.gradeAmount)} 원</TableCell>
-                  <TableCell className="font-bold">{formatCurrency(result.finalAmount)} 원</TableCell>
+                  <TableCell className="whitespace-nowrap">{result.year}년 {result.month}월</TableCell>
+                  <TableCell className="whitespace-nowrap">{result.uniqueId}</TableCell>
+                  <TableCell className="whitespace-nowrap">{result.company}</TableCell>
+                  <TableCell className="whitespace-nowrap">{result.name}</TableCell>
+                  <TableCell className="whitespace-nowrap">{result.department}</TableCell>
+                  <TableCell className="whitespace-nowrap">{(result.workRate * 100).toFixed(1)}%</TableCell>
+                  <TableCell className="whitespace-nowrap">{result.evaluatorName}</TableCell>
+                  <TableCell className="whitespace-nowrap">{result.grade}</TableCell>
+                  <TableCell className="whitespace-nowrap">{result.score}</TableCell>
+                  <TableCell className="whitespace-nowrap text-right">{formatCurrency(result.baseAmount)} 원</TableCell>
+                  <TableCell className="whitespace-nowrap text-right">{formatCurrency(result.gradeAmount)} 원</TableCell>
+                  <TableCell className="font-bold whitespace-nowrap text-right">{formatCurrency(result.finalAmount)} 원</TableCell>
                 </TableRow>
               ))}
             </TableBody>

@@ -57,6 +57,8 @@ export type EvaluationGroup = {
 };
 
 export type EvaluationResult = Employee & {
+  year: number;
+  month: number;
   grade: Grade;
   score: number;
   payoutRate: number;

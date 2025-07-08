@@ -3,8 +3,7 @@
 import * as React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StatsCard } from './stats-card';
-import { Users, FileCheck, AlertTriangle, CheckCircle, BarChart3, Bot, Upload, LayoutDashboard, Settings } from 'lucide-react';
-import { mockEvaluationGroups, gradingScale as initialGradingScale } from '@/lib/data';
+import { Users, FileCheck, AlertTriangle, CheckCircle, Bot, Upload, LayoutDashboard, Settings } from 'lucide-react';
 import { GradeHistogram } from './grade-histogram';
 import {
   Table,
@@ -23,36 +22,39 @@ import {
 } from '@/components/ui/select';
 import { ConsistencyValidator } from './consistency-validator';
 import ManageData from './manage-data';
-import type { EvaluationResult, Grade, EvaluationGroup, Employee, GradeInfo } from '@/lib/types';
+import type { EvaluationResult, Grade, Employee, GradeInfo } from '@/lib/types';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { useToast } from '@/hooks/use-toast';
 import GradeManagement from './grade-management';
+import { MonthSelector } from './month-selector';
+import { calculateFinalAmount } from '@/lib/data';
 
 interface AdminDashboardProps {
   results: EvaluationResult[];
   setEmployees: React.Dispatch<React.SetStateAction<Employee[]>>;
   gradingScale: Record<NonNullable<Grade>, GradeInfo>;
   setGradingScale: React.Dispatch<React.SetStateAction<Record<NonNullable<Grade>, GradeInfo>>>;
+  selectedDate: { year: number; month: number };
+  setSelectedDate: (date: { year: number; month: number }) => void;
+  handleResultsUpdate: (updatedResults: EvaluationResult[]) => void;
 }
 
-export default function AdminDashboard({ results: initialResults, setEmployees, gradingScale, setGradingScale }: AdminDashboardProps) {
+export default function AdminDashboard({ 
+  results: initialResults, 
+  setEmployees, 
+  gradingScale, 
+  setGradingScale,
+  selectedDate,
+  setSelectedDate,
+  handleResultsUpdate
+}: AdminDashboardProps) {
   const [results, setResults] = React.useState<EvaluationResult[]>(initialResults);
   const { toast } = useToast();
 
   React.useEffect(() => {
     setResults(initialResults);
   }, [initialResults]);
-  
-  const employeeGroupMap = React.useMemo(() => {
-    const map = new Map<string, EvaluationGroup>();
-    mockEvaluationGroups.forEach(group => {
-        group.memberIds.forEach(memberId => {
-            map.set(memberId, group);
-        });
-    });
-    return map;
-  }, []);
 
   const totalEmployees = results.length;
   const completedEvaluations = results.filter(r => r.grade !== null).length;
@@ -65,6 +67,7 @@ export default function AdminDashboard({ results: initialResults, setEmployees, 
   }));
 
   const formatCurrency = (value: number) => {
+    if (isNaN(value)) return '0';
     return new Intl.NumberFormat('ko-KR').format(value);
   }
 
@@ -74,7 +77,9 @@ export default function AdminDashboard({ results: initialResults, setEmployees, 
 
     setResults(prevResults => prevResults.map(r => {
       if (r.id === employeeId) {
-        return { ...r, baseAmount: newAmount };
+        const gradeAmount = newAmount * r.payoutRate;
+        const finalAmount = calculateFinalAmount(gradeAmount, r.workRate);
+        return { ...r, baseAmount: newAmount, gradeAmount, finalAmount };
       }
       return r;
     }));
@@ -84,29 +89,37 @@ export default function AdminDashboard({ results: initialResults, setEmployees, 
     const newGrade = newGradeStr as Grade;
     setResults(prevResults => prevResults.map(r => {
       if (r.id === employeeId) {
-        return { ...r, grade: newGrade };
+        const gradeInfo = newGrade ? gradingScale[newGrade] : { score: 0, payoutRate: 0 };
+        const payoutRate = (gradeInfo?.payoutRate || 0) / 100;
+        const gradeAmount = r.baseAmount * payoutRate;
+        const finalAmount = calculateFinalAmount(gradeAmount, r.workRate);
+        return { 
+          ...r, 
+          grade: newGrade,
+          score: gradeInfo?.score || 0,
+          payoutRate: payoutRate,
+          gradeAmount,
+          finalAmount
+        };
       }
       return r;
     }));
   };
   
   const handleSaveChanges = () => {
-    // This would typically update state in a parent component or context
-    const updatedEmployees = results.map(r => {
-      const { grade, score, payoutRate, gradeAmount, finalAmount, evaluatorName, detailedGroup1, detailedGroup2, ...employeeData } = r;
-      return employeeData;
-    });
-    setEmployees(updatedEmployees);
-
+    handleResultsUpdate(results);
     toast({
       title: "변경사항 저장됨",
-      description: "기준금액 및 등급 변경사항이 성공적으로 저장되었습니다."
+      description: `${selectedDate.year}년 ${selectedDate.month}월 기준금액 및 등급 변경사항이 성공적으로 저장되었습니다.`
     })
   }
 
   return (
     <div className="space-y-6">
-      <h2 className="text-3xl font-bold tracking-tight">관리자 개요</h2>
+      <div className="flex justify-between items-center">
+        <h2 className="text-3xl font-bold tracking-tight">관리자 개요</h2>
+        <MonthSelector selectedDate={selectedDate} onDateChange={setSelectedDate} />
+      </div>
       <Tabs defaultValue="dashboard">
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="dashboard">
@@ -159,33 +172,29 @@ export default function AdminDashboard({ results: initialResults, setEmployees, 
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>고유사번</TableHead>
-                <TableHead>사번</TableHead>
-                <TableHead>이름</TableHead>
-                <TableHead>직책급</TableHead>
-                <TableHead>근무율</TableHead>
-                <TableHead>그룹 총점</TableHead>
-                <TableHead>점수</TableHead>
-                <TableHead>등급</TableHead>
-                <TableHead>기준금액</TableHead>
-                <TableHead>등급금액</TableHead>
-                <TableHead>최종금액</TableHead>
-                <TableHead>평가자</TableHead>
+                <TableHead className="whitespace-nowrap">고유사번</TableHead>
+                <TableHead className="whitespace-nowrap">회사</TableHead>
+                <TableHead className="whitespace-nowrap">이름</TableHead>
+                <TableHead className="whitespace-nowrap">직책급</TableHead>
+                <TableHead className="whitespace-nowrap">근무율</TableHead>
+                <TableHead className="whitespace-nowrap">점수</TableHead>
+                <TableHead className="whitespace-nowrap">등급</TableHead>
+                <TableHead className="whitespace-nowrap">기준금액</TableHead>
+                <TableHead className="whitespace-nowrap">등급금액</TableHead>
+                <TableHead className="whitespace-nowrap">최종금액</TableHead>
+                <TableHead className="whitespace-nowrap">평가자</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {results.map(r => {
-                const group = employeeGroupMap.get(r.id);
-                return (
+              {results.map(r => (
                   <TableRow key={r.id}>
-                    <TableCell>{r.uniqueId}</TableCell>
-                    <TableCell>{r.id}</TableCell>
-                    <TableCell className="font-medium">{r.name}</TableCell>
-                    <TableCell>{r.title || r.growthLevel}</TableCell>
-                    <TableCell>{(r.workRate * 100).toFixed(1)}%</TableCell>
-                    <TableCell>{group ? group.totalScore : 'N/A'}</TableCell>
-                    <TableCell>{r.score}</TableCell>
-                    <TableCell>
+                    <TableCell className="whitespace-nowrap">{r.uniqueId}</TableCell>
+                    <TableCell className="whitespace-nowrap">{r.company}</TableCell>
+                    <TableCell className="font-medium whitespace-nowrap">{r.name}</TableCell>
+                    <TableCell className="whitespace-nowrap">{r.title || r.growthLevel}</TableCell>
+                    <TableCell className="whitespace-nowrap">{(r.workRate * 100).toFixed(1)}%</TableCell>
+                    <TableCell className="whitespace-nowrap">{r.score}</TableCell>
+                    <TableCell className="whitespace-nowrap">
                       <Select value={r.grade || ''} onValueChange={(g) => handleGradeChange(r.id, g)}>
                           <SelectTrigger className="w-[100px]">
                               <SelectValue placeholder="선택" />
@@ -197,20 +206,20 @@ export default function AdminDashboard({ results: initialResults, setEmployees, 
                           </SelectContent>
                       </Select>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="whitespace-nowrap">
                       <Input 
                         type="text"
                         value={formatCurrency(r.baseAmount)}
                         onChange={(e) => handleBaseAmountChange(r.id, e.target.value)}
-                        className="w-32"
+                        className="w-32 text-right"
                       />
                     </TableCell>
-                    <TableCell>{formatCurrency(r.gradeAmount)}</TableCell>
-                    <TableCell>{formatCurrency(r.finalAmount)}</TableCell>
-                    <TableCell>{r.evaluatorName}</TableCell>
+                    <TableCell className="whitespace-nowrap text-right">{formatCurrency(r.gradeAmount)}</TableCell>
+                    <TableCell className="whitespace-nowrap text-right">{formatCurrency(r.finalAmount)}</TableCell>
+                    <TableCell className="whitespace-nowrap">{r.evaluatorName}</TableCell>
                   </TableRow>
                 )
-              })}
+              )}
             </TableBody>
           </Table>
           </div>

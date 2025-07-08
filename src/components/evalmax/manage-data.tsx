@@ -39,11 +39,10 @@ export default function ManageData({ setEmployees }: ManageDataProps) {
             title: row['직책'],
             position: row['호칭'],
             growthLevel: row['성장레벨'],
-            workRate: parseFloat(row['실근무율']),
+            workRate: parseFloat(row['실근무율']) || 0,
             group: row['평가그룹'],
             evaluatorId: row['평가자사번'],
-            baseAmount: Number(row['개인별 기준금액']),
-            // These are calculated or default values
+            baseAmount: Number(row['개인별 기준금액']) || 0,
             deductionHours: { attendance: 0, shortened: 0, total: 0 }, 
           }));
 

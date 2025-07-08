@@ -87,10 +87,10 @@ export default function GradeManagement({ gradingScale, setGradingScale }: Grade
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>등급</TableHead>
-                <TableHead>점수</TableHead>
-                <TableHead>지급률 (%)</TableHead>
-                <TableHead>설명</TableHead>
+                <TableHead className="whitespace-nowrap">등급</TableHead>
+                <TableHead className="whitespace-nowrap">점수</TableHead>
+                <TableHead className="whitespace-nowrap">지급률 (%)</TableHead>
+                <TableHead className="whitespace-nowrap">설명</TableHead>
                 <TableHead></TableHead>
               </TableRow>
             </TableHeader>
@@ -102,7 +102,6 @@ export default function GradeManagement({ gradingScale, setGradingScale }: Grade
                       value={gradeItem.grade || ''}
                       onChange={(e) => handleGradeChange(index, e.target.value)}
                       className="w-24"
-                      disabled={!gradeItem.isNew}
                     />
                   </TableCell>
                   <TableCell>
@@ -124,7 +123,11 @@ export default function GradeManagement({ gradingScale, setGradingScale }: Grade
                   <TableCell>
                     <Input
                       value={gradeItem.description}
-                      onChange={(e) => handleInputChange(index, 'description', e.target.value)}
+                      onChange={(e) => {
+                        const newGrades = [...localGrades];
+                        newGrades[index].description = e.target.value;
+                        setLocalGrades(newGrades);
+                      }}
                       className="w-48"
                     />
                   </TableCell>
