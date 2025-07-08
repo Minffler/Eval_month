@@ -55,6 +55,8 @@ const prompt = ai.definePrompt({
   제공된 등급 데이터를 분석하여 분포가 예상 분포와 일치하는지 확인하십시오.
   보고서에 잠재적인 불일치나 편향이 있다면 강조해서 표시해주세요.
 
+  반드시 한국어로 답변해주세요.
+
   등급 데이터: {{{gradeData}}}
   예상 분포: {{{expectedDistribution}}}
   `,
