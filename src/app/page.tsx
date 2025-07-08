@@ -94,10 +94,18 @@ export default function Home() {
   };
 
   const handleResultsUpdate = (updatedResultsForMonth: EvaluationResult[]) => {
-      const key = `${selectedDate.year}-${selectedDate.month}`;
+      // Find all results for the current month from the full `results` list to get a complete picture
+      const currentMonthOriginalResults = results.filter(r => r.year === selectedDate.year && r.month === selectedDate.month);
+      const updatedIds = new Set(updatedResultsForMonth.map(r => r.id));
+      
+      // Combine updated results with the ones that were not in the scope of update (e.g. from other evaluators)
+      const allResultsForMonth = [
+          ...updatedResultsForMonth,
+          ...currentMonthOriginalResults.filter(r => !updatedIds.has(r.id))
+      ];
 
       // Rebuild employees array from the comprehensive results
-      const updatedEmployees = updatedResultsForMonth.map(r => {
+      const updatedEmployees = allResultsForMonth.map(r => {
           const employee: Employee = {
             id: r.id,
             uniqueId: r.uniqueId,
@@ -114,10 +122,12 @@ export default function Home() {
           };
           return employee;
       });
+      
+      const key = `${selectedDate.year}-${selectedDate.month}`;
       setEmployees(prev => ({...prev, [key]: updatedEmployees}));
 
       // Rebuild evaluations array, preserving existing IDs
-      const updatedMonthEvaluations = updatedResultsForMonth.map(r => {
+      const updatedMonthEvaluations = allResultsForMonth.map(r => {
         const existingEval = currentMonthEvaluations.find(e => e.employeeId === r.id);
         return {
             id: existingEval?.id || `eval-${r.id}-${r.year}-${r.month}`,
@@ -241,7 +251,7 @@ export default function Home() {
                 });
         });
 
-        return <EmployeeDashboard allResults={allTimeResults} />;
+        return <EmployeeDashboard allResults={allTimeResults} gradingScale={gradingScale} />;
       default:
         return null;
     }

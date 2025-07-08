@@ -2,14 +2,16 @@
 
 import * as React from 'react';
 import { useAuth } from '@/contexts/auth-context';
-import type { EvaluationResult } from '@/lib/types';
+import type { EvaluationResult, Grade, GradeInfo } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { GradeHistogram } from './grade-histogram';
 
 interface EmployeeDashboardProps {
   allResults: EvaluationResult[];
+  gradingScale: Record<NonNullable<Grade>, GradeInfo>;
 }
 
 type SortConfig = {
@@ -17,7 +19,7 @@ type SortConfig = {
   direction: 'ascending' | 'descending';
 } | null;
 
-export default function EmployeeDashboard({ allResults }: EmployeeDashboardProps) {
+export default function EmployeeDashboard({ allResults, gradingScale }: EmployeeDashboardProps) {
   const { user } = useAuth();
   const [selectedYear, setSelectedYear] = React.useState(new Date().getFullYear().toString());
   const [employeeResults, setEmployeeResults] = React.useState<EvaluationResult[]>([]);
@@ -85,6 +87,20 @@ export default function EmployeeDashboard({ allResults }: EmployeeDashboardProps
     return <ArrowDown className="ml-2 h-4 w-4 text-primary" />;
   };
 
+  const gradeDistribution = React.useMemo(() => {
+      if (!filteredResults) return [];
+
+      const counts = filteredResults.reduce((acc, result) => {
+          if (result.grade) {
+              acc[result.grade] = (acc[result.grade] || 0) + 1;
+          }
+          return acc;
+      }, {} as Record<string, number>);
+
+      return Object.entries(counts).map(([name, value]) => ({ name, value }));
+  }, [filteredResults]);
+
+
   if (!user) {
     return <div>결과를 불러오는 중입니다...</div>;
   }
@@ -109,68 +125,82 @@ export default function EmployeeDashboard({ allResults }: EmployeeDashboardProps
         <CardHeader>
           <CardTitle className="text-2xl">{selectedYear}년 평가 결과</CardTitle>
           <CardDescription>
-            선택한 연도의 월별 성과 평가 및 보상 요약입니다.
+            선택한 연도의 성과 평가 및 보상 요약입니다.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          {sortedFilteredResults.length > 0 ? (
-          <div className="border rounded-lg overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('month')}>
-                  <div className="flex items-center">평가월 {getSortIcon('month')}</div>
-                </TableHead>
-                <TableHead className="whitespace-nowrap">고유사번</TableHead>
-                <TableHead className="whitespace-nowrap">회사</TableHead>
-                <TableHead className="whitespace-nowrap">이름</TableHead>
-                <TableHead className="whitespace-nowrap">소속부서</TableHead>
-                <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('workRate')}>
-                  <div className="flex items-center">근무율 {getSortIcon('workRate')}</div>
-                </TableHead>
-                <TableHead className="whitespace-nowrap">평가자</TableHead>
-                <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('grade')}>
-                  <div className="flex items-center">등급 {getSortIcon('grade')}</div>
-                </TableHead>
-                <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('score')}>
-                  <div className="flex items-center">점수 {getSortIcon('score')}</div>
-                </TableHead>
-                <TableHead className="whitespace-nowrap text-right cursor-pointer" onClick={() => requestSort('baseAmount')}>
-                  <div className="flex items-center justify-end">기준금액 {getSortIcon('baseAmount')}</div>
-                </TableHead>
-                <TableHead className="whitespace-nowrap text-right cursor-pointer" onClick={() => requestSort('gradeAmount')}>
-                  <div className="flex items-center justify-end">등급금액 {getSortIcon('gradeAmount')}</div>
-                </TableHead>
-                <TableHead className="whitespace-nowrap text-right cursor-pointer" onClick={() => requestSort('finalAmount')}>
-                  <div className="flex items-center justify-end">최종금액 {getSortIcon('finalAmount')}</div>
-                </TableHead>
-                <TableHead className="whitespace-nowrap">비고</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sortedFilteredResults.sort((a, b) => b.month - a.month).map((result) => (
-                <TableRow key={`${result.year}-${result.month}`}>
-                  <TableCell className="whitespace-nowrap">{result.year}년 {result.month}월</TableCell>
-                  <TableCell className="whitespace-nowrap">{result.uniqueId}</TableCell>
-                  <TableCell className="whitespace-nowrap">{result.company}</TableCell>
-                  <TableCell className="whitespace-nowrap">{result.name}</TableCell>
-                  <TableCell className="whitespace-nowrap">{result.department}</TableCell>
-                  <TableCell className="whitespace-nowrap">{(result.workRate * 100).toFixed(1)}%</TableCell>
-                  <TableCell className="whitespace-nowrap">{result.evaluatorName}</TableCell>
-                  <TableCell className="whitespace-nowrap">{result.grade}</TableCell>
-                  <TableCell className="whitespace-nowrap">{result.score}</TableCell>
-                  <TableCell className="whitespace-nowrap text-right">{formatCurrency(result.baseAmount)} 원</TableCell>
-                  <TableCell className="whitespace-nowrap text-right">{formatCurrency(result.gradeAmount)} 원</TableCell>
-                  <TableCell className="font-bold whitespace-nowrap text-right">{formatCurrency(result.finalAmount)} 원</TableCell>
-                  <TableCell className="whitespace-nowrap">{result.memo}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          </div>
-          ) : (
-             <p className="text-center text-muted-foreground py-8">선택한 연도에 해당하는 평가 결과가 없습니다.</p>
-          )}
+        <CardContent className="space-y-8">
+            <div>
+              <h3 className="text-lg font-semibold mb-2">연간 등급 분포</h3>
+              {gradeDistribution.length > 0 ? (
+                  <GradeHistogram data={gradeDistribution} gradingScale={gradingScale} />
+              ) : (
+                  <div className="flex items-center justify-center h-40 rounded-lg border border-dashed">
+                    <p className="text-muted-foreground">선택한 연도의 등급 데이터가 없습니다.</p>
+                  </div>
+              )}
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold mb-4">월별 상세 결과</h3>
+              {sortedFilteredResults.length > 0 ? (
+              <div className="border rounded-lg overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('month')}>
+                      <div className="flex items-center">평가월 {getSortIcon('month')}</div>
+                    </TableHead>
+                    <TableHead className="whitespace-nowrap">고유사번</TableHead>
+                    <TableHead className="whitespace-nowrap">회사</TableHead>
+                    <TableHead className="whitespace-nowrap">이름</TableHead>
+                    <TableHead className="whitespace-nowrap">소속부서</TableHead>
+                    <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('workRate')}>
+                      <div className="flex items-center">근무율 {getSortIcon('workRate')}</div>
+                    </TableHead>
+                    <TableHead className="whitespace-nowrap">평가자</TableHead>
+                    <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('grade')}>
+                      <div className="flex items-center">등급 {getSortIcon('grade')}</div>
+                    </TableHead>
+                    <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('score')}>
+                      <div className="flex items-center">점수 {getSortIcon('score')}</div>
+                    </TableHead>
+                    <TableHead className="whitespace-nowrap text-right cursor-pointer" onClick={() => requestSort('baseAmount')}>
+                      <div className="flex items-center justify-end">기준금액 {getSortIcon('baseAmount')}</div>
+                    </TableHead>
+                    <TableHead className="whitespace-nowrap text-right cursor-pointer" onClick={() => requestSort('gradeAmount')}>
+                      <div className="flex items-center justify-end">등급금액 {getSortIcon('gradeAmount')}</div>
+                    </TableHead>
+                    <TableHead className="whitespace-nowrap text-right cursor-pointer" onClick={() => requestSort('finalAmount')}>
+                      <div className="flex items-center justify-end">최종금액 {getSortIcon('finalAmount')}</div>
+                    </TableHead>
+                    <TableHead className="whitespace-nowrap">비고</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {sortedFilteredResults.sort((a, b) => b.month - a.month).map((result) => (
+                    <TableRow key={`${result.year}-${result.month}`}>
+                      <TableCell className="whitespace-nowrap">{result.year}년 {result.month}월</TableCell>
+                      <TableCell className="whitespace-nowrap">{result.uniqueId}</TableCell>
+                      <TableCell className="whitespace-nowrap">{result.company}</TableCell>
+                      <TableCell className="whitespace-nowrap">{result.name}</TableCell>
+                      <TableCell className="whitespace-nowrap">{result.department}</TableCell>
+                      <TableCell className="whitespace-nowrap">{(result.workRate * 100).toFixed(1)}%</TableCell>
+                      <TableCell className="whitespace-nowrap">{result.evaluatorName}</TableCell>
+                      <TableCell className="whitespace-nowrap">{result.grade}</TableCell>
+                      <TableCell className="whitespace-nowrap">{result.score}</TableCell>
+                      <TableCell className="whitespace-nowrap text-right">{formatCurrency(result.baseAmount)} 원</TableCell>
+                      <TableCell className="whitespace-nowrap text-right">{formatCurrency(result.gradeAmount)} 원</TableCell>
+                      <TableCell className="font-bold whitespace-nowrap text-right">{formatCurrency(result.finalAmount)} 원</TableCell>
+                      <TableCell className="whitespace-nowrap">{result.memo}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              </div>
+              ) : (
+                 <p className="text-center text-muted-foreground py-8">선택한 연도에 해당하는 평가 결과가 없습니다.</p>
+              )}
+            </div>
         </CardContent>
       </Card>
     </div>
