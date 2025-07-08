@@ -95,28 +95,39 @@ export default function Home() {
 
   const handleResultsUpdate = (updatedResultsForMonth: EvaluationResult[]) => {
       const key = `${selectedDate.year}-${selectedDate.month}`;
-      
-      const updatedEmployees = currentMonthEmployees.map(emp => {
-          const updatedResult = updatedResultsForMonth.find(r => r.id === emp.id);
-          if (updatedResult) {
-              return { ...emp, baseAmount: updatedResult.baseAmount };
-          }
-          return emp;
+
+      // Rebuild employees array from the comprehensive results
+      const updatedEmployees = updatedResultsForMonth.map(r => {
+          const employee: Employee = {
+            id: r.id,
+            uniqueId: r.uniqueId,
+            name: r.name,
+            company: r.company,
+            department: r.department,
+            title: r.title,
+            position: r.position,
+            growthLevel: r.growthLevel,
+            workRate: r.workRate,
+            evaluatorId: r.evaluatorId,
+            baseAmount: r.baseAmount,
+            group: r.detailedGroup2, // Use detailedGroup2 as the new group
+          };
+          return employee;
       });
       setEmployees(prev => ({...prev, [key]: updatedEmployees}));
 
-      const updatedMonthEvaluations = updatedResultsForMonth
-        .map(r => {
-            const existingEval = currentMonthEvaluations.find(e => e.employeeId === r.id);
-            return {
-                id: existingEval?.id || `eval-${r.id}-${r.year}-${r.month}`,
-                employeeId: r.id,
-                year: r.year,
-                month: r.month,
-                grade: r.grade,
-                memo: r.memo
-            };
-        });
+      // Rebuild evaluations array, preserving existing IDs
+      const updatedMonthEvaluations = updatedResultsForMonth.map(r => {
+        const existingEval = currentMonthEvaluations.find(e => e.employeeId === r.id);
+        return {
+            id: existingEval?.id || `eval-${r.id}-${r.year}-${r.month}`,
+            employeeId: r.id,
+            year: r.year,
+            month: r.month,
+            grade: r.grade,
+            memo: r.memo
+        };
+      });
       setEvaluations(prev => ({...prev, [key]: updatedMonthEvaluations}));
   };
 
