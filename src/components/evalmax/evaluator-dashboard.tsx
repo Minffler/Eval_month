@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useAuth } from '@/contexts/auth-context';
-import type { EvaluationResult, Grade, GradeInfo, EvaluationGroupCategory } from '@/lib/types';
+import type { EvaluationResult, Grade, GradeInfo, EvaluationGroupCategory, User } from '@/lib/types';
 import {
   Table,
   TableBody,
@@ -21,7 +21,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Check, Download } from 'lucide-react';
+import { Check, Download, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { Progress } from '../ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { MonthSelector } from './month-selector';
@@ -35,13 +35,21 @@ interface EvaluatorDashboardProps {
   selectedDate: { year: number; month: number };
   setSelectedDate: (date: { year: number; month: number }) => void;
   handleResultsUpdate: (updatedResults: EvaluationResult[]) => void;
+  evaluatorUser?: User;
 }
 
-export default function EvaluatorDashboard({ allResults, gradingScale, selectedDate, setSelectedDate, handleResultsUpdate }: EvaluatorDashboardProps) {
-  const { user } = useAuth();
+type SortConfig = {
+  key: keyof EvaluationResult;
+  direction: 'ascending' | 'descending';
+} | null;
+
+export default function EvaluatorDashboard({ allResults, gradingScale, selectedDate, setSelectedDate, handleResultsUpdate, evaluatorUser }: EvaluatorDashboardProps) {
+  const { user: authUser } = useAuth();
+  const user = evaluatorUser || authUser;
   const { toast } = useToast();
   const [localResults, setLocalResults] = React.useState<EvaluationResult[]>(allResults);
   const [activeTab, setActiveTab] = React.useState<EvaluationGroupCategory>('전체');
+  const [sortConfig, setSortConfig] = React.useState<SortConfig>(null);
 
   React.useEffect(() => {
     setLocalResults(allResults);
@@ -88,7 +96,12 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
   }
   
   const handleSave = () => {
-    handleResultsUpdate(localResults);
+    const myEmployeeIds = new Set(myEmployees.map(e => e.id));
+    const otherResults = allResults.filter(r => !myEmployeeIds.has(r.id));
+    const updatedMyResults = localResults.filter(r => myEmployeeIds.has(r.id));
+
+    handleResultsUpdate([...otherResults, ...updatedMyResults]);
+    
     toast({
       title: '성공!',
       description: '평가가 성공적으로 저장되었습니다.',
@@ -106,6 +119,24 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
       name: grade,
       value: visibleEmployees.filter(g => g.grade === grade).length,
     }));
+
+  const requestSort = (key: keyof EvaluationResult) => {
+    let direction: 'ascending' | 'descending' = 'ascending';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
+  
+  const getSortIcon = (key: keyof EvaluationResult) => {
+    if (!sortConfig || sortConfig.key !== key) {
+        return <ArrowUpDown className="ml-2 h-4 w-4 opacity-30" />;
+    }
+    if (sortConfig.direction === 'ascending') {
+        return <ArrowUp className="ml-2 h-4 w-4 text-primary" />;
+    }
+    return <ArrowDown className="ml-2 h-4 w-4 text-primary" />;
+  };
 
   const handleDownloadExcel = () => {
     const dataToExport = visibleEmployees.map(r => ({
@@ -130,7 +161,7 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-3xl font-bold tracking-tight">평가 허브</h2>
-        <MonthSelector selectedDate={selectedDate} onDateChange={setSelectedDate} />
+        {!evaluatorUser && <MonthSelector selectedDate={selectedDate} onDateChange={setSelectedDate} />}
       </div>
 
       <Card>
@@ -172,6 +203,19 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
         {Object.entries(categorizedEmployees).map(([category, employees]) => (
             <TabsContent key={category} value={category} className="pt-4">
                 {employees.length > 0 ? Object.entries(groupWithinCategory(employees)).map(([groupName, groupMembers]) => {
+                  const sortedGroupMembers = [...groupMembers].sort((a, b) => {
+                    if (!sortConfig) return 0;
+                    const aValue = a[sortConfig.key] ?? '';
+                    const bValue = b[sortConfig.key] ?? '';
+                    if (aValue < bValue) {
+                      return sortConfig.direction === 'ascending' ? -1 : 1;
+                    }
+                    if (aValue > bValue) {
+                      return sortConfig.direction === 'ascending' ? 1 : -1;
+                    }
+                    return 0;
+                  });
+
                   const availableScore = groupMembers.length * 100;
                   const usedScore = groupMembers.reduce((acc, curr) => acc + (curr.score || 0), 0);
                   
@@ -190,17 +234,29 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
                         <CardContent className="overflow-x-auto">
                             <Table>
                                 <TableHeader><TableRow>
-                                    <TableHead className="whitespace-nowrap">고유사번</TableHead>
-                                    <TableHead className="whitespace-nowrap">회사</TableHead>
-                                    <TableHead className="whitespace-nowrap">소속부서</TableHead>
-                                    <TableHead className="whitespace-nowrap">이름</TableHead>
-                                    <TableHead className="whitespace-nowrap">근무율</TableHead>
+                                    <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('uniqueId')}>
+                                        <div className="flex items-center">고유사번 {getSortIcon('uniqueId')}</div>
+                                    </TableHead>
+                                    <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('company')}>
+                                        <div className="flex items-center">회사 {getSortIcon('company')}</div>
+                                    </TableHead>
+                                    <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('department')}>
+                                        <div className="flex items-center">소속부서 {getSortIcon('department')}</div>
+                                    </TableHead>
+                                    <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('name')}>
+                                        <div className="flex items-center">이름 {getSortIcon('name')}</div>
+                                    </TableHead>
+                                    <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('workRate')}>
+                                        <div className="flex items-center">근무율 {getSortIcon('workRate')}</div>
+                                    </TableHead>
                                     <TableHead className="whitespace-nowrap">등급</TableHead>
-                                    <TableHead className="whitespace-nowrap">점수</TableHead>
+                                    <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('score')}>
+                                        <div className="flex items-center">점수 {getSortIcon('score')}</div>
+                                    </TableHead>
                                     <TableHead className="whitespace-nowrap w-[200px]">비고</TableHead>
                                 </TableRow></TableHeader>
                                 <TableBody>
-                                    {groupMembers.map(emp => (
+                                    {sortedGroupMembers.map(emp => (
                                         <TableRow key={emp.id}>
                                             <TableCell className="whitespace-nowrap">{emp.uniqueId}</TableCell>
                                             <TableCell className="whitespace-nowrap">{emp.company}</TableCell>
@@ -224,6 +280,7 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
                                               <Input 
                                                 value={emp.memo || ''}
                                                 onChange={(e) => handleMemoChange(emp.id, e.target.value)}
+                                                onBlur={handleSave}
                                                 placeholder="메모 입력"
                                               />
                                             </TableCell>

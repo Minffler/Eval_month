@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, FileCheck, Bot, Upload, LayoutDashboard, Settings, Download, Bell } from 'lucide-react';
+import { Users, FileCheck, Bot, Upload, LayoutDashboard, Settings, Download, Bell, ArrowUpDown, ArrowUp, ArrowDown, Eye } from 'lucide-react';
 import { GradeHistogram } from './grade-histogram';
 import {
   Table,
@@ -21,15 +21,15 @@ import {
 } from '@/components/ui/select';
 import { ConsistencyValidator } from './consistency-validator';
 import ManageData from './manage-data';
-import type { EvaluationResult, Grade, Employee, GradeInfo, Evaluation, EvaluationGroupCategory } from '@/lib/types';
+import type { EvaluationResult, Grade, Employee, GradeInfo, Evaluation, EvaluationGroupCategory, User } from '@/lib/types';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { useToast } from '@/hooks/use-toast';
 import GradeManagement from './grade-management';
 import { MonthSelector } from './month-selector';
-import { calculateFinalAmount } from '@/lib/data';
+import { calculateFinalAmount, mockUsers } from '@/lib/data';
 import * as XLSX from 'xlsx';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Progress } from '../ui/progress';
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -41,6 +41,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Textarea } from '../ui/textarea';
+import EvaluatorDashboard from './evaluator-dashboard';
 
 interface AdminDashboardProps {
   results: EvaluationResult[];
@@ -52,6 +53,11 @@ interface AdminDashboardProps {
   setSelectedDate: (date: { year: number; month: number }) => void;
   handleResultsUpdate: (updatedResults: EvaluationResult[]) => void;
 }
+
+type SortConfig = {
+  key: keyof EvaluationResult;
+  direction: 'ascending' | 'descending';
+} | null;
 
 export default function AdminDashboard({ 
   results: initialResults, 
@@ -68,6 +74,8 @@ export default function AdminDashboard({
   const [selectedEvaluators, setSelectedEvaluators] = React.useState<Set<string>>(new Set());
   const [isNotificationDialogOpen, setIsNotificationDialogOpen] = React.useState(false);
   const [notificationMessage, setNotificationMessage] = React.useState('');
+  const [sortConfig, setSortConfig] = React.useState<SortConfig>(null);
+  const [selectedEvaluatorId, setSelectedEvaluatorId] = React.useState<string>('');
   const { toast } = useToast();
 
   React.useEffect(() => {
@@ -117,8 +125,49 @@ export default function AdminDashboard({
       completed: data.completed,
       pending: data.total - data.completed,
       rate: data.total > 0 ? (data.completed / data.total) * 100 : 0,
-    }));
+    })).sort((a,b) => a.evaluatorName.localeCompare(b.evaluatorName));
   }, [initialResults]);
+  
+  const selectedEvaluator = React.useMemo(() => {
+    if (!selectedEvaluatorId) return null;
+    return mockUsers.find(u => u.id === selectedEvaluatorId) || null;
+  }, [selectedEvaluatorId]);
+
+  const sortedVisibleResults = React.useMemo(() => {
+    let sortableItems = [...visibleResults];
+    if (sortConfig !== null) {
+      sortableItems.sort((a, b) => {
+        const aValue = a[sortConfig.key] ?? '';
+        const bValue = b[sortConfig.key] ?? '';
+        if (aValue < bValue) {
+          return sortConfig.direction === 'ascending' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortConfig.direction === 'ascending' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableItems;
+  }, [visibleResults, sortConfig]);
+
+  const requestSort = (key: keyof EvaluationResult) => {
+    let direction: 'ascending' | 'descending' = 'ascending';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
+  
+  const getSortIcon = (key: keyof EvaluationResult) => {
+    if (!sortConfig || sortConfig.key !== key) {
+        return <ArrowUpDown className="ml-2 h-4 w-4 opacity-30" />;
+    }
+    if (sortConfig.direction === 'ascending') {
+        return <ArrowUp className="ml-2 h-4 w-4 text-primary" />;
+    }
+    return <ArrowDown className="ml-2 h-4 w-4 text-primary" />;
+  };
 
   const handleSelectAllEvaluators = (checked: boolean) => {
     if (checked) {
@@ -140,17 +189,19 @@ export default function AdminDashboard({
   };
   
   const handleOpenNotificationDialog = () => {
-    setNotificationMessage(`안녕하세요, <평가자이름>님. 평가 마감이 얼마 남지 않았습니다. 현재 진행률은 <%>입니다. 조속한 평가 진행 부탁드립니다.`);
+    setNotificationMessage(`안녕하세요, <평가자이름>님. <평가년월> 평가가 얼마 남지 않았습니다. 현재 진행률은 <%>입니다. 조속한 평가 진행 부탁드립니다.`);
     setIsNotificationDialogOpen(true);
   };
   
   const handleSendNotifications = () => {
+    const monthYearString = `${selectedDate.year}년 ${selectedDate.month}월`;
     selectedEvaluators.forEach(evaluatorId => {
         const stat = evaluatorStats.find(s => s.evaluatorId === evaluatorId);
         if (stat) {
             const message = notificationMessage
                 .replace(/<평가자이름>/g, stat.evaluatorName)
-                .replace(/<%>%/g, `${stat.rate.toFixed(1)}%`);
+                .replace(/<%>%/g, `${stat.rate.toFixed(1)}%`)
+                .replace(/<평가년월>/g, monthYearString);
             // In a real app, you would send this message via email, Slack, etc.
             console.log(`Sending to ${stat.evaluatorName}: ${message}`);
         }
@@ -255,12 +306,15 @@ export default function AdminDashboard({
         </div>
       </div>
       <Tabs defaultValue="dashboard">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="dashboard">
             <LayoutDashboard className="mr-2 h-4 w-4" /> 대시보드
           </TabsTrigger>
           <TabsTrigger value="results">
             <FileCheck className="mr-2 h-4 w-4" /> 전체 결과
+          </TabsTrigger>
+          <TabsTrigger value="evaluator-view">
+            <Eye className="mr-2 h-4 w-4" /> 평가자별 현황
           </TabsTrigger>
            <TabsTrigger value="manage-data">
             <Upload className="mr-2 h-4 w-4" /> 데이터 관리
@@ -354,23 +408,47 @@ export default function AdminDashboard({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="whitespace-nowrap">고유사번</TableHead>
-                  <TableHead className="whitespace-nowrap">회사</TableHead>
-                  <TableHead className="whitespace-nowrap">소속부서</TableHead>
-                  <TableHead className="whitespace-nowrap">이름</TableHead>
-                  <TableHead className="whitespace-nowrap">직책급</TableHead>
-                  <TableHead className="whitespace-nowrap">근무율</TableHead>
-                  <TableHead className="whitespace-nowrap">점수</TableHead>
-                  <TableHead className="whitespace-nowrap">등급</TableHead>
-                  <TableHead className="whitespace-nowrap">기준금액</TableHead>
-                  <TableHead className="whitespace-nowrap">등급금액</TableHead>
-                  <TableHead className="whitespace-nowrap">최종금액</TableHead>
-                  <TableHead className="whitespace-nowrap">평가자</TableHead>
+                  <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('uniqueId')}>
+                    <div className="flex items-center">고유사번 {getSortIcon('uniqueId')}</div>
+                  </TableHead>
+                  <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('company')}>
+                     <div className="flex items-center">회사 {getSortIcon('company')}</div>
+                  </TableHead>
+                  <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('department')}>
+                    <div className="flex items-center">소속부서 {getSortIcon('department')}</div>
+                  </TableHead>
+                  <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('name')}>
+                    <div className="flex items-center">이름 {getSortIcon('name')}</div>
+                  </TableHead>
+                  <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('title')}>
+                    <div className="flex items-center">직책급 {getSortIcon('title')}</div>
+                  </TableHead>
+                  <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('workRate')}>
+                    <div className="flex items-center">근무율 {getSortIcon('workRate')}</div>
+                  </TableHead>
+                  <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('score')}>
+                    <div className="flex items-center">점수 {getSortIcon('score')}</div>
+                  </TableHead>
+                  <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('grade')}>
+                    <div className="flex items-center">등급 {getSortIcon('grade')}</div>
+                  </TableHead>
+                  <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('baseAmount')}>
+                    <div className="flex items-center">기준금액 {getSortIcon('baseAmount')}</div>
+                  </TableHead>
+                  <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('gradeAmount')}>
+                    <div className="flex items-center">등급금액 {getSortIcon('gradeAmount')}</div>
+                  </TableHead>
+                  <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('finalAmount')}>
+                    <div className="flex items-center">최종금액 {getSortIcon('finalAmount')}</div>
+                  </TableHead>
+                  <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('evaluatorName')}>
+                    <div className="flex items-center">평가자 {getSortIcon('evaluatorName')}</div>
+                  </TableHead>
                   <TableHead className="whitespace-nowrap min-w-[200px]">비고</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {visibleResults.map(r => (
+                {sortedVisibleResults.map(r => (
                     <TableRow key={r.id}>
                       <TableCell className="whitespace-nowrap">{r.uniqueId}</TableCell>
                       <TableCell className="whitespace-nowrap">{r.company}</TableCell>
@@ -418,6 +496,45 @@ export default function AdminDashboard({
             </div>
           </Tabs>
         </TabsContent>
+        <TabsContent value="evaluator-view" className="pt-6 space-y-4">
+            <Card>
+                <CardHeader>
+                    <CardTitle>평가자별 현황 보기</CardTitle>
+                    <CardDescription>특정 평가자의 대시보드를 확인합니다.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Select onValueChange={setSelectedEvaluatorId} value={selectedEvaluatorId}>
+                        <SelectTrigger className="w-full sm:w-[280px]">
+                            <SelectValue placeholder="평가자를 선택하세요" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {evaluatorStats.map(stat => (
+                                <SelectItem key={stat.evaluatorId} value={stat.evaluatorId}>
+                                    {stat.evaluatorName}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </CardContent>
+            </Card>
+
+            {selectedEvaluator ? (
+                <EvaluatorDashboard
+                    allResults={initialResults}
+                    gradingScale={gradingScale}
+                    selectedDate={selectedDate}
+                    setSelectedDate={setSelectedDate} 
+                    handleResultsUpdate={handleResultsUpdate}
+                    evaluatorUser={selectedEvaluator}
+                />
+            ) : (
+                <Card className="flex items-center justify-center h-64">
+                  <p className="text-center text-muted-foreground">
+                    평가자를 선택하면 해당 평가자의 대시보드가 여기에 표시됩니다.
+                  </p>
+                </Card>
+            )}
+        </TabsContent>
         <TabsContent value="manage-data" className="pt-4">
           <ManageData onEmployeeUpload={onEmployeeUpload} onEvaluationUpload={onEvaluationUpload} results={initialResults} />
         </TabsContent>
@@ -433,7 +550,7 @@ export default function AdminDashboard({
           <DialogHeader>
             <DialogTitle>알림 메시지 설정</DialogTitle>
             <DialogDescription>
-              평가자에게 보낼 메시지를 입력하세요. 플레이스홀더를 사용하여 개인화할 수 있습니다: &lt;평가자이름&gt;, &lt;%&gt;
+              평가자에게 보낼 메시지를 입력하세요. 플레이스홀더를 사용하여 개인화할 수 있습니다: &lt;평가자이름&gt;, &lt;%&gt;, &lt;평가년월&gt;
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">

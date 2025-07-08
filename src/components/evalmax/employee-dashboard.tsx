@@ -6,15 +6,22 @@ import type { EvaluationResult } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 
 interface EmployeeDashboardProps {
   allResults: EvaluationResult[];
 }
 
+type SortConfig = {
+  key: keyof EvaluationResult;
+  direction: 'ascending' | 'descending';
+} | null;
+
 export default function EmployeeDashboard({ allResults }: EmployeeDashboardProps) {
   const { user } = useAuth();
   const [selectedYear, setSelectedYear] = React.useState(new Date().getFullYear().toString());
   const [employeeResults, setEmployeeResults] = React.useState<EvaluationResult[]>([]);
+  const [sortConfig, setSortConfig] = React.useState<SortConfig>(null);
 
   React.useEffect(() => {
     if (user) {
@@ -42,6 +49,41 @@ export default function EmployeeDashboard({ allResults }: EmployeeDashboardProps
     return employeeResults.filter(r => r.year.toString() === selectedYear);
   }, [employeeResults, selectedYear]);
 
+  const sortedFilteredResults = React.useMemo(() => {
+    let sortableItems = [...filteredResults];
+    if (sortConfig !== null) {
+      sortableItems.sort((a, b) => {
+        const aValue = a[sortConfig.key] ?? '';
+        const bValue = b[sortConfig.key] ?? '';
+        if (aValue < bValue) {
+          return sortConfig.direction === 'ascending' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortConfig.direction === 'ascending' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableItems;
+  }, [filteredResults, sortConfig]);
+
+  const requestSort = (key: keyof EvaluationResult) => {
+    let direction: 'ascending' | 'descending' = 'ascending';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
+  
+  const getSortIcon = (key: keyof EvaluationResult) => {
+    if (!sortConfig || sortConfig.key !== key) {
+        return <ArrowUpDown className="ml-2 h-4 w-4 opacity-30" />;
+    }
+    if (sortConfig.direction === 'ascending') {
+        return <ArrowUp className="ml-2 h-4 w-4 text-primary" />;
+    }
+    return <ArrowDown className="ml-2 h-4 w-4 text-primary" />;
+  };
 
   if (!user) {
     return <div>결과를 불러오는 중입니다...</div>;
@@ -71,28 +113,42 @@ export default function EmployeeDashboard({ allResults }: EmployeeDashboardProps
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {filteredResults.length > 0 ? (
+          {sortedFilteredResults.length > 0 ? (
           <div className="border rounded-lg overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="whitespace-nowrap">평가월</TableHead>
+                <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('month')}>
+                  <div className="flex items-center">평가월 {getSortIcon('month')}</div>
+                </TableHead>
                 <TableHead className="whitespace-nowrap">고유사번</TableHead>
                 <TableHead className="whitespace-nowrap">회사</TableHead>
                 <TableHead className="whitespace-nowrap">이름</TableHead>
                 <TableHead className="whitespace-nowrap">소속부서</TableHead>
-                <TableHead className="whitespace-nowrap">근무율</TableHead>
+                <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('workRate')}>
+                  <div className="flex items-center">근무율 {getSortIcon('workRate')}</div>
+                </TableHead>
                 <TableHead className="whitespace-nowrap">평가자</TableHead>
-                <TableHead className="whitespace-nowrap">등급</TableHead>
-                <TableHead className="whitespace-nowrap">점수</TableHead>
-                <TableHead className="whitespace-nowrap">기준금액</TableHead>
-                <TableHead className="whitespace-nowrap">등급금액</TableHead>
-                <TableHead className="whitespace-nowrap">최종금액</TableHead>
+                <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('grade')}>
+                  <div className="flex items-center">등급 {getSortIcon('grade')}</div>
+                </TableHead>
+                <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('score')}>
+                  <div className="flex items-center">점수 {getSortIcon('score')}</div>
+                </TableHead>
+                <TableHead className="whitespace-nowrap text-right cursor-pointer" onClick={() => requestSort('baseAmount')}>
+                  <div className="flex items-center justify-end">기준금액 {getSortIcon('baseAmount')}</div>
+                </TableHead>
+                <TableHead className="whitespace-nowrap text-right cursor-pointer" onClick={() => requestSort('gradeAmount')}>
+                  <div className="flex items-center justify-end">등급금액 {getSortIcon('gradeAmount')}</div>
+                </TableHead>
+                <TableHead className="whitespace-nowrap text-right cursor-pointer" onClick={() => requestSort('finalAmount')}>
+                  <div className="flex items-center justify-end">최종금액 {getSortIcon('finalAmount')}</div>
+                </TableHead>
                 <TableHead className="whitespace-nowrap">비고</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredResults.sort((a, b) => b.month - a.month).map((result) => (
+              {sortedFilteredResults.sort((a, b) => b.month - a.month).map((result) => (
                 <TableRow key={`${result.year}-${result.month}`}>
                   <TableCell className="whitespace-nowrap">{result.year}년 {result.month}월</TableCell>
                   <TableCell className="whitespace-nowrap">{result.uniqueId}</TableCell>
