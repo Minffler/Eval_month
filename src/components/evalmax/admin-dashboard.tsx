@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, FileCheck, Bot, Upload, LayoutDashboard, Settings, Download } from 'lucide-react';
+import { Users, FileCheck, Bot, Upload, LayoutDashboard, Settings, Download, Bell } from 'lucide-react';
 import { GradeHistogram } from './grade-histogram';
 import {
   Table,
@@ -31,6 +31,7 @@ import { calculateFinalAmount } from '@/lib/data';
 import * as XLSX from 'xlsx';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Progress } from '../ui/progress';
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface AdminDashboardProps {
   results: EvaluationResult[];
@@ -55,9 +56,12 @@ export default function AdminDashboard({
 }: AdminDashboardProps) {
   const [results, setResults] = React.useState<EvaluationResult[]>(initialResults);
   const [activeTab, setActiveTab] = React.useState<EvaluationGroupCategory>('전체');
+  const [selectedEvaluators, setSelectedEvaluators] = React.useState<Set<string>>(new Set());
+  const { toast } = useToast();
 
   React.useEffect(() => {
     setResults(initialResults);
+    setSelectedEvaluators(new Set());
   }, [initialResults]);
 
   const categorizedResults = React.useMemo(() => {
@@ -78,27 +82,59 @@ export default function AdminDashboard({
   }));
   
   const evaluatorStats = React.useMemo(() => {
-    const statsByName: Record<string, { total: number; completed: number, evaluatorId: string }> = {};
+    const statsById: Record<string, { total: number; completed: number; evaluatorName: string }> = {};
 
     initialResults.forEach(r => {
+      if (!r.evaluatorId) return;
+
+      const id = r.evaluatorId;
       const name = r.evaluatorName || "미지정";
-      if (!statsByName[name]) {
-        statsByName[name] = { total: 0, completed: 0, evaluatorId: r.evaluatorId };
+
+      if (!statsById[id]) {
+        statsById[id] = { total: 0, completed: 0, evaluatorName: name };
       }
-      statsByName[name].total++;
+      statsById[id].total++;
       if (r.grade) {
-        statsByName[name].completed++;
+        statsById[id].completed++;
       }
     });
 
-    return Object.entries(statsByName).map(([name, data]) => ({
-      evaluatorName: name,
+    return Object.entries(statsById).map(([id, data]) => ({
+      evaluatorId: id,
+      evaluatorName: data.evaluatorName,
       total: data.total,
       completed: data.completed,
       pending: data.total - data.completed,
       rate: data.total > 0 ? (data.completed / data.total) * 100 : 0,
     }));
   }, [initialResults]);
+
+  const handleSelectAllEvaluators = (checked: boolean) => {
+    if (checked) {
+      const allEvaluatorIds = new Set(evaluatorStats.map(s => s.evaluatorId));
+      setSelectedEvaluators(allEvaluatorIds);
+    } else {
+      setSelectedEvaluators(new Set());
+    }
+  };
+
+  const handleSelectEvaluator = (evaluatorId: string, checked: boolean) => {
+    const newSelection = new Set(selectedEvaluators);
+    if (checked) {
+      newSelection.add(evaluatorId);
+    } else {
+      newSelection.delete(evaluatorId);
+    }
+    setSelectedEvaluators(newSelection);
+  };
+  
+  const handleSendNotification = () => {
+    toast({
+        title: "알림 발송",
+        description: `${selectedEvaluators.size}명의 평가자에게 알림이 발송되었습니다.`,
+    });
+    setSelectedEvaluators(new Set());
+  };
 
   const formatCurrency = (value: number) => {
     if (isNaN(value) || value === null) return '0';
@@ -219,6 +255,13 @@ export default function AdminDashboard({
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-[50px]">
+                        <Checkbox
+                          checked={selectedEvaluators.size === evaluatorStats.length && evaluatorStats.length > 0}
+                          onCheckedChange={(checked) => handleSelectAllEvaluators(Boolean(checked))}
+                          aria-label="모든 평가자 선택"
+                        />
+                      </TableHead>
                       <TableHead className="whitespace-nowrap">평가자</TableHead>
                       <TableHead className="whitespace-nowrap text-center">대상 인원</TableHead>
                       <TableHead className="whitespace-nowrap text-center">완료</TableHead>
@@ -228,7 +271,14 @@ export default function AdminDashboard({
                   </TableHeader>
                   <TableBody>
                     {evaluatorStats.map(stat => (
-                      <TableRow key={stat.evaluatorName}>
+                      <TableRow key={stat.evaluatorId}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedEvaluators.has(stat.evaluatorId)}
+                            onCheckedChange={(checked) => handleSelectEvaluator(stat.evaluatorId, Boolean(checked))}
+                            aria-label={`${stat.evaluatorName} 선택`}
+                          />
+                        </TableCell>
                         <TableCell className="font-medium whitespace-nowrap">{stat.evaluatorName}</TableCell>
                         <TableCell className="text-center whitespace-nowrap">{stat.total}</TableCell>
                         <TableCell className="text-center whitespace-nowrap">{stat.completed}</TableCell>
@@ -243,6 +293,15 @@ export default function AdminDashboard({
                     ))}
                   </TableBody>
                 </Table>
+              </div>
+              <div className="flex justify-end mt-4">
+                <Button
+                  disabled={selectedEvaluators.size === 0}
+                  onClick={handleSendNotification}
+                >
+                  <Bell className="mr-2 h-4 w-4" />
+                  선택된 평가자에게 알림 발송
+                </Button>
               </div>
             </CardContent>
           </Card>
