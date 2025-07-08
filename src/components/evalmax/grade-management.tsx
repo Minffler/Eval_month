@@ -98,40 +98,40 @@ export default function GradeManagement({ gradingScale, setGradingScale }: Grade
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="whitespace-nowrap">등급</TableHead>
-                <TableHead className="whitespace-nowrap">점수</TableHead>
-                <TableHead className="whitespace-nowrap">지급률 (%)</TableHead>
-                <TableHead className="whitespace-nowrap">설명</TableHead>
+                <TableHead className="whitespace-nowrap py-2 px-3">등급</TableHead>
+                <TableHead className="whitespace-nowrap py-2 px-3">점수</TableHead>
+                <TableHead className="whitespace-nowrap py-2 px-3">지급률 (%)</TableHead>
+                <TableHead className="whitespace-nowrap py-2 px-3">설명</TableHead>
                 <TableHead></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {localGrades.map((gradeItem, index) => (
                 <TableRow key={index}>
-                  <TableCell>
+                  <TableCell className="py-1 px-2">
                     <Input
                       value={gradeItem.grade || ''}
                       onChange={(e) => handleGradeChange(index, e.target.value)}
-                      className="w-24"
+                      className="w-20 h-8"
                     />
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="py-1 px-2">
                     <Input
                       type="number"
                       value={gradeItem.score}
                       onChange={(e) => handleInputChange(index, 'score', e.target.value)}
-                      className="w-24"
+                      className="w-20 h-8"
                     />
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="py-1 px-2">
                     <Input
                       type="number"
                       value={gradeItem.payoutRate}
                       onChange={(e) => handleInputChange(index, 'payoutRate', e.target.value)}
-                      className="w-24"
+                      className="w-24 h-8"
                     />
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="py-1 px-2">
                     <Input
                       value={gradeItem.description}
                       onChange={(e) => {
@@ -139,14 +139,15 @@ export default function GradeManagement({ gradingScale, setGradingScale }: Grade
                         newGrades[index].description = e.target.value;
                         setLocalGrades(newGrades);
                       }}
-                      className="w-48"
+                      className="w-full h-8"
                     />
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="py-1 px-2">
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => handleRemoveGrade(index)}
+                      className="h-8 w-8"
                     >
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>

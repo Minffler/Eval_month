@@ -535,13 +535,13 @@ export default function AdminDashboard({
         </TabsContent>
         <TabsContent value="evaluator-view" className="pt-4 space-y-4">
             <Card>
-                <CardHeader>
-                    <CardTitle>평가자별 현황 보기</CardTitle>
-                    <CardDescription>특정 평가자의 대시보드를 확인합니다.</CardDescription>
-                </CardHeader>
-                <CardContent>
+                <CardHeader className="flex flex-col sm:flex-row items-center justify-between">
+                    <div>
+                        <CardTitle>평가자별 현황 보기</CardTitle>
+                        <CardDescription>특정 평가자의 대시보드를 확인합니다.</CardDescription>
+                    </div>
                     <Select onValueChange={setSelectedEvaluatorId} value={selectedEvaluatorId}>
-                        <SelectTrigger className="w-full sm:w-[280px]">
+                        <SelectTrigger className="w-full sm:w-[280px] mt-2 sm:mt-0">
                             <SelectValue placeholder="평가자를 선택하세요" />
                         </SelectTrigger>
                         <SelectContent>
@@ -552,7 +552,7 @@ export default function AdminDashboard({
                             ))}
                         </SelectContent>
                     </Select>
-                </CardContent>
+                </CardHeader>
             </Card>
 
             {selectedEvaluator ? (
