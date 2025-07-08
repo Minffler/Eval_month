@@ -432,14 +432,7 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
           >
             <CardHeader className="flex flex-col sm:flex-row justify-between sm:items-start gap-4 p-4">
                 <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                        <CardTitle>평가 진행 현황</CardTitle>
-                        <CollapsibleTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-6 w-6">
-                                {isChartOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                            </Button>
-                        </CollapsibleTrigger>
-                    </div>
+                    <CardTitle>평가 진행 현황</CardTitle>
                     <CardDescription>{selectedDate.year}년 {selectedDate.month}월 성과평가 ({(selectedDate.month % 12) + 1}월 급여반영)</CardDescription>
                 </div>
                 <div className="w-full sm:w-64 space-y-1">
@@ -456,6 +449,14 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
                 <GradeHistogram data={gradeDistribution} gradingScale={gradingScale} title={`${activeTab} 등급 분포`} />
               </CardContent>
             </CollapsibleContent>
+            <CollapsibleTrigger asChild>
+              <div className="border-t w-full text-center p-2 text-sm text-muted-foreground cursor-pointer hover:bg-muted/50 rounded-b-lg">
+                <div className="flex items-center justify-center">
+                  {isChartOpen ? "차트 숨기기" : "차트 보기"}
+                  {isChartOpen ? <ChevronUp className="h-4 w-4 ml-1" /> : <ChevronDown className="h-4 w-4 ml-1" />}
+                </div>
+              </div>
+            </CollapsibleTrigger>
           </Collapsible>
         </Card>
 
