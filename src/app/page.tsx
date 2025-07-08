@@ -10,6 +10,8 @@ import {
   User,
   LogOut,
   ChevronsLeftRight,
+  Upload,
+  UserCheck,
 } from 'lucide-react';
 
 import { useAuth } from '@/contexts/auth-context';
@@ -52,6 +54,8 @@ export default function Home() {
     admin: [
       { id: 'dashboard', label: '대시보드', icon: LayoutDashboard },
       { id: 'results', label: '전체 결과', icon: BarChart3 },
+      { id: 'data-management', label: '데이터 관리', icon: Upload },
+      { id: 'matcher', label: '평가자 매칭', icon: UserCheck },
       { id: 'consistency', label: 'AI 일관성 검토', icon: FileCheck },
     ],
     evaluator: [

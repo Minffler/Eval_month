@@ -16,13 +16,15 @@ export default function EmployeeDashboard() {
   React.useEffect(() => {
     if (user) {
       const allResults = getFullEvaluationResults();
-      const userResult = allResults.find(r => r.id === user.employeeId);
-      setResult(userResult || null);
+      // In a real app, you would use the logged-in user's ID.
+      // For this demo, we find the mock user with the 'employee' role.
+      const employeeUser = allResults.find(r => r.id === 'E003');
+      setResult(employeeUser || null);
     }
   }, [user]);
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(value);
+    return new Intl.NumberFormat('ko-KR').format(value);
   }
 
   if (!user || !result) {
@@ -57,6 +59,7 @@ export default function EmployeeDashboard() {
             <div className="space-y-4">
                 <h3 className="font-semibold font-headline">내 정보</h3>
                 <InfoItem label="이름" value={result.name} />
+                <InfoItem label="사번" value={result.id} />
                 <InfoItem label="소속부서" value={result.department} />
                 <InfoItem label="직책" value={result.title} />
                 <InfoItem label="평가자" value={result.evaluatorName} />
@@ -66,16 +69,15 @@ export default function EmployeeDashboard() {
                 <InfoItem label="등급" value={<span className="font-bold text-primary text-2xl">{result.grade}</span>} />
                 <InfoItem label="점수" value={`${result.score} / 150`} />
                 <InfoItem label="근무율" value={`${(result.workRate * 100).toFixed(1)}%`} />
-                <InfoItem label="근무율 그룹" value={result.detailedGroup1} />
             </div>
           </div>
           <Separator className="my-6"/>
           <div>
             <h3 className="font-semibold font-headline mb-4">보상 내역</h3>
             <div className="space-y-2 text-sm">
-                <CalculationRow label="개인별 기준금액" value={formatCurrency(result.baseAmount)} />
+                <CalculationRow label="개인별 기준금액" value={`${formatCurrency(result.baseAmount)} 원`} />
                 <CalculationRow label={`내 지급률 (${result.grade} 등급)`} value={`${result.payoutRate * 100}%`} />
-                <CalculationRow label="산출 등급 금액" value={formatCurrency(result.gradeAmount)} isSubtotal/>
+                <CalculationRow label="산출 등급 금액" value={`${formatCurrency(result.gradeAmount)} 원`} isSubtotal/>
                 <CalculationRow label={`근무율 조정`} value={`x ${(result.workRate).toFixed(2)}`} />
             </div>
           </div>
@@ -83,7 +85,7 @@ export default function EmployeeDashboard() {
         <CardFooter className="bg-muted/50 p-6 rounded-b-lg">
             <div className="flex justify-between items-center w-full">
                 <span className="font-bold text-lg font-headline">최종 성과급</span>
-                <span className="font-bold text-2xl text-primary">{formatCurrency(result.finalAmount)}</span>
+                <span className="font-bold text-2xl text-primary">{formatCurrency(result.finalAmount)} 원</span>
             </div>
         </CardFooter>
       </Card>

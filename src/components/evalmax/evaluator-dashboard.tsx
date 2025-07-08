@@ -129,7 +129,7 @@ export default function EvaluatorDashboard() {
   const totalCompletionRate = totalMyEmployees > 0 ? (totalMyCompleted / totalMyEmployees) * 100 : 0;
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(value);
+    return new Intl.NumberFormat('ko-KR').format(value);
   }
 
   if (!user) return <div>로딩중...</div>;
@@ -190,52 +190,58 @@ export default function EvaluatorDashboard() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            {evaluatorGroups.map(group => (
-                 <Card key={group.id}>
-                    <CardHeader><CardTitle className="font-headline">{group.name} - 평가 시트</CardTitle></CardHeader>
-                    <CardContent>
-                        <Table>
-                        <TableHeader><TableRow>
-                            <TableHead>이름</TableHead>
-                            <TableHead>근무율</TableHead>
-                            <TableHead>등급</TableHead>
-                            <TableHead>점수</TableHead>
-                            <TableHead className="text-right">최종 지급액</TableHead>
-                        </TableRow></TableHeader>
-                        <TableBody>
-                            {getGroupMembers(group.id).map(emp => (
-                                <TableRow key={emp.id}>
-                                    <TableCell className="font-medium">{emp.name}</TableCell>
-                                    <TableCell>{(emp.workRate * 100).toFixed(1)}%</TableCell>
-                                    <TableCell>
-                                    <Select value={evaluations[emp.id] || ''} onValueChange={(g: Grade) => handleGradeChange(emp.id, g)}>
-                                        <SelectTrigger className="w-[100px]">
-                                            <SelectValue placeholder="등급 선택" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                        {Object.keys(gradingScale).map(grade => (
-                                            <SelectItem key={grade} value={grade}>{grade}</SelectItem>
-                                        ))}
-                                        </SelectContent>
-                                    </Select>
-                                    </TableCell>
-                                    <TableCell>{emp.score}</TableCell>
-                                    <TableCell className="text-right">{formatCurrency(emp.finalAmount)}</TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                        </Table>
-                    </CardContent>
-                 </Card>
-            ))}
-          </div>
-          <div className="space-y-6 pt-10">
-            <Button onClick={handleSave} disabled={isSaveDisabled} className="w-full" size="lg">
-                <Check className="mr-2"/> 모든 평가 저장
-            </Button>
-          </div>
+      <div className="space-y-6">
+        {evaluatorGroups.map(group => (
+             <Card key={group.id}>
+                <CardHeader><CardTitle className="font-headline">{group.name} - 평가 시트 (총점: {group.totalScore})</CardTitle></CardHeader>
+                <CardContent className="overflow-x-auto">
+                    <Table>
+                    <TableHeader><TableRow>
+                        <TableHead>사번</TableHead>
+                        <TableHead>이름</TableHead>
+                        <TableHead>직책/레벨</TableHead>
+                        <TableHead>근무율</TableHead>
+                        <TableHead>등급</TableHead>
+                        <TableHead>점수</TableHead>
+                        <TableHead>기준금액</TableHead>
+                        <TableHead>등급금액</TableHead>
+                        <TableHead>최종 지급액</TableHead>
+                    </TableRow></TableHeader>
+                    <TableBody>
+                        {getGroupMembers(group.id).map(emp => (
+                            <TableRow key={emp.id}>
+                                <TableCell>{emp.id}</TableCell>
+                                <TableCell className="font-medium">{emp.name}</TableCell>
+                                <TableCell>{`${emp.title} / ${emp.growthLevel}`}</TableCell>
+                                <TableCell>{(emp.workRate * 100).toFixed(1)}%</TableCell>
+                                <TableCell>
+                                <Select value={evaluations[emp.id] || ''} onValueChange={(g: Grade) => handleGradeChange(emp.id, g)}>
+                                    <SelectTrigger className="w-[100px]">
+                                        <SelectValue placeholder="등급 선택" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                    {Object.keys(gradingScale).map(grade => (
+                                        <SelectItem key={grade} value={grade}>{grade}</SelectItem>
+                                    ))}
+                                    </SelectContent>
+                                </Select>
+                                </TableCell>
+                                <TableCell>{emp.score}</TableCell>
+                                <TableCell>{formatCurrency(emp.baseAmount)}</TableCell>
+                                <TableCell>{formatCurrency(emp.gradeAmount)}</TableCell>
+                                <TableCell>{formatCurrency(emp.finalAmount)}</TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                    </Table>
+                </CardContent>
+             </Card>
+        ))}
+      </div>
+      <div className="flex justify-end mt-4">
+        <Button onClick={handleSave} disabled={isSaveDisabled} size="lg">
+            <Check className="mr-2"/> 모든 평가 저장
+        </Button>
       </div>
     </div>
   );

@@ -59,6 +59,7 @@ export type EvaluationGroup = {
 export type EvaluationResult = Employee & {
   grade: Grade;
   score: number;
+  payoutRate: number;
   gradeAmount: number; // 등급금액
   finalAmount: number; // 최종금액
   evaluatorName: string;

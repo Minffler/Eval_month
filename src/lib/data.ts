@@ -19,14 +19,14 @@ export const mockUsers: User[] = [
 ];
 
 export const mockEmployees: Employee[] = [
-  { id: 'E001', uniqueId: '001', name: '김관리', company: 'OK', department: '인사팀', title: '인사팀장', position: '팀장', growthLevel: 'Lv.5', deductionHours: { attendance: 0, shortened: 0, total: 0 }, workRate: 1.0, group: '팀장/지점장', evaluatorId: 'user-1', baseAmount: 8000000 },
-  { id: 'E002', uniqueId: '002', name: '박평가', company: 'OK', department: '제품 개발', title: '개발팀장', position: '팀장', growthLevel: 'Lv.4', deductionHours: { attendance: 0, shortened: 0, total: 0 }, workRate: 1.0, group: '팀장/지점장', evaluatorId: 'user-1', baseAmount: 7500000 },
-  { id: 'E003', uniqueId: '003', name: '이주임', company: 'OK', department: '제품 개발', title: '소프트웨어 엔지니어', position: '주임', growthLevel: 'Lv.2', deductionHours: { attendance: 8, shortened: 0, total: 8 }, workRate: 0.95, group: 'Lv.2~3', evaluatorId: 'user-2', baseAmount: 5000000 },
-  { id: 'E004', uniqueId: '004', name: '최사원', company: 'OC', department: '제품 개발', title: '소프트웨어 엔지니어', position: '사원', growthLevel: 'Lv.1', deductionHours: { attendance: 0, shortened: 0, total: 0 }, workRate: 1.0, group: 'Lv.1', evaluatorId: 'user-2', baseAmount: 4500000 },
-  { id: 'E005', uniqueId: '005', name: '정대리', company: 'OCI', department: '디자인', title: 'UX 디자이너', position: '대리', growthLevel: 'Lv.3', deductionHours: { attendance: 16, shortened: 8, total: 24 }, workRate: 0.86, group: 'Lv.2~3', evaluatorId: 'user-2', baseAmount: 5500000 },
-  { id: 'E006', uniqueId: '006', name: '윤과장', company: 'OFI', department: '마케팅', title: '마케팅 매니저', position: '과장', growthLevel: 'Lv.4', deductionHours: { attendance: 40, shortened: 0, total: 40 }, workRate: 0.76, group: '팀장/지점장', evaluatorId: 'user-1', baseAmount: 6500000 },
-  { id: 'E007', uniqueId: '007', name: '오차장', company: 'EX', department: 'QA', title: 'QA 스페셜리스트', position: '차장', growthLevel: 'Lv.3', deductionHours: { attendance: 80, shortened: 0, total: 80 }, workRate: 0.52, group: 'Lv.2~3', evaluatorId: 'user-2', baseAmount: 6000000 },
-  { id: 'E008', uniqueId: '008', name: '강부장', company: 'OKDS', department: '영업', title: '영업 이사', position: '부장', growthLevel: 'Lv.5', deductionHours: { attendance: 150, shortened: 0, total: 150 }, workRate: 0.11, group: '별도평가', evaluatorId: 'user-1', baseAmount: 7000000 },
+  { id: 'E001', uniqueId: '0000001', name: '김관리', company: 'OK', department: '인사팀', title: '인사팀장', position: '팀장', growthLevel: 'Lv.5', deductionHours: { attendance: 0, shortened: 0, total: 0 }, workRate: 1.0, group: '팀장/지점장', evaluatorId: 'user-1', baseAmount: 8000000 },
+  { id: 'E002', uniqueId: '0000002', name: '박평가', company: 'OK', department: '제품 개발', title: '개발팀장', position: '팀장', growthLevel: 'Lv.4', deductionHours: { attendance: 0, shortened: 0, total: 0 }, workRate: 1.0, group: '팀장/지점장', evaluatorId: 'user-1', baseAmount: 7500000 },
+  { id: 'E003', uniqueId: '0000003', name: '이주임', company: 'OK', department: '제품 개발', title: '소프트웨어 엔지니어', position: '주임', growthLevel: 'Lv.2', deductionHours: { attendance: 8, shortened: 0, total: 8 }, workRate: 0.95, group: 'Lv.2~3', evaluatorId: 'user-2', baseAmount: 5000000 },
+  { id: 'E004', uniqueId: '0000004', name: '최사원', company: 'OC', department: '제품 개발', title: '소프트웨어 엔지니어', position: '사원', growthLevel: 'Lv.1', deductionHours: { attendance: 0, shortened: 0, total: 0 }, workRate: 1.0, group: 'Lv.1', evaluatorId: 'user-2', baseAmount: 4500000 },
+  { id: 'E005', uniqueId: '0000005', name: '정대리', company: 'OCI', department: '디자인', title: 'UX 디자이너', position: '대리', growthLevel: 'Lv.3', deductionHours: { attendance: 16, shortened: 8, total: 24 }, workRate: 0.86, group: 'Lv.2~3', evaluatorId: 'user-2', baseAmount: 5500000 },
+  { id: 'E006', uniqueId: '0000006', name: '윤과장', company: 'OFI', department: '마케팅', title: '마케팅 매니저', position: '과장', growthLevel: 'Lv.4', deductionHours: { attendance: 40, shortened: 0, total: 40 }, workRate: 0.76, group: '팀장/지점장', evaluatorId: 'user-1', baseAmount: 6500000 },
+  { id: 'E007', uniqueId: '0000007', name: '오차장', company: 'EX', department: 'QA', title: 'QA 스페셜리스트', position: '차장', growthLevel: 'Lv.3', deductionHours: { attendance: 80, shortened: 0, total: 80 }, workRate: 0.52, group: 'Lv.2~3', evaluatorId: 'user-2', baseAmount: 6000000 },
+  { id: 'E008', uniqueId: '0000008', name: '강부장', company: 'OKDS', department: '영업', title: '영업 이사', position: '부장', growthLevel: 'Lv.5', deductionHours: { attendance: 150, shortened: 0, total: 150 }, workRate: 0.11, group: '별도평가', evaluatorId: 'user-1', baseAmount: 7000000 },
 ];
 
 export const mockEvaluations: Evaluation[] = [
@@ -43,7 +43,7 @@ export const mockEvaluations: Evaluation[] = [
 export const mockEvaluationGroups: EvaluationGroup[] = [
     { id: 'group-1', name: 'Lv.1 그룹', evaluatorId: 'user-2', memberIds: ['E004'], totalScore: 100 },
     { id: 'group-2', name: 'Lv.2-3 그룹', evaluatorId: 'user-2', memberIds: ['E003', 'E005', 'E007'], totalScore: 300 },
-    { id: 'group-3', name: 'Lv.4+ 그룹', evaluatorId: 'user-1', memberIds: ['E001', 'E002', 'E006', 'E008'], totalScore: 450 },
+    { id: 'group-3', name: 'Lv.4+ 그룹', evaluatorId: 'user-1', memberIds: ['E001', 'E002', 'E006', 'E008'], totalScore: 400 },
 ];
 
 export const calculateFinalAmount = (gradeAmount: number, workRate: number): number => {
@@ -87,6 +87,7 @@ export const getFullEvaluationResults = (): EvaluationResult[] => {
       ...employee,
       grade,
       score,
+      payoutRate,
       gradeAmount,
       finalAmount,
       evaluatorName: evaluator?.name || 'N/A',
