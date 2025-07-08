@@ -25,7 +25,7 @@ export default function Home() {
   const handleEmployeeUpload = (year: number, month: number, newEmployees: Employee[]) => {
     const key = `${year}-${month}`;
     setEmployees(prev => ({ ...prev, [key]: newEmployees }));
-    // Also create blank evaluations for the new employees
+    
     const newEvals = newEmployees.map(emp => ({
         id: `eval-${emp.id}-${year}-${month}`,
         employeeId: emp.id,
@@ -34,7 +34,36 @@ export default function Home() {
         grade: null,
         memo: ''
     }));
-    setEvaluations(prev => ({...prev, [key]: newEvals}));
+    
+    setEvaluations(prev => {
+        const existingEvals = prev[key] || [];
+        const existingEmpIds = new Set(existingEvals.map(e => e.employeeId));
+        const finalEvals = [...existingEvals];
+        newEvals.forEach(newEval => {
+            if (!existingEmpIds.has(newEval.employeeId)) {
+                finalEvals.push(newEval);
+            }
+        });
+        return {...prev, [key]: finalEvals};
+    });
+  };
+
+  const handleEvaluationUpload = (year: number, month: number, uploadedEvals: Pick<Evaluation, 'employeeId' | 'grade' | 'memo'>[]) => {
+      const key = `${year}-${month}`;
+      setEvaluations(prev => {
+          const newEvalsForMonth = [...(prev[key] || [])];
+          uploadedEvals.forEach(uploadedEval => {
+              const evalIndex = newEvalsForMonth.findIndex(e => e.employeeId === uploadedEval.employeeId);
+              if (evalIndex > -1) {
+                  newEvalsForMonth[evalIndex] = {
+                      ...newEvalsForMonth[evalIndex],
+                      grade: uploadedEval.grade,
+                      memo: uploadedEval.memo,
+                  };
+              }
+          });
+          return {...prev, [key]: newEvalsForMonth};
+      });
   };
 
   const handleResultsUpdate = (updatedResultsForMonth: EvaluationResult[]) => {
@@ -124,6 +153,7 @@ export default function Home() {
         return <AdminDashboard 
                   results={results}
                   onEmployeeUpload={handleEmployeeUpload}
+                  onEvaluationUpload={handleEvaluationUpload}
                   gradingScale={gradingScale}
                   setGradingScale={setGradingScale}
                   selectedDate={selectedDate}
@@ -163,8 +193,8 @@ export default function Home() {
                         gradeAmount,
                         finalAmount,
                         evaluatorName: evaluator?.name || 'N/A',
-                        detailedGroup1: '', // Not needed for employee view
-                        detailedGroup2: '', // Not needed for employee view
+                        detailedGroup1: '',
+                        detailedGroup2: '',
                     };
                 });
         });
@@ -174,6 +204,17 @@ export default function Home() {
         return null;
     }
   };
+
+  if (!user) {
+    return (
+      <div className="flex flex-col min-h-screen bg-background">
+        <Header />
+        <main className="flex-1 p-4 md:p-6 lg:p-8">
+          <p>로딩중...</p>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
