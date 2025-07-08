@@ -32,6 +32,15 @@ import * as XLSX from 'xlsx';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Progress } from '../ui/progress';
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Textarea } from '../ui/textarea';
 
 interface AdminDashboardProps {
   results: EvaluationResult[];
@@ -57,6 +66,8 @@ export default function AdminDashboard({
   const [results, setResults] = React.useState<EvaluationResult[]>(initialResults);
   const [activeTab, setActiveTab] = React.useState<EvaluationGroupCategory>('전체');
   const [selectedEvaluators, setSelectedEvaluators] = React.useState<Set<string>>(new Set());
+  const [isNotificationDialogOpen, setIsNotificationDialogOpen] = React.useState(false);
+  const [notificationMessage, setNotificationMessage] = React.useState('');
   const { toast } = useToast();
 
   React.useEffect(() => {
@@ -128,11 +139,29 @@ export default function AdminDashboard({
     setSelectedEvaluators(newSelection);
   };
   
-  const handleSendNotification = () => {
+  const handleOpenNotificationDialog = () => {
+    setNotificationMessage(`안녕하세요, <평가자이름>님. 평가 마감이 얼마 남지 않았습니다. 현재 진행률은 <%>입니다. 조속한 평가 진행 부탁드립니다.`);
+    setIsNotificationDialogOpen(true);
+  };
+  
+  const handleSendNotifications = () => {
+    selectedEvaluators.forEach(evaluatorId => {
+        const stat = evaluatorStats.find(s => s.evaluatorId === evaluatorId);
+        if (stat) {
+            const message = notificationMessage
+                .replace(/<평가자이름>/g, stat.evaluatorName)
+                .replace(/<%>%/g, `${stat.rate.toFixed(1)}%`);
+            // In a real app, you would send this message via email, Slack, etc.
+            console.log(`Sending to ${stat.evaluatorName}: ${message}`);
+        }
+    });
+
     toast({
-        title: "알림 발송",
+        title: "알림 발송 완료",
         description: `${selectedEvaluators.size}명의 평가자에게 알림이 발송되었습니다.`,
     });
+    
+    setIsNotificationDialogOpen(false);
     setSelectedEvaluators(new Set());
   };
 
@@ -297,7 +326,7 @@ export default function AdminDashboard({
               <div className="flex justify-end mt-4">
                 <Button
                   disabled={selectedEvaluators.size === 0}
-                  onClick={handleSendNotification}
+                  onClick={handleOpenNotificationDialog}
                 >
                   <Bell className="mr-2 h-4 w-4" />
                   선택된 평가자에게 알림 발송
@@ -399,6 +428,29 @@ export default function AdminDashboard({
           <ConsistencyValidator />
         </TabsContent>
       </Tabs>
+      <Dialog open={isNotificationDialogOpen} onOpenChange={setIsNotificationDialogOpen}>
+        <DialogContent className="sm:max-w-[525px]">
+          <DialogHeader>
+            <DialogTitle>알림 메시지 설정</DialogTitle>
+            <DialogDescription>
+              평가자에게 보낼 메시지를 입력하세요. 플레이스홀더를 사용하여 개인화할 수 있습니다: &lt;평가자이름&gt;, &lt;%&gt;
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <Textarea
+                id="notification-message"
+                value={notificationMessage}
+                onChange={(e) => setNotificationMessage(e.target.value)}
+                className="col-span-4 h-32"
+                placeholder="알림 메시지를 입력하세요..."
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsNotificationDialogOpen(false)}>취소</Button>
+            <Button onClick={handleSendNotifications}>발송</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
