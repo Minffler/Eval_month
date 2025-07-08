@@ -1,15 +1,30 @@
 'use client';
 
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ChartTooltipContent } from '@/components/ui/chart';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from '@/components/ui/chart';
 
 interface GradeHistogramProps {
   data: { name: string; value: number }[];
   title?: string;
 }
 
-export function GradeHistogram({ data, title = 'Grade Distribution' }: GradeHistogramProps) {
+const chartConfig = {
+  value: {
+    label: 'Count',
+    color: 'hsl(var(--primary))',
+  },
+} satisfies ChartConfig;
+
+export function GradeHistogram({
+  data,
+  title = 'Grade Distribution',
+}: GradeHistogramProps) {
   return (
     <Card>
       <CardHeader>
@@ -17,29 +32,35 @@ export function GradeHistogram({ data, title = 'Grade Distribution' }: GradeHist
       </CardHeader>
       <CardContent>
         <div className="h-[300px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={data}>
-              <XAxis
-                dataKey="name"
-                stroke="#888888"
-                fontSize={12}
-                tickLine={false}
-                axisLine={false}
-              />
-              <YAxis
-                stroke="#888888"
-                fontSize={12}
-                tickLine={false}
-                axisLine={false}
-                tickFormatter={(value) => `${value}`}
-              />
-              <Tooltip
-                cursor={{ fill: 'hsl(var(--muted))' }}
-                content={<ChartTooltipContent />}
-              />
-              <Bar dataKey="value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          <ChartContainer config={chartConfig} className="w-full h-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart accessibilityLayer data={data}>
+                <XAxis
+                  dataKey="name"
+                  stroke="#888888"
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <YAxis
+                  stroke="#888888"
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(value) => `${value}`}
+                />
+                <ChartTooltip
+                  cursor={{ fill: 'hsl(var(--muted))' }}
+                  content={<ChartTooltipContent />}
+                />
+                <Bar
+                  dataKey="value"
+                  fill="var(--color-value)"
+                  radius={[4, 4, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartContainer>
         </div>
       </CardContent>
     </Card>
