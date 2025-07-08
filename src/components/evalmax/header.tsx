@@ -5,6 +5,12 @@ import { RoleSwitcher } from './role-switcher';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Bell, LogOut } from 'lucide-react';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Separator } from '@/components/ui/separator';
 
 export default function Header() {
   const { user, role, setRole, logout } = useAuth();
@@ -14,6 +20,12 @@ export default function Header() {
     evaluator: '평가자',
     employee: '피평가자',
   };
+
+  const notifications = [
+    { message: '2025년 6월 평가대상자가 업로드 되었습니다. 평가를 진행해주세요.' },
+    { message: '평가마감 기한이 3일 남았습니다. 근무율을 최종적으로 확인해주세요.' },
+    { message: '평가가 마감되었습니다. 마감 이후 수정은 불가합니다.' },
+  ];
 
   if (!user || !role) {
     return null;
@@ -30,9 +42,40 @@ export default function Header() {
         {user.roles.length > 1 && (
            <RoleSwitcher currentRole={role} availableRoles={user.roles} onRoleChange={setRole} />
         )}
-        <Button variant="ghost" size="icon" className="rounded-full">
-            <Bell className="h-5 w-5" />
-        </Button>
+        
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="icon" className="rounded-full relative">
+                <Bell className="h-5 w-5" />
+                {notifications.length > 0 && (
+                  <span className="absolute top-1 right-1 flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-primary/80"></span>
+                  </span>
+                )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-96" align="end">
+            <div className="p-4">
+              <h3 className="font-semibold text-lg">알림</h3>
+            </div>
+            <Separator />
+            <div className="p-2">
+              {notifications.length > 0 ? (
+                <ul className="space-y-2">
+                  {notifications.map((notification, index) => (
+                    <li key={index} className="p-2 rounded-md hover:bg-muted">
+                        <p className="text-sm">{notification.message}</p>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-center text-sm text-muted-foreground p-4">새로운 알림이 없습니다.</p>
+              )}
+            </div>
+          </PopoverContent>
+        </Popover>
+
         <div className="flex items-center gap-3">
           <Avatar className="h-9 w-9">
             <AvatarImage src={user?.avatar} alt={user?.name} data-ai-hint="person avatar" />
