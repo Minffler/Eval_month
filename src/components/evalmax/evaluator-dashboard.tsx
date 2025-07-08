@@ -115,7 +115,10 @@ const DraggableTableRow = ({ employee, gradingScale, selected, onSelect, onGrade
             </TableCell>
             <TableCell className="whitespace-nowrap py-1 px-2">{employee.uniqueId}</TableCell>
             <TableCell className="whitespace-nowrap py-1 px-2">{employee.company}</TableCell>
+            <TableCell className="whitespace-nowrap py-1 px-2">{employee.department}</TableCell>
             <TableCell className="font-medium whitespace-nowrap py-1 px-2">{employee.name}</TableCell>
+            <TableCell className="whitespace-nowrap py-1 px-2">{employee.title}</TableCell>
+            <TableCell className="whitespace-nowrap py-1 px-2">{employee.growthLevel}</TableCell>
             <TableCell className="whitespace-nowrap py-1 px-2">{(employee.workRate * 100).toFixed(1)}%</TableCell>
             <TableCell className="whitespace-nowrap py-1 px-2">
                 <Select value={employee.grade || ''} onValueChange={(g: Grade) => onGradeChange(employee.id, g)}>
@@ -156,7 +159,7 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
   const [activeId, setActiveId] = React.useState<string | null>(null);
   const [editingGroupId, setEditingGroupId] = React.useState<string | null>(null);
   const [editingGroupName, setEditingGroupName] = React.useState('');
-  const [isChartOpen, setIsChartOpen] = React.useState(true);
+  const [isChartOpen, setIsChartOpen] = React.useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -530,7 +533,10 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
                                   </TableHead>
                                   <TableHead className="whitespace-nowrap py-2 px-2">고유사번</TableHead>
                                   <TableHead className="whitespace-nowrap py-2 px-2">회사</TableHead>
+                                  <TableHead className="whitespace-nowrap py-2 px-2">소속부서</TableHead>
                                   <TableHead className="whitespace-nowrap py-2 px-2">이름</TableHead>
+                                  <TableHead className="whitespace-nowrap py-2 px-2">직책</TableHead>
+                                  <TableHead className="whitespace-nowrap py-2 px-2">성장레벨</TableHead>
                                   <TableHead className="whitespace-nowrap py-2 px-2">근무율</TableHead>
                                   <TableHead className="whitespace-nowrap py-2 px-2">등급</TableHead>
                                   <TableHead className="whitespace-nowrap py-2 px-2">점수</TableHead>
@@ -587,7 +593,10 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
                         </TableCell>
                         <TableCell className="whitespace-nowrap py-1 px-2">{activeEmployee.uniqueId}</TableCell>
                         <TableCell className="whitespace-nowrap py-1 px-2">{activeEmployee.company}</TableCell>
+                        <TableCell className="whitespace-nowrap py-1 px-2">{activeEmployee.department}</TableCell>
                         <TableCell className="font-medium whitespace-nowrap py-1 px-2">{activeEmployee.name}</TableCell>
+                        <TableCell className="whitespace-nowrap py-1 px-2">{activeEmployee.title}</TableCell>
+                        <TableCell className="whitespace-nowrap py-1 px-2">{activeEmployee.growthLevel}</TableCell>
                         <TableCell className="whitespace-nowrap py-1 px-2">{(activeEmployee.workRate * 100).toFixed(1)}%</TableCell>
                         <TableCell className="whitespace-nowrap py-1 px-2">{activeEmployee.grade}</TableCell>
                         <TableCell className="whitespace-nowrap py-1 px-2">{activeEmployee.score}</TableCell>
