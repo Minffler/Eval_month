@@ -26,62 +26,63 @@ export default function EmployeeDashboard() {
   }
 
   if (!user || !result) {
-    return <div>Loading your results...</div>;
+    return <div>결과를 불러오는 중입니다...</div>;
   }
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold font-headline tracking-tight">My Performance Review</h2>
+        <h2 className="text-3xl font-bold font-headline tracking-tight">내 성과 리뷰</h2>
         <Select defaultValue={selectedPeriod} onValueChange={setSelectedPeriod}>
           <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Select period" />
+            <SelectValue placeholder="기간 선택" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="2025-07">July 2025</SelectItem>
-            <SelectItem value="2025-06" disabled>June 2025</SelectItem>
-            <SelectItem value="2025-05" disabled>May 2025</SelectItem>
+            <SelectItem value="2025-07">2025년 7월</SelectItem>
+            <SelectItem value="2025-06" disabled>2025년 6월</SelectItem>
+            <SelectItem value="2025-05" disabled>2025년 5월</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       <Card className="w-full max-w-3xl mx-auto">
         <CardHeader>
-          <CardTitle className="font-headline text-2xl">Evaluation Result: {selectedPeriod}</CardTitle>
+          <CardTitle className="font-headline text-2xl">평가 결과: {selectedPeriod}</CardTitle>
           <CardDescription>
-            Here is a summary of your performance evaluation and compensation for the selected period.
+            선택한 기간의 성과 평가 및 보상 요약입니다.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
-                <h3 className="font-semibold font-headline">Your Information</h3>
-                <InfoItem label="Name" value={result.name} />
-                <InfoItem label="Department" value={result.department} />
-                <InfoItem label="Title" value={result.title} />
-                <InfoItem label="Evaluator" value={result.evaluatorName} />
+                <h3 className="font-semibold font-headline">내 정보</h3>
+                <InfoItem label="이름" value={result.name} />
+                <InfoItem label="소속부서" value={result.department} />
+                <InfoItem label="직책" value={result.title} />
+                <InfoItem label="평가자" value={result.evaluatorName} />
             </div>
             <div className="space-y-4">
-                <h3 className="font-semibold font-headline">Performance Details</h3>
-                <InfoItem label="Grade" value={<span className="font-bold text-primary text-2xl">{result.grade}</span>} />
-                <InfoItem label="Score" value={`${result.score} / 150`} />
-                <InfoItem label="Work Rate" value={`${(result.workRate * 100).toFixed(1)}%`} />
+                <h3 className="font-semibold font-headline">성과 상세</h3>
+                <InfoItem label="등급" value={<span className="font-bold text-primary text-2xl">{result.grade}</span>} />
+                <InfoItem label="점수" value={`${result.score} / 150`} />
+                <InfoItem label="근무율" value={`${(result.workRate * 100).toFixed(1)}%`} />
+                <InfoItem label="근무율 그룹" value={result.detailedGroup1} />
             </div>
           </div>
           <Separator className="my-6"/>
           <div>
-            <h3 className="font-semibold font-headline mb-4">Compensation Breakdown</h3>
+            <h3 className="font-semibold font-headline mb-4">보상 내역</h3>
             <div className="space-y-2 text-sm">
-                <CalculationRow label="Base Amount (B Grade)" value={formatCurrency(result.baseAmount)} />
-                <CalculationRow label={`Your Payout Rate (${result.grade} Grade)`} value={`${result.score}%`} />
-                <CalculationRow label="Calculated Grade Amount" value={formatCurrency(result.gradeAmount)} isSubtotal/>
-                <CalculationRow label={`Work Rate Adjustment`} value={`x ${(result.workRate).toFixed(2)}`} />
+                <CalculationRow label="기준 금액 (B등급)" value={formatCurrency(result.baseAmount)} />
+                <CalculationRow label={`내 지급률 (${result.grade} 등급)`} value={`${result.score}%`} />
+                <CalculationRow label="산출 등급 금액" value={formatCurrency(result.gradeAmount)} isSubtotal/>
+                <CalculationRow label={`근무율 조정`} value={`x ${(result.workRate).toFixed(2)}`} />
             </div>
           </div>
         </CardContent>
         <CardFooter className="bg-muted/50 p-6 rounded-b-lg">
             <div className="flex justify-between items-center w-full">
-                <span className="font-bold text-lg font-headline">Final Performance Pay</span>
+                <span className="font-bold text-lg font-headline">최종 성과급</span>
                 <span className="font-bold text-2xl text-primary">{formatCurrency(result.finalAmount)}</span>
             </div>
         </CardFooter>

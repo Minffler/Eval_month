@@ -50,16 +50,16 @@ export default function Home() {
 
   const navItems = {
     admin: [
-      { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-      { id: 'results', label: 'All Results', icon: BarChart3 },
-      { id: 'consistency', label: 'Consistency Check', icon: FileCheck },
+      { id: 'dashboard', label: '대시보드', icon: LayoutDashboard },
+      { id: 'results', label: '전체 결과', icon: BarChart3 },
+      { id: 'consistency', label: 'AI 일관성 검토', icon: FileCheck },
     ],
     evaluator: [
-      { id: 'dashboard', label: 'Evaluation Hub', icon: LayoutDashboard },
-      { id: 'my-team', label: 'My Team', icon: Users },
+      { id: 'dashboard', label: '평가 허브', icon: LayoutDashboard },
+      { id: 'my-team', label: '우리 팀', icon: Users },
     ],
     employee: [
-      { id: 'my-results', label: 'My Results', icon: FileText },
+      { id: 'my-results', label: '내 결과', icon: FileText },
     ],
   };
 
@@ -92,14 +92,14 @@ export default function Home() {
         </SidebarContent>
         <SidebarFooter>
           <div className="flex flex-col gap-2 p-4">
-              <Button variant="outline"><LogOut className="mr-2"/> Logout</Button>
+              <Button variant="outline"><LogOut className="mr-2"/> 로그아웃</Button>
           </div>
         </SidebarFooter>
       </Sidebar>
       <SidebarInset className="flex flex-col">
         <Header />
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
-          {user ? renderDashboard() : <p>Loading...</p>}
+          {user ? renderDashboard() : <p>로딩중...</p>}
         </main>
       </SidebarInset>
     </SidebarProvider>

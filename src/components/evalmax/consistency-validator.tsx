@@ -21,8 +21,8 @@ import { mockEvaluations } from '@/lib/data';
 import { validateGradeConsistency } from '@/ai/flows/grade-consistency-validation';
 
 const formSchema = z.object({
-  gradeData: z.string().min(10, 'Grade data is required.'),
-  expectedDistribution: z.string().min(10, 'Expected distribution is required.'),
+  gradeData: z.string().min(10, '등급 데이터가 필요합니다.'),
+  expectedDistribution: z.string().min(10, '예상 분포 설명이 필요합니다.'),
 });
 
 const defaultGradeData = JSON.stringify(
@@ -32,7 +32,7 @@ const defaultGradeData = JSON.stringify(
 );
 
 const defaultExpectedDistribution =
-  'Most employees should receive a B or B+ grade, with fewer employees receiving S or D grades. The distribution should be relatively even across departments, with no significant skew towards one particular group.';
+  '대부분의 직원은 B 또는 B+ 등급을 받아야 하며, S 또는 D 등급을 받는 직원은 소수여야 합니다. 등급 분포는 부서 간에 비교적 균등해야 하며, 특정 그룹에 치우치지 않아야 합니다.';
 
 export function ConsistencyValidator() {
   const [loading, setLoading] = React.useState(false);
@@ -54,7 +54,7 @@ export function ConsistencyValidator() {
       setReport(result.consistencyReport);
     } catch (error) {
       console.error('Error validating consistency:', error);
-      setReport('An error occurred while generating the report. Please try again.');
+      setReport('리포트를 생성하는 중 오류가 발생했습니다. 다시 시도해주세요.');
     } finally {
       setLoading(false);
     }
@@ -64,9 +64,9 @@ export function ConsistencyValidator() {
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <Card>
         <CardHeader>
-          <CardTitle className="font-headline">Analyze Grade Consistency</CardTitle>
+          <CardTitle className="font-headline">등급 일관성 분석</CardTitle>
           <CardDescription>
-            Use our AI-powered tool to analyze grade distributions and identify potential inconsistencies or biases.
+            AI 기반 도구를 사용하여 등급 분포를 분석하고 잠재적인 불일치나 편향을 식별하세요.
           </CardDescription>
         </CardHeader>
         <Form {...form}>
@@ -77,10 +77,10 @@ export function ConsistencyValidator() {
                 name="gradeData"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Grade Data (JSON)</FormLabel>
+                    <FormLabel>등급 데이터 (JSON)</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Paste grade data here"
+                        placeholder="여기에 등급 데이터를 붙여넣으세요"
                         className="h-48 font-code"
                         {...field}
                       />
@@ -94,16 +94,16 @@ export function ConsistencyValidator() {
                 name="expectedDistribution"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Expected Distribution</FormLabel>
+                    <FormLabel>예상 분포</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Describe the expected grade distribution"
+                        placeholder="예상 등급 분포에 대해 설명해주세요"
                         className="h-32"
                         {...field}
                       />
                     </FormControl>
                     <FormDescription>
-                      Describe what a fair distribution looks like for your organization.
+                      조직에 이상적인 공정한 분포가 무엇인지 설명해주세요.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -117,7 +117,7 @@ export function ConsistencyValidator() {
                 ) : (
                   <Sparkles className="mr-2 h-4 w-4" />
                 )}
-                Analyze with AI
+                AI로 분석하기
               </Button>
             </CardFooter>
           </form>
@@ -126,14 +126,14 @@ export function ConsistencyValidator() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="font-headline">AI Consistency Report</CardTitle>
+          <CardTitle className="font-headline">AI 일관성 리포트</CardTitle>
           <CardDescription>
-            The generated report will appear below.
+            생성된 리포트가 아래에 표시됩니다.
           </CardDescription>
         </CardHeader>
         <CardContent className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap rounded-md border p-4 min-h-[400px]">
           {loading && <div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>}
-          {report ? report : !loading && <p className="text-muted-foreground">Your report will be generated here...</p>}
+          {report ? report : !loading && <p className="text-muted-foreground">리포트가 여기에 생성됩니다...</p>}
         </CardContent>
       </Card>
     </div>

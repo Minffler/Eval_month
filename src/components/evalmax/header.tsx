@@ -10,16 +10,16 @@ export default function Header() {
   const { user, role, setUser } = useAuth();
 
   const roleDisplay: Record<string, string> = {
-    admin: 'Admin',
-    evaluator: 'Evaluator',
-    employee: 'Employee',
+    admin: '관리자',
+    evaluator: '평가자',
+    employee: '피평가자',
   };
 
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6">
       <div className="flex-1">
         <h1 className="text-xl font-semibold font-headline">
-          {roleDisplay[role]} Dashboard
+          {roleDisplay[role]} 대시보드
         </h1>
       </div>
       <div className="flex items-center gap-4">

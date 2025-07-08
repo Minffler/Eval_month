@@ -17,9 +17,9 @@ interface RoleSwitcherProps {
 
 export function RoleSwitcher({ currentRole, onRoleChange }: RoleSwitcherProps) {
   const roles: { value: Role; label: string; icon: React.ElementType }[] = [
-    { value: 'admin', label: 'Admin', icon: UserCog },
-    { value: 'evaluator', label: 'Evaluator', icon: UserCheck },
-    { value: 'employee', label: 'Employee', icon: UserIcon },
+    { value: 'admin', label: '관리자', icon: UserCog },
+    { value: 'evaluator', label: '평가자', icon: UserCheck },
+    { value: 'employee', label: '피평가자', icon: UserIcon },
   ];
 
   const CurrentIcon = roles.find(r => r.value === currentRole)?.icon || UserIcon;
@@ -29,7 +29,7 @@ export function RoleSwitcher({ currentRole, onRoleChange }: RoleSwitcherProps) {
       <SelectTrigger className="w-auto md:w-[180px] gap-2">
         <CurrentIcon className="h-4 w-4 text-muted-foreground" />
         <div className="hidden md:block">
-            <SelectValue placeholder="Select a role" />
+            <SelectValue placeholder="역할 선택" />
         </div>
       </SelectTrigger>
       <SelectContent>

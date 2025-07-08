@@ -77,15 +77,15 @@ export default function EvaluatorDashboard() {
     if (isSaveDisabled) {
       toast({
         variant: 'destructive',
-        title: 'Error: Score Exceeded',
-        description: 'One or more groups have exceeded their total score limit. Please adjust grades before saving.',
+        title: '오류: 점수 초과',
+        description: '하나 이상의 그룹이 총점 한도를 초과했습니다. 저장하기 전에 등급을 조정해주세요.',
       });
       return;
     }
     console.log('Saving evaluations:', evaluations);
     toast({
-      title: 'Success!',
-      description: 'Your evaluations have been saved successfully.',
+      title: '성공!',
+      description: '평가가 성공적으로 저장되었습니다.',
       action: <Check className="text-green-500" />,
     });
   };
@@ -109,6 +109,8 @@ export default function EvaluatorDashboard() {
         gradeAmount,
         finalAmount,
         evaluatorName: user?.name || 'N/A',
+        detailedGroup1: '', // These are not needed here
+        detailedGroup2: '',
       }
     });
   };
@@ -122,26 +124,30 @@ export default function EvaluatorDashboard() {
     }))
     .filter(item => item.value > 0);
 
-  if (!user) return <div>Loading...</div>;
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(value);
+  }
+
+  if (!user) return <div>로딩중...</div>;
 
   return (
     <div className="space-y-6">
-      <h2 className="text-3xl font-bold font-headline tracking-tight">Evaluation Hub</h2>
+      <h2 className="text-3xl font-bold font-headline tracking-tight">평가 허브</h2>
 
       <Card>
         <CardHeader>
-          <CardTitle className="font-headline flex items-center gap-2"><Users />Evaluation Progress</CardTitle>
+          <CardTitle className="font-headline flex items-center gap-2"><Users />평가 진행 현황</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Group</TableHead>
-                <TableHead>Members</TableHead>
-                <TableHead>Completed</TableHead>
-                <TableHead>Total Score</TableHead>
-                <TableHead>Current Score</TableHead>
-                <TableHead>Remaining</TableHead>
+                <TableHead>그룹</TableHead>
+                <TableHead>인원</TableHead>
+                <TableHead>완료</TableHead>
+                <TableHead>총점</TableHead>
+                <TableHead>현재 점수</TableHead>
+                <TableHead>잔여 점수</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -160,9 +166,9 @@ export default function EvaluatorDashboard() {
           {isSaveDisabled && (
             <Alert variant="destructive" className="mt-4">
               <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Total Score Exceeded</AlertTitle>
+              <AlertTitle>총점 초과</AlertTitle>
               <AlertDescription>
-                You cannot save until the "Current Score" is less than or equal to the "Total Score" for all groups.
+                "현재 점수"가 모든 그룹의 "총점"보다 낮거나 같아야 저장할 수 있습니다.
               </AlertDescription>
             </Alert>
           )}
@@ -173,15 +179,15 @@ export default function EvaluatorDashboard() {
           <div className="lg:col-span-2 space-y-6">
             {evaluatorGroups.map(group => (
                  <Card key={group.id}>
-                    <CardHeader><CardTitle className="font-headline">{group.name} - Evaluation Sheet</CardTitle></CardHeader>
+                    <CardHeader><CardTitle className="font-headline">{group.name} - 평가 시트</CardTitle></CardHeader>
                     <CardContent>
                         <Table>
                         <TableHeader><TableRow>
-                            <TableHead>Name</TableHead>
-                            <TableHead>Work Rate</TableHead>
-                            <TableHead>Grade</TableHead>
-                            <TableHead>Score</TableHead>
-                            <TableHead className="text-right">Final Amount</TableHead>
+                            <TableHead>이름</TableHead>
+                            <TableHead>근무율</TableHead>
+                            <TableHead>등급</TableHead>
+                            <TableHead>점수</TableHead>
+                            <TableHead className="text-right">최종 지급액</TableHead>
                         </TableRow></TableHeader>
                         <TableBody>
                             {getGroupMembers(group.id).map(emp => (
@@ -191,7 +197,7 @@ export default function EvaluatorDashboard() {
                                     <TableCell>
                                     <Select value={evaluations[emp.id] || ''} onValueChange={(g: Grade) => handleGradeChange(emp.id, g)}>
                                         <SelectTrigger className="w-[100px]">
-                                            <SelectValue placeholder="Select Grade" />
+                                            <SelectValue placeholder="등급 선택" />
                                         </SelectTrigger>
                                         <SelectContent>
                                         {Object.keys(gradingScale).map(grade => (
@@ -201,7 +207,7 @@ export default function EvaluatorDashboard() {
                                     </Select>
                                     </TableCell>
                                     <TableCell>{emp.score}</TableCell>
-                                    <TableCell className="text-right">{new Intl.NumberFormat('ko-KR').format(emp.finalAmount)}</TableCell>
+                                    <TableCell className="text-right">{formatCurrency(emp.finalAmount)}</TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
@@ -211,9 +217,9 @@ export default function EvaluatorDashboard() {
             ))}
           </div>
           <div className="space-y-6">
-            <GradeHistogram data={gradeDistribution} title="My Grade Distribution" />
+            <GradeHistogram data={gradeDistribution} title="나의 등급 분포" />
             <Button onClick={handleSave} disabled={isSaveDisabled} className="w-full" size="lg">
-                <Check className="mr-2"/> Save All Evaluations
+                <Check className="mr-2"/> 모든 평가 저장
             </Button>
           </div>
       </div>

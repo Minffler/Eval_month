@@ -16,14 +16,14 @@ interface GradeHistogramProps {
 
 const chartConfig = {
   value: {
-    label: 'Count',
+    label: '인원수',
     color: 'hsl(var(--primary))',
   },
 } satisfies ChartConfig;
 
 export function GradeHistogram({
   data,
-  title = 'Grade Distribution',
+  title = '등급 분포',
 }: GradeHistogramProps) {
   return (
     <Card>

@@ -1,11 +1,11 @@
 'use server';
 
 /**
- * @fileOverview This file defines a Genkit flow for validating grade consistency across different teams and departments.
+ * @fileOverview 이 파일은 여러 팀과 부서에 걸친 등급 일관성을 검증하기 위한 Genkit 플로우를 정의합니다.
  *
- * - validateGradeConsistency - A function that validates grade consistency.
- * - ValidateGradeConsistencyInput - The input type for the validateGradeConsistency function.
- * - ValidateGradeConsistencyOutput - The return type for the validateGradeConsistency function.
+ * - validateGradeConsistency - 등급 일관성을 검증하는 함수.
+ * - ValidateGradeConsistencyInput - validateGradeConsistency 함수의 입력 타입.
+ * - ValidateGradeConsistencyOutput - validateGradeConsistency 함수의 반환 타입.
  */
 
 import {ai} from '@/ai/genkit';
@@ -15,12 +15,12 @@ const ValidateGradeConsistencyInputSchema = z.object({
   gradeData: z
     .string()
     .describe(
-      'A string containing grade distributions for different teams and departments in the organization.'
+      '조직 내 여러 팀과 부서의 등급 분포를 담고 있는 문자열.'
     ),
   expectedDistribution: z
     .string()
     .describe(
-      'A string describing the expected grade distribution across the organization. For example: Most employees should receive a B or B+ grade, with fewer employees receiving S or D grades.'
+      '조직 전체의 예상 등급 분포를 설명하는 문자열. 예: 대부분의 직원은 B 또는 B+ 등급을 받아야 하며, S 또는 D 등급을 받는 직원은 소수여야 합니다.'
     ),
 });
 
@@ -32,7 +32,7 @@ const ValidateGradeConsistencyOutputSchema = z.object({
   consistencyReport: z
     .string()
     .describe(
-      'A report indicating whether the grade distributions are consistent with the expected distribution, and highlighting any potential inconsistencies or biases.'
+      '등급 분포가 예상 분포와 일치하는지 여부를 나타내고, 잠재적인 불일치나 편향을 강조하는 보고서.'
     ),
 });
 
@@ -50,13 +50,13 @@ const prompt = ai.definePrompt({
   name: 'validateGradeConsistencyPrompt',
   input: {schema: ValidateGradeConsistencyInputSchema},
   output: {schema: ValidateGradeConsistencyOutputSchema},
-  prompt: `You are an HR analyst tasked with validating grade consistency across different teams and departments.
+  prompt: `당신은 여러 팀과 부서에 걸쳐 등급의 일관성을 검증하는 임무를 맡은 HR 분석가입니다.
 
-  Analyze the provided grade data and determine if the distributions are consistent with the expected distribution.
-  Highlight any potential inconsistencies or biases in your report.
+  제공된 등급 데이터를 분석하여 분포가 예상 분포와 일치하는지 확인하십시오.
+  보고서에 잠재적인 불일치나 편향이 있다면 강조해서 표시해주세요.
 
-  Grade Data: {{{gradeData}}}
-  Expected Distribution: {{{expectedDistribution}}}
+  등급 데이터: {{{gradeData}}}
+  예상 분포: {{{expectedDistribution}}}
   `,
 });
 
