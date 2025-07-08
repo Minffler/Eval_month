@@ -19,6 +19,7 @@ export type Employee = {
   company: Company; // 회사
   department: string; // 소속부서
   title: string; // 직책
+  position: string; // 호칭
   growthLevel: string; // 성장레벨
   deductionHours: {
     attendance: number; // 차감시간(근태)
@@ -28,6 +29,7 @@ export type Employee = {
   workRate: number; // 근무율
   group: string; // 그룹구분
   evaluatorId: string;
+  baseAmount: number; // 개인별 기준금액
 };
 
 export type Grade = 'S' | 'A+' | 'A' | 'B+' | 'B' | 'B-' | 'BC' | 'C-' | 'D' | null;
@@ -57,7 +59,6 @@ export type EvaluationGroup = {
 export type EvaluationResult = Employee & {
   grade: Grade;
   score: number;
-  baseAmount: number; // 기준금액
   gradeAmount: number; // 등급금액
   finalAmount: number; // 최종금액
   evaluatorName: string;

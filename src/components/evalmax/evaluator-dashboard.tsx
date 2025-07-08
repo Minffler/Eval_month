@@ -6,11 +6,10 @@ import {
   mockEvaluationGroups,
   mockEmployees,
   gradingScale,
-  baseCompensationAmount,
   calculateFinalAmount,
   mockEvaluations,
 } from '@/lib/data';
-import type { EvaluationGroup, EvaluationResult, Grade } from '@/lib/types';
+import type { EvaluationResult, Grade } from '@/lib/types';
 import {
   Table,
   TableBody,
@@ -26,13 +25,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { GradeHistogram } from './grade-histogram';
 import { useToast } from '@/hooks/use-toast';
-import { AlertCircle, Check, Users } from 'lucide-react';
+import { AlertCircle, Check } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
+import { Progress } from '../ui/progress';
 
 export default function EvaluatorDashboard() {
   const { user } = useAuth();
@@ -63,7 +62,7 @@ export default function EvaluatorDashboard() {
       return {
         ...group,
         memberCount: group.memberIds.length,
-        completedCount: group.memberIds.filter(id => evaluations[id] !== null).length,
+        completedCount: group.memberIds.filter(id => !!evaluations[id]).length,
         currentScore,
         remainingScore: group.totalScore - currentScore,
         isOverScore: currentScore > group.totalScore,
@@ -90,7 +89,7 @@ export default function EvaluatorDashboard() {
     });
   };
 
-  const getGroupMembers = (groupId: string): EvaluationResult[] => {
+  const getGroupMembers = (groupId: string): (EvaluationResult & {payoutRate: number})[] => {
     const group = evaluatorGroups.find(g => g.id === groupId);
     if (!group) return [];
     return group.memberIds.map(id => {
@@ -98,31 +97,36 @@ export default function EvaluatorDashboard() {
       const grade = evaluations[id] || null;
       const score = grade ? gradingScale[grade].score : 0;
       const payoutRate = grade ? gradingScale[grade].payoutRate : 0;
-      const gradeAmount = baseCompensationAmount * payoutRate;
+      const gradeAmount = employee.baseAmount * payoutRate;
       const finalAmount = calculateFinalAmount(gradeAmount, employee.workRate);
       
       return {
         ...employee,
         grade,
         score,
-        baseAmount: baseCompensationAmount,
         gradeAmount,
         finalAmount,
         evaluatorName: user?.name || 'N/A',
-        detailedGroup1: '', // These are not needed here
+        detailedGroup1: '',
         detailedGroup2: '',
+        payoutRate,
       }
     });
   };
   
-  const assignedEmployeesCount = evaluatorGroups.reduce((acc, g) => acc + g.memberIds.length, 0);
+  const myEmployeesIds = React.useMemo(() => {
+    return evaluatorGroups.flatMap(g => g.memberIds)
+  }, [evaluatorGroups]);
 
   const gradeDistribution = Object.keys(gradingScale)
     .map(grade => ({
       name: grade,
-      value: Object.values(evaluations).filter(g => g === grade).length,
-    }))
-    .filter(item => item.value > 0);
+      value: Object.entries(evaluations).filter(([empId, g]) => myEmployeesIds.includes(empId) && g === grade).length,
+    }));
+    
+  const totalMyEmployees = summary.reduce((acc, s) => acc + s.memberCount, 0);
+  const totalMyCompleted = summary.reduce((acc, s) => acc + s.completedCount, 0);
+  const totalCompletionRate = totalMyEmployees > 0 ? (totalMyCompleted / totalMyEmployees) * 100 : 0;
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(value);
@@ -136,42 +140,53 @@ export default function EvaluatorDashboard() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="font-headline flex items-center gap-2"><Users />평가 진행 현황</CardTitle>
+          <CardTitle className="font-headline flex items-center gap-2">평가 진행 현황</CardTitle>
+          <CardDescription>25년 7월 성과평가 (8월 급여반영)</CardDescription>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>그룹</TableHead>
-                <TableHead>인원</TableHead>
-                <TableHead>완료</TableHead>
-                <TableHead>총점</TableHead>
-                <TableHead>현재 점수</TableHead>
-                <TableHead>잔여 점수</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {summary.map(s => (
-                <TableRow key={s.id} className={s.isOverScore ? 'bg-destructive/10' : ''}>
-                  <TableCell className="font-medium">{s.name}</TableCell>
-                  <TableCell>{s.memberCount}</TableCell>
-                  <TableCell>{s.completedCount}</TableCell>
-                  <TableCell>{s.totalScore}</TableCell>
-                  <TableCell className={s.isOverScore ? 'font-bold text-destructive' : ''}>{s.currentScore}</TableCell>
-                  <TableCell className={s.isOverScore ? 'font-bold text-destructive' : ''}>{s.remainingScore}</TableCell>
+        <CardContent className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+          <div className="lg:col-span-2 space-y-4">
+              <div className='space-y-2'>
+                <div className='flex justify-between items-baseline'>
+                    <h4 className="font-semibold">종합 진행률</h4>
+                    <span className="font-bold text-lg text-primary">{totalCompletionRate.toFixed(1)}%</span>
+                </div>
+                <Progress value={totalCompletionRate} />
+                <p className="text-sm text-muted-foreground text-right">{totalMyCompleted} / {totalMyEmployees} 명 완료</p>
+              </div>
+
+            <Table>
+                <TableHeader>
+                <TableRow>
+                    <TableHead>그룹</TableHead>
+                    <TableHead>완료/전체</TableHead>
+                    <TableHead>현재/총점</TableHead>
+                    <TableHead>잔여 점수</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          {isSaveDisabled && (
-            <Alert variant="destructive" className="mt-4">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>총점 초과</AlertTitle>
-              <AlertDescription>
-                "현재 점수"가 모든 그룹의 "총점"보다 낮거나 같아야 저장할 수 있습니다.
-              </AlertDescription>
-            </Alert>
-          )}
+                </TableHeader>
+                <TableBody>
+                {summary.map(s => (
+                    <TableRow key={s.id} className={s.isOverScore ? 'bg-destructive/10' : ''}>
+                    <TableCell className="font-medium">{s.name}</TableCell>
+                    <TableCell>{s.completedCount}/{s.memberCount}</TableCell>
+                    <TableCell className={s.isOverScore ? 'font-bold text-destructive' : ''}>{s.currentScore}/{s.totalScore}</TableCell>
+                    <TableCell className={s.isOverScore ? 'font-bold text-destructive' : ''}>{s.remainingScore}</TableCell>
+                    </TableRow>
+                ))}
+                </TableBody>
+            </Table>
+            {isSaveDisabled && (
+                <Alert variant="destructive" className="mt-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>총점 초과</AlertTitle>
+                <AlertDescription>
+                    "현재 점수"가 모든 그룹의 "총점"보다 낮거나 같아야 저장할 수 있습니다.
+                </AlertDescription>
+                </Alert>
+            )}
+          </div>
+          <div className="lg:col-span-3">
+             <GradeHistogram data={gradeDistribution} title="나의 등급 분포" />
+          </div>
         </CardContent>
       </Card>
 
@@ -216,8 +231,7 @@ export default function EvaluatorDashboard() {
                  </Card>
             ))}
           </div>
-          <div className="space-y-6">
-            <GradeHistogram data={gradeDistribution} title="나의 등급 분포" />
+          <div className="space-y-6 pt-10">
             <Button onClick={handleSave} disabled={isSaveDisabled} className="w-full" size="lg">
                 <Check className="mr-2"/> 모든 평가 저장
             </Button>

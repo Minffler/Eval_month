@@ -1,9 +1,10 @@
 'use client';
 
+import * as React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StatsCard } from './stats-card';
-import { Users, FileCheck, AlertTriangle, CheckCircle, BarChart3, Bot, Upload } from 'lucide-react';
-import { getFullEvaluationResults, gradingScale } from '@/lib/data';
+import { Users, FileCheck, AlertTriangle, CheckCircle, BarChart3, Bot, Upload, LayoutDashboard } from 'lucide-react';
+import { getFullEvaluationResults, gradingScale, calculateFinalAmount } from '@/lib/data';
 import { GradeHistogram } from './grade-histogram';
 import {
   Table,
@@ -16,21 +17,60 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { ConsistencyValidator } from './consistency-validator';
 import ManageData from './manage-data';
+import type { EvaluationResult } from '@/lib/types';
+import { Input } from '../ui/input';
+import { Button } from '../ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 export default function AdminDashboard() {
-  const allResults = getFullEvaluationResults();
-  const totalEmployees = allResults.length;
-  const completedEvaluations = allResults.filter(r => r.grade !== null).length;
+  const [results, setResults] = React.useState<EvaluationResult[]>([]);
+  const { toast } = useToast();
+
+  React.useEffect(() => {
+    setResults(getFullEvaluationResults());
+  }, []);
+  
+  const totalEmployees = results.length;
+  const completedEvaluations = results.filter(r => r.grade !== null).length;
   const completionRate = totalEmployees > 0 ? (completedEvaluations / totalEmployees) * 100 : 0;
   const missingEvaluations = totalEmployees - completedEvaluations;
 
   const gradeDistribution = Object.keys(gradingScale).map(grade => ({
     name: grade,
-    value: allResults.filter(r => r.grade === grade).length,
+    value: results.filter(r => r.grade === grade).length,
   }));
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(value);
+  }
+
+  const handleBaseAmountChange = (employeeId: string, newAmountStr: string) => {
+    const newAmount = Number(newAmountStr);
+    if (isNaN(newAmount)) return;
+
+    setResults(prevResults => prevResults.map(r => {
+      if (r.id === employeeId) {
+        const payoutRate = r.grade ? gradingScale[r.grade].payoutRate : 0;
+        const newGradeAmount = newAmount * payoutRate;
+        const newFinalAmount = calculateFinalAmount(newGradeAmount, r.workRate);
+        return { 
+          ...r, 
+          baseAmount: newAmount,
+          gradeAmount: newGradeAmount,
+          finalAmount: newFinalAmount,
+        };
+      }
+      return r;
+    }));
+  };
+  
+  const handleSaveChanges = () => {
+    // In a real app, you would send this data to a server.
+    console.log("Saving updated results:", results);
+    toast({
+      title: "변경사항 저장됨",
+      description: "기준금액 변경사항이 성공적으로 저장되었습니다."
+    })
   }
 
   return (
@@ -39,7 +79,7 @@ export default function AdminDashboard() {
       <Tabs defaultValue="overview">
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview">
-            <LayoutDashboardIcon className="mr-2 h-4 w-4" /> 개요
+            <LayoutDashboard className="mr-2 h-4 w-4" /> 개요
           </TabsTrigger>
           <TabsTrigger value="distributions">
             <BarChart3 className="mr-2 h-4 w-4" /> 등급 분포
@@ -76,7 +116,7 @@ export default function AdminDashboard() {
             />
             <StatsCard
               title="총 지급액"
-              value={formatCurrency(allResults.reduce((acc, r) => acc + r.finalAmount, 0))}
+              value={formatCurrency(results.reduce((acc, r) => acc + r.finalAmount, 0))}
               description="예상 총 성과급 지급액"
               icon={<FileCheck className="h-4 w-4" />}
             />
@@ -93,27 +133,37 @@ export default function AdminDashboard() {
               <TableRow>
                 <TableHead>이름</TableHead>
                 <TableHead>부서</TableHead>
-                <TableHead>회사</TableHead>
-                <TableHead>근무율</TableHead>
                 <TableHead>등급</TableHead>
                 <TableHead>점수</TableHead>
+                <TableHead>개인별 기준금액</TableHead>
+                <TableHead>등급금액</TableHead>
                 <TableHead className="text-right">최종 지급액</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {allResults.map(r => (
+              {results.map(r => (
                 <TableRow key={r.id}>
                   <TableCell className="font-medium">{r.name}</TableCell>
                   <TableCell>{r.department}</TableCell>
-                  <TableCell>{r.company}</TableCell>
-                  <TableCell>{(r.workRate * 100).toFixed(1)}%</TableCell>
                   <TableCell><Badge variant={r.grade && r.grade.startsWith('S') || r.grade?.startsWith('A') ? 'default' : 'secondary'}>{r.grade || 'N/A'}</Badge></TableCell>
                   <TableCell>{r.score}</TableCell>
+                  <TableCell>
+                    <Input 
+                      type="number"
+                      value={r.baseAmount}
+                      onChange={(e) => handleBaseAmountChange(r.id, e.target.value)}
+                      className="w-32"
+                    />
+                  </TableCell>
+                  <TableCell>{formatCurrency(r.gradeAmount)}</TableCell>
                   <TableCell className="text-right">{formatCurrency(r.finalAmount)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
+          </div>
+          <div className="flex justify-end mt-4">
+            <Button onClick={handleSaveChanges}>변경사항 저장</Button>
           </div>
         </TabsContent>
         <TabsContent value="consistency" className="pt-4">
@@ -125,26 +175,4 @@ export default function AdminDashboard() {
       </Tabs>
     </div>
   );
-}
-
-function LayoutDashboardIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <rect width="7" height="9" x="3" y="3" rx="1" />
-      <rect width="7" height="5" x="14" y="3" rx="1" />
-      <rect width="7"height="9" x="14" y="12" rx="1" />
-      <rect width="7" height="5" x="3" y="16" rx="1" />
-    </svg>
-  )
 }

@@ -73,8 +73,8 @@ export default function EmployeeDashboard() {
           <div>
             <h3 className="font-semibold font-headline mb-4">보상 내역</h3>
             <div className="space-y-2 text-sm">
-                <CalculationRow label="기준 금액 (B등급)" value={formatCurrency(result.baseAmount)} />
-                <CalculationRow label={`내 지급률 (${result.grade} 등급)`} value={`${result.score}%`} />
+                <CalculationRow label="개인별 기준금액" value={formatCurrency(result.baseAmount)} />
+                <CalculationRow label={`내 지급률 (${result.grade} 등급)`} value={`${result.payoutRate * 100}%`} />
                 <CalculationRow label="산출 등급 금액" value={formatCurrency(result.gradeAmount)} isSubtotal/>
                 <CalculationRow label={`근무율 조정`} value={`x ${(result.workRate).toFixed(2)}`} />
             </div>

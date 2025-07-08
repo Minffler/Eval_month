@@ -6,12 +6,11 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, Save } from 'lucide-react';
-import { baseCompensationAmount } from '@/lib/data';
+import { Download } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 export default function ManageData() {
   const { toast } = useToast();
-  const [baseAmount, setBaseAmount] = React.useState(baseCompensationAmount);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -24,12 +23,16 @@ export default function ManageData() {
     }
   };
 
-  const handleSaveSettings = () => {
-    toast({
-      title: '설정 저장됨',
-      description: `기준 금액이 ${new Intl.NumberFormat('ko-KR').format(baseAmount)}원으로 업데이트되었습니다.`,
-    });
-    // 여기에 기준 금액 저장 로직을 추가할 수 있습니다.
+  const handleDownloadTemplate = () => {
+    const headers = [
+      '고유사번', '사번', '이름', '회사', '소속부서', '호칭', '직책', '성장레벨', 
+      '실근무율', '평가그룹', '세부구분1', '세부구분2', '평가자사번', '평가자이름', 
+      '개인별 기준금액'
+    ];
+    const worksheet = XLSX.utils.aoa_to_sheet([headers]);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, '평가대상자 양식');
+    XLSX.writeFile(workbook, 'evaluation_template.xlsx');
   };
 
   return (
@@ -38,45 +41,22 @@ export default function ManageData() {
         <CardHeader>
           <CardTitle className="font-headline">평가 대상자 데이터 관리</CardTitle>
           <CardDescription>
-            엑셀 파일을 업로드하여 평가 대상자 정보를 업데이트하세요.
+            엑셀 파일을 업로드하여 평가 대상자 정보를 업데이트하세요. 양식에 맞는 파일을 사용해주세요.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
           <div className="grid w-full max-w-sm items-center gap-1.5">
             <Label htmlFor="employee-data">엑셀 파일 업로드</Label>
             <Input id="employee-data" type="file" accept=".xlsx, .xls, .csv" onChange={handleFileUpload} />
           </div>
+           <Button onClick={handleDownloadTemplate} variant="outline" className="w-full sm:w-auto sm:mt-auto">
+            <Download className="mr-2 h-4 w-4" /> 양식 다운로드
+          </Button>
         </CardContent>
         <CardFooter>
             <p className="text-sm text-muted-foreground">
-                양식에 맞는 엑셀 파일을 업로드해주세요. 기존 데이터는 덮어쓰여집니다.
+                기존 데이터는 덮어쓰여집니다.
             </p>
-        </CardFooter>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="font-headline">기준 금액 관리</CardTitle>
-          <CardDescription>
-            B등급을 기준으로 하는 월별 성과급 기준 금액을 설정하세요.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-           <div className="space-y-2">
-            <Label htmlFor="base-amount">기준 금액 (원)</Label>
-            <Input 
-              id="base-amount" 
-              type="number" 
-              value={baseAmount}
-              onChange={(e) => setBaseAmount(Number(e.target.value))}
-              placeholder="예: 5000000"
-            />
-          </div>
-        </CardContent>
-        <CardFooter>
-          <Button onClick={handleSaveSettings}>
-            <Save className="mr-2 h-4 w-4" /> 저장하기
-          </Button>
         </CardFooter>
       </Card>
     </div>
