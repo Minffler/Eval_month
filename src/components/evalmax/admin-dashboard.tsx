@@ -316,7 +316,7 @@ export default function AdminDashboard({
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, '평가결과');
-    XLSX.writeFile(workbook, `evalmax_${selectedDate.year}_${selectedDate.month}_결과.xlsx`);
+    XLSX.writeFile(workbook, `PL월성과평가_${selectedDate.year}_${selectedDate.month}_결과.xlsx`);
   };
 
   return (

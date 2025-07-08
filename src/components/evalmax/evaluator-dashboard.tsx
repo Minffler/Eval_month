@@ -395,7 +395,7 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, `평가결과-${activeTab}`);
-    XLSX.writeFile(workbook, `evalmax_${selectedDate.year}_${selectedDate.month}_평가자결과.xlsx`);
+    XLSX.writeFile(workbook, `PL월성과평가_${selectedDate.year}_${selectedDate.month}_평가자결과.xlsx`);
   };
 
   if (!user) return <div>로딩중...</div>;

@@ -4,7 +4,7 @@ import { AuthProvider } from '@/contexts/auth-context';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'EvalMax - 월간 성과 평가 시스템',
+  title: 'PL월성과평가',
   description: '월간 성과 및 평가 시스템',
 };
 

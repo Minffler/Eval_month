@@ -24,7 +24,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   React.useEffect(() => {
     try {
-      const storedUser = localStorage.getItem('evalmax-user');
+      const storedUser = localStorage.getItem('pl-eval-user');
       if (storedUser) {
         const parsedUser: User = JSON.parse(storedUser);
         setUser(parsedUser);
@@ -32,7 +32,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (error) {
       console.error('Failed to parse user from localStorage', error);
-      localStorage.removeItem('evalmax-user');
+      localStorage.removeItem('pl-eval-user');
     } finally {
       setLoading(false);
     }
@@ -50,7 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setUser(foundUser);
       setRole(foundUser.roles[0]);
-      localStorage.setItem('evalmax-user', JSON.stringify(foundUser));
+      localStorage.setItem('pl-eval-user', JSON.stringify(foundUser));
       // No need to push, the page component will react to the state change
       return true;
     },
@@ -60,7 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = React.useCallback(() => {
     setUser(null);
     setRole(null);
-    localStorage.removeItem('evalmax-user');
+    localStorage.removeItem('pl-eval-user');
     router.push('/login');
   }, [router]);
 
