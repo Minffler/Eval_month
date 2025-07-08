@@ -114,7 +114,7 @@ const DraggableTableRow = ({ employee, gradingScale, selected, onSelect, onGrade
             <TableCell className="whitespace-nowrap py-1 px-2">{(employee.workRate * 100).toFixed(1)}%</TableCell>
             <TableCell className="whitespace-nowrap py-1 px-2">
                 <Select value={employee.grade || ''} onValueChange={(g: Grade) => onGradeChange(employee.id, g)}>
-                    <SelectTrigger className="w-[90px] h-8">
+                    <SelectTrigger className="w-[80px] h-8">
                         <SelectValue placeholder="등급 선택" />
                     </SelectTrigger>
                     <SelectContent>
@@ -130,7 +130,6 @@ const DraggableTableRow = ({ employee, gradingScale, selected, onSelect, onGrade
                     value={employee.memo || ''}
                     onChange={(e) => onMemoChange(employee.id, e.target.value)}
                     onBlur={onSave}
-                    placeholder="메모 입력"
                     className="h-8"
                 />
             </TableCell>
@@ -225,28 +224,32 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
   }
   
   const flattenGroupsToResults = (): EvaluationResult[] => {
-      const allGroupMembers = Object.values(groups).flatMap(group => 
-          group.members.map(member => ({...member, detailedGroup2: group.name}))
-      );
-
-      const allMemberIds = new Set(allGroupMembers.map(m => m.id));
-      const myEmployeeIds = new Set(myEmployees.map(e => e.id));
+    const allGroupMembers = Object.values(groups).flatMap(group => 
+        group.members.map(member => ({ ...member, detailedGroup2: group.name }))
+    );
+  
+    const myEmployeeIds = new Set(myEmployees.map(e => e.id));
+    
+    // Create a map for quick lookups of updated members
+    const updatedMemberMap = new Map(allGroupMembers.map(m => [m.id, m]));
+  
+    const updatedResultsInScope = allResults.map(res => {
+      // If the result is not for one of my employees, return it as is.
+      if (!myEmployeeIds.has(res.id)) return res;
       
-      const updatedResultsInScope = allResults.map(res => {
-          if (!myEmployeeIds.has(res.id)) return res;
-          const updatedMember = allGroupMembers.find(m => m.id === res.id);
-          if (updatedMember) {
-              return updatedMember;
-          }
-           // If member was in visibleEmployees but not in any group (e.g. newly added)
-          const originalVisibleEmployee = visibleEmployees.find(e => e.id === res.id);
-          if (originalVisibleEmployee && !allMemberIds.has(res.id)) {
-              return originalVisibleEmployee;
-          }
-          return res;
-      });
-
-      return updatedResultsInScope;
+      // If it is one of my employees, check if it has been updated.
+      const updatedMember = updatedMemberMap.get(res.id);
+      if (updatedMember) {
+        return updatedMember;
+      }
+      
+      // If an employee was in the original `myEmployees` but is no longer in any group,
+      // it means they were filtered out by the activeTab, but we should preserve their original data
+      // when merging back. So we return original `res`.
+      return res;
+    });
+  
+    return updatedResultsInScope;
   };
   
   const handleSave = () => {
@@ -409,13 +412,15 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
       onDragEnd={handleDragEnd}
     >
       <div className="space-y-4">
+        {!evaluatorUser && (
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-bold tracking-tight">평가 허브</h2>
-          {!evaluatorUser && <MonthSelector selectedDate={selectedDate} onDateChange={setSelectedDate} />}
+          <MonthSelector selectedDate={selectedDate} onDateChange={setSelectedDate} />
         </div>
+        )}
 
         <Card>
-          <CardHeader className="flex flex-col sm:flex-row justify-between sm:items-start gap-4">
+           <CardHeader className="flex flex-col sm:flex-row justify-between sm:items-start gap-4 p-4">
               <div>
                   <CardTitle className="flex items-center gap-2">평가 진행 현황</CardTitle>
                   <CardDescription>{selectedDate.year}년 {selectedDate.month}월 성과평가 ({(selectedDate.month % 12) + 1}월 급여반영)</CardDescription>
@@ -429,7 +434,7 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
                   <p className="text-xs text-muted-foreground text-right">{totalMyCompleted} / {totalMyEmployees} 명 완료</p>
               </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className='p-4 pt-0'>
             <GradeHistogram data={gradeDistribution} gradingScale={gradingScale} title={`${activeTab} 등급 분포`} />
           </CardContent>
         </Card>
@@ -442,13 +447,13 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
           </TabsList>
 
           <div className="flex justify-end my-4">
-              <Button onClick={handleDownloadExcel} variant="outline">
+              <Button onClick={handleDownloadExcel} variant="outline" size="sm">
                 <Download className="mr-2 h-4 w-4" />
                 현재 탭 엑셀 다운로드
               </Button>
           </div>
 
-          <TabsContent value={activeTab} className="pt-4">
+          <TabsContent value={activeTab} className="pt-0">
             {Object.keys(groups).length > 0 ? Object.entries(groups).map(([groupKey, group]) => {
                 const availableScore = group.members.length * 100;
                 const usedScore = group.members.reduce((acc, curr) => acc + (curr.score || 0), 0);

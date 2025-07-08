@@ -211,7 +211,7 @@ export default function AdminDashboard({
   };
 
   const handleOpenNotificationDialog = () => {
-    setNotificationMessage(`<평가년월> 평가가 얼마 남지 않았습니다. 현재 진행률은 <%>입니다. 조속한 평가 진행 부탁드립니다.`);
+    setNotificationMessage(`<평가년월> 평가 마감 3일 전입니다. (현재 진행률 <%>`);
     setIsNotificationDialogOpen(true);
   };
   
@@ -350,7 +350,7 @@ export default function AdminDashboard({
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-4 pt-4">
-          <GradeHistogram data={overallGradeDistribution} gradingScale={gradingScale} title="전체 등급 분포" />
+          <GradeHistogram data={overallGradeDistribution} gradingScale={gradingScale} />
           <Card>
             <CardHeader>
               <CardTitle>평가자별 진행 현황</CardTitle>
@@ -496,7 +496,7 @@ export default function AdminDashboard({
                       <TableCell className="whitespace-nowrap py-1 px-2">{r.score}</TableCell>
                       <TableCell className="whitespace-nowrap py-1 px-2">
                         <Select value={r.grade || ''} onValueChange={(g) => handleGradeChange(r.id, g)}>
-                            <SelectTrigger className="w-[90px] h-8">
+                            <SelectTrigger className="w-[80px] h-8">
                                 <SelectValue placeholder="선택" />
                             </SelectTrigger>
                             <SelectContent>
@@ -521,7 +521,6 @@ export default function AdminDashboard({
                         <Input
                           defaultValue={r.memo || ''}
                           onBlur={(e) => handleMemoChange(r.id, e.target.value)}
-                          placeholder="비고 입력"
                           className="w-full h-8"
                         />
                       </TableCell>
@@ -535,7 +534,7 @@ export default function AdminDashboard({
         </TabsContent>
         <TabsContent value="evaluator-view" className="pt-4 space-y-4">
             <Card>
-                <CardHeader className="flex flex-col sm:flex-row items-center justify-between">
+                <CardHeader className="flex flex-col sm:flex-row items-center justify-between p-4">
                     <div>
                         <CardTitle>평가자별 현황 보기</CardTitle>
                         <CardDescription>특정 평가자의 대시보드를 확인합니다.</CardDescription>
@@ -547,7 +546,7 @@ export default function AdminDashboard({
                         <SelectContent>
                             {evaluatorStats.map(stat => (
                                 <SelectItem key={stat.evaluatorId} value={stat.evaluatorId}>
-                                    {stat.evaluatorName} {stat.evaluatorUniqueId}
+                                    {stat.evaluatorUniqueId} {stat.evaluatorName}
                                 </SelectItem>
                             ))}
                         </SelectContent>
@@ -608,5 +607,3 @@ export default function AdminDashboard({
     </div>
   );
 }
-
-    
