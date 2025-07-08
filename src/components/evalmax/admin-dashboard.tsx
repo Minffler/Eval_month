@@ -316,9 +316,9 @@ export default function AdminDashboard({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h2 className="text-3xl font-bold tracking-tight">관리자 개요</h2>
+        <h2 className="text-2xl font-bold tracking-tight">관리자 개요</h2>
         <div className="flex flex-wrap items-center gap-2">
           <MonthSelector selectedDate={selectedDate} onDateChange={setSelectedDate} />
         </div>
@@ -345,7 +345,7 @@ export default function AdminDashboard({
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="dashboard" className="space-y-6 pt-6">
+        <TabsContent value="dashboard" className="space-y-4 pt-4">
           <GradeHistogram data={overallGradeDistribution} gradingScale={gradingScale} title="전체 등급 분포" />
           <Card>
             <CardHeader>
@@ -399,6 +399,7 @@ export default function AdminDashboard({
                 <Button
                   variant="outline"
                   onClick={handleSelectIncompleteEvaluators}
+                  size="sm"
                 >
                   <ClipboardX className="mr-2 h-4 w-4" />
                   미완료 평가자 선택
@@ -406,6 +407,7 @@ export default function AdminDashboard({
                 <Button
                   disabled={selectedEvaluators.size === 0}
                   onClick={handleOpenNotificationDialog}
+                  size="sm"
                 >
                   <Bell className="mr-2 h-4 w-4" />
                   선택된 평가자에게 알림 발송
@@ -484,7 +486,7 @@ export default function AdminDashboard({
                       <TableCell className="whitespace-nowrap">{r.score}</TableCell>
                       <TableCell className="whitespace-nowrap">
                         <Select value={r.grade || ''} onValueChange={(g) => handleGradeChange(r.id, g)}>
-                            <SelectTrigger className="w-[100px]">
+                            <SelectTrigger className="w-[100px] h-8">
                                 <SelectValue placeholder="선택" />
                             </SelectTrigger>
                             <SelectContent>
@@ -499,7 +501,7 @@ export default function AdminDashboard({
                           type="text"
                           defaultValue={formatCurrency(r.baseAmount)}
                           onBlur={(e) => handleBaseAmountChange(r.id, e.target.value)}
-                          className="w-32 text-right"
+                          className="w-28 text-right h-8"
                         />
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-right">{formatCurrency(r.gradeAmount)}</TableCell>
@@ -510,7 +512,7 @@ export default function AdminDashboard({
                           defaultValue={r.memo || ''}
                           onBlur={(e) => handleMemoChange(r.id, e.target.value)}
                           placeholder="비고 입력"
-                          className="w-full"
+                          className="w-full h-8"
                         />
                       </TableCell>
                     </TableRow>
@@ -521,7 +523,7 @@ export default function AdminDashboard({
             </div>
           </Tabs>
         </TabsContent>
-        <TabsContent value="evaluator-view" className="pt-6 space-y-4">
+        <TabsContent value="evaluator-view" className="pt-4 space-y-4">
             <Card>
                 <CardHeader>
                     <CardTitle>평가자별 현황 보기</CardTitle>

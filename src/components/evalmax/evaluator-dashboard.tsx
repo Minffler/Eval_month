@@ -96,25 +96,25 @@ const DraggableTableRow = ({ employee, gradingScale, selected, onSelect, onGrade
 
     return (
         <TableRow ref={setNodeRef} style={style} data-state={selected ? "selected" : "unselected"} className={cn(isBulkDrag && "opacity-50")}>
-            <TableCell className="py-2 px-2 w-[80px]">
+            <TableCell className="p-1 w-[80px]">
                 <div className='flex items-center gap-1'>
                   <Checkbox
                       checked={selected}
                       onCheckedChange={(checked) => onSelect(employee.id, Boolean(checked))}
                       aria-label={`Select ${employee.name}`}
                   />
-                  <Button variant="ghost" size="icon" className="cursor-grab" {...attributes} {...listeners}>
+                  <Button variant="ghost" size="icon" className="cursor-grab h-8 w-8" {...attributes} {...listeners}>
                       <GripVertical className="h-4 w-4" />
                   </Button>
                 </div>
             </TableCell>
-            <TableCell className="whitespace-nowrap py-2">{employee.uniqueId}</TableCell>
-            <TableCell className="whitespace-nowrap py-2">{employee.company}</TableCell>
-            <TableCell className="font-medium whitespace-nowrap py-2">{employee.name}</TableCell>
-            <TableCell className="whitespace-nowrap py-2">{(employee.workRate * 100).toFixed(1)}%</TableCell>
-            <TableCell className="whitespace-nowrap py-2">
+            <TableCell className="whitespace-nowrap py-1 px-2">{employee.uniqueId}</TableCell>
+            <TableCell className="whitespace-nowrap py-1 px-2">{employee.company}</TableCell>
+            <TableCell className="font-medium whitespace-nowrap py-1 px-2">{employee.name}</TableCell>
+            <TableCell className="whitespace-nowrap py-1 px-2">{(employee.workRate * 100).toFixed(1)}%</TableCell>
+            <TableCell className="whitespace-nowrap py-1 px-2">
                 <Select value={employee.grade || ''} onValueChange={(g: Grade) => onGradeChange(employee.id, g)}>
-                    <SelectTrigger className="w-[100px] h-9">
+                    <SelectTrigger className="w-[90px] h-8">
                         <SelectValue placeholder="등급 선택" />
                     </SelectTrigger>
                     <SelectContent>
@@ -124,14 +124,14 @@ const DraggableTableRow = ({ employee, gradingScale, selected, onSelect, onGrade
                     </SelectContent>
                 </Select>
             </TableCell>
-            <TableCell className="whitespace-nowrap py-2">{employee.score}</TableCell>
-            <TableCell className="py-2">
+            <TableCell className="whitespace-nowrap py-1 px-2">{employee.score}</TableCell>
+            <TableCell className="py-1 px-2">
                 <Input
                     value={employee.memo || ''}
                     onChange={(e) => onMemoChange(employee.id, e.target.value)}
                     onBlur={onSave}
                     placeholder="메모 입력"
-                    className="h-9"
+                    className="h-8"
                 />
             </TableCell>
         </TableRow>
@@ -392,9 +392,9 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="space-y-6">
+      <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <h2 className="text-3xl font-bold tracking-tight">평가 허브</h2>
+          <h2 className="text-2xl font-bold tracking-tight">평가 허브</h2>
           {!evaluatorUser && <MonthSelector selectedDate={selectedDate} onDateChange={setSelectedDate} />}
         </div>
 
@@ -403,8 +403,8 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
             <CardTitle className="flex items-center gap-2">평가 진행 현황</CardTitle>
             <CardDescription>{selectedDate.year}년 {selectedDate.month}월 성과평가 ({(selectedDate.month % 12) + 1}월 급여반영)</CardDescription>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-            <div className="lg:col-span-2 space-y-4">
+          <CardContent className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+            <div className="lg:col-span-2 space-y-2">
                 <div className='space-y-2'>
                   <div className='flex justify-between items-baseline'>
                       <h4 className="font-semibold">종합 진행률</h4>
@@ -441,7 +441,7 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
                 const allSelected = group.members.length > 0 && group.members.every(m => selectedIds.has(m.id));
 
                 return (
-                  <Card key={groupKey} className="mb-6">
+                  <Card key={groupKey} className="mb-4">
                       <CardHeader>
                         <div className="flex justify-between items-center">
                           <div className='flex items-center gap-2'>
@@ -478,20 +478,20 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
                         <SortableContext items={group.members.map(m => m.id)} strategy={verticalListSortingStrategy}>
                           <Table>
                               <TableHeader><TableRow>
-                                  <TableHead className="py-2 px-2 w-[80px]">
+                                  <TableHead className="w-[80px]">
                                     <Checkbox 
                                       checked={allSelected}
                                       onCheckedChange={(checked) => handleToggleGroupSelection(group, Boolean(checked))}
                                       aria-label={`Select all in ${group.name}`}
                                     />
                                   </TableHead>
-                                  <TableHead className="whitespace-nowrap py-2">고유사번</TableHead>
-                                  <TableHead className="whitespace-nowrap py-2">회사</TableHead>
-                                  <TableHead className="whitespace-nowrap py-2">이름</TableHead>
-                                  <TableHead className="whitespace-nowrap py-2">근무율</TableHead>
-                                  <TableHead className="whitespace-nowrap py-2">등급</TableHead>
-                                  <TableHead className="whitespace-nowrap py-2">점수</TableHead>
-                                  <TableHead className="whitespace-nowrap w-[200px] py-2">비고</TableHead>
+                                  <TableHead className="whitespace-nowrap">고유사번</TableHead>
+                                  <TableHead className="whitespace-nowrap">회사</TableHead>
+                                  <TableHead className="whitespace-nowrap">이름</TableHead>
+                                  <TableHead className="whitespace-nowrap">근무율</TableHead>
+                                  <TableHead className="whitespace-nowrap">등급</TableHead>
+                                  <TableHead className="whitespace-nowrap">점수</TableHead>
+                                  <TableHead className="whitespace-nowrap w-[200px]">비고</TableHead>
                               </TableRow></TableHeader>
                               <TableBody>
                                   {group.members.map(emp => (
@@ -533,22 +533,22 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
             <Table className="bg-background shadow-lg relative">
                 <TableBody>
                      <TableRow>
-                        <TableCell className="py-2 px-2 w-[80px]">
+                        <TableCell className="p-1 w-[80px]">
                            <div className='flex items-center gap-1'>
                             <Checkbox checked={selectedIds.has(activeId)} readOnly />
-                            <Button variant="ghost" size="icon" className="cursor-grabbing">
+                            <Button variant="ghost" size="icon" className="cursor-grabbing h-8 w-8">
                                 <GripVertical className="h-4 w-4" />
                             </Button>
                            </div>
                            {isBulkDrag && <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">{selectedIds.size}</div>}
                         </TableCell>
-                        <TableCell className="whitespace-nowrap py-2">{activeEmployee.uniqueId}</TableCell>
-                        <TableCell className="whitespace-nowrap py-2">{activeEmployee.company}</TableCell>
-                        <TableCell className="font-medium whitespace-nowrap py-2">{activeEmployee.name}</TableCell>
-                        <TableCell className="whitespace-nowrap py-2">{(activeEmployee.workRate * 100).toFixed(1)}%</TableCell>
-                        <TableCell className="whitespace-nowrap py-2">{activeEmployee.grade}</TableCell>
-                        <TableCell className="whitespace-nowrap py-2">{activeEmployee.score}</TableCell>
-                        <TableCell className="py-2">{activeEmployee.memo}</TableCell>
+                        <TableCell className="whitespace-nowrap py-1 px-2">{activeEmployee.uniqueId}</TableCell>
+                        <TableCell className="whitespace-nowrap py-1 px-2">{activeEmployee.company}</TableCell>
+                        <TableCell className="font-medium whitespace-nowrap py-1 px-2">{activeEmployee.name}</TableCell>
+                        <TableCell className="whitespace-nowrap py-1 px-2">{(activeEmployee.workRate * 100).toFixed(1)}%</TableCell>
+                        <TableCell className="whitespace-nowrap py-1 px-2">{activeEmployee.grade}</TableCell>
+                        <TableCell className="whitespace-nowrap py-1 px-2">{activeEmployee.score}</TableCell>
+                        <TableCell className="py-1 px-2">{activeEmployee.memo}</TableCell>
                     </TableRow>
                 </TableBody>
             </Table>

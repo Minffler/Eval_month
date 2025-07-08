@@ -68,10 +68,10 @@ export function GradeHistogram({
         {description && <CardDescription>{description}</CardDescription>}
       </CardHeader>
       <CardContent className="flex-1 flex flex-col justify-center">
-        <div className="h-[250px]">
+        <div className="h-[220px]">
           <ChartContainer config={chartConfig} className="w-full h-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart accessibilityLayer data={sortedData} margin={{ top: 30, right: 10, left: 10, bottom: 20 }}>
+              <BarChart accessibilityLayer data={sortedData} margin={{ top: 20, right: 10, left: 0, bottom: 20 }}>
                 <XAxis
                   dataKey="name"
                   tickLine={false}
