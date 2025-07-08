@@ -24,7 +24,7 @@ export default function EmployeeDashboard({ allResults }: EmployeeDashboardProps
   }, [user, allResults]);
 
   const formatCurrency = (value: number) => {
-    if (isNaN(value)) return '0';
+    if (isNaN(value) || value === null) return '0';
     return new Intl.NumberFormat('ko-KR').format(value);
   }
 
@@ -88,6 +88,7 @@ export default function EmployeeDashboard({ allResults }: EmployeeDashboardProps
                 <TableHead className="whitespace-nowrap">기준금액</TableHead>
                 <TableHead className="whitespace-nowrap">등급금액</TableHead>
                 <TableHead className="whitespace-nowrap">최종금액</TableHead>
+                <TableHead className="whitespace-nowrap">비고</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -105,6 +106,7 @@ export default function EmployeeDashboard({ allResults }: EmployeeDashboardProps
                   <TableCell className="whitespace-nowrap text-right">{formatCurrency(result.baseAmount)} 원</TableCell>
                   <TableCell className="whitespace-nowrap text-right">{formatCurrency(result.gradeAmount)} 원</TableCell>
                   <TableCell className="font-bold whitespace-nowrap text-right">{formatCurrency(result.finalAmount)} 원</TableCell>
+                  <TableCell className="whitespace-nowrap">{result.memo}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

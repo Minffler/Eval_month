@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StatsCard } from './stats-card';
-import { Users, FileCheck, AlertTriangle, CheckCircle, Bot, Upload, LayoutDashboard, Settings } from 'lucide-react';
+import { Users, FileCheck, AlertTriangle, CheckCircle, Bot, Upload, LayoutDashboard, Settings, Download } from 'lucide-react';
 import { GradeHistogram } from './grade-histogram';
 import {
   Table,
@@ -29,10 +29,11 @@ import { useToast } from '@/hooks/use-toast';
 import GradeManagement from './grade-management';
 import { MonthSelector } from './month-selector';
 import { calculateFinalAmount } from '@/lib/data';
+import * as XLSX from 'xlsx';
 
 interface AdminDashboardProps {
   results: EvaluationResult[];
-  setEmployees: React.Dispatch<React.SetStateAction<Employee[]>>;
+  onEmployeeUpload: (year: number, month: number, employees: Employee[]) => void;
   gradingScale: Record<NonNullable<Grade>, GradeInfo>;
   setGradingScale: React.Dispatch<React.SetStateAction<Record<NonNullable<Grade>, GradeInfo>>>;
   selectedDate: { year: number; month: number };
@@ -42,7 +43,7 @@ interface AdminDashboardProps {
 
 export default function AdminDashboard({ 
   results: initialResults, 
-  setEmployees, 
+  onEmployeeUpload,
   gradingScale, 
   setGradingScale,
   selectedDate,
@@ -67,7 +68,7 @@ export default function AdminDashboard({
   }));
 
   const formatCurrency = (value: number) => {
-    if (isNaN(value)) return '0';
+    if (isNaN(value) || value === null) return '0';
     return new Intl.NumberFormat('ko-KR').format(value);
   }
 
@@ -84,6 +85,15 @@ export default function AdminDashboard({
       return r;
     }));
   };
+  
+  const handleMemoChange = (employeeId: string, newMemo: string) => {
+    setResults(prevResults => prevResults.map(r => {
+      if (r.id === employeeId) {
+        return { ...r, memo: newMemo };
+      }
+      return r;
+    }));
+  };
 
   const handleGradeChange = (employeeId: string, newGradeStr: string) => {
     const newGrade = newGradeStr as Grade;
@@ -91,7 +101,7 @@ export default function AdminDashboard({
       if (r.id === employeeId) {
         const gradeInfo = newGrade ? gradingScale[newGrade] : { score: 0, payoutRate: 0 };
         const payoutRate = (gradeInfo?.payoutRate || 0) / 100;
-        const gradeAmount = r.baseAmount * payoutRate;
+        const gradeAmount = (r.baseAmount || 0) * payoutRate;
         const finalAmount = calculateFinalAmount(gradeAmount, r.workRate);
         return { 
           ...r, 
@@ -110,9 +120,31 @@ export default function AdminDashboard({
     handleResultsUpdate(results);
     toast({
       title: "변경사항 저장됨",
-      description: `${selectedDate.year}년 ${selectedDate.month}월 기준금액 및 등급 변경사항이 성공적으로 저장되었습니다.`
+      description: `${selectedDate.year}년 ${selectedDate.month}월 평가 데이터가 성공적으로 저장되었습니다.`
     })
   }
+
+  const handleDownloadExcel = () => {
+    const dataToExport = results.map(r => ({
+      '고유사번': r.uniqueId,
+      '회사': r.company,
+      '소속부서': r.department,
+      '이름': r.name,
+      '직책급': r.title || r.growthLevel,
+      '근무율': `${(r.workRate * 100).toFixed(1)}%`,
+      '점수': r.score,
+      '등급': r.grade,
+      '기준금액': r.baseAmount,
+      '등급금액': r.gradeAmount,
+      '최종금액': r.finalAmount,
+      '평가자': r.evaluatorName,
+      '비고': r.memo,
+    }));
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, '평가결과');
+    XLSX.writeFile(workbook, `evalmax_${selectedDate.year}_${selectedDate.month}_결과.xlsx`);
+  };
 
   return (
     <div className="space-y-6">
@@ -168,12 +200,19 @@ export default function AdminDashboard({
           <GradeHistogram data={gradeDistribution} title="전체 등급 분포" />
         </TabsContent>
         <TabsContent value="results" className="pt-4">
+          <div className="flex justify-end mb-4">
+            <Button onClick={handleDownloadExcel} variant="outline">
+              <Download className="mr-2 h-4 w-4" />
+              엑셀 다운로드
+            </Button>
+          </div>
           <div className="border rounded-lg overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="whitespace-nowrap">고유사번</TableHead>
                 <TableHead className="whitespace-nowrap">회사</TableHead>
+                <TableHead className="whitespace-nowrap">소속부서</TableHead>
                 <TableHead className="whitespace-nowrap">이름</TableHead>
                 <TableHead className="whitespace-nowrap">직책급</TableHead>
                 <TableHead className="whitespace-nowrap">근무율</TableHead>
@@ -183,6 +222,7 @@ export default function AdminDashboard({
                 <TableHead className="whitespace-nowrap">등급금액</TableHead>
                 <TableHead className="whitespace-nowrap">최종금액</TableHead>
                 <TableHead className="whitespace-nowrap">평가자</TableHead>
+                <TableHead className="whitespace-nowrap">비고</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -190,6 +230,7 @@ export default function AdminDashboard({
                   <TableRow key={r.id}>
                     <TableCell className="whitespace-nowrap">{r.uniqueId}</TableCell>
                     <TableCell className="whitespace-nowrap">{r.company}</TableCell>
+                    <TableCell className="whitespace-nowrap">{r.department}</TableCell>
                     <TableCell className="font-medium whitespace-nowrap">{r.name}</TableCell>
                     <TableCell className="whitespace-nowrap">{r.title || r.growthLevel}</TableCell>
                     <TableCell className="whitespace-nowrap">{(r.workRate * 100).toFixed(1)}%</TableCell>
@@ -210,13 +251,28 @@ export default function AdminDashboard({
                       <Input 
                         type="text"
                         value={formatCurrency(r.baseAmount)}
-                        onChange={(e) => handleBaseAmountChange(r.id, e.target.value)}
+                        onBlur={(e) => handleBaseAmountChange(r.id, e.target.value)}
+                        onChange={(e) => {
+                           const val = e.target.value.replace(/,/g, '');
+                           if (!isNaN(Number(val))) {
+                               setResults(prev => prev.map(res => res.id === r.id ? {...res, baseAmount: Number(val)} : res))
+                           }
+                        }}
                         className="w-32 text-right"
                       />
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-right">{formatCurrency(r.gradeAmount)}</TableCell>
                     <TableCell className="whitespace-nowrap text-right">{formatCurrency(r.finalAmount)}</TableCell>
                     <TableCell className="whitespace-nowrap">{r.evaluatorName}</TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      <Input
+                        value={r.memo || ''}
+                        onChange={(e) => handleMemoChange(r.id, e.target.value)}
+                        onBlur={handleSaveChanges}
+                        placeholder="비고 입력"
+                        className="w-40"
+                      />
+                    </TableCell>
                   </TableRow>
                 )
               )}
@@ -228,7 +284,7 @@ export default function AdminDashboard({
           </div>
         </TabsContent>
         <TabsContent value="manage-data" className="pt-4">
-          <ManageData setEmployees={setEmployees} />
+          <ManageData onEmployeeUpload={onEmployeeUpload} />
         </TabsContent>
         <TabsContent value="grade-management" className="pt-4">
            <GradeManagement gradingScale={gradingScale} setGradingScale={setGradingScale} />

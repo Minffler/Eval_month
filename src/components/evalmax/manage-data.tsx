@@ -6,17 +6,22 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Download, Upload } from 'lucide-react';
+import { Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import type { Employee } from '@/lib/types';
+import type { Employee, Company } from '@/lib/types';
+import { MonthSelector } from './month-selector';
 
 interface ManageDataProps {
-  setEmployees: React.Dispatch<React.SetStateAction<Employee[]>>;
+  onEmployeeUpload: (year: number, month: number, employees: Employee[]) => void;
 }
 
-export default function ManageData({ setEmployees }: ManageDataProps) {
+export default function ManageData({ onEmployeeUpload }: ManageDataProps) {
   const { toast } = useToast();
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [selectedDate, setSelectedDate] = React.useState(() => {
+    const today = new Date();
+    return { year: today.getFullYear(), month: today.getMonth() + 1 };
+  });
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -30,39 +35,44 @@ export default function ManageData({ setEmployees }: ManageDataProps) {
           const worksheet = workbook.Sheets[sheetName];
           const json = XLSX.utils.sheet_to_json<any>(worksheet);
 
-          const newEmployees: Employee[] = json.map(row => ({
-            id: row['사번'],
-            uniqueId: row['고유사번'],
-            name: row['이름'],
-            company: row['회사'],
-            department: row['소속부서'],
-            title: row['직책'],
-            position: row['호칭'],
-            growthLevel: row['성장레벨'],
-            workRate: parseFloat(row['실근무율']) || 0,
-            group: row['평가그룹'],
-            evaluatorId: row['평가자사번'],
-            baseAmount: Number(row['개인별 기준금액']) || 0,
-            deductionHours: { attendance: 0, shortened: 0, total: 0 }, 
-          }));
+          const newEmployees: Employee[] = json.map((row, index) => {
+            const uniqueId = String(row['고유사번'] || '');
+            if (!uniqueId) {
+                throw new Error(`${index + 2}번째 행에 고유사번이 없습니다.`);
+            }
 
-          setEmployees(newEmployees);
+            return {
+              id: `E${uniqueId}`, // 사번 생성
+              uniqueId: uniqueId,
+              name: String(row['이름'] || ''),
+              company: String(row['회사'] || '') as Company,
+              department: String(row['소속부서'] || ''),
+              title: String(row['직책'] || ''),
+              position: String(row['호칭'] || ''),
+              growthLevel: String(row['성장레벨'] || ''),
+              workRate: parseFloat(String(row['실근무율'] || '0')) || 0,
+              evaluatorId: String(row['평가자사번'] || ''),
+              baseAmount: Number(String(row['기준금액'] || '0').replace(/,/g, '')) || 0,
+              group: String(row['평가그룹'] || ''),
+            };
+          });
+
+          onEmployeeUpload(selectedDate.year, selectedDate.month, newEmployees);
           toast({
             title: '파일 업로드 성공',
-            description: `${file.name} 파일의 데이터가 성공적으로 반영되었습니다.`,
+            description: `${selectedDate.year}년 ${selectedDate.month}월 데이터가 ${file.name} 파일에서 성공적으로 반영되었습니다.`,
           });
-        } catch (error) {
+        } catch (error: any) {
           console.error("Error parsing Excel file:", error);
           toast({
             variant: "destructive",
             title: '파일 처리 오류',
-            description: '엑셀 파일을 처리하는 중 오류가 발생했습니다. 파일 형식을 확인해주세요.',
+            description: error.message || '엑셀 파일을 처리하는 중 오류가 발생했습니다. 파일 형식을 확인해주세요.',
           });
         }
       };
       reader.readAsArrayBuffer(file);
     }
-    // Reset file input
     if(fileInputRef.current) {
         fileInputRef.current.value = "";
     }
@@ -70,9 +80,8 @@ export default function ManageData({ setEmployees }: ManageDataProps) {
 
   const handleDownloadTemplate = () => {
     const headers = [
-      '고유사번', '사번', '이름', '회사', '소속부서', '호칭', '직책', '성장레벨', 
-      '실근무율', '평가그룹', '세부구분1', '세부구분2', '평가자사번', '평가자이름', 
-      '개인별 기준금액'
+      '회사', '고유사번', '이름', '소속부서', '직책', '성장레벨', '호칭', 
+      '실근무율', '평가그룹', '평가자사번', '평가자이름', '기준금액'
     ];
     const worksheet = XLSX.utils.aoa_to_sheet([headers]);
     const workbook = XLSX.utils.book_new();
@@ -86,21 +95,27 @@ export default function ManageData({ setEmployees }: ManageDataProps) {
         <CardHeader>
           <CardTitle>평가 대상자 데이터 관리</CardTitle>
           <CardDescription>
-            엑셀 파일을 업로드하여 평가 대상자 정보를 업데이트하세요. 양식에 맞는 파일을 사용해주세요.
+            엑셀 파일을 업로드하여 특정 월의 평가 대상자 정보를 업데이트하세요.
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-          <div className="grid w-full max-w-sm items-center gap-1.5">
-            <Label htmlFor="employee-data">엑셀 파일 업로드</Label>
-            <Input id="employee-data" type="file" accept=".xlsx, .xls, .csv" onChange={handleFileUpload} ref={fileInputRef} />
+        <CardContent className="space-y-4">
+          <div>
+            <Label>데이터 적용 월 선택</Label>
+            <MonthSelector selectedDate={selectedDate} onDateChange={setSelectedDate} />
           </div>
-           <Button onClick={handleDownloadTemplate} variant="outline" className="w-full sm:w-auto sm:mt-auto">
-            <Download className="mr-2 h-4 w-4" /> 양식 다운로드
-          </Button>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="grid w-full max-w-sm items-center gap-1.5">
+              <Label htmlFor="employee-data">엑셀 파일 업로드</Label>
+              <Input id="employee-data" type="file" accept=".xlsx, .xls, .csv" onChange={handleFileUpload} ref={fileInputRef} />
+            </div>
+            <Button onClick={handleDownloadTemplate} variant="outline" className="w-full sm:w-auto mt-auto">
+              <Download className="mr-2 h-4 w-4" /> 양식 다운로드
+            </Button>
+          </div>
         </CardContent>
         <CardFooter>
             <p className="text-sm text-muted-foreground">
-                기존 데이터는 덮어쓰여집니다.
+                선택한 월의 기존 데이터는 덮어쓰여집니다.
             </p>
         </CardFooter>
       </Card>

@@ -56,9 +56,20 @@ export default function GradeManagement({ gradingScale, setGradingScale }: Grade
   };
 
   const handleSaveChanges = () => {
+    // Validate that there are no duplicate grade names
+    const gradeNames = localGrades.map(g => g.grade);
+    if (new Set(gradeNames).size !== gradeNames.length) {
+        toast({
+            variant: "destructive",
+            title: "오류",
+            description: "등급명은 고유해야 합니다. 중복된 등급명이 있는지 확인해주세요.",
+        });
+        return;
+    }
+
     const newGradingScale = localGrades.reduce((acc, current) => {
-        if(current.grade) {
-            acc[current.grade] = {
+        if(current.grade && current.grade.trim() !== '') {
+            acc[current.grade.trim() as NonNullable<Grade>] = {
                 score: current.score,
                 payoutRate: current.payoutRate,
                 description: current.description,

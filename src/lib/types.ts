@@ -21,15 +21,10 @@ export type Employee = {
   title: string; // 직책
   position: string; // 호칭
   growthLevel: string; // 성장레벨
-  deductionHours: {
-    attendance: number; // 차감시간(근태)
-    shortened: number; // 차감시간(단축)
-    total: number; // 차감시간(근태+단축)
-  };
   workRate: number; // 근무율
-  group: string; // 그룹구분
-  evaluatorId: string;
+  evaluatorId: string; // 평가자사번
   baseAmount: number; // 개인별 기준금액
+  group: string; // 평가그룹
 };
 
 export type Grade = 'S' | 'A+' | 'A' | 'B+' | 'B' | 'B-' | 'BC' | 'C-' | 'D' | null;
@@ -46,7 +41,11 @@ export type Evaluation = {
   year: number;
   month: number;
   grade: Grade;
+  memo?: string;
 };
+
+export type EvaluationGroupCategory = '전체' | '70% 이상' | '별도평가' | '미평가';
+
 
 export type EvaluationGroup = {
   id: string;
@@ -67,4 +66,5 @@ export type EvaluationResult = Employee & {
   evaluatorName: string;
   detailedGroup1: string; // 세부구분1(근무율)
   detailedGroup2: string; // 세부구분2(직책/성장레벨별 구분)
+  memo?: string;
 };

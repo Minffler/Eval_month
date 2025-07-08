@@ -7,45 +7,61 @@ import AdminDashboard from '@/components/evalmax/admin-dashboard';
 import EvaluatorDashboard from '@/components/evalmax/evaluator-dashboard';
 import EmployeeDashboard from '@/components/evalmax/employee-dashboard';
 import type { Employee, Evaluation, EvaluationResult, Grade, GradeInfo, User } from '@/lib/types';
-import { mockEmployees, gradingScale as initialGradingScale, calculateFinalAmount, mockUsers, mockEvaluations } from '@/lib/data';
+import { mockEmployees, gradingScale as initialGradingScale, calculateFinalAmount, mockUsers, mockEvaluations as initialMockEvaluations } from '@/lib/data';
 
 export default function Home() {
-  const { user, role, setUser } = useAuth();
+  const { user, role } = useAuth();
   
-  const [employees, setEmployees] = React.useState<Employee[]>(mockEmployees);
-  const [evaluations, setEvaluations] = React.useState<Evaluation[]>(mockEvaluations);
+  const [employees, setEmployees] = React.useState<Record<string, Employee[]>>({ '2025-7': mockEmployees });
+  const [evaluations, setEvaluations] = React.useState<Record<string, Evaluation[]>>({ '2025-7': initialMockEvaluations });
   const [gradingScale, setGradingScale] = React.useState(initialGradingScale);
   const [results, setResults] = React.useState<EvaluationResult[]>([]);
   const [selectedDate, setSelectedDate] = React.useState({ year: 2025, month: 7 });
 
+  const dateKey = `${selectedDate.year}-${selectedDate.month}`;
+  const currentMonthEmployees = employees[dateKey] || [];
+  const currentMonthEvaluations = evaluations[dateKey] || [];
+
+  const handleEmployeeUpload = (year: number, month: number, newEmployees: Employee[]) => {
+    const key = `${year}-${month}`;
+    setEmployees(prev => ({ ...prev, [key]: newEmployees }));
+    // Also create blank evaluations for the new employees
+    const newEvals = newEmployees.map(emp => ({
+        id: `eval-${emp.id}-${year}-${month}`,
+        employeeId: emp.id,
+        year,
+        month,
+        grade: null,
+        memo: ''
+    }));
+    setEvaluations(prev => ({...prev, [key]: newEvals}));
+  };
+
   const handleResultsUpdate = (updatedResultsForMonth: EvaluationResult[]) => {
-      const updatedEmployees = employees.map(emp => {
+      const key = `${selectedDate.year}-${selectedDate.month}`;
+      
+      const updatedEmployees = currentMonthEmployees.map(emp => {
           const updatedResult = updatedResultsForMonth.find(r => r.id === emp.id);
           if (updatedResult) {
               return { ...emp, baseAmount: updatedResult.baseAmount };
           }
           return emp;
       });
-      setEmployees(updatedEmployees);
+      setEmployees(prev => ({...prev, [key]: updatedEmployees}));
 
-      const otherMonthEvaluations = evaluations.filter(ev => 
-          !(ev.year === selectedDate.year && ev.month === selectedDate.month)
-      );
-      
       const updatedMonthEvaluations = updatedResultsForMonth
-        .filter(r => r.grade) // Only save if grade is assigned
         .map(r => {
-            const existingEval = evaluations.find(e => e.employeeId === r.id && e.year === r.year && e.month === r.month);
+            const existingEval = currentMonthEvaluations.find(e => e.employeeId === r.id);
             return {
                 id: existingEval?.id || `eval-${r.id}-${r.year}-${r.month}`,
                 employeeId: r.id,
                 year: r.year,
                 month: r.month,
-                grade: r.grade
+                grade: r.grade,
+                memo: r.memo
             };
         });
-
-      setEvaluations([...otherMonthEvaluations, ...updatedMonthEvaluations]);
+      setEvaluations(prev => ({...prev, [key]: updatedMonthEvaluations}));
   };
 
   React.useEffect(() => {
@@ -65,12 +81,9 @@ export default function Home() {
         currentEvaluations: Evaluation[],
         currentGradingScale: Record<NonNullable<Grade>, GradeInfo>
     ): EvaluationResult[] => {
+      if (!currentEmployees) return [];
       return currentEmployees.map(employee => {
-        const evaluation = currentEvaluations.find(e => 
-          e.employeeId === employee.id && 
-          e.year === selectedDate.year && 
-          e.month === selectedDate.month
-        );
+        const evaluation = currentEvaluations.find(e => e.employeeId === employee.id);
         
         const grade = evaluation?.grade || null;
         
@@ -97,19 +110,20 @@ export default function Home() {
           evaluatorName: evaluator?.name || 'N/A',
           detailedGroup1,
           detailedGroup2,
+          memo: evaluation?.memo || ''
         };
       });
     };
-
-    setResults(getFullEvaluationResults(employees, evaluations, gradingScale));
-  }, [employees, evaluations, gradingScale, selectedDate]);
+    
+    setResults(getFullEvaluationResults(currentMonthEmployees, currentMonthEvaluations, gradingScale));
+  }, [employees, evaluations, gradingScale, selectedDate, dateKey, currentMonthEmployees, currentMonthEvaluations]);
 
   const renderDashboard = () => {
     switch (role) {
       case 'admin':
         return <AdminDashboard 
                   results={results}
-                  setEmployees={setEmployees}
+                  onEmployeeUpload={handleEmployeeUpload}
                   gradingScale={gradingScale}
                   setGradingScale={setGradingScale}
                   selectedDate={selectedDate}
@@ -122,11 +136,14 @@ export default function Home() {
                   gradingScale={gradingScale}
                   selectedDate={selectedDate}
                   setSelectedDate={setSelectedDate} 
+                  handleResultsUpdate={handleResultsUpdate}
                 />;
       case 'employee':
-        // For employee, we pass all results, not just for the selected month
-        const allTimeResults = employees.flatMap(employee => {
-            return evaluations
+        const allEmployeeEvals: Evaluation[] = Object.values(evaluations).flat();
+        const allEmployeeData: Employee[] = Object.values(employees).flat();
+        
+        const allTimeResults = allEmployeeData.flatMap(employee => {
+            return allEmployeeEvals
                 .filter(ev => ev.employeeId === employee.id)
                 .map(evaluation => {
                     const grade = evaluation?.grade || null;
@@ -146,8 +163,8 @@ export default function Home() {
                         gradeAmount,
                         finalAmount,
                         evaluatorName: evaluator?.name || 'N/A',
-                        detailedGroup1: getDetailedGroup1(employee.workRate),
-                        detailedGroup2: employee.title || employee.growthLevel,
+                        detailedGroup1: '', // Not needed for employee view
+                        detailedGroup2: '', // Not needed for employee view
                     };
                 });
         });
