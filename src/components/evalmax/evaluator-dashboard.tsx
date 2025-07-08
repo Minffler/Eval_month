@@ -89,9 +89,12 @@ const DraggableTableRow = ({ employee, gradingScale, selected, onSelect, onGrade
         transform: CSS.Transform.toString(transform),
         transition,
     };
+    
+    const isBulkDrag = React.useContext(DndContext)?.active?.id !== employee.id && selected;
+
 
     return (
-        <TableRow ref={setNodeRef} style={style} data-state={selected ? "selected" : "unselected"}>
+        <TableRow ref={setNodeRef} style={style} data-state={selected ? "selected" : "unselected"} className={cn(isBulkDrag && "opacity-50")}>
             <TableCell className="py-2 px-2 w-[80px]">
                 <div className='flex items-center gap-1'>
                   <Checkbox
@@ -255,11 +258,11 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
     setGroups(prev => {
       const newGroups = JSON.parse(JSON.stringify(prev));
       
-      const findItemAndGroup = (id: string) => {
-        for (const key in newGroups) {
-          const memberIndex = newGroups[key].members.findIndex((m: EvaluationResult) => m.id === id);
+      const findItemAndGroup = (id: string, groupsSource: Groups) => {
+        for (const key in groupsSource) {
+          const memberIndex = groupsSource[key].members.findIndex((m: EvaluationResult) => m.id === id);
           if (memberIndex > -1) {
-            return { groupKey: key, index: memberIndex, member: newGroups[key].members[memberIndex] };
+            return { groupKey: key, index: memberIndex, member: groupsSource[key].members[memberIndex] };
           }
         }
         return null;
@@ -267,17 +270,27 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
       
       const overGroupKey = Object.keys(newGroups).find(key => key === over.id || newGroups[key].members.some((m: EvaluationResult) => m.id === over.id));
       if (!overGroupKey) return prev;
-
+      
       let overIndex = newGroups[overGroupKey].members.findIndex((m: EvaluationResult) => m.id === over.id);
       if (overIndex === -1) overIndex = newGroups[overGroupKey].members.length;
 
       const movedItems: EvaluationResult[] = [];
+      const sourceGroupKeys: Record<string, string> = {};
+
       movedIds.forEach(id => {
-          const itemInfo = findItemAndGroup(id);
+          const itemInfo = findItemAndGroup(id, prev);
           if (itemInfo) {
               movedItems.push(itemInfo.member);
-              newGroups[itemInfo.groupKey].members.splice(itemInfo.index, 1);
+              sourceGroupKeys[id] = itemInfo.groupKey;
           }
+      });
+
+      movedItems.forEach(item => {
+        const sourceGroupKey = sourceGroupKeys[item.id];
+        const itemInfo = findItemAndGroup(item.id, newGroups);
+        if(itemInfo) {
+            newGroups[itemInfo.groupKey].members.splice(itemInfo.index, 1);
+        }
       });
       
       newGroups[overGroupKey].members.splice(overIndex, 0, ...movedItems);
@@ -368,6 +381,8 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
   if (!user) return <div>로딩중...</div>;
 
   const activeEmployee = activeId ? myEmployees.find(emp => emp.id === activeId) : null;
+  const isBulkDrag = activeId ? selectedIds.has(activeId) && selectedIds.size > 1 : false;
+
 
   return (
     <DndContext
@@ -399,7 +414,7 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
                 </div>
             </div>
             <div className="lg:col-span-3">
-              <GradeHistogram data={gradeDistribution} title={`${activeTab} 등급 분포`} />
+              <GradeHistogram data={gradeDistribution} gradingScale={gradingScale} title={`${activeTab} 등급 분포`} />
             </div>
           </CardContent>
         </Card>
@@ -423,7 +438,6 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
                 const availableScore = group.members.length * 100;
                 const usedScore = group.members.reduce((acc, curr) => acc + (curr.score || 0), 0);
                 const allSelected = group.members.length > 0 && group.members.every(m => selectedIds.has(m.id));
-                const someSelected = group.members.some(m => selectedIds.has(m.id));
 
                 return (
                   <Card key={groupKey} className="mb-6">
@@ -515,12 +529,12 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
       </div>
        <DragOverlay>
         {activeId && activeEmployee ? (
-            <Table className="bg-background shadow-lg">
+            <Table className="bg-background shadow-lg relative">
                 <TableBody>
                      <TableRow>
                         <TableCell className="py-2 px-2 w-[80px]">
                            <div className='flex items-center gap-1'>
-                            <Checkbox checked={selectedIds.has(activeId)} />
+                            <Checkbox checked={selectedIds.has(activeId)} readOnly />
                             <Button variant="ghost" size="icon" className="cursor-grabbing">
                                 <GripVertical className="h-4 w-4" />
                             </Button>

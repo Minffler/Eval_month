@@ -9,10 +9,11 @@ import {
   type ChartConfig,
 } from '@/components/ui/chart';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
-import { gradingScale } from '@/lib/data';
+import type { Grade, GradeInfo } from '@/lib/types';
 
 interface GradeHistogramProps {
   data: { name: string; value: number }[];
+  gradingScale: Record<NonNullable<Grade>, GradeInfo>;
   title?: string;
   description?: string;
 }
@@ -26,6 +27,7 @@ const chartConfig = {
 
 export function GradeHistogram({
   data,
+  gradingScale,
   title = '등급 분포',
   description
 }: GradeHistogramProps) {
@@ -33,11 +35,17 @@ export function GradeHistogram({
   const tableData = (Object.keys(gradingScale) as (keyof typeof gradingScale)[])
     .map(grade => {
         const count = data.find(d => d.name === grade)?.value || 0;
+        const gradeInfo = gradingScale[grade];
         return {
             grade,
-            score: gradingScale[grade].score,
+            score: gradeInfo ? gradeInfo.score : 'N/A',
             count
         }
+    })
+    .sort((a,b) => {
+      const scoreA = typeof a.score === 'number' ? a.score : -1;
+      const scoreB = typeof b.score === 'number' ? b.score : -1;
+      return scoreB - scoreA;
     });
 
   return (
@@ -84,20 +92,20 @@ export function GradeHistogram({
         <div className="overflow-x-auto">
             <Table>
                 <TableHeader>
-                    <TableRow className="bg-muted/50">
-                        <TableHead className="text-center font-bold">등급</TableHead>
-                        {tableData.map(d => <TableCell key={d.grade} className="text-center font-bold text-primary">{d.grade}</TableCell>)}
-                    </TableRow>
                     <TableRow>
-                        <TableHead className="text-center">점수</TableHead>
-                        {tableData.map(d => <TableCell key={d.grade} className="text-center">{d.score}</TableCell>)}
+                        <TableHead className="text-center font-bold">등급</TableHead>
+                        <TableHead className="text-center font-bold">점수</TableHead>
+                        <TableHead className="text-center font-bold">인원</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    <TableRow>
-                        <TableHead className="text-center">인원</TableHead>
-                        {tableData.map(d => <TableCell key={d.grade} className="text-center font-medium">{d.count}</TableCell>)}
-                    </TableRow>
+                    {tableData.map(({ grade, score, count }) => (
+                        <TableRow key={grade}>
+                            <TableCell className="text-center font-bold text-primary">{grade}</TableCell>
+                            <TableCell className="text-center">{score}</TableCell>
+                            <TableCell className="text-center font-medium">{count}</TableCell>
+                        </TableRow>
+                    ))}
                 </TableBody>
             </Table>
         </div>

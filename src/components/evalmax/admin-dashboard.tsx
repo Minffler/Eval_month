@@ -346,7 +346,7 @@ export default function AdminDashboard({
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-6 pt-6">
-          <GradeHistogram data={overallGradeDistribution} title="전체 등급 분포" />
+          <GradeHistogram data={overallGradeDistribution} gradingScale={gradingScale} title="전체 등급 분포" />
           <Card>
             <CardHeader>
               <CardTitle>평가자별 진행 현황</CardTitle>
