@@ -1,31 +1,70 @@
 'use client';
 
 import * as React from 'react';
+import { useRouter } from 'next/navigation';
 import type { User, Role } from '@/lib/types';
-import { mockUsers } from '@/lib/data';
+import { mockUsers, mockEmployees } from '@/lib/data';
 
 interface AuthContextType {
   user: User | null;
   role: Role;
-  setUser: (role: Role) => void;
+  login: (id: string, pass: string) => Promise<boolean>;
+  logout: () => void;
+  setRole: (role: Role) => void;
+  loading: boolean;
 }
 
 const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [role, setRole] = React.useState<Role>('admin');
-  const [user, setUserState] = React.useState<User | null>(null);
+  const [user, setUser] = React.useState<User | null>(null);
+  const [role, setRole] = React.useState<Role>(null);
+  const [loading, setLoading] = React.useState(true);
+  const router = useRouter();
 
   React.useEffect(() => {
-    const currentUser = mockUsers.find(u => u.role === role) || null;
-    setUserState(currentUser);
-  }, [role]);
-
-  const setUser = React.useCallback((newRole: Role) => {
-    setRole(newRole);
+    try {
+      const storedUser = localStorage.getItem('evalmax-user');
+      if (storedUser) {
+        const parsedUser: User = JSON.parse(storedUser);
+        setUser(parsedUser);
+        setRole(parsedUser.roles[0] || null);
+      }
+    } catch (error) {
+      console.error('Failed to parse user from localStorage', error);
+      localStorage.removeItem('evalmax-user');
+    } finally {
+      setLoading(false);
+    }
   }, []);
-  
-  const value = React.useMemo(() => ({ user, role, setUser }), [user, role, setUser]);
+
+  const login = React.useCallback(
+    async (uniqueId: string, pass: string): Promise<boolean> => {
+      if (uniqueId !== pass) return false;
+
+      const employee = mockEmployees.find((e) => e.uniqueId === uniqueId);
+      if (!employee) return false;
+
+      const foundUser = mockUsers.find((u) => u.employeeId === employee.id);
+      if (!foundUser) return false;
+
+      setUser(foundUser);
+      setRole(foundUser.roles[0]);
+      localStorage.setItem('evalmax-user', JSON.stringify(foundUser));
+      // No need to push, the page component will react to the state change
+      return true;
+    },
+    []
+  );
+
+  const logout = React.useCallback(() => {
+    setUser(null);
+    setRole(null);
+    localStorage.removeItem('evalmax-user');
+    router.push('/login');
+  }, [router]);
+
+  const value = { user, role, setRole, login, logout, loading };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

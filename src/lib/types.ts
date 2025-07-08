@@ -1,10 +1,10 @@
-export type Role = 'admin' | 'evaluator' | 'employee';
+export type Role = 'admin' | 'evaluator' | 'employee' | null;
 
 export type User = {
   id: string;
   employeeId: string;
   name: string;
-  role: Role;
+  roles: Role[];
   avatar: string;
   title: string;
   department: string;
@@ -16,7 +16,7 @@ export type Employee = {
   id: string; // 사번
   uniqueId: string; // 고유사번
   name: string; // 이름
-  company: Company; // 회사
+  company: string; // 회사
   department: string; // 소속부서
   title: string; // 직책
   position: string; // 호칭

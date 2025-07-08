@@ -8,15 +8,25 @@ import EvaluatorDashboard from '@/components/evalmax/evaluator-dashboard';
 import EmployeeDashboard from '@/components/evalmax/employee-dashboard';
 import type { Employee, Evaluation, EvaluationResult, Grade, GradeInfo, User } from '@/lib/types';
 import { mockEmployees, gradingScale as initialGradingScale, calculateFinalAmount, mockUsers, mockEvaluations as initialMockEvaluations } from '@/lib/data';
+import { useRouter } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
 
 export default function Home() {
-  const { user, role } = useAuth();
+  const { user, role, loading } = useAuth();
+  const router = useRouter();
   
   const [employees, setEmployees] = React.useState<Record<string, Employee[]>>({ '2025-7': mockEmployees });
   const [evaluations, setEvaluations] = React.useState<Record<string, Evaluation[]>>({ '2025-7': initialMockEvaluations });
   const [gradingScale, setGradingScale] = React.useState(initialGradingScale);
   const [results, setResults] = React.useState<EvaluationResult[]>([]);
   const [selectedDate, setSelectedDate] = React.useState({ year: 2025, month: 7 });
+
+  React.useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
+
 
   const dateKey = `${selectedDate.year}-${selectedDate.month}`;
   const currentMonthEmployees = employees[dateKey] || [];
@@ -226,22 +236,24 @@ export default function Home() {
     }
   };
 
-  if (!user) {
+  if (loading) {
     return (
-      <div className="flex flex-col min-h-screen bg-background">
-        <Header />
-        <main className="flex-1 p-4 md:p-6 lg:p-8">
-          <p>로딩중...</p>
-        </main>
+      <div className="flex flex-col min-h-screen bg-background items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="mt-4 text-muted-foreground">로딩중...</p>
       </div>
     );
+  }
+
+  if (!user) {
+    return null;
   }
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Header />
       <main className="flex-1 p-4 md:p-6 lg:p-8">
-        {user ? renderDashboard() : <p>로딩중...</p>}
+        {renderDashboard()}
       </main>
     </div>
   );

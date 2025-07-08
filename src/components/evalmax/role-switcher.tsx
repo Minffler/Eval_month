@@ -12,20 +12,23 @@ import { UserCog, UserCheck, User as UserIcon } from 'lucide-react';
 
 interface RoleSwitcherProps {
   currentRole: Role;
+  availableRoles: Role[];
   onRoleChange: (role: Role) => void;
 }
 
-export function RoleSwitcher({ currentRole, onRoleChange }: RoleSwitcherProps) {
-  const roles: { value: Role; label: string; icon: React.ElementType }[] = [
+export function RoleSwitcher({ currentRole, availableRoles, onRoleChange }: RoleSwitcherProps) {
+  const allRoles: { value: Role; label: string; icon: React.ElementType }[] = [
     { value: 'admin', label: '관리자', icon: UserCog },
     { value: 'evaluator', label: '평가자', icon: UserCheck },
     { value: 'employee', label: '피평가자', icon: UserIcon },
   ];
 
-  const CurrentIcon = roles.find(r => r.value === currentRole)?.icon || UserIcon;
+  const rolesToShow = allRoles.filter(r => r.value && availableRoles.includes(r.value));
+
+  const CurrentIcon = allRoles.find(r => r.value === currentRole)?.icon || UserIcon;
 
   return (
-    <Select value={currentRole} onValueChange={(value: Role) => onRoleChange(value)}>
+    <Select value={currentRole || ''} onValueChange={(value: Role) => onRoleChange(value)}>
       <SelectTrigger className="w-auto md:w-[180px] gap-2">
         <CurrentIcon className="h-4 w-4 text-muted-foreground" />
         <div className="hidden md:block">
@@ -33,8 +36,8 @@ export function RoleSwitcher({ currentRole, onRoleChange }: RoleSwitcherProps) {
         </div>
       </SelectTrigger>
       <SelectContent>
-        {roles.map(({ value, label, icon: Icon }) => (
-          <SelectItem key={value} value={value}>
+        {rolesToShow.map(({ value, label, icon: Icon }) => (
+          <SelectItem key={value} value={value!}>
             <div className="flex items-center gap-2">
               <Icon className="h-4 w-4" />
               <span>{label}</span>
