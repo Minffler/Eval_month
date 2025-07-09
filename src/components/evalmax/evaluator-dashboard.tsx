@@ -904,11 +904,19 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, allEmploye
       </Card>
       
       <Card>
-        <CardHeader><CardTitle>현재 담당 소속</CardTitle><CardDescription>현재 담당하고 있는 소속 그룹 목록입니다.</CardDescription></CardHeader>
+        <CardHeader><CardTitle>담당 소속</CardTitle><CardDescription>현재 담당하고 있는 소속 그룹 목록입니다.</CardDescription></CardHeader>
         <CardContent>
           <div className="border rounded-lg">
             <Table>
-              <TableHeader><TableRow><TableHead>회사</TableHead><TableHead>부서</TableHead><TableHead>직책</TableHead><TableHead className="text-right">담당 인원</TableHead><TableHead className="w-[100px] text-center">작업</TableHead></TableRow></TableHeader>
+              <TableHeader>
+                <TableRow>
+                    <TableHead>회사</TableHead>
+                    <TableHead>부서</TableHead>
+                    <TableHead>직책</TableHead>
+                    <TableHead className="text-right">담당 인원</TableHead>
+                    <TableHead className="w-[100px] text-center">담당 해제</TableHead>
+                </TableRow>
+              </TableHeader>
               <TableBody>
                 {managedGroups.length > 0 ? (
                   managedGroups.map((group) => (
@@ -916,12 +924,16 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, allEmploye
                       <TableCell>{group.company}</TableCell>
                       <TableCell>{group.department}</TableCell>
                       <TableCell>{group.position}</TableCell>
-                      <TableCell className="text-right">{group.count}명</TableCell>
-                      <TableCell>
-                        <div className="flex items-center justify-center gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => handleShowDetails(group)}><Users className="h-4 w-4" /></Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleReleaseGroup(group.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <span>{group.count}명</span>
+                          <Button variant="outline" size="sm" className="h-7 px-2 py-1" onClick={() => handleShowDetails(group)}>상세보기</Button>
                         </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Button variant="ghost" size="icon" onClick={() => handleReleaseGroup(group.id)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))
@@ -1049,7 +1061,7 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
         return <AssignmentManagementView 
                  myEmployees={myEmployees} 
                  currentMonthResults={currentMonthResults}
-                 allEmployees={allResults}
+                 allEmployees={allResults.filter(e => e.uniqueId !== effectiveUser.uniqueId)} // Exclude self
                  handleResultsUpdate={handleResultsUpdate}
                  evaluatorId={effectiveUser.uniqueId}
                  evaluatorName={effectiveUser.name}

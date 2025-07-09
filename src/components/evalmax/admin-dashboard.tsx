@@ -110,6 +110,7 @@ export default function AdminDashboard({
   const [evaluatorStatsSortConfig, setEvaluatorStatsSortConfig] = React.useState<EvaluatorStatsSortConfig>({ key: 'rate', direction: 'ascending' });
   const [selectedEvaluatorId, setSelectedEvaluatorId] = React.useState<string>('');
   const [isDistributionChartOpen, setIsDistributionChartOpen] = React.useState(false);
+  const [isAllResultsChartOpen, setIsAllResultsChartOpen] = React.useState(true);
   const { toast } = useToast();
 
   React.useEffect(() => {
@@ -514,110 +515,131 @@ export default function AdminDashboard({
             );
         case 'all-results':
              return (
-                 <Tabs defaultValue="전체" onValueChange={(val) => setActiveResultsTab(val as EvaluationGroupCategory)}>
-                    <TabsList className="grid w-full grid-cols-4 mb-4">
-                        {Object.keys(categorizedResults).map(category => (
-                            <TabsTrigger key={category} value={category}>{category} ({categorizedResults[category as EvaluationGroupCategory].length})</TabsTrigger>
-                        ))}
-                    </TabsList>
-                    
-                    <div className="flex justify-end mb-4">
-                      <Button onClick={handleDownloadExcel} variant="outline">
-                        <Download className="mr-2 h-4 w-4" />
-                        엑셀 다운로드
-                      </Button>
-                    </div>
-                    <div className="border rounded-lg overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('uniqueId')}>
-                            <div className="flex items-center">ID {getSortIcon('uniqueId')}</div>
-                          </TableHead>
-                          <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('company')}>
-                             <div className="flex items-center">회사 {getSortIcon('company')}</div>
-                          </TableHead>
-                          <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('department')}>
-                            <div className="flex items-center">소속부서 {getSortIcon('department')}</div>
-                          </TableHead>
-                          <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('name')}>
-                            <div className="flex items-center">이름 {getSortIcon('name')}</div>
-                          </TableHead>
-                          <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('title')}>
-                            <div className="flex items-center">직책 {getSortIcon('title')}</div>
-                          </TableHead>
-                          <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('evaluationGroup')}>
-                            <div className="flex items-center">평가그룹 {getSortIcon('evaluationGroup')}</div>
-                          </TableHead>
-                          <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('workRate')}>
-                            <div className="flex items-center">근무율 {getSortIcon('workRate')}</div>
-                          </TableHead>
-                          <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('score')}>
-                            <div className="flex items-center">점수 {getSortIcon('score')}</div>
-                          </TableHead>
-                          <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('grade')}>
-                            <div className="flex items-center">등급 {getSortIcon('grade')}</div>
-                          </TableHead>
-                          <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('baseAmount')}>
-                            <div className="flex items-center">기준금액 {getSortIcon('baseAmount')}</div>
-                          </TableHead>
-                          <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('finalAmount')}>
-                            <div className="flex items-center">최종금액 {getSortIcon('finalAmount')}</div>
-                          </TableHead>
-                          <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('evaluatorName')}>
-                            <div className="flex items-center">평가자 {getSortIcon('evaluatorName')}</div>
-                          </TableHead>
-                          <TableHead className="whitespace-nowrap min-w-[200px]">비고</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {sortedVisibleResults.map(r => (
-                            <TableRow key={r.id}>
-                              <TableCell className="py-1 px-2 whitespace-nowrap">{r.uniqueId}</TableCell>
-                              <TableCell className="py-1 px-2 whitespace-nowrap">{r.company}</TableCell>
-                              <TableCell className="py-1 px-2 whitespace-nowrap">{r.department}</TableCell>
-                              <TableCell className="py-1 px-2 font-medium whitespace-nowrap">{r.name}</TableCell>
-                              <TableCell className="py-1 px-2 whitespace-nowrap">{r.title}</TableCell>
-                              <TableCell className="py-1 px-2 whitespace-nowrap">{r.evaluationGroup}</TableCell>
-                              <TableCell className="py-1 px-2 whitespace-nowrap">{(r.workRate * 100).toFixed(1)}%</TableCell>
-                              <TableCell className="py-1 px-2 whitespace-nowrap">{r.score}</TableCell>
-                              <TableCell className="py-1 px-2 whitespace-nowrap">
-                                <Select value={r.grade || ''} onValueChange={(g) => handleGradeChange(r.id, g)}>
-                                    <SelectTrigger className="w-[80px] h-8">
-                                        <SelectValue placeholder="선택" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                    {Object.keys(gradingScale).map(grade => (
-                                        <SelectItem key={grade} value={grade}>{grade}</SelectItem>
-                                    ))}
-                                    </SelectContent>
-                                </Select>
-                              </TableCell>
-                              <TableCell className="py-1 px-2 whitespace-nowrap">
-                                <Input 
-                                  type="text"
-                                  defaultValue={formatCurrency(r.baseAmount)}
-                                  onBlur={(e) => handleBaseAmountChange(r.id, e.target.value)}
-                                  className="w-28 text-right h-8"
-                                />
-                              </TableCell>
-                              <TableCell className="py-1 px-2 whitespace-nowrap text-right">{formatCurrency(r.finalAmount)}</TableCell>
-                              <TableCell className="py-1 px-2 whitespace-nowrap">{r.evaluatorName}</TableCell>
-                              <TableCell className="py-1 px-2 whitespace-nowrap">
-                                <Input
-                                  defaultValue={r.memo || ''}
-                                  onBlur={(e) => handleMemoChange(r.id, e.target.value)}
-                                  className="w-full h-8"
-                                  placeholder=''
-                                />
-                              </TableCell>
+                 <div className="space-y-4">
+                     <Card>
+                        <Collapsible open={isAllResultsChartOpen} onOpenChange={setIsAllResultsChartOpen}>
+                            <div className="flex w-full cursor-pointer items-center justify-between p-4 rounded-t-lg hover:bg-muted/50">
+                                <CollapsibleTrigger asChild>
+                                <div className="flex items-center gap-2 w-full">
+                                    <CardTitle>전체 등급 분포</CardTitle>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6 ml-auto">
+                                    {isAllResultsChartOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                    </Button>
+                                </div>
+                                </CollapsibleTrigger>
+                            </div>
+                            <CollapsibleContent>
+                            <CardContent>
+                                <GradeHistogram data={overallGradeDistribution} gradingScale={gradingScale} />
+                            </CardContent>
+                            </CollapsibleContent>
+                        </Collapsible>
+                     </Card>
+                     <Tabs defaultValue="전체" onValueChange={(val) => setActiveResultsTab(val as EvaluationGroupCategory)}>
+                        <TabsList className="grid w-full grid-cols-4 mb-4">
+                            {Object.keys(categorizedResults).map(category => (
+                                <TabsTrigger key={category} value={category}>{category} ({categorizedResults[category as EvaluationGroupCategory].length})</TabsTrigger>
+                            ))}
+                        </TabsList>
+                        
+                        <div className="flex justify-end mb-4">
+                        <Button onClick={handleDownloadExcel} variant="outline">
+                            <Download className="mr-2 h-4 w-4" />
+                            엑셀 다운로드
+                        </Button>
+                        </div>
+                        <div className="border rounded-lg overflow-x-auto">
+                        <Table>
+                        <TableHeader>
+                            <TableRow>
+                            <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('uniqueId')}>
+                                <div className="flex items-center">ID {getSortIcon('uniqueId')}</div>
+                            </TableHead>
+                            <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('company')}>
+                                <div className="flex items-center">회사 {getSortIcon('company')}</div>
+                            </TableHead>
+                            <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('department')}>
+                                <div className="flex items-center">소속부서 {getSortIcon('department')}</div>
+                            </TableHead>
+                            <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('name')}>
+                                <div className="flex items-center">이름 {getSortIcon('name')}</div>
+                            </TableHead>
+                            <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('title')}>
+                                <div className="flex items-center">직책 {getSortIcon('title')}</div>
+                            </TableHead>
+                            <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('evaluationGroup')}>
+                                <div className="flex items-center">평가그룹 {getSortIcon('evaluationGroup')}</div>
+                            </TableHead>
+                            <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('workRate')}>
+                                <div className="flex items-center">근무율 {getSortIcon('workRate')}</div>
+                            </TableHead>
+                            <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('score')}>
+                                <div className="flex items-center">점수 {getSortIcon('score')}</div>
+                            </TableHead>
+                            <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('grade')}>
+                                <div className="flex items-center">등급 {getSortIcon('grade')}</div>
+                            </TableHead>
+                            <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('baseAmount')}>
+                                <div className="flex items-center">기준금액 {getSortIcon('baseAmount')}</div>
+                            </TableHead>
+                            <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('finalAmount')}>
+                                <div className="flex items-center">최종금액 {getSortIcon('finalAmount')}</div>
+                            </TableHead>
+                            <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('evaluatorName')}>
+                                <div className="flex items-center">평가자 {getSortIcon('evaluatorName')}</div>
+                            </TableHead>
+                            <TableHead className="whitespace-nowrap min-w-[200px]">비고</TableHead>
                             </TableRow>
-                          )
-                        )}
-                      </TableBody>
-                    </Table>
-                    </div>
-                  </Tabs>
+                        </TableHeader>
+                        <TableBody>
+                            {sortedVisibleResults.map(r => (
+                                <TableRow key={r.id}>
+                                <TableCell className="py-1 px-2 whitespace-nowrap">{r.uniqueId}</TableCell>
+                                <TableCell className="py-1 px-2 whitespace-nowrap">{r.company}</TableCell>
+                                <TableCell className="py-1 px-2 whitespace-nowrap">{r.department}</TableCell>
+                                <TableCell className="py-1 px-2 font-medium whitespace-nowrap">{r.name}</TableCell>
+                                <TableCell className="py-1 px-2 whitespace-nowrap">{r.title}</TableCell>
+                                <TableCell className="py-1 px-2 whitespace-nowrap">{r.evaluationGroup}</TableCell>
+                                <TableCell className="py-1 px-2 whitespace-nowrap">{(r.workRate * 100).toFixed(1)}%</TableCell>
+                                <TableCell className="py-1 px-2 whitespace-nowrap">{r.score}</TableCell>
+                                <TableCell className="py-1 px-2 whitespace-nowrap">
+                                    <Select value={r.grade || ''} onValueChange={(g) => handleGradeChange(r.id, g)}>
+                                        <SelectTrigger className="w-[80px] h-8">
+                                            <SelectValue placeholder="선택" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                        {Object.keys(gradingScale).map(grade => (
+                                            <SelectItem key={grade} value={grade}>{grade}</SelectItem>
+                                        ))}
+                                        </SelectContent>
+                                    </Select>
+                                </TableCell>
+                                <TableCell className="py-1 px-2 whitespace-nowrap">
+                                    <Input 
+                                    type="text"
+                                    defaultValue={formatCurrency(r.baseAmount)}
+                                    onBlur={(e) => handleBaseAmountChange(r.id, e.target.value)}
+                                    className="w-28 text-right h-8"
+                                    />
+                                </TableCell>
+                                <TableCell className="py-1 px-2 whitespace-nowrap text-right">{formatCurrency(r.finalAmount)}</TableCell>
+                                <TableCell className="py-1 px-2 whitespace-nowrap">{r.evaluatorName}</TableCell>
+                                <TableCell className="py-1 px-2 whitespace-nowrap">
+                                    <Input
+                                    defaultValue={r.memo || ''}
+                                    onBlur={(e) => handleMemoChange(r.id, e.target.value)}
+                                    className="w-full h-8"
+                                    placeholder=''
+                                    />
+                                </TableCell>
+                                </TableRow>
+                            )
+                            )}
+                        </TableBody>
+                        </Table>
+                        </div>
+                    </Tabs>
+                </div>
              );
         case 'evaluator-view':
             return (

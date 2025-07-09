@@ -32,8 +32,8 @@ const adminNavItems: NavItem[] = [
     icon: FileCheck,
     children: [
       { id: 'dashboard', label: '대시보드', icon: LayoutDashboard },
-      { id: 'all-results', label: '전체 결과', icon: FileCheck },
-      { id: 'evaluator-view', label: '평가자별 결과', icon: Eye },
+      { id: 'all-results', label: '개인별 등급/금액', icon: FileCheck },
+      { id: 'evaluator-view', label: '평가자별 화면', icon: Eye },
       { id: 'consistency-check', label: '편향 검토 (AI)', icon: Bot },
     ],
   },
@@ -85,6 +85,8 @@ const GRADING_SCALE_STORAGE_KEY = 'pl_eval_grading_scale';
 
 const getInitialDate = () => {
     const today = new Date();
+    // A month is available only after it has completely passed.
+    // e.g., July's evaluation data is available from August 1st.
     const lastMonthDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
     
     const year = lastMonthDate.getFullYear();
@@ -479,7 +481,7 @@ export default function Home() {
           payoutRate,
           gradeAmount,
           finalAmount,
-          evaluatorName: evaluator?.name || (employee.evaluatorId ? `ID: ${employee.evaluatorId}` : '미지정'),
+          evaluatorName: evaluator?.name || (employee.evaluatorId ? `미지정 (${employee.evaluatorId})` : '미지정'),
           evaluationGroup: getEvaluationGroup(employee.workRate),
           detailedGroup1: getDetailedGroup1(employee.workRate),
           detailedGroup2: getDetailedGroup2(employee),
@@ -534,7 +536,7 @@ export default function Home() {
           payoutRate,
           gradeAmount,
           finalAmount,
-          evaluatorName: evaluator?.name || (employee.evaluatorId ? `ID: ${employee.evaluatorId}` : '미지정'),
+          evaluatorName: evaluator?.name || (employee.evaluatorId ? `미지정 (${employee.evaluatorId})` : '미지정'),
           evaluationGroup: '', 
           detailedGroup1,
           detailedGroup2,
