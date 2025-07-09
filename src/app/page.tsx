@@ -209,27 +209,6 @@ export default function Home() {
       setEvaluations(prev => ({...prev, [key]: updatedMonthEvaluations}));
   };
 
-  const handleDepartmentNameUpdate = (oldName: string, newName: string, fromYear: number, fromMonth: number) => {
-    const fromDate = new Date(fromYear, fromMonth - 1);
-    const newEmployeesState = { ...employees };
-    
-    Object.keys(newEmployeesState).forEach(key => {
-        const [year, month] = key.split('-').map(Number);
-        const keyDate = new Date(year, month - 1);
-
-        if (keyDate >= fromDate) {
-            newEmployeesState[key] = newEmployeesState[key].map(emp => {
-                if (emp.department === oldName) {
-                    return { ...emp, department: newName };
-                }
-                return emp;
-            });
-        }
-    });
-
-    setEmployees(newEmployeesState);
-};
-
   React.useEffect(() => {
     const getDetailedGroup1 = (workRate: number): string => {
         if (workRate >= 0.7) return 'A. 70% 이상';
@@ -339,7 +318,6 @@ export default function Home() {
                   selectedDate={selectedDate}
                   setSelectedDate={setSelectedDate} 
                   handleResultsUpdate={handleResultsUpdate}
-                  handleDepartmentNameUpdate={handleDepartmentNameUpdate}
                   activeView={evaluatorActiveView}
                 />;
       case 'employee':
