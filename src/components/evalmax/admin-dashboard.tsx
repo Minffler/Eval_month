@@ -26,7 +26,6 @@ import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { useToast } from '@/hooks/use-toast';
 import GradeManagement from './grade-management';
-import { MonthSelector } from './month-selector';
 import { calculateFinalAmount, getPositionSortValue } from '@/lib/data';
 import * as XLSX from 'xlsx';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
@@ -371,7 +370,8 @@ export default function AdminDashboard({
       '회사': r.company,
       '소속부서': r.department,
       '이름': r.name,
-      '직책/성장레벨': ['팀장', '지점장', '센터장', '지부장'].includes(r.position) ? r.title : r.growthLevel,
+      '직책': r.title,
+      '성장레벨': r.growthLevel,
       '근무율': `${(r.workRate * 100).toFixed(1)}%`,
       '점수': r.score,
       '등급': r.grade,
@@ -415,7 +415,6 @@ export default function AdminDashboard({
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between">
                       <CardTitle>평가자별 진행 현황</CardTitle>
-                      <MonthSelector selectedDate={selectedDate} onDateChange={setSelectedDate} />
                     </CardHeader>
                     <CardContent>
                       <div className="border rounded-lg overflow-x-auto">
@@ -529,7 +528,7 @@ export default function AdminDashboard({
                             <div className="flex items-center">이름 {getSortIcon('name')}</div>
                           </TableHead>
                           <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('title')}>
-                            <div className="flex items-center">직책/성장레벨 {getSortIcon('title')}</div>
+                            <div className="flex items-center">직책 {getSortIcon('title')}</div>
                           </TableHead>
                           <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('workRate')}>
                             <div className="flex items-center">근무율 {getSortIcon('workRate')}</div>
@@ -559,11 +558,7 @@ export default function AdminDashboard({
                               <TableCell className="py-1 px-2 whitespace-nowrap">{r.company}</TableCell>
                               <TableCell className="py-1 px-2 whitespace-nowrap">{r.department}</TableCell>
                               <TableCell className="py-1 px-2 font-medium whitespace-nowrap">{r.name}</TableCell>
-                              <TableCell className="py-1 px-2 whitespace-nowrap">
-                                {['팀장', '지점장', '센터장', '지부장'].includes(r.position)
-                                  ? r.title
-                                  : r.growthLevel}
-                              </TableCell>
+                              <TableCell className="py-1 px-2 whitespace-nowrap">{r.title}</TableCell>
                               <TableCell className="py-1 px-2 whitespace-nowrap">{(r.workRate * 100).toFixed(1)}%</TableCell>
                               <TableCell className="py-1 px-2 whitespace-nowrap">{r.score}</TableCell>
                               <TableCell className="py-1 px-2 whitespace-nowrap">
@@ -649,7 +644,7 @@ export default function AdminDashboard({
                 </div>
             );
         case 'file-upload':
-            return <ManageData onEmployeeUpload={onEmployeeUpload} onEvaluationUpload={onEvaluationUpload} results={initialResults} />;
+            return <ManageData onEmployeeUpload={onEmployeeUpload} onEvaluationUpload={onEvaluationUpload} results={initialResults} selectedDate={selectedDate} setSelectedDate={setSelectedDate} />;
         case 'evaluator-management':
             return <EvaluatorManagement results={initialResults} allEmployees={allEmployees} handleResultsUpdate={handleResultsUpdate} />;
         case 'grade-management':

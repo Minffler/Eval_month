@@ -24,6 +24,7 @@ import {
   Edit2,
   ListChecks,
 } from 'lucide-react';
+import { MonthSelector } from '@/components/evalmax/month-selector';
 
 const adminNavItems: NavItem[] = [
   {
@@ -75,7 +76,7 @@ const GRADING_SCALE_STORAGE_KEY = 'pl_eval_grading_scale';
 
 
 export default function Home() {
-  const { user, role, loading } = useAuth();
+  const { user, role, loading, logout } = useAuth();
   const router = useRouter();
   
   const [employees, setEmployees] = React.useState<Record<string, Employee[]>>(() => {
@@ -118,7 +119,7 @@ export default function Home() {
   });
   
   const [results, setResults] = React.useState<EvaluationResult[]>([]);
-  const [selectedDate, setSelectedDate] = React.useState({ year: 2025, month: 7 });
+  const [selectedDate, setSelectedDate] = React.useState({ year: new Date().getFullYear(), month: new Date().getMonth() + 1 });
 
   // State for admin view
   const [isAdminSidebarOpen, setIsAdminSidebarOpen] = React.useState(true);
@@ -202,7 +203,29 @@ export default function Home() {
       const key = `${year}-${month}`;
       
       setEmployees(prevEmps => {
-        const newEmpsForMonth = [...(prevEmps[key] || [])];
+        let allEmpsState = {...prevEmps};
+
+        // Create a map of evaluator updates
+        const evaluatorUpdates = new Map<string, string>();
+        uploadedData.forEach(item => {
+            if (item.evaluatorId && item.evaluatorName) {
+            evaluatorUpdates.set(item.evaluatorId, item.evaluatorName);
+            }
+        });
+
+        // Update evaluator names across all months
+        if (evaluatorUpdates.size > 0) {
+            for (const monthKey in allEmpsState) {
+            allEmpsState[monthKey] = allEmpsState[monthKey].map(emp => {
+                if (evaluatorUpdates.has(emp.uniqueId)) {
+                return { ...emp, name: evaluatorUpdates.get(emp.uniqueId)! };
+                }
+                return emp;
+            });
+            }
+        }
+          
+        const newEmpsForMonth = [...(allEmpsState[key] || [])];
         uploadedData.forEach(uploadItem => {
             const empIndex = newEmpsForMonth.findIndex(e => e.id === uploadItem.employeeId);
             if (empIndex > -1) {
@@ -223,7 +246,8 @@ export default function Home() {
                 newEmpsForMonth[empIndex] = updatedEmployee;
             }
         });
-        return {...prevEmps, [key]: newEmpsForMonth};
+        allEmpsState[key] = newEmpsForMonth;
+        return allEmpsState;
       });
 
       setEvaluations(prevEvals => {
@@ -234,12 +258,10 @@ export default function Home() {
                   const currentEval = newEvalsForMonth[evalIndex];
                   const updatedEval = { ...currentEval };
 
-                  // Conditionally update grade. Don't update if a grade already exists.
-                  if (!currentEval.grade) {
+                  if (currentEval.grade === null || currentEval.grade === undefined) {
                       updatedEval.grade = uploadItem.grade;
                   }
                   
-                  // Always update memo
                   if (uploadItem.memo !== undefined) {
                     updatedEval.memo = uploadItem.memo;
                   }
@@ -312,7 +334,6 @@ export default function Home() {
     const getDetailedGroup2 = (employee: Employee): string => {
         const { position, growthLevel, group } = employee;
 
-        // Handle special evaluation groups first
         if (group === '별도평가' || group === '미평가') {
             return group;
         }
@@ -324,7 +345,6 @@ export default function Home() {
             return '지부장/센터장';
         }
     
-        // For other positions (like '팀원'), use growth level
         if (growthLevel === 'Lv.1') {
             return 'Lv.1';
         }
@@ -332,7 +352,6 @@ export default function Home() {
             return 'Lv.2~3';
         }
 
-        // Fallback for all other cases.
         return '기타';
     }
 
@@ -440,6 +459,13 @@ export default function Home() {
     }
   };
 
+  const headerContent = (
+    <div className='flex items-center gap-4'>
+        <MonthSelector selectedDate={selectedDate} onDateChange={setSelectedDate} />
+        <Header />
+    </div>
+  );
+
   if (loading) {
     return (
       <div className="flex flex-col min-h-screen bg-background items-center justify-center">
@@ -453,49 +479,41 @@ export default function Home() {
     return null;
   }
   
-  if (role === 'admin') {
-      return (
-        <div className="flex h-screen bg-background overflow-hidden">
-            <Sidebar
-                navItems={adminNavItems}
-                activeView={adminActiveView}
-                setActiveView={setAdminActiveView}
-                isOpen={isAdminSidebarOpen}
-                setIsOpen={setIsAdminSidebarOpen}
-            />
-            <div className={cn("flex flex-col flex-1 transition-all duration-300 ease-in-out", isAdminSidebarOpen ? "ml-64" : "ml-16")}>
-                <Header />
-                <main className="flex-1 overflow-y-auto">
-                    {renderDashboard()}
-                </main>
+  const commonLayout = (sidebarNavItems: NavItem[], activeView: string, setActiveView: (v: any) => void, isOpen: boolean, setIsOpen: (v: boolean) => void) => (
+    <div className="flex h-screen bg-background overflow-hidden">
+        <Sidebar
+            navItems={sidebarNavItems}
+            activeView={activeView}
+            setActiveView={setActiveView}
+            isOpen={isOpen}
+            setIsOpen={setIsOpen}
+            user={user}
+            logout={logout}
+        />
+        <div className={cn("flex flex-col flex-1 transition-all duration-300 ease-in-out", isOpen ? "ml-64" : "ml-16")}>
+            <div className="sticky top-0 z-10 flex h-16 items-center justify-end gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6">
+                {headerContent}
             </div>
+            <main className="flex-1 overflow-y-auto">
+                {renderDashboard()}
+            </main>
         </div>
-      )
+    </div>
+  )
+
+  if (role === 'admin') {
+      return commonLayout(adminNavItems, adminActiveView, setAdminActiveView, isAdminSidebarOpen, setIsAdminSidebarOpen)
   }
 
   if (role === 'evaluator') {
-      return (
-        <div className="flex h-screen bg-background overflow-hidden">
-            <Sidebar
-                navItems={evaluatorNavItems}
-                activeView={evaluatorActiveView}
-                setActiveView={setEvaluatorActiveView}
-                isOpen={isEvaluatorSidebarOpen}
-                setIsOpen={setIsEvaluatorSidebarOpen}
-            />
-            <div className={cn("flex flex-col flex-1 transition-all duration-300 ease-in-out", isEvaluatorSidebarOpen ? "ml-64" : "ml-16")}>
-                <Header />
-                 <main className="flex-1 overflow-y-auto">
-                    {renderDashboard()}
-                </main>
-            </div>
-        </div>
-      )
+      return commonLayout(evaluatorNavItems, evaluatorActiveView, setEvaluatorActiveView, isEvaluatorSidebarOpen, setIsEvaluatorSidebarOpen)
   }
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <Header />
+      <div className="sticky top-0 z-10 flex h-16 items-center justify-end gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6">
+          {headerContent}
+      </div>
       <main className="flex-1 p-4 md:p-6 lg:p-8">
         {renderDashboard()}
       </main>

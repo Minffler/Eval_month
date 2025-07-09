@@ -77,4 +77,5 @@ export type EvaluationUploadData = {
   employeeId: string;
   grade: Grade;
   memo?: string;
+  evaluatorName?: string;
 } & Partial<Omit<Employee, 'id' | 'uniqueId'>>;

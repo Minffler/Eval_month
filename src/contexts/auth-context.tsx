@@ -58,11 +58,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = React.useCallback(
-    async (uniqueId: string, pass: string): Promise<boolean> => {
-      if (uniqueId !== pass) return false;
+    async (id: string, pass: string): Promise<boolean> => {
+      if (id !== pass) return false;
 
       const allEmployees = getAllEmployeesFromStorage();
-      const employee = allEmployees.find((e) => e.uniqueId === uniqueId);
+      const employee = allEmployees.find((e) => e.uniqueId === id);
       
       if (!employee) return false;
 
@@ -70,10 +70,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const roles: Role[] = ['employee'];
       const evaluatorUniqueIds = new Set(allEmployees.map(e => e.evaluatorId).filter(Boolean));
       
-      if (evaluatorUniqueIds.has(uniqueId)) {
+      if (evaluatorUniqueIds.has(id)) {
           roles.push('evaluator');
       }
-      if (uniqueId === '1911042') { // Special case for admin
+      // Special case for admin - unique ID '1911042'
+      if (id === '1911042') {
           if (!roles.includes('admin')) {
             roles.push('admin');
           }

@@ -32,13 +32,10 @@ export default function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6">
-      <div className="flex-1">
-        <h1 className="text-xl font-semibold font-headline">
+    <div className="flex items-center gap-4">
+        <h1 className="text-xl font-semibold font-headline flex-1">
           {roleDisplay[role]} 대시보드
         </h1>
-      </div>
-      <div className="flex items-center gap-4">
         {user.roles.length > 1 && (
            <RoleSwitcher currentRole={role} availableRoles={user.roles} onRoleChange={setRole} />
         )}
@@ -90,7 +87,6 @@ export default function Header() {
         <Button variant="ghost" onClick={logout} size="icon" className="rounded-full" aria-label="로그아웃">
           <LogOut className="h-5 w-5" />
         </Button>
-      </div>
-    </header>
+    </div>
   );
 }

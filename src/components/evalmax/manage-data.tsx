@@ -16,17 +16,14 @@ interface ManageDataProps {
   results: EvaluationResult[];
   onEmployeeUpload: (year: number, month: number, employees: Employee[]) => void;
   onEvaluationUpload: (year: number, month: number, evaluations: EvaluationUploadData[]) => void;
+  selectedDate: { year: number, month: number };
+  setSelectedDate: (date: { year: number, month: number }) => void;
 }
 
-export default function ManageData({ onEmployeeUpload, onEvaluationUpload, results }: ManageDataProps) {
+export default function ManageData({ onEmployeeUpload, onEvaluationUpload, results, selectedDate, setSelectedDate }: ManageDataProps) {
   const { toast } = useToast();
   const employeeFileInputRef = React.useRef<HTMLInputElement>(null);
   const evaluationFileInputRef = React.useRef<HTMLInputElement>(null);
-
-  const [selectedDate, setSelectedDate] = React.useState(() => {
-    const today = new Date();
-    return { year: today.getFullYear(), month: today.getMonth() + 1 };
-  });
 
   const handleEmployeeFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -116,6 +113,7 @@ export default function ManageData({ onEmployeeUpload, onEvaluationUpload, resul
                         workRate: workRateValue !== undefined && workRateValue !== null ? parseFloat(String(workRateValue)) : undefined,
                         group: row['평가그룹'] ? String(row['평가그룹']) : undefined,
                         evaluatorId: row['평가자 ID'] ? String(row['평가자 ID']) : undefined,
+                        evaluatorName: row['평가자'] ? String(row['평가자']) : undefined,
                         baseAmount: baseAmountValue !== undefined && baseAmountValue !== null ? Number(String(baseAmountValue).replace(/,/g, '')) : undefined,
                         grade: (String(row['등급'] || '') || null) as Grade,
                         memo: row['비고'] !== undefined ? String(row['비고']) : undefined,
@@ -155,7 +153,6 @@ export default function ManageData({ onEmployeeUpload, onEvaluationUpload, resul
         '실근무율': r.workRate,
         '평가그룹': r.group,
         '평가자 ID': r.evaluatorId,
-        '평가자': r.evaluatorName,
         '개인별 기준금액': r.baseAmount,
         '비고': r.memo,
     }));
@@ -163,7 +160,7 @@ export default function ManageData({ onEmployeeUpload, onEvaluationUpload, resul
     const worksheet = XLSX.utils.json_to_sheet(dataForSheet.length > 0 ? dataForSheet : [{}], {
         header: [
             'ID', '이름', '회사', '소속부서', '직책', '성장레벨', 
-            '실근무율', '평가그룹', '평가자 ID', '평가자', '개인별 기준금액', '비고'
+            '실근무율', '평가그룹', '평가자 ID', '개인별 기준금액', '비고'
         ]
     });
     const workbook = XLSX.utils.book_new();
@@ -208,19 +205,6 @@ export default function ManageData({ onEmployeeUpload, onEvaluationUpload, resul
 
   return (
     <div className="space-y-6">
-        <Card>
-            <CardHeader>
-                <CardTitle>데이터 관리</CardTitle>
-                <CardDescription>
-                    업로드할 데이터의 기준 월을 선택하세요. 선택한 월의 기존 데이터는 덮어쓰여집니다.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                <Label>데이터 적용 월 선택</Label>
-                <MonthSelector selectedDate={selectedDate} onDateChange={setSelectedDate} />
-            </CardContent>
-        </Card>
-
         <Tabs defaultValue="base-data">
             <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="base-data">평가 대상자 업로드</TabsTrigger>
