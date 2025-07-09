@@ -316,7 +316,6 @@ export default function AdminDashboard({
       '점수': r.score,
       '등급': r.grade,
       '기준금액': r.baseAmount,
-      '등급금액': r.gradeAmount,
       '최종금액': r.finalAmount,
       '평가자': r.evaluatorName,
       '비고': r.memo,
@@ -471,9 +470,6 @@ export default function AdminDashboard({
                           <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('baseAmount')}>
                             <div className="flex items-center">기준금액 {getSortIcon('baseAmount')}</div>
                           </TableHead>
-                          <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('gradeAmount')}>
-                            <div className="flex items-center">등급금액 {getSortIcon('gradeAmount')}</div>
-                          </TableHead>
                           <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('finalAmount')}>
                             <div className="flex items-center">최종금액 {getSortIcon('finalAmount')}</div>
                           </TableHead>
@@ -517,7 +513,6 @@ export default function AdminDashboard({
                                   className="w-28 text-right h-8"
                                 />
                               </TableCell>
-                              <TableCell className="py-1 px-2 whitespace-nowrap text-right">{formatCurrency(r.gradeAmount)}</TableCell>
                               <TableCell className="py-1 px-2 whitespace-nowrap text-right">{formatCurrency(r.finalAmount)}</TableCell>
                               <TableCell className="py-1 px-2 whitespace-nowrap">{r.evaluatorName}</TableCell>
                               <TableCell className="py-1 px-2 whitespace-nowrap">
@@ -563,11 +558,13 @@ export default function AdminDashboard({
                     {selectedEvaluator ? (
                         <EvaluatorDashboard
                             allResults={initialResults}
+                            currentMonthResults={results.filter(r => r.evaluatorId === selectedEvaluator.id)}
                             gradingScale={gradingScale}
                             selectedDate={selectedDate}
                             setSelectedDate={setSelectedDate} 
                             handleResultsUpdate={handleResultsUpdate}
                             evaluatorUser={selectedEvaluator}
+                            activeView='evaluation-input'
                         />
                     ) : (
                         <Card className="flex items-center justify-center h-64">

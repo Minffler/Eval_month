@@ -6,12 +6,69 @@ import Header from '@/components/evalmax/header';
 import AdminDashboard from '@/components/evalmax/admin-dashboard';
 import EvaluatorDashboard from '@/components/evalmax/evaluator-dashboard';
 import EmployeeDashboard from '@/components/evalmax/employee-dashboard';
-import type { Employee, Evaluation, EvaluationResult, Grade, GradeInfo, User } from '@/lib/types';
+import type { Employee, Evaluation, EvaluationResult, Grade, GradeInfo, User, EvaluatorView } from '@/lib/types';
 import { mockEmployees, gradingScale as initialGradingScale, calculateFinalAmount, mockUsers, mockEvaluations as initialMockEvaluations } from '@/lib/data';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
-import { Sidebar } from '@/components/evalmax/sidebar';
+import { Sidebar, type NavItem } from '@/components/evalmax/sidebar';
 import { cn } from '@/lib/utils';
+import {
+  LayoutDashboard,
+  FileCheck,
+  Eye,
+  Database,
+  Upload,
+  Users,
+  Settings,
+  Bot,
+  Edit2,
+  ListChecks,
+} from 'lucide-react';
+
+const adminNavItems: NavItem[] = [
+  {
+    id: 'results',
+    label: '평가결과',
+    icon: FileCheck,
+    children: [
+      { id: 'dashboard', label: '대시보드', icon: LayoutDashboard },
+      { id: 'all-results', label: '전체 결과', icon: FileCheck },
+      { id: 'evaluator-view', label: '평가자별 결과', icon: Eye },
+      { id: 'consistency-check', label: '편향 검토 (AI)', icon: Bot },
+    ],
+  },
+  {
+    id: 'data-management',
+    label: '데이터 관리',
+    icon: Database,
+    children: [
+      { id: 'file-upload', label: '파일 업로드', icon: Upload },
+      { id: 'evaluator-management', label: '평가자 관리', icon: Users },
+      { id: 'grade-management', label: '등급/점수 관리', icon: Settings },
+    ],
+  },
+];
+
+const evaluatorNavItems: NavItem[] = [
+  {
+    id: 'evaluation',
+    label: '평가입력/조회',
+    icon: FileCheck,
+    children: [
+      { id: 'evaluation-input', label: '평가입력', icon: Edit2 },
+      { id: 'all-results', label: '전체 결과', icon: ListChecks },
+    ],
+  },
+  {
+    id: 'management',
+    label: '평가관리',
+    icon: Settings,
+    children: [
+      { id: 'assignment-management', label: '담당 소속 관리', icon: Users },
+    ],
+  },
+];
+
 
 export default function Home() {
   const { user, role, loading } = useAuth();
@@ -23,9 +80,14 @@ export default function Home() {
   const [results, setResults] = React.useState<EvaluationResult[]>([]);
   const [selectedDate, setSelectedDate] = React.useState({ year: 2025, month: 7 });
 
-  // New state for admin view
-  const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
-  const [activeView, setActiveView] = React.useState('dashboard');
+  // State for admin view
+  const [isAdminSidebarOpen, setIsAdminSidebarOpen] = React.useState(true);
+  const [adminActiveView, setAdminActiveView] = React.useState('dashboard');
+
+  // State for evaluator view
+  const [isEvaluatorSidebarOpen, setIsEvaluatorSidebarOpen] = React.useState(true);
+  const [evaluatorActiveView, setEvaluatorActiveView] = React.useState<EvaluatorView>('evaluation-input');
+
 
   React.useEffect(() => {
     if (!loading && !user) {
@@ -206,6 +268,35 @@ export default function Home() {
   }, [employees, evaluations, gradingScale, selectedDate, dateKey, currentMonthEmployees, currentMonthEvaluations]);
 
   const renderDashboard = () => {
+    const allTimeResults = Object.keys(employees).flatMap(dateKey => {
+      const [year, month] = dateKey.split('-').map(Number);
+      const monthEmployees = employees[dateKey] || [];
+      const monthEvaluations = evaluations[dateKey] || [];
+      return monthEmployees.map(employee => {
+        const evaluation = monthEvaluations.find(e => e.employeeId === employee.id);
+        const grade = evaluation?.grade || null;
+        const gradeInfo = grade ? gradingScale[grade] : null;
+        const score = gradeInfo ? gradeInfo.score : 0;
+        const payoutRate = gradeInfo ? gradeInfo.payoutRate / 100 : 0;
+        const gradeAmount = (employee.baseAmount || 0) * payoutRate;
+        const finalAmount = calculateFinalAmount(gradeAmount, employee.workRate);
+        const evaluator = mockUsers.find(u => u.id === employee.evaluatorId);
+        return {
+          ...employee,
+          year,
+          month,
+          grade,
+          score,
+          payoutRate,
+          gradeAmount,
+          finalAmount,
+          evaluatorName: evaluator?.name || 'N/A',
+          detailedGroup1: '', 
+          detailedGroup2: '',
+        };
+      });
+    });
+
     switch (role) {
       case 'admin':
         return <AdminDashboard 
@@ -217,47 +308,19 @@ export default function Home() {
                   selectedDate={selectedDate}
                   setSelectedDate={setSelectedDate}
                   handleResultsUpdate={handleResultsUpdate}
-                  activeView={activeView}
+                  activeView={adminActiveView}
                 />;
       case 'evaluator':
         return <EvaluatorDashboard 
-                  allResults={results}
+                  allResults={allTimeResults}
+                  currentMonthResults={results}
                   gradingScale={gradingScale}
                   selectedDate={selectedDate}
                   setSelectedDate={setSelectedDate} 
                   handleResultsUpdate={handleResultsUpdate}
+                  activeView={evaluatorActiveView}
                 />;
       case 'employee':
-        const allEmployeeEvals: Evaluation[] = Object.values(evaluations).flat();
-        const allEmployeeData: Employee[] = Object.values(employees).flat();
-        
-        const allTimeResults = allEmployeeData.flatMap(employee => {
-            return allEmployeeEvals
-                .filter(ev => ev.employeeId === employee.id)
-                .map(evaluation => {
-                    const grade = evaluation?.grade || null;
-                    const gradeInfo = grade ? gradingScale[grade] : null;
-                    const score = gradeInfo ? gradeInfo.score : 0;
-                    const payoutRate = gradeInfo ? gradeInfo.payoutRate / 100 : 0;
-                    const gradeAmount = (employee.baseAmount || 0) * payoutRate;
-                    const finalAmount = calculateFinalAmount(gradeAmount, employee.workRate);
-                    const evaluator = mockUsers.find(u => u.id === employee.evaluatorId);
-                    return {
-                        ...employee,
-                        year: evaluation.year,
-                        month: evaluation.month,
-                        grade,
-                        score,
-                        payoutRate,
-                        gradeAmount,
-                        finalAmount,
-                        evaluatorName: evaluator?.name || 'N/A',
-                        detailedGroup1: '',
-                        detailedGroup2: '',
-                    };
-                });
-        });
-
         return <EmployeeDashboard allResults={allTimeResults} gradingScale={gradingScale} />;
       default:
         return null;
@@ -281,14 +344,35 @@ export default function Home() {
       return (
         <div className="flex h-screen bg-background overflow-hidden">
             <Sidebar
-                activeView={activeView}
-                setActiveView={setActiveView}
-                isOpen={isSidebarOpen}
-                setIsOpen={setIsSidebarOpen}
+                navItems={adminNavItems}
+                activeView={adminActiveView}
+                setActiveView={setAdminActiveView}
+                isOpen={isAdminSidebarOpen}
+                setIsOpen={setIsAdminSidebarOpen}
             />
-            <div className={cn("flex flex-col flex-1 transition-all duration-300 ease-in-out", isSidebarOpen ? "ml-64" : "ml-16")}>
+            <div className={cn("flex flex-col flex-1 transition-all duration-300 ease-in-out", isAdminSidebarOpen ? "ml-64" : "ml-16")}>
                 <Header />
                 <main className="flex-1 overflow-y-auto">
+                    {renderDashboard()}
+                </main>
+            </div>
+        </div>
+      )
+  }
+
+  if (role === 'evaluator') {
+      return (
+        <div className="flex h-screen bg-background overflow-hidden">
+            <Sidebar
+                navItems={evaluatorNavItems}
+                activeView={evaluatorActiveView}
+                setActiveView={setEvaluatorActiveView}
+                isOpen={isEvaluatorSidebarOpen}
+                setIsOpen={setIsEvaluatorSidebarOpen}
+            />
+            <div className={cn("flex flex-col flex-1 transition-all duration-300 ease-in-out", isEvaluatorSidebarOpen ? "ml-64" : "ml-16")}>
+                <Header />
+                 <main className="flex-1 overflow-y-auto">
                     {renderDashboard()}
                 </main>
             </div>

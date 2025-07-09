@@ -68,3 +68,5 @@ export type EvaluationResult = Employee & {
   detailedGroup2: string; // 세부구분2(직책/성장레벨별 구분)
   memo?: string;
 };
+
+export type EvaluatorView = 'evaluation-input' | 'all-results' | 'assignment-management';

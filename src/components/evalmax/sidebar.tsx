@@ -10,59 +10,29 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import {
-  LayoutDashboard,
-  FileCheck,
-  Eye,
-  Database,
-  Upload,
-  Users,
-  Settings,
-  Bot,
   ChevronLeft,
 } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
-type NavItem = {
+export type NavItem = {
   id: string;
   label: string;
   icon: React.ElementType;
   children?: NavItem[];
 };
 
-const navItems: NavItem[] = [
-  {
-    id: 'results',
-    label: '평가결과',
-    icon: FileCheck,
-    children: [
-      { id: 'dashboard', label: '대시보드', icon: LayoutDashboard },
-      { id: 'all-results', label: '전체 결과', icon: FileCheck },
-      { id: 'evaluator-view', label: '평가자별 결과', icon: Eye },
-      { id: 'consistency-check', label: '편향 검토 (AI)', icon: Bot },
-    ],
-  },
-  {
-    id: 'data-management',
-    label: '데이터 관리',
-    icon: Database,
-    children: [
-      { id: 'file-upload', label: '파일 업로드', icon: Upload },
-      { id: 'evaluator-management', label: '평가자 관리', icon: Users },
-      { id: 'grade-management', label: '등급/점수 관리', icon: Settings },
-    ],
-  },
-];
-
 interface SidebarProps {
+  navItems: NavItem[];
   activeView: string;
   setActiveView: (view: string) => void;
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
 }
 
-export function Sidebar({ activeView, setActiveView, isOpen, setIsOpen }: SidebarProps) {
-  const [openAccordion, setOpenAccordion] = React.useState<string[]>(['results', 'data-management']);
+export function Sidebar({ navItems, activeView, setActiveView, isOpen, setIsOpen }: SidebarProps) {
+  const defaultOpen = navItems.map(item => item.id);
+  const [openAccordion, setOpenAccordion] = React.useState<string[]>(defaultOpen);
 
   const handleNavClick = (id: string, hasChildren: boolean) => {
     if (!hasChildren) {
