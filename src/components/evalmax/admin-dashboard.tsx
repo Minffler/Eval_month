@@ -543,8 +543,8 @@ export default function AdminDashboard({
                  <div className="space-y-4">
                     <Card>
                       <CardHeader>
-                          <CardTitle>최종금액 분포</CardTitle>
-                          <CardDescription>평가그룹별 최종 지급금액 분포입니다.</CardDescription>
+                          <CardTitle>성과급 분포</CardTitle>
+                          <CardDescription>평가그룹별 성과급 금액대 분포입니다.</CardDescription>
                       </CardHeader>
                     <CardContent>
                         <AmountDistributionChart data={visibleResults} />

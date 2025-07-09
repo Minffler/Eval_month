@@ -25,14 +25,15 @@ export function AmountDistributionChart({ data }: AmountDistributionChartProps) 
   const chartData = React.useMemo(() => {
     const ranges = [
       { name: '0', min: 0, max: 0 },
-      { name: '1~100만', min: 1, max: 1000000 },
-      { name: '100~200만', min: 1000001, max: 2000000 },
-      { name: '200~300만', min: 2000001, max: 3000000 },
+      { name: '1~50만', min: 1, max: 500000 },
+      { name: '50~100만', min: 500001, max: 1000000 },
+      { name: '100~150만', min: 1000001, max: 1500000 },
+      { name: '150~200만', min: 1500001, max: 2000000 },
+      { name: '200~250만', min: 2000001, max: 2500000 },
+      { name: '250~300만', min: 2500001, max: 3000000 },
       { name: '300~400만', min: 3000001, max: 4000000 },
       { name: '400~500만', min: 4000001, max: 5000000 },
-      { name: '500~700만', min: 5000001, max: 7000000 },
-      { name: '700~1000만', min: 7000001, max: 10000000 },
-      { name: '1000만 이상', min: 10000001, max: Infinity },
+      { name: '500만 이상', min: 5000001, max: Infinity },
     ];
 
     const distribution = ranges.map(range => ({
