@@ -40,7 +40,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Check, Download, ArrowUpDown, ArrowUp, ArrowDown, Edit, GripVertical, ChevronUp, ChevronDown, PlusCircle, Save, X } from 'lucide-react';
 import { Progress } from '../ui/progress';
@@ -559,92 +559,94 @@ const AllResultsView = ({ allResults, gradingScale }: {
 
 interface AssignmentManagementViewProps {
   myEmployees: EvaluationResult[];
-  allResults: EvaluationResult[];
   currentMonthResults: EvaluationResult[];
   handleResultsUpdate: (updatedResults: EvaluationResult[]) => void;
-  handleDepartmentNameUpdate?: (oldName: string, newName: string) => void;
+  handleDepartmentNameUpdate?: (oldName: string, newName: string, year: number, month: number) => void;
 }
 
 
-const AssignmentManagementView = ({ myEmployees, allResults, currentMonthResults, handleResultsUpdate, handleDepartmentNameUpdate }: AssignmentManagementViewProps) => {
-  const [editingDepartment, setEditingDepartment] = React.useState<string | null>(null);
-  const [newDepartmentName, setNewDepartmentName] = React.useState('');
+const AssignmentManagementView = ({ myEmployees, currentMonthResults, handleResultsUpdate, handleDepartmentNameUpdate }: AssignmentManagementViewProps) => {
   const { toast } = useToast();
 
-  const managedDepartments = React.useMemo(() => {
-    const departmentCounts: Record<string, number> = {};
+  const managedGroups = React.useMemo(() => {
+    const groups: Record<string, { company: string; department: string; position: string; count: number }> = {};
     myEmployees.forEach(emp => {
-      if (emp.department) {
-        departmentCounts[emp.department] = (departmentCounts[emp.department] || 0) + 1;
+      const key = `${emp.company}|${emp.department}|${emp.position}`;
+      if (!groups[key]) {
+        groups[key] = {
+          company: emp.company,
+          department: emp.department,
+          position: emp.position,
+          count: 0,
+        };
       }
+      groups[key].count++;
     });
-    return Object.entries(departmentCounts).map(([name, count]) => ({ name, count })).sort((a,b) => a.name.localeCompare(b.name));
+    return Object.entries(groups)
+      .map(([key, value]) => ({ ...value, id: key }))
+      .sort((a,b) => a.department.localeCompare(b.department));
   }, [myEmployees]);
 
-  const handleStartEditing = (deptName: string) => {
-    setEditingDepartment(deptName);
-    setNewDepartmentName(deptName);
+  const [editableGroups, setEditableGroups] = React.useState(managedGroups);
+  
+  React.useEffect(() => {
+    setEditableGroups(managedGroups);
+  }, [managedGroups]);
+
+  const handleGroupChange = (id: string, field: 'company' | 'department', value: string) => {
+    setEditableGroups(current =>
+      current.map(group =>
+        group.id === id ? { ...group, [field]: value } : group
+      )
+    );
   };
 
-  const handleCancelEditing = () => {
-    setEditingDepartment(null);
-    setNewDepartmentName('');
-  };
-
-  const handleSaveDepartmentName = () => {
-    const trimmedName = newDepartmentName.trim();
-    if (!editingDepartment || !trimmedName) {
-      handleCancelEditing();
-      return;
-    }
+  const handleSaveChanges = () => {
+    const myEmployeeIds = new Set(myEmployees.map(e => e.id));
+    let hasChanges = false;
     
-    if (editingDepartment === trimmedName) {
-      handleCancelEditing();
+    const updates = new Map<string, { company: string, department: string }>();
+    editableGroups.forEach(eg => {
+      const originalGroup = managedGroups.find(mg => mg.id === eg.id);
+      if (originalGroup && (originalGroup.company !== eg.company || originalGroup.department !== eg.department)) {
+        updates.set(eg.id, { company: eg.company, department: eg.department });
+        hasChanges = true;
+      }
+    });
+    
+    if (!hasChanges) {
+      toast({ title: '변경 없음', description: '변경된 내용이 없습니다.' });
       return;
     }
 
-    const isNameTaken = allResults.some(r => r.department === trimmedName && r.department !== editingDepartment);
-    if (isNameTaken) {
-      toast({
-        variant: "destructive",
-        title: "오류",
-        description: `부서명 '${trimmedName}'은(는) 이미 존재합니다.`,
-      });
-      return;
-    }
+    const newResults = currentMonthResults.map(res => {
+      if (!myEmployeeIds.has(res.id)) {
+        return res;
+      }
 
-    if (handleDepartmentNameUpdate) {
-        handleDepartmentNameUpdate(editingDepartment, trimmedName);
-        toast({
-            title: "부서명 변경 완료",
-            description: `'${editingDepartment}'이(가) '${trimmedName}'(으)로 변경되었습니다. 이 변경사항은 현재 월부터 계속 적용됩니다.`,
-        });
-    } else {
-        const updatedResults = currentMonthResults.map(r => {
-        if (r.department === editingDepartment) {
-            return { ...r, department: trimmedName };
-        }
-        return r;
-        });
+      const originalKey = `${res.company}|${res.department}|${res.position}`;
+      const update = updates.get(originalKey);
+      
+      if (update) {
+        return { ...res, company: update.company, department: update.department };
+      }
+      
+      return res;
+    });
 
-        handleResultsUpdate(updatedResults);
-        toast({
-        title: "부서명 변경 완료",
-        description: `이번 달 평가에서 '${editingDepartment}'이(가) '${trimmedName}'(으)로 변경되었습니다.`,
-        });
-    }
-
-    handleCancelEditing();
+    handleResultsUpdate(newResults);
+    toast({
+      title: '저장 완료',
+      description: '담당 소속 정보가 성공적으로 변경되었습니다.',
+    });
   };
 
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-bold tracking-tight">담당 소속 관리</h2>
       <Card>
         <CardHeader>
-          <CardTitle>담당 부서 관리</CardTitle>
           <CardDescription>
-            담당하고 있는 부서의 명칭을 수정할 수 있습니다. 변경사항은 현재 선택된 월부터 이후 평가에 계속 적용됩니다.
+            담당하고 있는 소속의 정보를 수정할 수 있습니다. 변경사항은 현재 선택된 월 평가에만 적용됩니다.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -652,54 +654,40 @@ const AssignmentManagementView = ({ myEmployees, allResults, currentMonthResults
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>회사</TableHead>
                   <TableHead>부서명</TableHead>
+                  <TableHead>직책</TableHead>
                   <TableHead className="text-right">담당 인원</TableHead>
-                  <TableHead className="w-[120px] text-center">수정</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {managedDepartments.map(({ name, count }) => (
-                  <TableRow key={name}>
-                    <TableCell className="font-medium">
-                      {editingDepartment === name ? (
-                        <Input
-                          value={newDepartmentName}
-                          onChange={(e) => setNewDepartmentName(e.target.value)}
-                          onKeyDown={(e) => { if (e.key === 'Enter') handleSaveDepartmentName(); if (e.key === 'Escape') handleCancelEditing() } }
-                          onBlur={handleSaveDepartmentName}
-                          autoFocus
-                          className="h-8"
-                        />
-                      ) : (
-                        name
-                      )}
+                {editableGroups.map((group) => (
+                  <TableRow key={group.id}>
+                    <TableCell>
+                      <Input 
+                        value={group.company} 
+                        onChange={(e) => handleGroupChange(group.id, 'company', e.target.value)} 
+                        className="h-8"
+                      />
                     </TableCell>
-                    <TableCell className="text-right">
-                      {count}명
+                    <TableCell>
+                      <Input 
+                        value={group.department} 
+                        onChange={(e) => handleGroupChange(group.id, 'department', e.target.value)} 
+                        className="h-8"
+                      />
                     </TableCell>
-                    <TableCell className="text-center">
-                      {editingDepartment === name ? (
-                        <div className="flex gap-1 justify-center">
-                           <Button size="icon" className="h-8 w-8" onClick={handleSaveDepartmentName}>
-                            <Save className="h-4 w-4" />
-                          </Button>
-                          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={handleCancelEditing}>
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ) : (
-                        <Button variant="outline" size="sm" onClick={() => handleStartEditing(name)}>
-                          <Edit className="mr-2 h-4 w-4" />
-                          이름 변경
-                        </Button>
-                      )}
-                    </TableCell>
+                    <TableCell>{group.position}</TableCell>
+                    <TableCell className="text-right">{group.count}명</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           </div>
         </CardContent>
+        <CardFooter className="justify-end">
+          <Button onClick={handleSaveChanges}>변경사항 저장</Button>
+        </CardFooter>
       </Card>
     </div>
   );
@@ -738,7 +726,6 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
       case 'assignment-management':
         return <AssignmentManagementView 
                  myEmployees={myEmployees} 
-                 allResults={allResults}
                  currentMonthResults={currentMonthResults} 
                  handleResultsUpdate={handleResultsUpdate}
                  handleDepartmentNameUpdate={handleDepartmentNameUpdate ? (oldName, newName) => handleDepartmentNameUpdate(oldName, newName, selectedDate.year, selectedDate.month) : undefined}
