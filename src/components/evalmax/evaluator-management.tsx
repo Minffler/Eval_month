@@ -120,8 +120,8 @@ export default function EvaluatorManagement({
     setFilteredResults(newFilteredResults);
   }, [companyFilter, departmentFilter, titleFilter, results, sortConfig]);
 
-  const allCompanies = ['all', ...Array.from(new Set(results.map((r) => r.company)))];
-  const allDepartments = ['all', ...Array.from(new Set(results.map((r) => r.department)))];
+  const allCompanies = ['all', ...Array.from(new Set(results.map((r) => r.company).filter(Boolean)))];
+  const allDepartments = ['all', ...Array.from(new Set(results.map((r) => r.department).filter(Boolean)))];
   const allTitles = ['all', '지부장', '센터장', '팀장', '지점장', '팀원'];
 
   const requestSort = (key: keyof EvaluationResult) => {
