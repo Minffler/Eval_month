@@ -100,15 +100,17 @@ const getBGroupIndicatorStyle = (workRate: number): { style: React.CSSProperties
 
     const normalized = (workRate - 0.25) / (0.70 - 0.25);
 
-    const hue = 300;
-    const saturation = 10; 
-    const lightness = 90 - (normalized * (90 - 23));
+    // Dark brown base: hsl(25, 25%, 25%)
+    // Light brown base: hsl(25, 25%, 95%)
+    const hue = 25; 
+    const saturation = 25; 
+    const lightness = 95 - (normalized * (95 - 25));
 
     const style = {
         backgroundColor: `hsl(${hue}, ${saturation}%, ${lightness}%)`,
     };
     
-    const className = lightness < 45 ? 'text-white' : 'text-stone-800';
+    const className = lightness < 60 ? 'text-white' : 'text-stone-800';
 
     return { style, className };
 };
@@ -786,8 +788,8 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, allEmploye
   } | null>(null);
 
 
-  const allCompanies = React.useMemo(() => [...new Set(currentMonthResults.map(e => e.company))], [currentMonthResults]);
-  const allPositions = React.useMemo(() => [...new Set(currentMonthResults.map(e => e.position))].sort((a,b) => getPositionSortValue(a) - getPositionSortValue(b)), [currentMonthResults]);
+  const allCompanies = React.useMemo(() => [...new Set(currentMonthResults.map(e => e.company).filter(Boolean))], [currentMonthResults]);
+  const allPositions = React.useMemo(() => [...new Set(currentMonthResults.map(e => e.position).filter(Boolean))].sort((a,b) => getPositionSortValue(a) - getPositionSortValue(b)), [currentMonthResults]);
 
   const managedGroups = React.useMemo(() => {
     const groups: Record<string, { company: string; department: string; position: string; count: number }> = {};
