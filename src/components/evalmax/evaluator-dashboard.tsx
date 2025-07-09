@@ -64,7 +64,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '../ui/label';
 import { ScrollArea } from '../ui/scroll-area';
-import { getPositionSortValue } from '@/lib/data';
+import { getPositionSortValue, mockUsers, mockEmployees } from '@/lib/data';
 
 interface EvaluatorDashboardProps {
   allResults: EvaluationResult[];
@@ -580,19 +580,30 @@ interface AssignmentManagementViewProps {
 
 const AssignmentManagementView = ({ myEmployees, currentMonthResults, handleResultsUpdate, evaluatorId, evaluatorName }: AssignmentManagementViewProps) => {
   const { toast } = useToast();
-  const [selectedUnassignedGroup, setSelectedUnassignedGroup] = React.useState('');
+  
+  const [company, setCompany] = React.useState('');
+  const [department, setDepartment] = React.useState('');
+  const [position, setPosition] = React.useState('');
+
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = React.useState(false);
+  const [groupToChange, setGroupToChange] = React.useState<{
+    company: string;
+    department: string;
+    position: string;
+    currentEvaluatorName: string;
+    currentEvaluatorUniqueId: string;
+    memberCount: number;
+  } | null>(null);
+
+  const allCompanies = React.useMemo(() => [...new Set(currentMonthResults.map(e => e.company))], [currentMonthResults]);
+  const allPositions = React.useMemo(() => [...new Set(currentMonthResults.map(e => e.position))].sort((a,b) => getPositionSortValue(a) - getPositionSortValue(b)), [currentMonthResults]);
 
   const managedGroups = React.useMemo(() => {
     const groups: Record<string, { company: string; department: string; position: string; count: number }> = {};
     myEmployees.forEach(emp => {
       const key = `${emp.company}|${emp.department}|${emp.position}`;
       if (!groups[key]) {
-        groups[key] = {
-          company: emp.company,
-          department: emp.department,
-          position: emp.position,
-          count: 0,
-        };
+        groups[key] = { company: emp.company, department: emp.department, position: emp.position, count: 0 };
       }
       groups[key].count++;
     });
@@ -601,45 +612,70 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, handleResu
       .sort((a,b) => a.department.localeCompare(b.department));
   }, [myEmployees]);
 
-  const unassignedGroups = React.useMemo(() => {
-    const groups: Record<string, { company: string; department: string; position: string; count: number }> = {};
-    currentMonthResults.filter(emp => !emp.evaluatorId).forEach(emp => {
-      const key = `${emp.company}|${emp.department}|${emp.position}`;
-      if (!groups[key]) {
-        groups[key] = {
-          company: emp.company,
-          department: emp.department,
-          position: emp.position,
-          count: 0,
-        };
-      }
-      groups[key].count++;
-    });
-    return Object.entries(groups)
-      .map(([key, value]) => ({ ...value, id: key }))
-      .sort((a,b) => a.department.localeCompare(b.department));
-  }, [currentMonthResults]);
-
-  const handleAddGroup = () => {
-    if (!selectedUnassignedGroup) {
-      toast({ variant: 'destructive', title: '오류', description: '추가할 소속을 선택해주세요.' });
+  const handleInquire = () => {
+    if (!company || !department.trim() || !position) {
+      toast({ variant: 'destructive', title: '오류', description: '회사, 부서, 직책을 모두 입력/선택해주세요.' });
       return;
     }
-    const [company, department, position] = selectedUnassignedGroup.split('|');
+    const trimmedDepartment = department.trim();
+
+    const targetEmployees = currentMonthResults.filter(e => 
+      e.company === company && e.department === trimmedDepartment && e.position === position
+    );
+
+    if (targetEmployees.length === 0) {
+      toast({ title: '정보', description: '해당 조건의 소속 그룹이 존재하지 않습니다.' });
+      return;
+    }
+    
+    const firstMember = targetEmployees[0];
+    const currentEvaluator = firstMember.evaluatorId ? mockUsers.find(u => u.id === firstMember.evaluatorId) : null;
+    const currentEvaluatorEmployee = currentEvaluator ? mockEmployees.find(e => e.id === currentEvaluator.employeeId) : null;
+    
+    setGroupToChange({
+      company,
+      department: trimmedDepartment,
+      position,
+      currentEvaluatorName: currentEvaluator?.name || '미지정',
+      currentEvaluatorUniqueId: currentEvaluatorEmployee?.uniqueId || 'N/A',
+      memberCount: targetEmployees.length,
+    });
+    setIsConfirmDialogOpen(true);
+  };
+
+  const handleConfirmChange = () => {
+    if (!groupToChange) return;
+    
+    const currentEvaluatorUser = mockUsers.find(u => u.name === groupToChange.currentEvaluatorName);
+    if (currentEvaluatorUser?.id === evaluatorId) {
+        toast({ title: '정보', description: '이미 담당하고 있는 소속입니다.' });
+        setIsConfirmDialogOpen(false);
+        setGroupToChange(null);
+        return;
+    }
 
     const updatedResults = currentMonthResults.map(res => {
-      if (!res.evaluatorId && res.company === company && res.department === department && res.position === position) {
-        return { ...res, evaluatorId: evaluatorId, evaluatorName: evaluatorName };
+      if (res.company === groupToChange.company && res.department === groupToChange.department && res.position === groupToChange.position) {
+        return { ...res, evaluatorId, evaluatorName };
       }
       return res;
     });
 
     handleResultsUpdate(updatedResults);
-    toast({ title: '추가 완료', description: `'${department}' 소속이 담당으로 추가되었습니다.` });
-    setSelectedUnassignedGroup('');
+    
+    console.log(`[알림] 관리자에게: ${evaluatorName} 평가자가 ${groupToChange.department} 소속의 담당자가 되었습니다.`);
+    console.log(`[알림] ${evaluatorName} 평가자에게: 이제 ${groupToChange.department} 소속의 평가를 담당합니다.`);
+
+    toast({ title: '변경 완료', description: `'${groupToChange.department}' 소속의 담당자가 성공적으로 변경되었습니다.` });
+    
+    setIsConfirmDialogOpen(false);
+    setGroupToChange(null);
+    setCompany('');
+    setDepartment('');
+    setPosition('');
   };
 
-  const handleDeleteGroup = (groupKey: string) => {
+  const handleReleaseGroup = (groupKey: string) => {
     const [company, department, position] = groupKey.split('|');
     const updatedResults = currentMonthResults.map(res => {
       if (res.evaluatorId === evaluatorId && res.company === company && res.department === department && res.position === position) {
@@ -648,89 +684,64 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, handleResu
       return res;
     });
     handleResultsUpdate(updatedResults);
-    toast({ title: '삭제 완료', description: `'${department}' 소속을 더 이상 담당하지 않습니다.` });
+    toast({ title: '담당 해제 완료', description: `'${department}' 소속을 더 이상 담당하지 않습니다.` });
   };
   
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>새 담당 소속 추가</CardTitle>
-          <CardDescription>평가자가 지정되지 않은 소속을 담당으로 추가합니다.</CardDescription>
+          <CardTitle>담당 소속 추가/변경</CardTitle>
+          <CardDescription>담당을 원하는 소속 그룹의 정보를 입력하고 조회하여 담당자를 변경할 수 있습니다.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-end gap-2">
-            <div className="grid flex-1 gap-1.5">
-              <Label htmlFor="unassigned-group">추가할 소속</Label>
-              <Select value={selectedUnassignedGroup} onValueChange={setSelectedUnassignedGroup}>
-                <SelectTrigger id="unassigned-group">
-                  <SelectValue placeholder="담당할 소속을 선택하세요..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {unassignedGroups.length > 0 ? (
-                    unassignedGroups.map(group => (
-                      <SelectItem key={group.id} value={group.id}>
-                        {group.company} / {group.department} / {group.position} ({group.count}명)
-                      </SelectItem>
-                    ))
-                  ) : (
-                    <SelectItem value="none" disabled>추가할 소속이 없습니다.</SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-            <Button onClick={handleAddGroup} disabled={!selectedUnassignedGroup || unassignedGroups.length === 0}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              추가
-            </Button>
+          <div className="flex flex-col sm:flex-row items-end gap-2">
+            <div className="grid flex-1 gap-1.5 w-full"><Label htmlFor="change-company">회사</Label><Select value={company} onValueChange={setCompany}><SelectTrigger id="change-company"><SelectValue placeholder="회사를 선택하세요" /></SelectTrigger><SelectContent>{allCompanies.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
+            <div className="grid flex-1 gap-1.5 w-full"><Label htmlFor="change-department">부서명</Label><Input id="change-department" placeholder="부서명을 정확히 입력하세요" value={department} onChange={(e) => setDepartment(e.target.value)} /></div>
+            <div className="grid flex-1 gap-1.5 w-full"><Label htmlFor="change-position">직책</Label><Select value={position} onValueChange={setPosition}><SelectTrigger id="change-position"><SelectValue placeholder="직책을 선택하세요" /></SelectTrigger><SelectContent>{allPositions.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select></div>
+            <Button onClick={handleInquire} className="w-full sm:w-auto"><PlusCircle className="mr-2 h-4 w-4" />조회 및 변경 요청</Button>
           </div>
         </CardContent>
       </Card>
       
       <Card>
-        <CardHeader>
-          <CardTitle>현재 담당 소속</CardTitle>
-          <CardDescription>현재 담당하고 있는 소속 목록입니다. 담당을 중지하려면 삭제 버튼을 누르세요.</CardDescription>
-        </CardHeader>
+        <CardHeader><CardTitle>현재 담당 소속</CardTitle><CardDescription>현재 담당하고 있는 소속 그룹 목록입니다.</CardDescription></CardHeader>
         <CardContent>
           <div className="border rounded-lg">
             <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>회사</TableHead>
-                  <TableHead>부서</TableHead>
-                  <TableHead>직책</TableHead>
-                  <TableHead className="text-right">담당 인원</TableHead>
-                  <TableHead className="w-[50px]"></TableHead>
-                </TableRow>
-              </TableHeader>
+              <TableHeader><TableRow><TableHead>회사</TableHead><TableHead>부서</TableHead><TableHead>직책</TableHead><TableHead className="text-right">담당 인원</TableHead><TableHead className="w-[50px]"></TableHead></TableRow></TableHeader>
               <TableBody>
                 {managedGroups.length > 0 ? (
                   managedGroups.map((group) => (
                     <TableRow key={group.id}>
-                      <TableCell>{group.company}</TableCell>
-                      <TableCell>{group.department}</TableCell>
-                      <TableCell>{group.position}</TableCell>
-                      <TableCell className="text-right">{group.count}명</TableCell>
-                      <TableCell>
-                        <Button variant="ghost" size="icon" onClick={() => handleDeleteGroup(group.id)}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </TableCell>
+                      <TableCell>{group.company}</TableCell><TableCell>{group.department}</TableCell><TableCell>{group.position}</TableCell><TableCell className="text-right">{group.count}명</TableCell>
+                      <TableCell><Button variant="ghost" size="icon" onClick={() => handleReleaseGroup(group.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button></TableCell>
                     </TableRow>
                   ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center h-24">
-                      현재 담당하는 소속이 없습니다.
-                    </TableCell>
-                  </TableRow>
-                )}
+                ) : <TableRow><TableCell colSpan={5} className="text-center h-24">현재 담당하는 소속이 없습니다.</TableCell></TableRow>}
               </TableBody>
             </Table>
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>담당자 변경 확인</DialogTitle><DialogDescription>선택한 소속 그룹의 담당자를 변경하시겠습니까?</DialogDescription></DialogHeader>
+          {groupToChange && (
+            <div className="space-y-4 py-4">
+              <p className="text-sm"><span className="font-semibold text-muted-foreground">소속:</span> {groupToChange.company} / {groupToChange.department} / {groupToChange.position}</p>
+              <p className="text-sm"><span className="font-semibold text-muted-foreground">인원:</span> {groupToChange.memberCount}명</p>
+              <p className="text-sm"><span className="font-semibold text-muted-foreground">현재 담당자:</span> {groupToChange.currentEvaluatorName} ({groupToChange.currentEvaluatorUniqueId})</p>
+              <p className="text-sm pt-4 font-bold text-primary">이 그룹의 담당자를 현재 로그인한 평가자({evaluatorName})님으로 변경합니다.</p>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsConfirmDialogOpen(false)}>아니오</Button>
+            <Button onClick={handleConfirmChange}>예, 변경합니다</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
