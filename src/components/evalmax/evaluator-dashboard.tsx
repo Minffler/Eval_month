@@ -41,7 +41,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Check, Download, ArrowUpDown, ArrowUp, ArrowDown, Edit, GripVertical, ChevronUp, ChevronDown, PlusCircle, Save, X, Trash2 } from 'lucide-react';
+import { Check, Download, ArrowUpDown, ArrowUp, ArrowDown, Edit, GripVertical, ChevronUp, ChevronDown, PlusCircle, Save, X, Trash2, Users } from 'lucide-react';
 import { Progress } from '../ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { MonthSelector } from './month-selector';
@@ -649,6 +649,13 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, allEmploye
     memberCount: number;
   } | null>(null);
 
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = React.useState(false);
+  const [selectedGroupDetails, setSelectedGroupDetails] = React.useState<{
+    group: { company: string; department: string; position: string; count: number };
+    members: EvaluationResult[];
+  } | null>(null);
+
+
   const allCompanies = React.useMemo(() => [...new Set(currentMonthResults.map(e => e.company))], [currentMonthResults]);
   const allPositions = React.useMemo(() => [...new Set(currentMonthResults.map(e => e.position))].sort((a,b) => getPositionSortValue(a) - getPositionSortValue(b)), [currentMonthResults]);
 
@@ -665,6 +672,14 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, allEmploye
       .map(([key, value]) => ({ ...value, id: key }))
       .sort((a,b) => a.department.localeCompare(b.department));
   }, [myEmployees]);
+
+  const handleShowDetails = (group: { company: string; department: string; position: string; count: number; }) => {
+    const members = currentMonthResults.filter(e => 
+        e.company === group.company && e.department === group.department && e.position === group.position
+    );
+    setSelectedGroupDetails({ group, members });
+    setIsDetailsDialogOpen(true);
+  };
 
   const handleInquire = () => {
     if (!company || !department.trim() || !position) {
@@ -761,13 +776,21 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, allEmploye
         <CardContent>
           <div className="border rounded-lg">
             <Table>
-              <TableHeader><TableRow><TableHead>회사</TableHead><TableHead>부서</TableHead><TableHead>직책</TableHead><TableHead className="text-right">담당 인원</TableHead><TableHead className="w-[50px]"></TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow><TableHead>회사</TableHead><TableHead>부서</TableHead><TableHead>직책</TableHead><TableHead className="text-right">담당 인원</TableHead><TableHead className="w-[100px] text-center">작업</TableHead></TableRow></TableHeader>
               <TableBody>
                 {managedGroups.length > 0 ? (
                   managedGroups.map((group) => (
                     <TableRow key={group.id}>
-                      <TableCell>{group.company}</TableCell><TableCell>{group.department}</TableCell><TableCell>{group.position}</TableCell><TableCell className="text-right">{group.count}명</TableCell>
-                      <TableCell><Button variant="ghost" size="icon" onClick={() => handleReleaseGroup(group.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button></TableCell>
+                      <TableCell>{group.company}</TableCell>
+                      <TableCell>{group.department}</TableCell>
+                      <TableCell>{group.position}</TableCell>
+                      <TableCell className="text-right">{group.count}명</TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-center gap-1">
+                          <Button variant="ghost" size="icon" onClick={() => handleShowDetails(group)}><Users className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="icon" onClick={() => handleReleaseGroup(group.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))
                 ) : <TableRow><TableCell colSpan={5} className="text-center h-24">현재 담당하는 소속이 없습니다.</TableCell></TableRow>}
@@ -792,6 +815,49 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, allEmploye
             <Button variant="outline" onClick={() => setIsConfirmDialogOpen(false)}>아니오</Button>
             <Button onClick={handleConfirmChange}>예, 변경합니다</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
+        <DialogContent className="max-w-4xl">
+            <DialogHeader>
+                <DialogTitle>담당 인원 상세 정보</DialogTitle>
+                {selectedGroupDetails && (
+                <DialogDescription>
+                    {selectedGroupDetails.group.company} / {selectedGroupDetails.group.department} / {selectedGroupDetails.group.position} 그룹의 구성원 목록입니다.
+                </DialogDescription>
+                )}
+            </DialogHeader>
+            {selectedGroupDetails && (
+                <div className="max-h-[60vh] overflow-y-auto">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>회사</TableHead>
+                                <TableHead>부서</TableHead>
+                                <TableHead>고유사번</TableHead>
+                                <TableHead>이름</TableHead>
+                                <TableHead>직책</TableHead>
+                                <TableHead>성장레벨</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {selectedGroupDetails.members.map(member => (
+                                <TableRow key={member.id}>
+                                    <TableCell>{member.company}</TableCell>
+                                    <TableCell>{member.department}</TableCell>
+                                    <TableCell>{member.uniqueId}</TableCell>
+                                    <TableCell>{member.name}</TableCell>
+                                    <TableCell>{member.title}</TableCell>
+                                    <TableCell>{member.growthLevel}</TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
+            )}
+            <DialogFooter>
+                <Button onClick={() => setIsDetailsDialogOpen(false)}>닫기</Button>
+            </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
