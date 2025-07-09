@@ -65,7 +65,11 @@ export default function EvaluatorManagement({
       newFilteredResults = newFilteredResults.filter((r) => r.department === departmentFilter);
     }
     if (titleFilter !== 'all') {
-        newFilteredResults = newFilteredResults.filter((r) => r.title === titleFilter);
+        if (titleFilter === '팀원') {
+            newFilteredResults = newFilteredResults.filter((r) => !['지부장', '센터장', '팀장', '지점장'].includes(r.title));
+        } else {
+            newFilteredResults = newFilteredResults.filter((r) => r.title === titleFilter);
+        }
     }
     
     // Determine the current evaluator for the filtered group
@@ -114,18 +118,37 @@ export default function EvaluatorManagement({
   const allTitles = ['all', '지부장', '센터장', '팀장', '지점장', '팀원'];
   const evaluators = mockUsers.filter(u => u.roles.includes('evaluator'));
 
-  const evaluatorDepartments = React.useMemo(() => {
-    const departmentsByEvaluator: Record<string, Set<string>> = {};
+  const evaluatorDeptStrings = React.useMemo(() => {
+    const deptsByEvaluator: Record<string, Record<string, number>> = {};
     for (const r of results) {
         if (r.evaluatorId) {
-            if (!departmentsByEvaluator[r.evaluatorId]) {
-                departmentsByEvaluator[r.evaluatorId] = new Set();
+            if (!deptsByEvaluator[r.evaluatorId]) {
+                deptsByEvaluator[r.evaluatorId] = {};
             }
-            departmentsByEvaluator[r.evaluatorId].add(r.department);
+            const dept = r.department || '미지정';
+            deptsByEvaluator[r.evaluatorId][dept] = (deptsByEvaluator[r.evaluatorId][dept] || 0) + 1;
         }
     }
-    return departmentsByEvaluator;
-  }, [results]);
+    
+    const deptStrings: Record<string, string> = {};
+    for (const evaluatorId of evaluators.map(e => e.id)) {
+        const depts = deptsByEvaluator[evaluatorId];
+        if (depts) {
+          const sortedDeptNames = Object.entries(depts)
+              .sort(([, countA], [, countB]) => countB - countA)
+              .map(([deptName]) => deptName);
+
+          if (sortedDeptNames.length > 0) {
+              deptStrings[evaluatorId] = `(${sortedDeptNames.slice(0, 2).join(', ')}${sortedDeptNames.length > 2 ? ', ...' : ''})`;
+          } else {
+              deptStrings[evaluatorId] = '';
+          }
+        } else {
+          deptStrings[evaluatorId] = '';
+        }
+    }
+    return deptStrings;
+}, [results, evaluators]);
 
   const requestSort = (key: keyof EvaluationResult) => {
     let direction: 'ascending' | 'descending' = 'ascending';
@@ -215,7 +238,15 @@ export default function EvaluatorManagement({
 
           <div className="flex flex-wrap gap-2 my-4 p-4 border rounded-lg items-center">
             <p className="font-semibold text-sm">선택한 {selectedIds.size}명</p>
-            <Select value={bulkEvaluatorId} onValueChange={setBulkEvaluatorId}><SelectTrigger className="w-full sm:w-[250px]"><SelectValue placeholder="평가자 선택" /></SelectTrigger><SelectContent>{evaluators.map((evaluator) => { const depts = evaluatorDepartments[evaluator.id]; const deptString = depts ? `(${[...depts].slice(0, 2).join(', ')}${[...depts].size > 2 ? ', ...' : ''})` : ''; return (<SelectItem key={evaluator.id} value={evaluator.id}>{evaluator.name} {deptString}</SelectItem>);})}</SelectContent></Select>
+            <Select value={bulkEvaluatorId} onValueChange={setBulkEvaluatorId}>
+              <SelectTrigger className="w-full sm:w-[250px]"><SelectValue placeholder="평가자 선택" /></SelectTrigger>
+              <SelectContent>
+                {evaluators.map((evaluator) => { 
+                    const deptString = evaluatorDeptStrings[evaluator.id] || ''; 
+                    return (<SelectItem key={evaluator.id} value={evaluator.id}>{evaluator.name} {deptString}</SelectItem>);
+                })}
+              </SelectContent>
+            </Select>
             <Button onClick={handleBulkAssign}>일괄 할당</Button>
           </div>
           <div className="border rounded-lg overflow-x-auto">
