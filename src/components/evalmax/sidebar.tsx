@@ -21,6 +21,7 @@ import {
   ChevronLeft,
 } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 type NavItem = {
   id: string;
@@ -30,14 +31,15 @@ type NavItem = {
 };
 
 const navItems: NavItem[] = [
-  { id: 'dashboard', label: '대시보드', icon: LayoutDashboard },
   {
     id: 'results',
     label: '평가결과',
     icon: FileCheck,
     children: [
+      { id: 'dashboard', label: '대시보드', icon: LayoutDashboard },
       { id: 'all-results', label: '전체 결과', icon: FileCheck },
       { id: 'evaluator-view', label: '평가자별 결과', icon: Eye },
+      { id: 'consistency-check', label: '편향 검토 (AI)', icon: Bot },
     ],
   },
   {
@@ -50,7 +52,6 @@ const navItems: NavItem[] = [
       { id: 'grade-management', label: '등급/점수 관리', icon: Settings },
     ],
   },
-  { id: 'consistency-check', label: '편향 검토 (AI)', icon: Bot },
 ];
 
 interface SidebarProps {
@@ -93,35 +94,68 @@ export function Sidebar({ activeView, setActiveView, isOpen, setIsOpen }: Sideba
         </div>
         <ScrollArea className="h-[calc(100%-4rem)]">
         <nav className="flex-1 space-y-1 p-2">
-            {navItems.map((item) =>
-              item.children ? (
-                <Accordion
-                  key={item.id}
-                  type="single"
-                  collapsible
-                  defaultValue={openAccordion.includes(item.id) ? item.id : undefined}
-                  className="w-full"
-                >
-                <AccordionItem value={item.id} className="border-b-0">
-                  <AccordionTrigger className={cn("rounded-md px-3 py-2 text-sm font-medium hover:bg-muted hover:no-underline [&[data-state=open]>svg]:text-primary", !isOpen && 'justify-center p-2')}>
-                    <div className="flex items-center gap-3">
-                      <item.icon className="h-5 w-5 flex-shrink-0" />
-                      {isOpen && <span className="truncate">{item.label}</span>}
-                    </div>
-                  </AccordionTrigger>
-                  {isOpen && (
-                    <AccordionContent className="pl-6 pb-0 space-y-1">
+            {navItems.map((item) => {
+              if (!item.children) {
+                return <NavLink key={item.id} item={item} />;
+              }
+
+              if (isOpen) {
+                return (
+                  <Accordion
+                    key={item.id}
+                    type="multiple"
+                    value={openAccordion}
+                    onValueChange={setOpenAccordion}
+                    className="w-full"
+                  >
+                    <AccordionItem value={item.id} className="border-b-0">
+                      <AccordionTrigger className={cn("rounded-md px-3 py-2 text-sm font-medium hover:bg-muted hover:no-underline [&[data-state=open]>svg]:text-primary")}>
+                        <div className="flex items-center gap-3">
+                          <item.icon className="h-5 w-5 flex-shrink-0" />
+                          <span className="truncate">{item.label}</span>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="pl-6 pb-0 space-y-1">
+                          {item.children.map((child) => (
+                              <NavLink key={child.id} item={child} />
+                          ))}
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
+                );
+              } else {
+                const isChildActive = item.children.some(child => child.id === activeView);
+                return (
+                  <Popover key={item.id}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={isChildActive ? "secondary" : "ghost"}
+                        className="w-full justify-center"
+                        title={item.label}
+                      >
+                        <item.icon className="h-5 w-5 flex-shrink-0" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent side="right" align="start" className="w-56 p-1">
+                      <div className="space-y-1">
+                        <p className="px-2 py-1.5 text-sm font-semibold text-muted-foreground">{item.label}</p>
                         {item.children.map((child) => (
-                            <NavLink key={child.id} item={child} />
+                          <Button
+                            key={child.id}
+                            variant={activeView === child.id ? 'secondary' : 'ghost'}
+                            className="w-full justify-start gap-3"
+                            onClick={() => setActiveView(child.id)}
+                          >
+                            <child.icon className="h-5 w-5 flex-shrink-0" />
+                            <span>{child.label}</span>
+                          </Button>
                         ))}
-                    </AccordionContent>
-                  )}
-                </AccordionItem>
-                </Accordion>
-              ) : (
-                <NavLink key={item.id} item={item} />
-              )
-            )}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                );
+              }
+            })}
         </nav>
         </ScrollArea>
         <Button
