@@ -26,7 +26,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import type { EvaluationResult, User } from '@/lib/types';
-import { mockUsers } from '@/lib/data';
+import { mockUsers, getPositionSortValue } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 
@@ -58,8 +58,19 @@ export default function EvaluatorManagement({
 
     if (sortConfig !== null) {
       newFilteredResults.sort((a, b) => {
+        if (sortConfig.key === 'title') {
+            const orderA = getPositionSortValue(a.title);
+            const orderB = getPositionSortValue(b.title);
+            if (orderA !== orderB) {
+                return sortConfig.direction === 'ascending' ? orderA - orderB : orderB - orderA;
+            }
+        }
+        
         const aValue = a[sortConfig.key] ?? '';
         const bValue = b[sortConfig.key] ?? '';
+        if (typeof aValue === 'string' && typeof bValue === 'string') {
+          return sortConfig.direction === 'ascending' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+        }
         if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
         if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
         return 0;

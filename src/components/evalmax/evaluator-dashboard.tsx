@@ -74,6 +74,7 @@ interface EvaluatorDashboardProps {
   selectedDate: { year: number; month: number };
   setSelectedDate: (date: { year: number; month: number }) => void;
   handleResultsUpdate: (updatedResults: EvaluationResult[]) => void;
+  handleDepartmentNameUpdate?: (oldName: string, newName: string, year: number, month: number) => void;
   evaluatorUser?: User;
   activeView: EvaluatorView;
 }
@@ -507,7 +508,7 @@ const AllResultsView = ({ allResults, gradingScale }: {
   
   const getSortIcon = (key: keyof EvaluationResult) => {
     if (!sortConfig || sortConfig.key !== key) return <ArrowUpDown className="ml-2 h-4 w-4 opacity-30" />;
-    return sortConfig.direction === 'ascending' ? <ArrowUp className="ml-2 h-4 w-4 text-primary" /> : <ArrowDown className="ml-2 h-4 w-4 text-primary" />;
+    return sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4 text-primary" /> : <ArrowDown className="ml-2 h-4 w-4 text-primary" />;
   };
 
   const formatCurrency = (value: number) => new Intl.NumberFormat('ko-KR').format(value);
@@ -556,11 +557,16 @@ const AllResultsView = ({ allResults, gradingScale }: {
   )
 }
 
-const AssignmentManagementView = ({ myEmployees, currentMonthResults, handleResultsUpdate }: {
+interface AssignmentManagementViewProps {
   myEmployees: EvaluationResult[];
+  allResults: EvaluationResult[];
   currentMonthResults: EvaluationResult[];
   handleResultsUpdate: (updatedResults: EvaluationResult[]) => void;
-}) => {
+  handleDepartmentNameUpdate?: (oldName: string, newName: string) => void;
+}
+
+
+const AssignmentManagementView = ({ myEmployees, allResults, currentMonthResults, handleResultsUpdate, handleDepartmentNameUpdate }: AssignmentManagementViewProps) => {
   const [editingDepartment, setEditingDepartment] = React.useState<string | null>(null);
   const [newDepartmentName, setNewDepartmentName] = React.useState('');
   const { toast } = useToast();
@@ -597,28 +603,37 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, handleResu
       return;
     }
 
-    const isNameTaken = currentMonthResults.some(r => r.department === trimmedName && r.department !== editingDepartment);
+    const isNameTaken = allResults.some(r => r.department === trimmedName && r.department !== editingDepartment);
     if (isNameTaken) {
       toast({
         variant: "destructive",
         title: "오류",
-        description: `부서명 '${trimmedName}'은(는) 이번 달에 이미 존재합니다.`,
+        description: `부서명 '${trimmedName}'은(는) 이미 존재합니다.`,
       });
       return;
     }
 
-    const updatedResults = currentMonthResults.map(r => {
-      if (r.department === editingDepartment) {
-        return { ...r, department: trimmedName };
-      }
-      return r;
-    });
+    if (handleDepartmentNameUpdate) {
+        handleDepartmentNameUpdate(editingDepartment, trimmedName);
+        toast({
+            title: "부서명 변경 완료",
+            description: `'${editingDepartment}'이(가) '${trimmedName}'(으)로 변경되었습니다. 이 변경사항은 현재 월부터 계속 적용됩니다.`,
+        });
+    } else {
+        const updatedResults = currentMonthResults.map(r => {
+        if (r.department === editingDepartment) {
+            return { ...r, department: trimmedName };
+        }
+        return r;
+        });
 
-    handleResultsUpdate(updatedResults);
-    toast({
-      title: "부서명 변경 완료",
-      description: `이번 달 평가에서 '${editingDepartment}'이(가) '${trimmedName}'(으)로 변경되었습니다.`,
-    });
+        handleResultsUpdate(updatedResults);
+        toast({
+        title: "부서명 변경 완료",
+        description: `이번 달 평가에서 '${editingDepartment}'이(가) '${trimmedName}'(으)로 변경되었습니다.`,
+        });
+    }
+
     handleCancelEditing();
   };
 
@@ -629,7 +644,7 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, handleResu
         <CardHeader>
           <CardTitle>담당 부서 관리</CardTitle>
           <CardDescription>
-            담당하고 있는 부서의 명칭을 수정할 수 있습니다. 변경사항은 현재 선택된 월의 평가에만 적용됩니다.
+            담당하고 있는 부서의 명칭을 수정할 수 있습니다. 변경사항은 현재 선택된 월부터 이후 평가에 계속 적용됩니다.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -691,7 +706,7 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, handleResu
 };
 
 
-export default function EvaluatorDashboard({ allResults, currentMonthResults, gradingScale, selectedDate, setSelectedDate, handleResultsUpdate, evaluatorUser, activeView }: EvaluatorDashboardProps) {
+export default function EvaluatorDashboard({ allResults, currentMonthResults, gradingScale, selectedDate, setSelectedDate, handleResultsUpdate, handleDepartmentNameUpdate, evaluatorUser, activeView }: EvaluatorDashboardProps) {
   const { user: authUser } = useAuth();
   const user = evaluatorUser || authUser;
   
@@ -723,8 +738,10 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
       case 'assignment-management':
         return <AssignmentManagementView 
                  myEmployees={myEmployees} 
+                 allResults={allResults}
                  currentMonthResults={currentMonthResults} 
-                 handleResultsUpdate={handleResultsUpdate} 
+                 handleResultsUpdate={handleResultsUpdate}
+                 handleDepartmentNameUpdate={handleDepartmentNameUpdate ? (oldName, newName) => handleDepartmentNameUpdate(oldName, newName, selectedDate.year, selectedDate.month) : undefined}
                />;
       default:
         return <div>선택된 뷰가 없습니다.</div>;

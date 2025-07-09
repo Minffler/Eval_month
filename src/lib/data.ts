@@ -57,3 +57,23 @@ export const calculateFinalAmount = (gradeAmount: number, workRate: number): num
   }
   return 0;
 };
+
+export const positionSortOrder: Record<string, number> = {
+  '지부장': 1,
+  '센터장': 2,
+  '팀장': 3,
+  '지점장': 4,
+};
+
+export function getPositionSortValue(title: string): number {
+    for (const pos in positionSortOrder) {
+        if (title.includes(pos)) {
+            return positionSortOrder[pos];
+        }
+    }
+    // '팀원' or other non-managerial roles
+    if (title.includes('팀원')) {
+      return 99;
+    }
+    return 98; // other titles
+}

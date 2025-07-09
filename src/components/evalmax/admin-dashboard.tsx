@@ -27,7 +27,7 @@ import { Button } from '../ui/button';
 import { useToast } from '@/hooks/use-toast';
 import GradeManagement from './grade-management';
 import { MonthSelector } from './month-selector';
-import { calculateFinalAmount, mockUsers, mockEmployees } from '@/lib/data';
+import { calculateFinalAmount, mockUsers, mockEmployees, getPositionSortValue } from '@/lib/data';
 import * as XLSX from 'xlsx';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Progress } from '../ui/progress';
@@ -149,8 +149,19 @@ export default function AdminDashboard({
     let sortableItems = [...visibleResults];
     if (sortConfig !== null) {
       sortableItems.sort((a, b) => {
+        if (sortConfig.key === 'title') {
+            const orderA = getPositionSortValue(a.title);
+            const orderB = getPositionSortValue(b.title);
+            if (orderA !== orderB) {
+                return sortConfig.direction === 'ascending' ? orderA - orderB : orderB - orderA;
+            }
+        }
+
         const aValue = a[sortConfig.key] ?? '';
         const bValue = b[sortConfig.key] ?? '';
+        if (typeof aValue === 'string' && typeof bValue === 'string') {
+          return sortConfig.direction === 'ascending' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+        }
         if (aValue < bValue) {
           return sortConfig.direction === 'ascending' ? -1 : 1;
         }
