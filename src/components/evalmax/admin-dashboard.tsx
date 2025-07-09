@@ -63,6 +63,20 @@ type SortConfig = {
   direction: 'ascending' | 'descending';
 } | null;
 
+type EvaluatorStat = {
+  evaluatorUniqueId: string;
+  evaluatorName: string;
+  total: number;
+  completed: number;
+  pending: number;
+  rate: number;
+};
+type EvaluatorStatsSortConfig = {
+  key: keyof EvaluatorStat;
+  direction: 'ascending' | 'descending';
+} | null;
+
+
 export default function AdminDashboard({ 
   results: initialResults, 
   allEmployees,
@@ -81,6 +95,7 @@ export default function AdminDashboard({
   const [isNotificationDialogOpen, setIsNotificationDialogOpen] = React.useState(false);
   const [notificationMessage, setNotificationMessage] = React.useState('');
   const [sortConfig, setSortConfig] = React.useState<SortConfig>(null);
+  const [evaluatorStatsSortConfig, setEvaluatorStatsSortConfig] = React.useState<EvaluatorStatsSortConfig>({ key: 'rate', direction: 'ascending' });
   const [selectedEvaluatorId, setSelectedEvaluatorId] = React.useState<string>('');
   const [isDistributionChartOpen, setIsDistributionChartOpen] = React.useState(false);
   const { toast } = useToast();
@@ -132,8 +147,27 @@ export default function AdminDashboard({
       completed: data.completed,
       pending: data.total - data.completed,
       rate: data.total > 0 ? (data.completed / data.total) * 100 : 0,
-    })).sort((a, b) => a.evaluatorName.localeCompare(b.evaluatorName));
+    }));
   }, [initialResults, allEmployees]);
+
+  const sortedEvaluatorStats = React.useMemo(() => {
+    let sortableItems: EvaluatorStat[] = [...evaluatorStats];
+    if (evaluatorStatsSortConfig !== null) {
+      sortableItems.sort((a, b) => {
+        const aValue = a[evaluatorStatsSortConfig.key];
+        const bValue = b[evaluatorStatsSortConfig.key];
+        
+        if (aValue < bValue) {
+          return evaluatorStatsSortConfig.direction === 'ascending' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return evaluatorStatsSortConfig.direction === 'ascending' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableItems;
+  }, [evaluatorStats, evaluatorStatsSortConfig]);
   
   const isAllEvaluatorsSelected = evaluatorStats.length > 0 && selectedEvaluators.size === evaluatorStats.length;
   const isIndeterminateEvaluatorSelection = selectedEvaluators.size > 0 && !isAllEvaluatorsSelected;
@@ -185,6 +219,24 @@ export default function AdminDashboard({
         return <ArrowUpDown className="ml-2 h-4 w-4 opacity-30" />;
     }
     if (sortConfig.direction === 'ascending') {
+        return <ArrowUp className="ml-2 h-4 w-4 text-primary" />;
+    }
+    return <ArrowDown className="ml-2 h-4 w-4 text-primary" />;
+  };
+
+  const requestEvaluatorStatsSort = (key: keyof EvaluatorStat) => {
+    let direction: 'ascending' | 'descending' = 'ascending';
+    if (evaluatorStatsSortConfig && evaluatorStatsSortConfig.key === key && evaluatorStatsSortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setEvaluatorStatsSortConfig({ key, direction });
+  };
+  
+  const getEvaluatorStatsSortIcon = (key: keyof EvaluatorStat) => {
+    if (!evaluatorStatsSortConfig || evaluatorStatsSortConfig.key !== key) {
+        return <ArrowUpDown className="ml-2 h-4 w-4 opacity-30" />;
+    }
+    if (evaluatorStatsSortConfig.direction === 'ascending') {
         return <ArrowUp className="ml-2 h-4 w-4 text-primary" />;
     }
     return <ArrowDown className="ml-2 h-4 w-4 text-primary" />;
@@ -377,16 +429,28 @@ export default function AdminDashboard({
                                   aria-label="모든 평가자 선택"
                                 />
                               </TableHead>
-                              <TableHead className="whitespace-nowrap">평가자사번</TableHead>
-                              <TableHead className="whitespace-nowrap">평가자</TableHead>
-                              <TableHead className="whitespace-nowrap text-center">대상 인원</TableHead>
-                              <TableHead className="whitespace-nowrap text-center">완료</TableHead>
-                              <TableHead className="whitespace-nowrap text-center">미입력</TableHead>
-                              <TableHead className="whitespace-nowrap text-center w-[200px]">완료율</TableHead>
+                              <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestEvaluatorStatsSort('evaluatorUniqueId')}>
+                                <div className="flex items-center">평가자사번{getEvaluatorStatsSortIcon('evaluatorUniqueId')}</div>
+                              </TableHead>
+                              <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestEvaluatorStatsSort('evaluatorName')}>
+                                <div className="flex items-center">평가자{getEvaluatorStatsSortIcon('evaluatorName')}</div>
+                              </TableHead>
+                              <TableHead className="whitespace-nowrap text-center cursor-pointer" onClick={() => requestEvaluatorStatsSort('total')}>
+                                <div className="flex items-center justify-center">대상 인원{getEvaluatorStatsSortIcon('total')}</div>
+                              </TableHead>
+                              <TableHead className="whitespace-nowrap text-center cursor-pointer" onClick={() => requestEvaluatorStatsSort('completed')}>
+                                <div className="flex items-center justify-center">완료{getEvaluatorStatsSortIcon('completed')}</div>
+                              </TableHead>
+                              <TableHead className="whitespace-nowrap text-center cursor-pointer" onClick={() => requestEvaluatorStatsSort('pending')}>
+                                <div className="flex items-center justify-center">미입력{getEvaluatorStatsSortIcon('pending')}</div>
+                              </TableHead>
+                              <TableHead className="whitespace-nowrap text-center w-[200px] cursor-pointer" onClick={() => requestEvaluatorStatsSort('rate')}>
+                                <div className="flex items-center justify-center">완료율{getEvaluatorStatsSortIcon('rate')}</div>
+                              </TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {evaluatorStats.map(stat => (
+                            {sortedEvaluatorStats.map(stat => (
                               <TableRow key={stat.evaluatorUniqueId}>
                                 <TableCell>
                                   <Checkbox
