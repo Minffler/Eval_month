@@ -246,7 +246,7 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, handleRe
 
   React.useEffect(() => {
     const groupWithinCategory = (employees: EvaluationResult[]): Groups => {
-        return employees.reduce((acc, emp) => {
+        const initialGroups = employees.reduce((acc, emp) => {
             const groupKey = emp.detailedGroup2 || '기타';
             if (!acc[groupKey]) {
                 acc[groupKey] = { name: groupKey, members: [] };
@@ -254,6 +254,24 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, handleRe
             acc[groupKey].members.push(emp);
             return acc;
         }, {} as Groups);
+        
+        // Sort members within each group
+        for (const key in initialGroups) {
+            initialGroups[key].members.sort((a, b) => {
+                const companyCompare = a.company.localeCompare(b.company);
+                if (companyCompare !== 0) return companyCompare;
+
+                const departmentCompare = a.department.localeCompare(b.department);
+                if (departmentCompare !== 0) return departmentCompare;
+
+                const levelA = parseInt(a.growthLevel.replace('Lv.', ''), 10) || 99;
+                const levelB = parseInt(b.growthLevel.replace('Lv.', ''), 10) || 99;
+                if (levelA !== levelB) return levelA - levelB;
+                
+                return b.workRate - a.workRate;
+            });
+        }
+        return initialGroups;
     };
     setGroups(groupWithinCategory(visibleEmployees));
     setSelectedIds(new Set());
@@ -508,7 +526,7 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, handleRe
           </Collapsible>
         </Card>
         <Tabs defaultValue="A. 정규평가" onValueChange={(val) => setActiveTab(val as EvaluationGroupCategory)}>
-          <TabsList className="w-full grid grid-cols-4">{Object.keys(categorizedEmployees).map(category => (<TabsTrigger key={category} value={category}>{category} ({categorizedEmployees[category as keyof typeof categorizedEmployees]?.length ?? 0})</TabsTrigger>))}</TabsList>
+          <TabsList className="w-full grid grid-cols-4">{Object.entries(categorizedEmployees).map(([category, employees]) => (<TabsTrigger key={category} value={category}>{category} ({employees?.length ?? 0})</TabsTrigger>))}</TabsList>
           <div className="flex justify-between my-4 gap-2">
             <Button onClick={handleOpenAddGroupDialog} variant="outline" size="sm"><PlusCircle className="mr-2 h-4 w-4" />새 그룹 추가</Button>
             <div className="flex-grow" />
@@ -543,8 +561,16 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, handleRe
                           <Table>
                               <TableHeader><TableRow>
                                   <TableHead className="w-[80px] p-2"><Checkbox checked={isIndeterminate ? 'indeterminate' : allSelectedInGroup} onCheckedChange={(checked) => handleToggleGroupSelection(group, Boolean(checked))} aria-label={`Select all in ${group.name}`}/></TableHead>
-                                  <TableHead className="whitespace-nowrap py-2 px-2">{isBGroupView ? '구분' : 'ID'}</TableHead>
-                                  <TableHead className="whitespace-nowrap py-2 px-2">회사</TableHead><TableHead className="whitespace-nowrap py-2 px-2">소속부서</TableHead><TableHead className="whitespace-nowrap py-2 px-2">이름</TableHead><TableHead className="whitespace-nowrap py-2 px-2">직책</TableHead><TableHead className="whitespace-nowrap py-2 px-2">성장레벨</TableHead><TableHead className="whitespace-nowrap py-2 px-2">근무율</TableHead><TableHead className="whitespace-nowrap py-2 px-2">등급</TableHead><TableHead className="whitespace-nowrap py-2 px-2">점수</TableHead><TableHead className="whitespace-nowrap w-[200px] py-2 px-2">비고</TableHead>
+                                  <TableHead className="whitespace-nowrap py-2 px-2 text-center">{isBGroupView ? '구분' : 'ID'}</TableHead>
+                                  <TableHead className="whitespace-nowrap py-2 px-2 text-center">회사</TableHead>
+                                  <TableHead className="whitespace-nowrap py-2 px-2 text-center">소속부서</TableHead>
+                                  <TableHead className="whitespace-nowrap py-2 px-2 text-center">이름</TableHead>
+                                  <TableHead className="whitespace-nowrap py-2 px-2 text-center">직책</TableHead>
+                                  <TableHead className="whitespace-nowrap py-2 px-2 text-center">성장레벨</TableHead>
+                                  <TableHead className="whitespace-nowrap py-2 px-2 text-center">근무율</TableHead>
+                                  <TableHead className="whitespace-nowrap py-2 px-2 text-center">등급</TableHead>
+                                  <TableHead className="whitespace-nowrap py-2 px-2 text-center">점수</TableHead>
+                                  <TableHead className="whitespace-nowrap w-[200px] py-2 px-2 text-center">비고</TableHead>
                               </TableRow></TableHeader>
                               <TableBody>{group.members.map(emp => (<DraggableTableRow key={emp.id} employee={emp} gradingScale={gradingScale} selected={selectedIds.has(emp.id)} onSelect={handleToggleSelection} onGradeChange={handleGradeChange} onMemoChange={handleMemoChange} onSave={handleSave} isBGroupView={isBGroupView} />))}</TableBody>
                           </Table>
