@@ -357,7 +357,7 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, setSelec
   const gradeDistribution = Object.keys(gradingScale).map(grade => ({ name: grade, value: visibleEmployees.filter(g => g.grade === grade).length }));
 
   const handleDownloadExcel = () => {
-    const dataToExport = visibleEmployees.map(r => ({ '고유사번': r.uniqueId, '회사': r.company, '소속부서': r.department, '이름': r.name, '근무율': `${(r.workRate * 100).toFixed(1)}%`, '등급': r.grade, '점수': r.score, '비고': r.memo }));
+    const dataToExport = visibleEmployees.map(r => ({ 'ID': r.uniqueId, '회사': r.company, '소속부서': r.department, '이름': r.name, '근무율': `${(r.workRate * 100).toFixed(1)}%`, '등급': r.grade, '점수': r.score, '비고': r.memo }));
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, `평가결과-${activeTab}`);
@@ -477,7 +477,7 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, setSelec
                           <Table>
                               <TableHeader><TableRow>
                                   <TableHead className="w-[80px] p-2"><Checkbox checked={isIndeterminate ? 'indeterminate' : allSelectedInGroup} onCheckedChange={(checked) => handleToggleGroupSelection(group, Boolean(checked))} aria-label={`Select all in ${group.name}`}/></TableHead>
-                                  <TableHead className="whitespace-nowrap py-2 px-2">고유사번</TableHead><TableHead className="whitespace-nowrap py-2 px-2">회사</TableHead><TableHead className="whitespace-nowrap py-2 px-2">소속부서</TableHead><TableHead className="whitespace-nowrap py-2 px-2">이름</TableHead><TableHead className="whitespace-nowrap py-2 px-2">직책</TableHead><TableHead className="whitespace-nowrap py-2 px-2">성장레벨</TableHead><TableHead className="whitespace-nowrap py-2 px-2">근무율</TableHead><TableHead className="whitespace-nowrap py-2 px-2">등급</TableHead><TableHead className="whitespace-nowrap py-2 px-2">점수</TableHead><TableHead className="whitespace-nowrap w-[200px] py-2 px-2">비고</TableHead>
+                                  <TableHead className="whitespace-nowrap py-2 px-2">ID</TableHead><TableHead className="whitespace-nowrap py-2 px-2">회사</TableHead><TableHead className="whitespace-nowrap py-2 px-2">소속부서</TableHead><TableHead className="whitespace-nowrap py-2 px-2">이름</TableHead><TableHead className="whitespace-nowrap py-2 px-2">직책</TableHead><TableHead className="whitespace-nowrap py-2 px-2">성장레벨</TableHead><TableHead className="whitespace-nowrap py-2 px-2">근무율</TableHead><TableHead className="whitespace-nowrap py-2 px-2">등급</TableHead><TableHead className="whitespace-nowrap py-2 px-2">점수</TableHead><TableHead className="whitespace-nowrap w-[200px] py-2 px-2">비고</TableHead>
                               </TableRow></TableHeader>
                               <TableBody>{group.members.map(emp => (<DraggableTableRow key={emp.id} employee={emp} gradingScale={gradingScale} selected={selectedIds.has(emp.id)} onSelect={handleToggleSelection} onGradeChange={handleGradeChange} onMemoChange={handleMemoChange} onSave={handleSave} />))}</TableBody>
                           </Table>
@@ -807,7 +807,7 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, allEmploye
             <div className="space-y-4 py-4">
               <p className="text-sm"><span className="font-semibold text-muted-foreground">소속:</span> {groupToChange.company} / {groupToChange.department} / {groupToChange.position}</p>
               <p className="text-sm"><span className="font-semibold text-muted-foreground">인원:</span> {groupToChange.memberCount}명</p>
-              <p className="text-sm"><span className="font-semibold text-muted-foreground">현재 담당자:</span> {groupToChange.currentEvaluatorName} ({groupToChange.currentEvaluatorUniqueId})</p>
+              <p className="text-sm"><span className="font-semibold text-muted-foreground">현재 담당자:</span> {groupToChange.currentEvaluatorName} (ID: {groupToChange.currentEvaluatorUniqueId})</p>
               <p className="text-sm pt-4 font-bold text-primary">이 그룹의 담당자를 현재 로그인한 평가자({evaluatorName})님으로 변경합니다.</p>
             </div>
           )}
@@ -834,7 +834,7 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, allEmploye
                             <TableRow>
                                 <TableHead>회사</TableHead>
                                 <TableHead>부서</TableHead>
-                                <TableHead>고유사번</TableHead>
+                                <TableHead>ID</TableHead>
                                 <TableHead>이름</TableHead>
                                 <TableHead>직책</TableHead>
                                 <TableHead>성장레벨</TableHead>

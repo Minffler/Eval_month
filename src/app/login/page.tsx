@@ -39,7 +39,7 @@ export default function LoginPage() {
       toast({
         variant: 'destructive',
         title: '로그인 실패',
-        description: '아이디 또는 비밀번호가 올바르지 않습니다.',
+        description: 'ID 또는 비밀번호가 올바르지 않습니다.',
       });
     }
     setLoading(false);
@@ -50,12 +50,12 @@ export default function LoginPage() {
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle className="text-2xl font-headline">PL월성과평가</CardTitle>
-          <CardDescription>고유사번과 비밀번호를 입력해주세요.</CardDescription>
+          <CardDescription>ID와 비밀번호를 입력해주세요.</CardDescription>
         </CardHeader>
         <form onSubmit={handleLogin}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="id">ID (고유사번)</Label>
+              <Label htmlFor="id">ID</Label>
               <Input
                 id="id"
                 value={id}

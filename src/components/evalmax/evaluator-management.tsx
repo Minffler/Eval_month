@@ -191,7 +191,7 @@ export default function EvaluatorManagement({
     const updatedResults = results.map((r) => {
       if (r.id === employeeId) {
         const evaluator = allEmployees.find(u => u.uniqueId === newEvaluatorId);
-        return { ...r, evaluatorId: newEvaluatorId, evaluatorName: evaluator?.name || (newEvaluatorId ? `ID: ${newEvaluatorId}` : '미지정') };
+        return { ...r, evaluatorId: newEvaluatorId, evaluatorName: evaluator?.name || `ID: ${newEvaluatorId}` };
       }
       return r;
     });
@@ -210,7 +210,7 @@ export default function EvaluatorManagement({
     const updatedResults = results.map(r => {
       if (selectedIds.has(r.id)) {
         const evaluator = allEmployees.find(u => u.uniqueId === bulkEvaluatorId);
-        return { ...r, evaluatorId: bulkEvaluatorId, evaluatorName: evaluator?.name || (bulkEvaluatorId ? `ID: ${bulkEvaluatorId}` : '미지정') };
+        return { ...r, evaluatorId: bulkEvaluatorId, evaluatorName: evaluator?.name || `ID: ${bulkEvaluatorId}` };
       }
       return r;
     });
@@ -263,7 +263,7 @@ export default function EvaluatorManagement({
               <TableHeader>
                 <TableRow>
                   <TableHead><Checkbox checked={isAllSelected} onCheckedChange={(checked) => handleSelectAll(Boolean(checked))} /></TableHead>
-                  <TableHead className="cursor-pointer" onClick={() => requestSort('uniqueId')}><div className="flex items-center">고유사번{getSortIcon('uniqueId')}</div></TableHead>
+                  <TableHead className="cursor-pointer" onClick={() => requestSort('uniqueId')}><div className="flex items-center">ID{getSortIcon('uniqueId')}</div></TableHead>
                   <TableHead className="cursor-pointer" onClick={() => requestSort('name')}><div className="flex items-center">이름{getSortIcon('name')}</div></TableHead>
                   <TableHead className="cursor-pointer" onClick={() => requestSort('company')}><div className="flex items-center">회사{getSortIcon('company')}</div></TableHead>
                   <TableHead className="cursor-pointer" onClick={() => requestSort('department')}><div className="flex items-center">소속부서{getSortIcon('department')}</div></TableHead>
@@ -281,7 +281,7 @@ export default function EvaluatorManagement({
                     <TableCell>{result.department}</TableCell>
                     <TableCell>{result.title}</TableCell>
                     <TableCell>
-                      <Select value={result.evaluatorId} onValueChange={(newEvaluatorId) => handleEvaluatorChange(result.id, newEvaluatorId)}>
+                      <Select value={result.evaluatorId || ''} onValueChange={(newEvaluatorId) => handleEvaluatorChange(result.id, newEvaluatorId)}>
                         <SelectTrigger className="w-[180px]"><SelectValue placeholder="평가자 선택" /></SelectTrigger>
                         <SelectContent>{evaluators.map((evaluator) => (<SelectItem key={evaluator.uniqueId} value={evaluator.uniqueId}>{evaluator.name}</SelectItem>))}</SelectContent>
                       </Select>

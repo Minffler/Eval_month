@@ -367,7 +367,7 @@ export default function AdminDashboard({
 
   const handleDownloadExcel = () => {
     const dataToExport = visibleResults.map(r => ({
-      '고유사번': r.uniqueId,
+      'ID': r.uniqueId,
       '회사': r.company,
       '소속부서': r.department,
       '이름': r.name,
@@ -377,6 +377,7 @@ export default function AdminDashboard({
       '등급': r.grade,
       '기준금액': r.baseAmount,
       '최종금액': r.finalAmount,
+      '평가자 ID': r.evaluatorId,
       '평가자': r.evaluatorName,
       '비고': r.memo,
     }));
@@ -429,7 +430,7 @@ export default function AdminDashboard({
                                 />
                               </TableHead>
                               <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestEvaluatorStatsSort('evaluatorUniqueId')}>
-                                <div className="flex items-center">평가자사번{getEvaluatorStatsSortIcon('evaluatorUniqueId')}</div>
+                                <div className="flex items-center">평가자 ID{getEvaluatorStatsSortIcon('evaluatorUniqueId')}</div>
                               </TableHead>
                               <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestEvaluatorStatsSort('evaluatorName')}>
                                 <div className="flex items-center">평가자{getEvaluatorStatsSortIcon('evaluatorName')}</div>
@@ -516,7 +517,7 @@ export default function AdminDashboard({
                       <TableHeader>
                         <TableRow>
                           <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('uniqueId')}>
-                            <div className="flex items-center">고유사번 {getSortIcon('uniqueId')}</div>
+                            <div className="flex items-center">ID {getSortIcon('uniqueId')}</div>
                           </TableHead>
                           <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('company')}>
                              <div className="flex items-center">회사 {getSortIcon('company')}</div>
@@ -619,7 +620,7 @@ export default function AdminDashboard({
                                 <SelectContent>
                                     {evaluatorStats.map(stat => (
                                         <SelectItem key={stat.evaluatorUniqueId} value={stat.evaluatorUniqueId}>
-                                            {stat.evaluatorUniqueId} {stat.evaluatorName}
+                                            {stat.evaluatorName} ({stat.evaluatorUniqueId})
                                         </SelectItem>
                                     ))}
                                 </SelectContent>

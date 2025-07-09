@@ -1,9 +1,9 @@
 export type Role = 'admin' | 'evaluator' | 'employee' | null;
 
 export type User = {
-  id: string;
-  employeeId: string;
-  uniqueId: string;
+  id: string; // 내부 시스템용 ID (페이지 키 등으로 사용)
+  employeeId: string; // Employee.id와 연결
+  uniqueId: string; // 사용자 ID (고유사번)
   name: string;
   roles: Role[];
   avatar: string;
@@ -14,8 +14,8 @@ export type User = {
 export type Company = 'OK' | 'OC' | 'OCI' | 'OFI' | 'EX' | 'OKDS' | 'OKH' | 'OKIP' | 'OKV' | 'OT';
 
 export type Employee = {
-  id: string; // 사번
-  uniqueId: string; // 고유사번
+  id: string; // 내부 시스템용 ID (E + uniqueId)
+  uniqueId: string; // 사용자 ID (고유사번)
   name: string; // 이름
   company: string; // 회사
   department: string; // 소속부서
@@ -23,7 +23,7 @@ export type Employee = {
   position: string; // 호칭
   growthLevel: string; // 성장레벨
   workRate: number; // 근무율
-  evaluatorId: string; // 평가자 고유사번
+  evaluatorId: string; // 평가자 ID (고유사번)
   baseAmount: number; // 개인별 기준금액
   group: string; // 평가그룹
   memo?: string;
@@ -65,7 +65,7 @@ export type EvaluationResult = Employee & {
   payoutRate: number;
   gradeAmount: number; // 등급금액
   finalAmount: number; // 최종금액
-  evaluatorName: string;
+  evaluatorName: string; // 평가자 이름
   detailedGroup1: string; // 세부구분1(근무율)
   detailedGroup2: string; // 세부구분2(직책/성장레벨별 구분)
   memo?: string;

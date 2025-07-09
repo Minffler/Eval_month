@@ -34,7 +34,7 @@ export default function EmployeeDashboard({ allResults, gradingScale }: Employee
 
   React.useEffect(() => {
     if (user) {
-      const employeeUserResults = allResults.filter(r => r.id === user.employeeId);
+      const employeeUserResults = allResults.filter(r => r.uniqueId === user.uniqueId);
       setEmployeeResults(employeeUserResults);
     }
   }, [user, allResults]);
@@ -177,7 +177,7 @@ export default function EmployeeDashboard({ allResults, gradingScale }: Employee
                     <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('month')}>
                       <div className="flex items-center">평가월 {getSortIcon('month')}</div>
                     </TableHead>
-                    <TableHead className="whitespace-nowrap">고유사번</TableHead>
+                    <TableHead className="whitespace-nowrap">ID</TableHead>
                     <TableHead className="whitespace-nowrap">회사</TableHead>
                     <TableHead className="whitespace-nowrap">이름</TableHead>
                     <TableHead className="whitespace-nowrap">소속부서</TableHead>

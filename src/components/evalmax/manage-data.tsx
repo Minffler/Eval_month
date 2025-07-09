@@ -41,9 +41,9 @@ export default function ManageData({ onEmployeeUpload, onEvaluationUpload, resul
           const json = XLSX.utils.sheet_to_json<any>(worksheet);
 
           const newEmployees: Employee[] = json.map((row, index) => {
-            const uniqueId = String(row['고유사번'] || '');
+            const uniqueId = String(row['ID'] || '');
             if (!uniqueId) {
-                throw new Error(`${index + 2}번째 행에 고유사번이 없습니다.`);
+                throw new Error(`${index + 2}번째 행에 ID가 없습니다.`);
             }
 
             return {
@@ -56,7 +56,7 @@ export default function ManageData({ onEmployeeUpload, onEvaluationUpload, resul
               position: String(row['직책'] || '팀원'),
               growthLevel: String(row['성장레벨'] || ''),
               workRate: parseFloat(String(row['실근무율'] || '0')) || 0,
-              evaluatorId: String(row['평가자사번'] || ''),
+              evaluatorId: String(row['평가자 ID'] || ''),
               baseAmount: Number(String(row['개인별 기준금액'] || '0').replace(/,/g, '')) || 0,
               group: String(row['평가그룹'] || ''),
               memo: String(row['비고'] || ''),
@@ -97,9 +97,9 @@ export default function ManageData({ onEmployeeUpload, onEvaluationUpload, resul
                 const json = XLSX.utils.sheet_to_json<any>(worksheet);
 
                 const newEvaluations = json.map((row, index) => {
-                    const uniqueId = String(row['고유사번'] || '');
+                    const uniqueId = String(row['ID'] || '');
                     if (!uniqueId) {
-                        throw new Error(`${index + 2}번째 행에 고유사번이 없습니다.`);
+                        throw new Error(`${index + 2}번째 행에 ID가 없습니다.`);
                     }
                     return {
                         employeeId: `E${uniqueId}`,
@@ -133,7 +133,7 @@ export default function ManageData({ onEmployeeUpload, onEvaluationUpload, resul
 
   const handleDownloadBaseTemplate = () => {
     const dataForSheet = results.map(r => ({
-        '고유사번': r.uniqueId,
+        'ID': r.uniqueId,
         '이름': r.name,
         '회사': r.company,
         '소속부서': r.department,
@@ -141,16 +141,16 @@ export default function ManageData({ onEmployeeUpload, onEvaluationUpload, resul
         '성장레벨': r.growthLevel,
         '실근무율': r.workRate,
         '평가그룹': r.group,
-        '평가자사번': r.evaluatorId,
-        '평가자이름': r.evaluatorName,
+        '평가자 ID': r.evaluatorId,
+        '평가자': r.evaluatorName,
         '개인별 기준금액': r.baseAmount,
         '비고': r.memo,
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(dataForSheet.length > 0 ? dataForSheet : [{}], {
         header: [
-            '고유사번', '이름', '회사', '소속부서', '직책', '성장레벨', 
-            '실근무율', '평가그룹', '평가자사번', '평가자이름', '개인별 기준금액', '비고'
+            'ID', '이름', '회사', '소속부서', '직책', '성장레벨', 
+            '실근무율', '평가그룹', '평가자 ID', '평가자', '개인별 기준금액', '비고'
         ]
     });
     const workbook = XLSX.utils.book_new();
@@ -161,7 +161,7 @@ export default function ManageData({ onEmployeeUpload, onEvaluationUpload, resul
 
   const handleDownloadEvalTemplate = () => {
     const dataForSheet = results.map(r => ({
-        '고유사번': r.uniqueId,
+        'ID': r.uniqueId,
         '이름': r.name,
         '회사': r.company,
         '소속부서': r.department,
@@ -171,8 +171,8 @@ export default function ManageData({ onEmployeeUpload, onEvaluationUpload, resul
         '평가그룹': r.group,
         '세부구분1': r.detailedGroup1,
         '세부구분2': r.detailedGroup2,
-        '평가자사번': r.evaluatorId,
-        '평가자이름': r.evaluatorName,
+        '평가자 ID': r.evaluatorId,
+        '평가자': r.evaluatorName,
         '점수': r.score,
         '등급': r.grade,
         '기준금액': r.baseAmount,
@@ -181,8 +181,8 @@ export default function ManageData({ onEmployeeUpload, onEvaluationUpload, resul
     }));
 
     const headers = [
-        '고유사번', '이름', '회사', '소속부서', '직책', '성장레벨', 
-        '실근무율', '평가그룹', '세부구분1', '세부구분2', '평가자사번', '평가자이름', 
+        'ID', '이름', '회사', '소속부서', '직책', '성장레벨', 
+        '실근무율', '평가그룹', '세부구분1', '세부구분2', '평가자 ID', '평가자', 
         '점수', '등급', '기준금액', '최종금액', '비고'
     ];
 
