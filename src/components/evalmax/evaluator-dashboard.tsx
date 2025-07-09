@@ -188,7 +188,9 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, setSelec
   const categorizedEmployees = React.useMemo(() => {
     const categories: Record<EvaluationGroupCategory, EvaluationResult[]> = {
       '전체': myEmployees,
-      '70% 이상': myEmployees.filter(emp => emp.workRate >= 0.7),
+      'A. 정규평가': myEmployees.filter(emp => emp.evaluationGroup === 'A. 정규평가'),
+      'B. 별도평가': myEmployees.filter(emp => emp.evaluationGroup === 'B. 별도평가'),
+      'C. 미평가': myEmployees.filter(emp => emp.evaluationGroup === 'C. 미평가'),
     };
     return categories;
   }, [myEmployees]);
@@ -429,15 +431,30 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, setSelec
               <div className="flex-1"><CardTitle>평가 진행 현황</CardTitle><CardDescription>{selectedDate.year}년 {selectedDate.month}월 성과평가</CardDescription></div>
               <div className="w-full sm:w-64 space-y-1">
                 <div className='flex justify-between items-baseline'><h4 className="font-semibold text-sm">종합 진행률</h4><span className="font-bold text-base text-primary">{totalCompletionRate.toFixed(1)}%</span></div>
-                <Progress value={totalCompletionRate} className="h-2" /><p className="text-xs text-muted-foreground text-right">{totalMyCompleted} / {totalMyEmployees} 명 완료</p>
+                <Progress value={totalCompletionRate} className="h-2" />
+                <p className="text-xs text-muted-foreground text-right">{totalMyCompleted} / {totalMyEmployees} 명 완료</p>
               </div>
             </CardHeader>
-            <CollapsibleContent><CardContent className='p-4 pt-0 space-y-2'><h3 className="font-semibold">{`${activeTab} 등급 분포`}</h3><div className="border rounded-lg p-2"><GradeHistogram data={gradeDistribution} gradingScale={gradingScale} /></div></CardContent></CollapsibleContent>
-            <CollapsibleTrigger asChild><div className="border-t w-full text-center p-2 text-sm text-muted-foreground cursor-pointer hover:bg-muted/50 rounded-b-lg"><div className="flex items-center justify-center">{isChartOpen ? "차트 숨기기" : "차트 보기"}{isChartOpen ? <ChevronUp className="h-4 w-4 ml-1" /> : <ChevronDown className="h-4 w-4 ml-1" />}</div></div></CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className='p-4 pt-0 space-y-2'>
+                <h3 className="font-semibold">{`${activeTab} 등급 분포`}</h3>
+                <div className="border rounded-lg p-2">
+                  <GradeHistogram data={gradeDistribution} gradingScale={gradingScale} />
+                </div>
+              </CardContent>
+            </CollapsibleContent>
+            <CollapsibleTrigger asChild>
+              <div className="border-t w-full text-center p-2 text-sm text-muted-foreground cursor-pointer hover:bg-muted/50 rounded-b-lg">
+                <div className="flex items-center justify-center">
+                  {isChartOpen ? "차트 숨기기" : "차트 보기"}
+                  {isChartOpen ? <ChevronUp className="h-4 w-4 ml-1" /> : <ChevronDown className="h-4 w-4 ml-1" />}
+                </div>
+              </div>
+            </CollapsibleTrigger>
           </Collapsible>
         </Card>
         <Tabs defaultValue="전체" onValueChange={(val) => setActiveTab(val as EvaluationGroupCategory)}>
-          <TabsList className="w-full grid grid-cols-2">{Object.keys(categorizedEmployees).map(category => (<TabsTrigger key={category} value={category}>{category} ({categorizedEmployees[category as EvaluationGroupCategory].length})</TabsTrigger>))}</TabsList>
+          <TabsList className="w-full grid grid-cols-4">{Object.keys(categorizedEmployees).map(category => (<TabsTrigger key={category} value={category}>{category} ({categorizedEmployees[category as EvaluationGroupCategory].length})</TabsTrigger>))}</TabsList>
           <div className="flex justify-end my-4 gap-2">
             <Button onClick={handleOpenAddGroupDialog} variant="outline" size="sm"><PlusCircle className="mr-2 h-4 w-4" />새 그룹 추가</Button>
             <Button onClick={handleDownloadExcel} variant="outline" size="sm"><Download className="mr-2 h-4 w-4" />현재 탭 엑셀 다운로드</Button>
@@ -916,6 +933,31 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
                  evaluatorId={effectiveUser.uniqueId}
                  evaluatorName={effectiveUser.name}
                />;
+        case 'notifications': {
+            const notifications = [
+                { date: '2025.07.07 14:00', message: '2025년 6월 평가대상자가 업로드 되었습니다. 평가를 진행해주세요.' },
+                { date: '2025.07.15 09:00', message: '평가마감 기한이 3일 남았습니다. 근무율을 최종적으로 확인해주세요.' },
+                { date: '2025.07.18 18:00', message: '평가가 마감되었습니다. 마감 이후 수정은 불가합니다.' },
+            ];
+            return (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>알림함</CardTitle>
+                        <CardDescription>최근 알림 내역입니다.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <ul className="space-y-4">
+                        {notifications.map((notification, index) => (
+                            <li key={index} className="p-3 rounded-md border bg-muted/50">
+                                <p className="text-sm font-medium">{notification.message}</p>
+                                <p className="text-xs text-muted-foreground mt-1">{notification.date}</p>
+                            </li>
+                        ))}
+                        </ul>
+                    </CardContent>
+                </Card>
+            )
+        }
       default:
         return <div>선택된 뷰가 없습니다.</div>;
     }

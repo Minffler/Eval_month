@@ -45,7 +45,7 @@ export type Evaluation = {
   memo?: string;
 };
 
-export type EvaluationGroupCategory = '전체' | '70% 이상';
+export type EvaluationGroupCategory = '전체' | 'A. 정규평가' | 'B. 별도평가' | 'C. 미평가';
 
 
 export type EvaluationGroup = {
@@ -65,12 +65,12 @@ export type EvaluationResult = Employee & {
   gradeAmount: number; // 등급금액
   finalAmount: number; // 최종금액
   evaluatorName: string; // 평가자 이름
-  detailedGroup1: string; // 세부구분1(근무율)
+  evaluationGroup: string; // 평가그룹(근무율 기준)
   detailedGroup2: string; // 세부구분2(직책/성장레벨별 구분)
   memo?: string;
 };
 
-export type EvaluatorView = 'evaluation-input' | 'all-results' | 'assignment-management';
+export type EvaluatorView = 'evaluation-input' | 'all-results' | 'assignment-management' | 'notifications';
 
 export type EvaluationUploadData = {
   employeeId: string;

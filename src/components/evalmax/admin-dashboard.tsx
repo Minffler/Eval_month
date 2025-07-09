@@ -107,7 +107,9 @@ export default function AdminDashboard({
   const categorizedResults = React.useMemo(() => {
     const categories: Record<EvaluationGroupCategory, EvaluationResult[]> = {
       '전체': initialResults,
-      '70% 이상': initialResults.filter(emp => emp.workRate >= 0.7),
+      'A. 정규평가': initialResults.filter(r => r.evaluationGroup === 'A. 정규평가'),
+      'B. 별도평가': initialResults.filter(r => r.evaluationGroup === 'B. 별도평가'),
+      'C. 미평가': initialResults.filter(r => r.evaluationGroup === 'C. 미평가'),
     };
     return categories;
   }, [initialResults]);
@@ -370,6 +372,7 @@ export default function AdminDashboard({
       '이름': r.name,
       '직책': r.title,
       '성장레벨': r.growthLevel,
+      '평가그룹': r.evaluationGroup,
       '근무율': `${(r.workRate * 100).toFixed(1)}%`,
       '점수': r.score,
       '등급': r.grade,
@@ -498,7 +501,7 @@ export default function AdminDashboard({
         case 'all-results':
              return (
                  <Tabs defaultValue="전체" onValueChange={(val) => setActiveResultsTab(val as EvaluationGroupCategory)}>
-                    <TabsList className="grid w-full grid-cols-2 mb-4">
+                    <TabsList className="grid w-full grid-cols-4 mb-4">
                         {Object.keys(categorizedResults).map(category => (
                             <TabsTrigger key={category} value={category}>{category} ({categorizedResults[category as EvaluationGroupCategory].length})</TabsTrigger>
                         ))}
@@ -529,6 +532,9 @@ export default function AdminDashboard({
                           <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('title')}>
                             <div className="flex items-center">직책 {getSortIcon('title')}</div>
                           </TableHead>
+                          <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('evaluationGroup')}>
+                            <div className="flex items-center">평가그룹 {getSortIcon('evaluationGroup')}</div>
+                          </TableHead>
                           <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('workRate')}>
                             <div className="flex items-center">근무율 {getSortIcon('workRate')}</div>
                           </TableHead>
@@ -558,6 +564,7 @@ export default function AdminDashboard({
                               <TableCell className="py-1 px-2 whitespace-nowrap">{r.department}</TableCell>
                               <TableCell className="py-1 px-2 font-medium whitespace-nowrap">{r.name}</TableCell>
                               <TableCell className="py-1 px-2 whitespace-nowrap">{r.title}</TableCell>
+                              <TableCell className="py-1 px-2 whitespace-nowrap">{r.evaluationGroup}</TableCell>
                               <TableCell className="py-1 px-2 whitespace-nowrap">{(r.workRate * 100).toFixed(1)}%</TableCell>
                               <TableCell className="py-1 px-2 whitespace-nowrap">{r.score}</TableCell>
                               <TableCell className="py-1 px-2 whitespace-nowrap">
@@ -650,6 +657,31 @@ export default function AdminDashboard({
             return <GradeManagement gradingScale={gradingScale} setGradingScale={setGradingScale} />;
         case 'consistency-check':
             return <ConsistencyValidator results={initialResults} gradingScale={gradingScale} />;
+        case 'notifications': {
+            const notifications = [
+                { date: '2025.07.07 14:00', message: '2025년 6월 평가대상자가 업로드 되었습니다. 평가를 진행해주세요.' },
+                { date: '2025.07.15 09:00', message: '평가마감 기한이 3일 남았습니다. 근무율을 최종적으로 확인해주세요.' },
+                { date: '2025.07.18 18:00', message: '평가가 마감되었습니다. 마감 이후 수정은 불가합니다.' },
+            ];
+            return (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>알림함</CardTitle>
+                        <CardDescription>최근 알림 내역입니다.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <ul className="space-y-4">
+                        {notifications.map((notification, index) => (
+                            <li key={index} className="p-3 rounded-md border bg-muted/50">
+                                <p className="text-sm font-medium">{notification.message}</p>
+                                <p className="text-xs text-muted-foreground mt-1">{notification.date}</p>
+                            </li>
+                        ))}
+                        </ul>
+                    </CardContent>
+                </Card>
+            )
+        }
         default:
             return <div>선택된 뷰가 없습니다.</div>
     }

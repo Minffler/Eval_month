@@ -9,7 +9,7 @@ import EmployeeDashboard from '@/components/evalmax/employee-dashboard';
 import type { Employee, Evaluation, EvaluationResult, Grade, GradeInfo, User, EvaluatorView, EvaluationUploadData } from '@/lib/types';
 import { mockEmployees, gradingScale as initialGradingScale, calculateFinalAmount, mockEvaluations as initialMockEvaluations } from '@/lib/data';
 import { useRouter } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Bell } from 'lucide-react';
 import { Sidebar, type NavItem } from '@/components/evalmax/sidebar';
 import { cn } from '@/lib/utils';
 import {
@@ -24,7 +24,6 @@ import {
   Edit2,
   ListChecks,
 } from 'lucide-react';
-import { MonthSelector } from '@/components/evalmax/month-selector';
 
 const adminNavItems: NavItem[] = [
   {
@@ -48,6 +47,11 @@ const adminNavItems: NavItem[] = [
       { id: 'grade-management', label: '등급/점수 관리', icon: Settings },
     ],
   },
+  {
+    id: 'notifications',
+    label: '알림함',
+    icon: Bell,
+  },
 ];
 
 const evaluatorNavItems: NavItem[] = [
@@ -67,6 +71,11 @@ const evaluatorNavItems: NavItem[] = [
     children: [
       { id: 'assignment-management', label: '담당 소속 관리', icon: Users },
     ],
+  },
+  {
+    id: 'notifications',
+    label: '알림함',
+    icon: Bell,
   },
 ];
 
@@ -204,27 +213,25 @@ export default function Home() {
       
       setEmployees(prevEmps => {
         let allEmpsState = JSON.parse(JSON.stringify(prevEmps));
+        const evaluatorNameUpdates = new Map<string, string>();
 
-        // Step 1: Update evaluator names across all employee records.
-        const evaluatorUpdates = new Map<string, string>();
         uploadedData.forEach(item => {
             if (item.evaluatorId && item.evaluatorName) {
-                evaluatorUpdates.set(item.evaluatorId, item.evaluatorName);
+                evaluatorNameUpdates.set(item.evaluatorId, item.evaluatorName);
             }
         });
 
-        if (evaluatorUpdates.size > 0) {
+        if (evaluatorNameUpdates.size > 0) {
             for (const monthKey in allEmpsState) {
                 allEmpsState[monthKey] = allEmpsState[monthKey].map((emp: Employee) => {
-                    if (evaluatorUpdates.has(emp.uniqueId)) {
-                        return { ...emp, name: evaluatorUpdates.get(emp.uniqueId)! };
+                    if (evaluatorNameUpdates.has(emp.uniqueId)) {
+                        return { ...emp, name: evaluatorNameUpdates.get(emp.uniqueId)! };
                     }
                     return emp;
                 });
             }
         }
           
-        // Step 2: Update the specific employee records for the given month from the upload.
         const newEmpsForMonth = [...(allEmpsState[key] || [])];
         uploadedData.forEach(uploadItem => {
             const empIndex = newEmpsForMonth.findIndex(e => e.id === uploadItem.employeeId);
@@ -282,7 +289,7 @@ export default function Home() {
         const key = `${r.year}-${r.month}`;
         if (!acc[key]) acc[key] = [];
 
-        const { year, month, grade, score, payoutRate, gradeAmount, finalAmount, evaluatorName, detailedGroup1, detailedGroup2, memo, ...employeeData } = r;
+        const { year, month, grade, score, payoutRate, gradeAmount, finalAmount, evaluatorName, evaluationGroup, detailedGroup2, memo, ...employeeData } = r;
         acc[key].push(employeeData);
         return acc;
     }, {} as Record<string, Employee[]>);
@@ -321,16 +328,11 @@ export default function Home() {
 
 
   React.useEffect(() => {
-    const getDetailedGroup1 = (workRate: number): string => {
-        if (workRate >= 0.7) return 'A. 70% 이상';
-        if (workRate < 0.25) return 'C. 25% 미만';
-        const ratePercent = Math.floor(workRate * 100);
-        const lowerBound = Math.floor(ratePercent / 5) * 5;
-        const upperBound = lowerBound + 4;
-        if (lowerBound === 65) return 'B. 69~65%';
-        if (lowerBound < 65 && lowerBound >= 25) return `B. ${upperBound}~${lowerBound}%`;
-        return `B. ${ratePercent}%`;
-    }
+    const getEvaluationGroup = (workRate: number): string => {
+        if (workRate >= 0.7) return 'A. 정규평가';
+        if (workRate >= 0.25) return 'B. 별도평가';
+        return 'C. 미평가';
+    };
 
     const getDetailedGroup2 = (employee: Employee): string => {
         const { position, growthLevel } = employee;
@@ -371,7 +373,7 @@ export default function Home() {
         const finalAmount = calculateFinalAmount(gradeAmount, employee.workRate);
         const evaluator = allEmployees.find(e => e.uniqueId === employee.evaluatorId);
 
-        const detailedGroup1 = getDetailedGroup1(employee.workRate);
+        const evaluationGroup = getEvaluationGroup(employee.workRate);
         const detailedGroup2 = getDetailedGroup2(employee);
 
         return {
@@ -384,7 +386,7 @@ export default function Home() {
           gradeAmount,
           finalAmount,
           evaluatorName: evaluator?.name || (employee.evaluatorId ? `ID: ${employee.evaluatorId}` : '미지정'),
-          detailedGroup1,
+          evaluationGroup,
           detailedGroup2,
           memo: evaluation?.memo || employee.memo || ''
         };
@@ -418,7 +420,7 @@ export default function Home() {
           gradeAmount,
           finalAmount,
           evaluatorName: evaluator?.name || (employee.evaluatorId ? `ID: ${employee.evaluatorId}` : '미지정'),
-          detailedGroup1: '', 
+          evaluationGroup: '', 
           detailedGroup2: '',
           memo: evaluation?.memo || employee.memo || '',
         };
@@ -457,10 +459,7 @@ export default function Home() {
   };
 
   const headerContent = (
-    <div className='flex items-center gap-4'>
-        <MonthSelector selectedDate={selectedDate} onDateChange={setSelectedDate} />
-        <Header />
-    </div>
+    <Header selectedDate={selectedDate} onDateChange={setSelectedDate} />
   );
 
   if (loading) {
@@ -488,7 +487,7 @@ export default function Home() {
             logout={logout}
         />
         <div className={cn("flex flex-col flex-1 transition-all duration-300 ease-in-out", isOpen ? "ml-64" : "ml-16")}>
-            <div className="sticky top-0 z-10 flex h-16 items-center justify-end gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6">
+            <div className="sticky top-0 z-10 flex h-16 items-center justify-between gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6">
                 {headerContent}
             </div>
             <main className="flex-1 overflow-y-auto">
@@ -508,7 +507,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <div className="sticky top-0 z-10 flex h-16 items-center justify-end gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6">
+      <div className="sticky top-0 z-10 flex h-16 items-center justify-between gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6">
           {headerContent}
       </div>
       <main className="flex-1 p-4 md:p-6 lg:p-8">
