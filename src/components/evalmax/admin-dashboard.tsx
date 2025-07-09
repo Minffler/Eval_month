@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, FileCheck, Bot, Upload, LayoutDashboard, Settings, Download, Bell, ArrowUpDown, ArrowUp, ArrowDown, Eye, ClipboardX } from 'lucide-react';
+import { Users, FileCheck, Bot, Upload, LayoutDashboard, Settings, Download, Bell, ArrowUpDown, ArrowUp, ArrowDown, Eye, ClipboardX, ChevronUp, ChevronDown } from 'lucide-react';
 import { GradeHistogram } from './grade-histogram';
 import {
   Table,
@@ -43,6 +43,7 @@ import {
 import { Textarea } from '../ui/textarea';
 import EvaluatorDashboard from './evaluator-dashboard';
 import EvaluatorManagement from './evaluator-management';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
 
 interface AdminDashboardProps {
   results: EvaluationResult[];
@@ -79,6 +80,7 @@ export default function AdminDashboard({
   const [notificationMessage, setNotificationMessage] = React.useState('');
   const [sortConfig, setSortConfig] = React.useState<SortConfig>(null);
   const [selectedEvaluatorId, setSelectedEvaluatorId] = React.useState<string>('');
+  const [isDistributionChartOpen, setIsDistributionChartOpen] = React.useState(false);
   const { toast } = useToast();
 
   React.useEffect(() => {
@@ -330,10 +332,30 @@ export default function AdminDashboard({
         case 'dashboard':
             return (
                 <div className="space-y-4">
-                  <GradeHistogram data={overallGradeDistribution} gradingScale={gradingScale} title="전체 등급 분포" />
                   <Card>
-                    <CardHeader>
+                    <Collapsible open={isDistributionChartOpen} onOpenChange={setIsDistributionChartOpen}>
+                        <div className="flex w-full cursor-pointer items-center justify-between p-4 rounded-t-lg hover:bg-muted/50">
+                            <CollapsibleTrigger asChild>
+                              <div className="flex items-center gap-2 w-full">
+                                <CardTitle>전체 등급 분포</CardTitle>
+                                <Button variant="ghost" size="icon" className="h-6 w-6 ml-auto">
+                                  {isDistributionChartOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                </Button>
+                              </div>
+                            </CollapsibleTrigger>
+                        </div>
+                        <CollapsibleContent>
+                          <CardContent>
+                            <GradeHistogram data={overallGradeDistribution} gradingScale={gradingScale} />
+                          </CardContent>
+                        </CollapsibleContent>
+                    </Collapsible>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between">
                       <CardTitle>평가자별 진행 현황</CardTitle>
+                      <MonthSelector selectedDate={selectedDate} onDateChange={setSelectedDate} />
                     </CardHeader>
                     <CardContent>
                       <div className="border rounded-lg overflow-x-auto">
@@ -571,12 +593,6 @@ export default function AdminDashboard({
 
   return (
     <div className="space-y-4 p-4 md:p-6 lg:p-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h2 className="text-2xl font-bold tracking-tight">관리자 개요</h2>
-        <div className="flex flex-wrap items-center gap-2">
-          <MonthSelector selectedDate={selectedDate} onDateChange={setSelectedDate} />
-        </div>
-      </div>
       {renderContent()}
        <Dialog open={isNotificationDialogOpen} onOpenChange={setIsNotificationDialogOpen}>
         <DialogContent className="sm:max-w-[525px]">

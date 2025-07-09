@@ -132,7 +132,11 @@ export default function EmployeeDashboard({ allResults, gradingScale }: Employee
             <div>
               <h3 className="text-lg font-semibold mb-2">연간 등급 분포</h3>
               {gradeDistribution.length > 0 ? (
-                  <GradeHistogram data={gradeDistribution} gradingScale={gradingScale} />
+                <Card>
+                  <CardContent className="pt-6">
+                    <GradeHistogram data={gradeDistribution} gradingScale={gradingScale} />
+                  </CardContent>
+                </Card>
               ) : (
                   <div className="flex items-center justify-center h-40 rounded-lg border border-dashed">
                     <p className="text-muted-foreground">선택한 연도의 등급 데이터가 없습니다.</p>

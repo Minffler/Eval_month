@@ -523,8 +523,11 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
                 </div>
             </CardHeader>
             <CollapsibleContent>
-              <CardContent className='p-4 pt-0'>
-                <GradeHistogram data={gradeDistribution} gradingScale={gradingScale} title={`${activeTab} 등급 분포`} />
+              <CardContent className='p-4 pt-0 space-y-2'>
+                <h3 className="font-semibold">{`${activeTab} 등급 분포`}</h3>
+                <div className="border rounded-lg p-2">
+                  <GradeHistogram data={gradeDistribution} gradingScale={gradingScale} />
+                </div>
               </CardContent>
             </CollapsibleContent>
             <CollapsibleTrigger asChild>
