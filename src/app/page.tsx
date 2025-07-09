@@ -198,7 +198,7 @@ export default function Home() {
     });
   };
 
-  const handleEvaluationUpload = (year: number, month: number, uploadedEvals: (Pick<Evaluation, 'employeeId' | 'grade' | 'memo'> & { baseAmount?: number })[]) => {
+  const handleEvaluationUpload = (year: number, month: number, uploadedEvals: (Pick<Evaluation, 'employeeId' | 'grade' | 'memo'> & { baseAmount?: number; evaluatorId?: string; })[]) => {
       const key = `${year}-${month}`;
       
       setEvaluations(prev => {
@@ -219,14 +219,16 @@ export default function Home() {
       setEmployees(prev => {
         const newEmpsForMonth = [...(prev[key] || [])];
         uploadedEvals.forEach(uploadedData => {
-            if (uploadedData.baseAmount !== undefined && !isNaN(uploadedData.baseAmount)) {
-                const empIndex = newEmpsForMonth.findIndex(e => e.id === uploadedData.employeeId);
-                if (empIndex > -1) {
-                    newEmpsForMonth[empIndex] = {
-                        ...newEmpsForMonth[empIndex],
-                        baseAmount: uploadedData.baseAmount,
-                    };
+            const empIndex = newEmpsForMonth.findIndex(e => e.id === uploadedData.employeeId);
+            if (empIndex > -1) {
+                const updatedEmployee = { ...newEmpsForMonth[empIndex] };
+                if (uploadedData.baseAmount !== undefined && !isNaN(uploadedData.baseAmount)) {
+                    updatedEmployee.baseAmount = uploadedData.baseAmount;
                 }
+                if (uploadedData.evaluatorId !== undefined) {
+                    updatedEmployee.evaluatorId = uploadedData.evaluatorId;
+                }
+                newEmpsForMonth[empIndex] = updatedEmployee;
             }
         });
         return {...prev, [key]: newEmpsForMonth};

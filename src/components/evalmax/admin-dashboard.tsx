@@ -49,7 +49,7 @@ interface AdminDashboardProps {
   results: EvaluationResult[];
   allEmployees: Employee[];
   onEmployeeUpload: (year: number, month: number, employees: Employee[]) => void;
-  onEvaluationUpload: (year: number, month: number, evaluations: (Pick<Evaluation, 'employeeId' | 'grade' | 'memo'> & { baseAmount?: number | undefined })[]) => void;
+  onEvaluationUpload: (year: number, month: number, evaluations: (Pick<Evaluation, 'employeeId' | 'grade' | 'memo'> & { baseAmount?: number | undefined; evaluatorId?: string | undefined; })[]) => void;
   gradingScale: Record<NonNullable<Grade>, GradeInfo>;
   setGradingScale: React.Dispatch<React.SetStateAction<Record<NonNullable<Grade>, GradeInfo>>>;
   selectedDate: { year: number; month: number };

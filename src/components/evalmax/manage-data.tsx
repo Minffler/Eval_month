@@ -15,7 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 interface ManageDataProps {
   results: EvaluationResult[];
   onEmployeeUpload: (year: number, month: number, employees: Employee[]) => void;
-  onEvaluationUpload: (year: number, month: number, evaluations: (Pick<Evaluation, 'employeeId' | 'grade' | 'memo'> & { baseAmount?: number })[]) => void;
+  onEvaluationUpload: (year: number, month: number, evaluations: (Pick<Evaluation, 'employeeId' | 'grade' | 'memo'> & { baseAmount?: number, evaluatorId?: string })[]) => void;
 }
 
 export default function ManageData({ onEmployeeUpload, onEvaluationUpload, results }: ManageDataProps) {
@@ -106,6 +106,7 @@ export default function ManageData({ onEmployeeUpload, onEvaluationUpload, resul
                         grade: (String(row['등급'] || '') || null) as Grade,
                         memo: String(row['비고'] || ''),
                         baseAmount: Number(String(row['기준금액'] || '0').replace(/,/g, '')),
+                        evaluatorId: String(row['평가자 ID'] || '') || undefined,
                     };
                 });
 
