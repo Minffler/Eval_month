@@ -100,15 +100,15 @@ const getBGroupIndicatorStyle = (workRate: number): { style: React.CSSProperties
 
     const normalized = (workRate - 0.25) / (0.70 - 0.25);
 
-    const hue = 210; // Blue, matching primary
-    const saturation = 50 + (normalized * 50); // From 50% to 100%
-    const lightness = 95 - (normalized * 35); // From 95% down to 60%
+    const hue = 300;
+    const saturation = 10; 
+    const lightness = 90 - (normalized * (90 - 23));
 
     const style = {
         backgroundColor: `hsl(${hue}, ${saturation}%, ${lightness}%)`,
     };
-
-    const className = 'text-blue-900';
+    
+    const className = lightness < 45 ? 'text-white' : 'text-stone-800';
 
     return { style, className };
 };
