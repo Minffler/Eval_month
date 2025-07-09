@@ -25,15 +25,17 @@ export function AmountDistributionChart({ data }: AmountDistributionChartProps) 
   const chartData = React.useMemo(() => {
     const ranges = [
       { name: '0', min: 0, max: 0 },
-      { name: '1~50만', min: 1, max: 500000 },
-      { name: '50~100만', min: 500001, max: 1000000 },
-      { name: '100~150만', min: 1000001, max: 1500000 },
-      { name: '150~200만', min: 1500001, max: 2000000 },
-      { name: '200~250만', min: 2000001, max: 2500000 },
-      { name: '250~300만', min: 2500001, max: 3000000 },
-      { name: '300~400만', min: 3000001, max: 4000000 },
-      { name: '400~500만', min: 4000001, max: 5000000 },
-      { name: '500만 이상', min: 5000001, max: Infinity },
+      { name: '1-25만', min: 1, max: 250000 },
+      { name: '25-50만', min: 250001, max: 500000 },
+      { name: '50-75만', min: 500001, max: 750000 },
+      { name: '75-100만', min: 750001, max: 1000000 },
+      { name: '100-125만', min: 1000001, max: 1250000 },
+      { name: '125-150만', min: 1250001, max: 1500000 },
+      { name: '150-175만', min: 1500001, max: 1750000 },
+      { name: '175-200만', min: 1750001, max: 2000000 },
+      { name: '200-250만', min: 2000001, max: 2500000 },
+      { name: '250-300만', min: 2500001, max: 3000000 },
+      { name: '300만 이상', min: 3000001, max: Infinity },
     ];
 
     const distribution = ranges.map(range => ({
@@ -50,8 +52,21 @@ export function AmountDistributionChart({ data }: AmountDistributionChartProps) 
       }
     });
     
-    // We only want to show ranges that have employees in them
-    return distribution.filter(d => d.count > 0);
+    // Find the index of the last range that has data
+    const lastIndexWithData = distribution.reduce((maxIdx, item, idx) => {
+        return item.count > 0 ? idx : maxIdx;
+    }, -1);
+
+    // Show at least 9 bins, and include all bins with data.
+    const minBins = 9;
+    // We want to show up to one bin beyond the last one with data.
+    const requiredBinsForData = lastIndexWithData > -1 ? lastIndexWithData + 2 : 0;
+    
+    let binsToShow = Math.max(minBins, requiredBinsForData);
+    // Don't show more bins than we have defined
+    binsToShow = Math.min(binsToShow, ranges.length);
+    
+    return distribution.slice(0, binsToShow);
   }, [data]);
   
   const totalCount = React.useMemo(() => {

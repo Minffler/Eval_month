@@ -136,7 +136,6 @@ export default function AdminDashboard({
     switch(dashboardFilter) {
       case 'A. 정규평가': return initialResults.filter(r => r.evaluationGroup === 'A. 정규평가');
       case 'B. 별도평가': return initialResults.filter(r => r.evaluationGroup === 'B. 별도평가');
-      case 'C. 미평가': return initialResults.filter(r => r.evaluationGroup === 'C. 미평가');
       case '직책자': return initialResults.filter(isLeader);
       case '비직책자': return initialResults.filter(r => !isLeader(r));
       case '전체':
@@ -434,7 +433,6 @@ export default function AdminDashboard({
                                     <TabsTrigger value="전체" className="text-xs px-2 py-1 h-auto">전체</TabsTrigger>
                                     <TabsTrigger value="A. 정규평가" className="text-xs px-2 py-1 h-auto">A.정규</TabsTrigger>
                                     <TabsTrigger value="B. 별도평가" className="text-xs px-2 py-1 h-auto">B.별도</TabsTrigger>
-                                    <TabsTrigger value="C. 미평가" className="text-xs px-2 py-1 h-auto">C.미평가</TabsTrigger>
                                     <TabsTrigger value="직책자" className="text-xs px-2 py-1 h-auto">직책자</TabsTrigger>
                                     <TabsTrigger value="비직책자" className="text-xs px-2 py-1 h-auto">비직책자</TabsTrigger>
                                 </TabsList>
