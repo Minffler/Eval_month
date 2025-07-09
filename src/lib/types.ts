@@ -72,3 +72,9 @@ export type EvaluationResult = Employee & {
 };
 
 export type EvaluatorView = 'evaluation-input' | 'all-results' | 'assignment-management';
+
+export type EvaluationUploadData = {
+  employeeId: string;
+  grade: Grade;
+  memo?: string;
+} & Partial<Omit<Employee, 'id' | 'uniqueId'>>;

@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/select';
 import { ConsistencyValidator } from './consistency-validator';
 import ManageData from './manage-data';
-import type { EvaluationResult, Grade, Employee, GradeInfo, Evaluation, EvaluationGroupCategory, User } from '@/lib/types';
+import type { EvaluationResult, Grade, Employee, GradeInfo, Evaluation, EvaluationGroupCategory, User, EvaluationUploadData } from '@/lib/types';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -49,7 +49,7 @@ interface AdminDashboardProps {
   results: EvaluationResult[];
   allEmployees: Employee[];
   onEmployeeUpload: (year: number, month: number, employees: Employee[]) => void;
-  onEvaluationUpload: (year: number, month: number, evaluations: (Pick<Evaluation, 'employeeId' | 'grade' | 'memo'> & { baseAmount?: number | undefined; evaluatorId?: string | undefined; })[]) => void;
+  onEvaluationUpload: (year: number, month: number, evaluations: EvaluationUploadData[]) => void;
   gradingScale: Record<NonNullable<Grade>, GradeInfo>;
   setGradingScale: React.Dispatch<React.SetStateAction<Record<NonNullable<Grade>, GradeInfo>>>;
   selectedDate: { year: number; month: number };

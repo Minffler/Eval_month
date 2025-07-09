@@ -8,14 +8,14 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import type { Employee, Evaluation, EvaluationResult, Grade } from '@/lib/types';
+import type { Employee, Evaluation, EvaluationResult, Grade, EvaluationUploadData } from '@/lib/types';
 import { MonthSelector } from './month-selector';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 
 interface ManageDataProps {
   results: EvaluationResult[];
   onEmployeeUpload: (year: number, month: number, employees: Employee[]) => void;
-  onEvaluationUpload: (year: number, month: number, evaluations: (Pick<Evaluation, 'employeeId' | 'grade' | 'memo'> & { baseAmount?: number, evaluatorId?: string })[]) => void;
+  onEvaluationUpload: (year: number, month: number, evaluations: EvaluationUploadData[]) => void;
 }
 
 export default function ManageData({ onEmployeeUpload, onEvaluationUpload, results }: ManageDataProps) {
@@ -96,17 +96,29 @@ export default function ManageData({ onEmployeeUpload, onEvaluationUpload, resul
                 const worksheet = workbook.Sheets[sheetName];
                 const json = XLSX.utils.sheet_to_json<any>(worksheet);
 
-                const newEvaluations = json.map((row, index) => {
+                const newEvaluations: EvaluationUploadData[] = json.map((row, index) => {
                     const uniqueId = String(row['ID'] || '');
                     if (!uniqueId) {
                         throw new Error(`${index + 2}번째 행에 ID가 없습니다.`);
                     }
+
+                    const workRateValue = row['실근무율'];
+                    const baseAmountValue = row['기준금액'];
+                    
                     return {
                         employeeId: `E${uniqueId}`,
+                        name: row['이름'] ? String(row['이름']) : undefined,
+                        company: row['회사'] ? String(row['회사']) : undefined,
+                        department: row['소속부서'] ? String(row['소속부서']) : undefined,
+                        title: row['직책'] ? String(row['직책']) : undefined,
+                        position: row['직책'] ? String(row['직책']) : undefined,
+                        growthLevel: row['성장레벨'] ? String(row['성장레벨']) : undefined,
+                        workRate: workRateValue !== undefined && workRateValue !== null ? parseFloat(String(workRateValue)) : undefined,
+                        group: row['평가그룹'] ? String(row['평가그룹']) : undefined,
+                        evaluatorId: row['평가자 ID'] ? String(row['평가자 ID']) : undefined,
+                        baseAmount: baseAmountValue !== undefined && baseAmountValue !== null ? Number(String(baseAmountValue).replace(/,/g, '')) : undefined,
                         grade: (String(row['등급'] || '') || null) as Grade,
-                        memo: String(row['비고'] || ''),
-                        baseAmount: Number(String(row['기준금액'] || '0').replace(/,/g, '')),
-                        evaluatorId: String(row['평가자 ID'] || '') || undefined,
+                        memo: row['비고'] !== undefined ? String(row['비고']) : undefined,
                     };
                 });
 

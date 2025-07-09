@@ -6,7 +6,7 @@ import Header from '@/components/evalmax/header';
 import AdminDashboard from '@/components/evalmax/admin-dashboard';
 import EvaluatorDashboard from '@/components/evalmax/evaluator-dashboard';
 import EmployeeDashboard from '@/components/evalmax/employee-dashboard';
-import type { Employee, Evaluation, EvaluationResult, Grade, GradeInfo, User, EvaluatorView } from '@/lib/types';
+import type { Employee, Evaluation, EvaluationResult, Grade, GradeInfo, User, EvaluatorView, EvaluationUploadData } from '@/lib/types';
 import { mockEmployees, gradingScale as initialGradingScale, calculateFinalAmount, mockEvaluations as initialMockEvaluations } from '@/lib/data';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
@@ -198,40 +198,56 @@ export default function Home() {
     });
   };
 
-  const handleEvaluationUpload = (year: number, month: number, uploadedEvals: (Pick<Evaluation, 'employeeId' | 'grade' | 'memo'> & { baseAmount?: number; evaluatorId?: string; })[]) => {
+  const handleEvaluationUpload = (year: number, month: number, uploadedData: EvaluationUploadData[]) => {
       const key = `${year}-${month}`;
       
-      setEvaluations(prev => {
-          const newEvalsForMonth = [...(prev[key] || [])];
-          uploadedEvals.forEach(uploadedEval => {
-              const evalIndex = newEvalsForMonth.findIndex(e => e.employeeId === uploadedEval.employeeId);
-              if (evalIndex > -1) {
-                  newEvalsForMonth[evalIndex] = {
-                      ...newEvalsForMonth[evalIndex],
-                      grade: uploadedEval.grade,
-                      memo: uploadedEval.memo,
-                  };
-              }
-          });
-          return {...prev, [key]: newEvalsForMonth};
-      });
-
-      setEmployees(prev => {
-        const newEmpsForMonth = [...(prev[key] || [])];
-        uploadedEvals.forEach(uploadedData => {
-            const empIndex = newEmpsForMonth.findIndex(e => e.id === uploadedData.employeeId);
+      setEmployees(prevEmps => {
+        const newEmpsForMonth = [...(prevEmps[key] || [])];
+        uploadedData.forEach(uploadItem => {
+            const empIndex = newEmpsForMonth.findIndex(e => e.id === uploadItem.employeeId);
             if (empIndex > -1) {
                 const updatedEmployee = { ...newEmpsForMonth[empIndex] };
-                if (uploadedData.baseAmount !== undefined && !isNaN(uploadedData.baseAmount)) {
-                    updatedEmployee.baseAmount = uploadedData.baseAmount;
-                }
-                if (uploadedData.evaluatorId !== undefined) {
-                    updatedEmployee.evaluatorId = uploadedData.evaluatorId;
-                }
+                
+                if (uploadItem.name !== undefined) updatedEmployee.name = uploadItem.name;
+                if (uploadItem.company !== undefined) updatedEmployee.company = uploadItem.company;
+                if (uploadItem.department !== undefined) updatedEmployee.department = uploadItem.department;
+                if (uploadItem.title !== undefined) updatedEmployee.title = uploadItem.title;
+                if (uploadItem.position !== undefined) updatedEmployee.position = uploadItem.position;
+                if (uploadItem.growthLevel !== undefined) updatedEmployee.growthLevel = uploadItem.growthLevel;
+                if (uploadItem.workRate !== undefined) updatedEmployee.workRate = uploadItem.workRate;
+                if (uploadItem.group !== undefined) updatedEmployee.group = uploadItem.group;
+                if (uploadItem.evaluatorId !== undefined) updatedEmployee.evaluatorId = uploadItem.evaluatorId;
+                if (uploadItem.baseAmount !== undefined) updatedEmployee.baseAmount = uploadItem.baseAmount;
+                if (uploadItem.memo !== undefined) updatedEmployee.memo = uploadItem.memo;
+                
                 newEmpsForMonth[empIndex] = updatedEmployee;
             }
         });
-        return {...prev, [key]: newEmpsForMonth};
+        return {...prevEmps, [key]: newEmpsForMonth};
+      });
+
+      setEvaluations(prevEvals => {
+          const newEvalsForMonth = [...(prevEvals[key] || [])];
+          uploadedData.forEach(uploadItem => {
+              const evalIndex = newEvalsForMonth.findIndex(e => e.employeeId === uploadItem.employeeId);
+              if (evalIndex > -1) {
+                  const currentEval = newEvalsForMonth[evalIndex];
+                  const updatedEval = { ...currentEval };
+
+                  // Conditionally update grade. Don't update if a grade already exists.
+                  if (!currentEval.grade) {
+                      updatedEval.grade = uploadItem.grade;
+                  }
+                  
+                  // Always update memo
+                  if (uploadItem.memo !== undefined) {
+                    updatedEval.memo = uploadItem.memo;
+                  }
+
+                  newEvalsForMonth[evalIndex] = updatedEval;
+              }
+          });
+          return {...prevEvals, [key]: newEvalsForMonth};
       });
   };
 
