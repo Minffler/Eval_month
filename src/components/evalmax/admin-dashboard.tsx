@@ -111,6 +111,7 @@ export default function AdminDashboard({
   const [evaluatorStatsSortConfig, setEvaluatorStatsSortConfig] = React.useState<EvaluatorStatsSortConfig>({ key: 'rate', direction: 'ascending' });
   const [selectedEvaluatorId, setSelectedEvaluatorId] = React.useState<string>('');
   const [isDistributionChartOpen, setIsDistributionChartOpen] = React.useState(true);
+  const [isPayoutChartOpen, setIsPayoutChartOpen] = React.useState(false);
   const [dashboardFilter, setDashboardFilter] = React.useState('전체');
   const { toast } = useToast();
 
@@ -540,13 +541,24 @@ export default function AdminDashboard({
              return (
                  <div className="space-y-4">
                     <Card>
-                      <CardHeader>
-                          <CardTitle>성과급 분포</CardTitle>
-                          <CardDescription>평가그룹별 성과급 금액대 분포입니다.</CardDescription>
-                      </CardHeader>
-                    <CardContent>
-                        <AmountDistributionChart data={visibleResults} />
-                    </CardContent>
+                      <Collapsible open={isPayoutChartOpen} onOpenChange={setIsPayoutChartOpen}>
+                        <div className="flex items-center justify-between p-4">
+                            <div>
+                              <CardTitle>성과급 분포</CardTitle>
+                              <CardDescription>평가그룹별 성과급 금액대 분포입니다.</CardDescription>
+                            </div>
+                            <CollapsibleTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  {isPayoutChartOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                              </Button>
+                            </CollapsibleTrigger>
+                        </div>
+                        <CollapsibleContent>
+                          <CardContent className="pt-0">
+                              <AmountDistributionChart data={visibleResults} />
+                          </CardContent>
+                        </CollapsibleContent>
+                      </Collapsible>
                     </Card>
                      <Tabs defaultValue="전체" onValueChange={(val) => setActiveResultsTab(val as EvaluationGroupCategory)}>
                         <TabsList className="grid w-full grid-cols-4 mb-4">
