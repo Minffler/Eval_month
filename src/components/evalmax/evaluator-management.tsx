@@ -41,6 +41,7 @@ export default function EvaluatorManagement({
   const [filteredResults, setFilteredResults] = React.useState(results);
   const [companyFilter, setCompanyFilter] = React.useState('all');
   const [departmentFilter, setDepartmentFilter] = React.useState('all');
+  const [positionFilter, setPositionFilter] = React.useState('all');
   const { toast } = useToast();
 
   React.useEffect(() => {
@@ -49,6 +50,7 @@ export default function EvaluatorManagement({
 
   const allCompanies = ['all', ...Array.from(new Set(results.map((r) => r.company)))];
   const allDepartments = ['all', ...Array.from(new Set(results.map((r) => r.department)))];
+  const allPositions = ['all', '팀장', '지점장', '센터장', '지부장', '-'];
 
   React.useEffect(() => {
     let newFilteredResults = results;
@@ -60,8 +62,11 @@ export default function EvaluatorManagement({
         (r) => r.department === departmentFilter
       );
     }
+    if (positionFilter !== 'all') {
+      newFilteredResults = newFilteredResults.filter((r) => r.position === positionFilter);
+    }
     setFilteredResults(newFilteredResults);
-  }, [companyFilter, departmentFilter, results]);
+  }, [companyFilter, departmentFilter, positionFilter, results]);
 
   const evaluators = mockUsers.filter(u => u.roles.includes('evaluator'));
 
@@ -96,13 +101,13 @@ export default function EvaluatorManagement({
         <CardHeader>
           <CardTitle>평가자 관리</CardTitle>
           <CardDescription>
-            회사, 소속부서별로 직원의 평가자를 매칭하고 관리합니다.
+            회사, 소속부서, 직책별로 직원의 평가자를 매칭하고 관리합니다.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4 mb-4">
+          <div className="flex flex-wrap gap-2 mb-4">
             <Select value={companyFilter} onValueChange={setCompanyFilter}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="회사 선택" />
               </SelectTrigger>
               <SelectContent>
@@ -114,13 +119,25 @@ export default function EvaluatorManagement({
               </SelectContent>
             </Select>
             <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="소속부서 선택" />
               </SelectTrigger>
               <SelectContent>
                 {allDepartments.map((d) => (
                   <SelectItem key={d} value={d}>
                     {d === 'all' ? '모든 부서' : d}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={positionFilter} onValueChange={setPositionFilter}>
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="직책 선택" />
+              </SelectTrigger>
+              <SelectContent>
+                {allPositions.map((p) => (
+                  <SelectItem key={p} value={p}>
+                    {p === 'all' ? '모든 직책' : p === '-' ? '없음' : p}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -134,6 +151,7 @@ export default function EvaluatorManagement({
                   <TableHead>이름</TableHead>
                   <TableHead>회사</TableHead>
                   <TableHead>소속부서</TableHead>
+                  <TableHead>직책</TableHead>
                   <TableHead>평가자</TableHead>
                 </TableRow>
               </TableHeader>
@@ -144,6 +162,7 @@ export default function EvaluatorManagement({
                     <TableCell>{result.name}</TableCell>
                     <TableCell>{result.company}</TableCell>
                     <TableCell>{result.department}</TableCell>
+                    <TableCell>{result.title}</TableCell>
                     <TableCell>
                       <Select
                         value={result.evaluatorId}
