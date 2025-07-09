@@ -28,13 +28,12 @@ import { Checkbox } from '@/components/ui/checkbox';
 import type { EvaluationResult, Employee } from '@/lib/types';
 import { getPositionSortValue } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowUpDown, ArrowUp, ArrowDown, ChevronsUpDown, X } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 
 interface EvaluatorManagementProps {
   results: EvaluationResult[];
@@ -170,17 +169,32 @@ export default function EvaluatorManagement({
       });
     }
     
-    // Determine the current evaluator for the filtered group
     if (companyFilter.size === 0 && departmentFilter.size === 0 && titleFilter.size === 0) {
         setCurrentGroupEvaluator('필터를 선택하여 그룹을 지정해주세요.');
     } else if (newFilteredResults.length > 0) {
-        const firstEvaluatorId = newFilteredResults[0].evaluatorId;
-        const allSame = newFilteredResults.every(r => r.evaluatorId === firstEvaluatorId);
-        if (allSame) {
-            const evaluator = allEmployees.find(e => e.uniqueId === firstEvaluatorId);
-            setCurrentGroupEvaluator(evaluator ? `${evaluator.name} (${evaluator.uniqueId})` : '미지정');
+        const uniqueEvaluatorIds = Array.from(new Set(newFilteredResults.map(r => r.evaluatorId).filter(Boolean)));
+        
+        if (uniqueEvaluatorIds.length === 0) {
+            if (newFilteredResults.some(r => !r.evaluatorId)) {
+                setCurrentGroupEvaluator('미지정');
+            } else {
+                setCurrentGroupEvaluator('해당 그룹 없음');
+            }
+        } else if (uniqueEvaluatorIds.length === 1) {
+            const evaluator = allEmployees.find(e => e.uniqueId === uniqueEvaluatorIds[0]);
+            setCurrentGroupEvaluator(evaluator ? `${evaluator.name} (${evaluator.uniqueId})` : `ID: ${uniqueEvaluatorIds[0]}`);
         } else {
-            setCurrentGroupEvaluator('여러 평가자');
+            const evaluatorNames = uniqueEvaluatorIds.map(id => {
+                const evaluator = allEmployees.find(e => e.uniqueId === id);
+                return evaluator ? evaluator.name : `ID: ${id}`;
+            });
+
+            const displayNames = evaluatorNames.slice(0, 3);
+            let displayText = displayNames.join(', ');
+            if (evaluatorNames.length > 3) {
+                displayText += '...';
+            }
+            setCurrentGroupEvaluator(displayText);
         }
     } else {
         setCurrentGroupEvaluator('해당 그룹 없음');
@@ -220,7 +234,7 @@ export default function EvaluatorManagement({
   }, [companyFilter, departmentFilter, titleFilter, results, sortConfig, allEmployees]);
 
   const allCompanies = React.useMemo(() => [...new Set(results.map((r) => r.company).filter(Boolean))], [results]);
-  const allDepartments = React.useMemo(() => [...new Set(results.map((r) => r.department).filter(Boolean))], [results]);
+  const allDepartments = React.useMemo(() => [...new Set(results.map((r) => r.department).filter(Boolean))].sort(), [results]);
   const allTitles = ['지부장', '센터장', '팀장', '지점장', '팀원'];
 
   const requestSort = (key: keyof EvaluationResult) => {
@@ -350,7 +364,7 @@ export default function EvaluatorManagement({
                     <TableCell>{result.department}</TableCell>
                     <TableCell>{result.title}</TableCell>
                     <TableCell>
-                      <Select value={result.evaluatorId || ''} onValueChange={(newEvaluatorId) => handleEvaluatorChange(result.id, newEvaluatorId)}>
+                      <Select value={result.evaluatorId || 'unassigned'} onValueChange={(newEvaluatorId) => handleEvaluatorChange(result.id, newEvaluatorId)}>
                         <SelectTrigger className="w-[220px]">
                             <SelectValue placeholder="미지정" />
                         </SelectTrigger>

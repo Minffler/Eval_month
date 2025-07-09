@@ -18,7 +18,8 @@ const getRecentMonths = () => {
   const dates: { year: number; month: number }[] = [];
   const today = new Date();
   for (let i = 0; i < 24; i++) {
-    const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+    // Start from last month
+    const date = new Date(today.getFullYear(), today.getMonth() - 1 - i, 1);
     dates.push({ year: date.getFullYear(), month: date.getMonth() + 1 });
   }
   return dates;

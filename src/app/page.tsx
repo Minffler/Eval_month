@@ -83,6 +83,12 @@ const EMPLOYEES_STORAGE_KEY = 'pl_eval_employees';
 const EVALUATIONS_STORAGE_KEY = 'pl_eval_evaluations';
 const GRADING_SCALE_STORAGE_KEY = 'pl_eval_grading_scale';
 
+const getInitialDate = () => {
+    const today = new Date();
+    // Set initial date to last month
+    const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    return { year: lastMonth.getFullYear(), month: lastMonth.getMonth() + 1 };
+};
 
 export default function Home() {
   const { user, role, loading, logout } = useAuth();
@@ -128,7 +134,7 @@ export default function Home() {
   });
   
   const [results, setResults] = React.useState<EvaluationResult[]>([]);
-  const [selectedDate, setSelectedDate] = React.useState({ year: new Date().getFullYear(), month: new Date().getMonth() + 1 });
+  const [selectedDate, setSelectedDate] = React.useState(getInitialDate);
 
   // State for admin view
   const [isAdminSidebarOpen, setIsAdminSidebarOpen] = React.useState(true);
@@ -229,7 +235,7 @@ export default function Home() {
                     id: `E${id}`,
                     uniqueId: id,
                     name: name,
-                    company: '', department: '', title: '', position: '',
+                    company: '', department: '', title: '평가자', position: '평가자',
                     growthLevel: '', workRate: 1.0, evaluatorId: '', baseAmount: 0, memo: ''
                 };
                 if (!newState[key]) newState[key] = [];
