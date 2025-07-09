@@ -227,6 +227,9 @@ export default function Home() {
                     if (evaluatorNameUpdates.has(emp.uniqueId)) {
                         return { ...emp, name: evaluatorNameUpdates.get(emp.uniqueId)! };
                     }
+                    if (evaluatorNameUpdates.has(emp.evaluatorId)) {
+                        return { ...emp, evaluatorName: evaluatorNameUpdates.get(emp.evaluatorId)! };
+                    }
                     return emp;
                 });
             }
@@ -326,6 +329,49 @@ export default function Home() {
     });
 };
 
+  const handleClearEmployeeData = (year: number, month: number) => {
+    const key = `${year}-${month}`;
+    setEmployees(prev => {
+        const newState = { ...prev };
+        delete newState[key];
+        return newState;
+    });
+    setEvaluations(prev => {
+        const newState = { ...prev };
+        delete newState[key];
+        return newState;
+    });
+  };
+
+  const handleClearEvaluationData = (year: number, month: number) => {
+    const key = `${year}-${month}`;
+    setEvaluations(prev => {
+        const currentEvalsForMonth = prev[key] || [];
+        const resetEvals = currentEvalsForMonth.map(ev => ({
+            ...ev,
+            grade: null,
+            memo: '', 
+        }));
+        return {...prev, [key]: resetEvals };
+    });
+  };
+
+  const handleClearMyEvaluations = (year: number, month: number, evaluatorId: string) => {
+    const key = `${year}-${month}`;
+    if (!evaluatorId) return;
+
+    const myEmployeeIds = new Set((employees[key] || []).filter(e => e.evaluatorId === evaluatorId).map(e => e.id));
+
+    setEvaluations(prev => {
+        const updatedEvalsForMonth = (prev[key] || []).map(ev => {
+            if (myEmployeeIds.has(ev.employeeId)) {
+                return { ...ev, grade: null, memo: '' };
+            }
+            return ev;
+        });
+        return { ...prev, [key]: updatedEvalsForMonth };
+    });
+  };
 
   React.useEffect(() => {
     const getEvaluationGroup = (workRate: number): string => {
@@ -440,6 +486,8 @@ export default function Home() {
                   setSelectedDate={setSelectedDate}
                   handleResultsUpdate={handleResultsUpdate}
                   activeView={adminActiveView}
+                  onClearEmployeeData={handleClearEmployeeData}
+                  onClearEvaluationData={handleClearEvaluationData}
                 />;
       case 'evaluator':
         return <EvaluatorDashboard 
@@ -450,6 +498,7 @@ export default function Home() {
                   setSelectedDate={setSelectedDate} 
                   handleResultsUpdate={handleResultsUpdate}
                   activeView={evaluatorActiveView}
+                  onClearMyEvaluations={handleClearMyEvaluations}
                 />;
       case 'employee':
         return <EmployeeDashboard allResults={allTimeResults} gradingScale={gradingScale} />;

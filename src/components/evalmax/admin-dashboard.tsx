@@ -38,6 +38,15 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogHeader as AlertDialogHeader2,
+  AlertDialogContent as AlertDialogContent2,
+  AlertDialogTitle as AlertDialogTitle2,
+  AlertDialogDescription as AlertDialogDescription2,
+  AlertDialogFooter as AlertDialogFooter2,
+
 } from '@/components/ui/dialog';
 import { Textarea } from '../ui/textarea';
 import EvaluatorDashboard from './evaluator-dashboard';
@@ -55,6 +64,8 @@ interface AdminDashboardProps {
   setSelectedDate: (date: { year: number; month: number }) => void;
   handleResultsUpdate: (updatedResults: EvaluationResult[]) => void;
   activeView: string;
+  onClearEmployeeData: (year: number, month: number) => void;
+  onClearEvaluationData: (year: number, month: number) => void;
 }
 
 type SortConfig = {
@@ -87,6 +98,8 @@ export default function AdminDashboard({
   setSelectedDate,
   handleResultsUpdate,
   activeView,
+  onClearEmployeeData,
+  onClearEvaluationData,
 }: AdminDashboardProps) {
   const [results, setResults] = React.useState<EvaluationResult[]>(initialResults);
   const [activeResultsTab, setActiveResultsTab] = React.useState<EvaluationGroupCategory>('전체');
@@ -639,6 +652,7 @@ export default function AdminDashboard({
                             handleResultsUpdate={handleResultsUpdate}
                             evaluatorUser={selectedEvaluator}
                             activeView='evaluation-input'
+                            onClearMyEvaluations={()=>{}}
                         />
                     ) : (
                         <Card className="flex items-center justify-center h-64">
@@ -650,7 +664,7 @@ export default function AdminDashboard({
                 </div>
             );
         case 'file-upload':
-            return <ManageData onEmployeeUpload={onEmployeeUpload} onEvaluationUpload={onEvaluationUpload} results={initialResults} selectedDate={selectedDate} setSelectedDate={setSelectedDate} />;
+            return <ManageData onEmployeeUpload={onEmployeeUpload} onEvaluationUpload={onEvaluationUpload} results={initialResults} selectedDate={selectedDate} setSelectedDate={setSelectedDate} onClearEmployeeData={onClearEmployeeData} onClearEvaluationData={onClearEvaluationData} />;
         case 'evaluator-management':
             return <EvaluatorManagement results={initialResults} allEmployees={allEmployees} handleResultsUpdate={handleResultsUpdate} />;
         case 'grade-management':

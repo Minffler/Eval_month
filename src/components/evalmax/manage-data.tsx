@@ -2,15 +2,26 @@
 
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Download } from 'lucide-react';
+import { Download, Trash2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import type { Employee, Evaluation, EvaluationResult, Grade, EvaluationUploadData } from '@/lib/types';
 import { MonthSelector } from './month-selector';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+
 
 interface ManageDataProps {
   results: EvaluationResult[];
@@ -18,12 +29,27 @@ interface ManageDataProps {
   onEvaluationUpload: (year: number, month: number, evaluations: EvaluationUploadData[]) => void;
   selectedDate: { year: number, month: number };
   setSelectedDate: (date: { year: number, month: number }) => void;
+  onClearEmployeeData: (year: number, month: number) => void;
+  onClearEvaluationData: (year: number, month: number) => void;
 }
 
-export default function ManageData({ onEmployeeUpload, onEvaluationUpload, results, selectedDate, setSelectedDate }: ManageDataProps) {
+export default function ManageData({ onEmployeeUpload, onEvaluationUpload, results, selectedDate, setSelectedDate, onClearEmployeeData, onClearEvaluationData }: ManageDataProps) {
   const { toast } = useToast();
   const employeeFileInputRef = React.useRef<HTMLInputElement>(null);
   const evaluationFileInputRef = React.useRef<HTMLInputElement>(null);
+  const [dialogOpen, setDialogOpen] = React.useState<'deleteEmployees' | 'resetEvaluations' | null>(null);
+
+  const handleClearEmployees = () => {
+    onClearEmployeeData(selectedDate.year, selectedDate.month);
+    toast({ title: '삭제 완료', description: '해당 월의 모든 대상자 데이터가 삭제되었습니다.' });
+    setDialogOpen(null);
+  };
+  
+  const handleResetEvaluations = () => {
+    onClearEvaluationData(selectedDate.year, selectedDate.month);
+    toast({ title: '초기화 완료', description: '해당 월의 모든 평가 데이터가 초기화되었습니다.' });
+    setDialogOpen(null);
+  };
 
   const handleEmployeeFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -209,7 +235,7 @@ export default function ManageData({ onEmployeeUpload, onEvaluationUpload, resul
             <TabsContent value="base-data">
                 <Card>
                     <CardHeader>
-                        <CardTitle>평가 대상자 데이터</CardTitle>
+                        <CardTitle>평가 대상자</CardTitle>
                         <CardDescription>
                             엑셀 파일을 업로드하여 특정 월의 평가 대상자 정보를 업데이트하세요.
                         </CardDescription>
@@ -249,6 +275,43 @@ export default function ManageData({ onEmployeeUpload, onEvaluationUpload, resul
                 </Card>
             </TabsContent>
         </Tabs>
+
+        <Card>
+            <CardHeader>
+                <CardTitle>데이터 초기화</CardTitle>
+                <CardDescription>
+                    현재 선택된 월({selectedDate.year}년 {selectedDate.month}월)의 데이터를 삭제하거나 초기화합니다. 이 작업은 되돌릴 수 없습니다.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col sm:flex-row gap-4">
+                <Button variant="destructive" onClick={() => setDialogOpen('deleteEmployees')} disabled={results.length === 0}>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    기존 대상자데이터 삭제
+                </Button>
+                <Button variant="destructive" onClick={() => setDialogOpen('resetEvaluations')} disabled={results.length === 0}>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    기존 평가데이터 초기화
+                </Button>
+            </CardContent>
+        </Card>
+
+        <AlertDialog open={dialogOpen !== null} onOpenChange={(open) => !open && setDialogOpen(null)}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>정말 진행하시겠습니까?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        {dialogOpen === 'deleteEmployees' && `기존 대상자 ${results.length}명의 이력을 모두 삭제합니다. 이 작업은 되돌릴 수 없습니다.`}
+                        {dialogOpen === 'resetEvaluations' && `기존 대상자 ${results.length}명의 평가데이터를 모두 초기화합니다. 이 작업은 되돌릴 수 없습니다.`}
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setDialogOpen(null)}>취소</AlertDialogCancel>
+                    <AlertDialogAction onClick={dialogOpen === 'deleteEmployees' ? handleClearEmployees : handleResetEvaluations}>
+                        확인
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
     </div>
   );
 }
