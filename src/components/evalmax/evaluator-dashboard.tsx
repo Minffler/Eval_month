@@ -66,6 +66,7 @@ import {
 import { Label } from '../ui/label';
 import { ScrollArea } from '../ui/scroll-area';
 import { Badge } from '../ui/badge';
+import { getPositionSortValue } from '@/lib/data';
 
 interface EvaluatorDashboardProps {
   allResults: EvaluationResult[];
@@ -490,6 +491,14 @@ const AllResultsView = ({ allResults, gradingScale }: {
     let sortableItems = [...filteredResults];
     if (sortConfig !== null) {
       sortableItems.sort((a, b) => {
+        if (sortConfig.key === 'title') {
+            const orderA = getPositionSortValue(a.title);
+            const orderB = getPositionSortValue(b.title);
+            if (orderA !== orderB) {
+                return sortConfig.direction === 'ascending' ? orderA - orderB : orderB - orderA;
+            }
+        }
+        
         const aValue = a[sortConfig.key] ?? '';
         const bValue = b[sortConfig.key] ?? '';
         if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
@@ -508,7 +517,7 @@ const AllResultsView = ({ allResults, gradingScale }: {
   
   const getSortIcon = (key: keyof EvaluationResult) => {
     if (!sortConfig || sortConfig.key !== key) return <ArrowUpDown className="ml-2 h-4 w-4 opacity-30" />;
-    return sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4 text-primary" /> : <ArrowDown className="ml-2 h-4 w-4 text-primary" />;
+    return sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4 text-primary" /> : <ArrowDown className="h-4 w-4 text-primary" />;
   };
 
   const formatCurrency = (value: number) => new Intl.NumberFormat('ko-KR').format(value);
@@ -529,25 +538,29 @@ const AllResultsView = ({ allResults, gradingScale }: {
             <Table>
               <TableHeader><TableRow>
                 <TableHead className="cursor-pointer" onClick={() => requestSort('month')}><div className="flex items-center">평가월{getSortIcon('month')}</div></TableHead>
-                <TableHead>이름</TableHead>
-                <TableHead>소속부서</TableHead>
+                <TableHead className="cursor-pointer" onClick={() => requestSort('company')}><div className="flex items-center">회사{getSortIcon('company')}</div></TableHead>
+                <TableHead className="cursor-pointer" onClick={() => requestSort('department')}><div className="flex items-center">소속부서{getSortIcon('department')}</div></TableHead>
+                <TableHead className="cursor-pointer" onClick={() => requestSort('name')}><div className="flex items-center">이름{getSortIcon('name')}</div></TableHead>
+                <TableHead className="cursor-pointer" onClick={() => requestSort('title')}><div className="flex items-center">직책{getSortIcon('title')}</div></TableHead>
                 <TableHead className="cursor-pointer" onClick={() => requestSort('grade')}><div className="flex items-center">등급{getSortIcon('grade')}</div></TableHead>
                 <TableHead className="cursor-pointer" onClick={() => requestSort('score')}><div className="flex items-center">점수{getSortIcon('score')}</div></TableHead>
-                <TableHead className="text-right">최종금액</TableHead>
+                <TableHead className="text-right cursor-pointer" onClick={() => requestSort('finalAmount')}><div className="flex items-center justify-end">최종금액{getSortIcon('finalAmount')}</div></TableHead>
                 <TableHead>비고</TableHead>
               </TableRow></TableHeader>
               <TableBody>
                 {sortedFilteredResults.length > 0 ? sortedFilteredResults.sort((a,b) => b.month - a.month).map(result => (
                   <TableRow key={`${result.year}-${result.month}`}>
                     <TableCell>{result.year}년 {result.month}월</TableCell>
-                    <TableCell>{result.name}</TableCell>
+                    <TableCell>{result.company}</TableCell>
                     <TableCell>{result.department}</TableCell>
+                    <TableCell>{result.name}</TableCell>
+                    <TableCell>{result.title}</TableCell>
                     <TableCell>{result.grade}</TableCell>
                     <TableCell>{result.score}</TableCell>
                     <TableCell className="text-right font-semibold">{formatCurrency(result.finalAmount)} 원</TableCell>
-                    <TableCell>{result.memo}</TableCell>
+                    <TableCell>{result.memo || ''}</TableCell>
                   </TableRow>
-                )) : <TableRow><TableCell colSpan={7} className="text-center h-24">해당 연도의 평가 결과가 없습니다.</TableCell></TableRow>}
+                )) : <TableRow><TableCell colSpan={9} className="text-center h-24">해당 연도의 평가 결과가 없습니다.</TableCell></TableRow>}
               </TableBody>
             </Table>
           </div>
@@ -588,10 +601,22 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, handleResu
   }, [myEmployees]);
 
   const [editableGroups, setEditableGroups] = React.useState(managedGroups);
+  const [positionFilter, setPositionFilter] = React.useState('전체');
+  const positionFilterOptions = ['전체', '지부장/센터장', '팀장/지점장', '팀원'];
   
   React.useEffect(() => {
     setEditableGroups(managedGroups);
   }, [managedGroups]);
+
+  const filteredGroups = React.useMemo(() => {
+    if (positionFilter === '전체') return editableGroups;
+    return editableGroups.filter(g => {
+      if (positionFilter === '지부장/센터장') return ['지부장', '센터장'].includes(g.position);
+      if (positionFilter === '팀장/지점장') return ['팀장', '지점장'].includes(g.position);
+      if (positionFilter === '팀원') return !['지부장', '센터장', '팀장', '지점장'].includes(g.position);
+      return true;
+    });
+  }, [editableGroups, positionFilter]);
 
   const handleGroupChange = (id: string, field: 'company' | 'department', value: string) => {
     setEditableGroups(current =>
@@ -645,9 +670,19 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, handleResu
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardDescription>
-            담당하고 있는 소속의 정보를 수정할 수 있습니다. 변경사항은 현재 선택된 월 평가에만 적용됩니다.
-          </CardDescription>
+           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+            <CardDescription>
+              담당하고 있는 소속의 정보를 수정할 수 있습니다. 변경사항은 현재 선택된 월 평가에만 적용됩니다.
+            </CardDescription>
+            <Select value={positionFilter} onValueChange={setPositionFilter}>
+              <SelectTrigger className="w-full sm:w-[200px]">
+                <SelectValue placeholder="직책 선택" />
+              </SelectTrigger>
+              <SelectContent>
+                {positionFilterOptions.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="border rounded-lg">
@@ -661,7 +696,7 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, handleResu
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {editableGroups.map((group) => (
+                {filteredGroups.map((group) => (
                   <TableRow key={group.id}>
                     <TableCell>
                       <Input 
