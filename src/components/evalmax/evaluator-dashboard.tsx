@@ -233,15 +233,16 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, handleRe
   );
 
   const categorizedEmployees = React.useMemo(() => {
-    const categories: Record<EvaluationGroupCategory, EvaluationResult[]> = {
+    const categories: Partial<Record<EvaluationGroupCategory, EvaluationResult[]>> = {
       'A. 정규평가': myEmployees.filter(emp => emp.evaluationGroup === 'A. 정규평가'),
       'B. 별도평가': myEmployees.filter(emp => emp.evaluationGroup === 'B. 별도평가'),
       'C. 미평가': myEmployees.filter(emp => emp.evaluationGroup === 'C. 미평가'),
+      '전체': myEmployees,
     };
     return categories;
   }, [myEmployees]);
 
-  const visibleEmployees = categorizedEmployees[activeTab];
+  const visibleEmployees = categorizedEmployees[activeTab] ?? [];
 
   React.useEffect(() => {
     const groupWithinCategory = (employees: EvaluationResult[]): Groups => {
@@ -507,9 +508,10 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, handleRe
           </Collapsible>
         </Card>
         <Tabs defaultValue="A. 정규평가" onValueChange={(val) => setActiveTab(val as EvaluationGroupCategory)}>
-          <TabsList className="w-full grid grid-cols-3">{Object.keys(categorizedEmployees).map(category => (<TabsTrigger key={category} value={category}>{category} ({categorizedEmployees[category as EvaluationGroupCategory].length})</TabsTrigger>))}</TabsList>
+          <TabsList className="w-full grid grid-cols-4">{Object.keys(categorizedEmployees).map(category => (<TabsTrigger key={category} value={category}>{category} ({categorizedEmployees[category as keyof typeof categorizedEmployees]?.length ?? 0})</TabsTrigger>))}</TabsList>
           <div className="flex justify-between my-4 gap-2">
             <Button onClick={handleOpenAddGroupDialog} variant="outline" size="sm"><PlusCircle className="mr-2 h-4 w-4" />새 그룹 추가</Button>
+            <div className="flex-grow" />
             <Button onClick={handleDownloadExcel} variant="outline" size="sm"><Download className="mr-2 h-4 w-4" />현재 탭 엑셀 다운로드</Button>
           </div>
           <TabsContent value={activeTab} className="pt-0">
