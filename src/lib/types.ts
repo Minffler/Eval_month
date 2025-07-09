@@ -26,6 +26,7 @@ export type Employee = {
   evaluatorId: string; // 평가자 고유사번
   baseAmount: number; // 개인별 기준금액
   group: string; // 평가그룹
+  memo?: string;
 };
 
 export type Grade = 'S' | 'A+' | 'A' | 'B+' | 'B' | 'B-' | 'C' | 'C-' | 'D' | null;

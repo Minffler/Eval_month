@@ -170,24 +170,28 @@ export default function Home() {
 
   const handleEmployeeUpload = (year: number, month: number, newEmployees: Employee[]) => {
     const key = `${year}-${month}`;
-    setEmployees(prev => ({ ...prev, [key]: newEmployees }));
-    
-    const newEvals = newEmployees.map(emp => ({
-        id: `eval-${emp.id}-${year}-${month}`,
-        employeeId: emp.id,
-        year,
-        month,
-        grade: null,
-        memo: ''
-    }));
-    
+    setEmployees(prev => ({...prev, [key]: newEmployees}));
+
     setEvaluations(prev => {
-        const existingEvals = prev[key] || [];
-        const existingEmpIds = new Set(existingEvals.map(e => e.employeeId));
-        const finalEvals = [...existingEvals];
-        newEvals.forEach(newEval => {
-            if (!existingEmpIds.has(newEval.employeeId)) {
-                finalEvals.push(newEval);
+        const currentEvalsForMonth = prev[key] || [];
+        const finalEvals = newEmployees.map(emp => {
+            const existingEval = currentEvalsForMonth.find(e => e.employeeId === emp.id);
+            if (existingEval) {
+                // Preserve existing grade, but update memo if provided.
+                return {
+                    ...existingEval,
+                    memo: emp.memo || existingEval.memo,
+                };
+            } else {
+                // Create new evaluation for new employee.
+                return {
+                    id: `eval-${emp.id}-${year}-${month}`,
+                    employeeId: emp.id,
+                    year,
+                    month,
+                    grade: 'B' as Grade,
+                    memo: emp.memo || '',
+                };
             }
         });
         return {...prev, [key]: finalEvals};
@@ -325,7 +329,7 @@ export default function Home() {
           evaluatorName: evaluator?.name || '미지정',
           detailedGroup1,
           detailedGroup2,
-          memo: evaluation?.memo || ''
+          memo: evaluation?.memo || employee.memo || ''
         };
       });
     };
@@ -359,6 +363,7 @@ export default function Home() {
           evaluatorName: evaluator?.name || '미지정',
           detailedGroup1: '', 
           detailedGroup2: '',
+          memo: evaluation?.memo || employee.memo || '',
         };
       });
     });
