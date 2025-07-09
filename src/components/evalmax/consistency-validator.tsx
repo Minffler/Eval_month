@@ -27,7 +27,7 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-const CustomXAxisTick = (props: any) => {
+const CustomYAxisTick = (props: any) => {
     const { x, y, payload, gradingScale } = props;
     const grade = payload.value as Grade;
 
@@ -39,10 +39,10 @@ const CustomXAxisTick = (props: any) => {
 
     return (
         <g transform={`translate(${x},${y})`}>
-            <text x={0} y={0} dy={12} textAnchor="middle" fill="hsl(var(--foreground))" fontSize={12} fontWeight="500">
+            <text x={0} y={0} dx={-4} textAnchor="end" fill="hsl(var(--foreground))" fontSize={12} fontWeight="500">
                 {grade}
             </text>
-            <text x={0} y={0} dy={26} textAnchor="middle" fill="hsl(var(--muted-foreground))" fontSize={11}>
+            <text x={0} y={0} dy={14} dx={-4} textAnchor="end" fill="hsl(var(--muted-foreground))" fontSize={11}>
                 ({score}점)
             </text>
         </g>
@@ -165,23 +165,29 @@ export function ConsistencyValidator({ results, gradingScale }: ConsistencyValid
                 <div className="h-[220px]">
                   <ChartContainer config={chartConfig} className="w-full h-full">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart accessibilityLayer data={chartData} margin={{ top: 20, right: 10, left: 0, bottom: 20 }}>
+                      <BarChart
+                        layout="vertical"
+                        accessibilityLayer
+                        data={chartData}
+                        margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
+                      >
                         <XAxis
-                          dataKey="name"
-                          tickLine={false}
-                          axisLine={false}
-                          tick={<CustomXAxisTick gradingScale={gradingScale} />}
-                          height={40}
-                          interval={0}
-                        />
-                        <YAxis
+                          type="number"
                           stroke="hsl(var(--muted-foreground))"
                           fontSize={12}
                           tickLine={false}
                           axisLine={false}
                           tickFormatter={(value) => `${value}`}
                           allowDecimals={false}
-                          width={25}
+                        />
+                        <YAxis
+                          type="category"
+                          dataKey="name"
+                          tickLine={false}
+                          axisLine={false}
+                          tick={<CustomYAxisTick gradingScale={gradingScale} />}
+                          width={80}
+                          interval={0}
                         />
                         <ChartTooltip
                           cursor={{ fill: 'hsl(var(--muted))' }}
@@ -190,12 +196,13 @@ export function ConsistencyValidator({ results, gradingScale }: ConsistencyValid
                         <Bar
                           dataKey="value"
                           fill="var(--color-value)"
-                          radius={[4, 4, 0, 0]}
+                          radius={[0, 4, 4, 0]}
+                          layout="vertical"
                         >
-                            <LabelList dataKey="value" position="top" offset={5} fontSize={12} formatter={(value: number) => value > 0 ? value : ''} />
+                            <LabelList dataKey="value" position="right" offset={5} fontSize={12} formatter={(value: number) => value > 0 ? value : ''} />
                             <LabelList 
                                 dataKey="percentage" 
-                                position="insideTop"
+                                position="insideRight"
                                 offset={4}
                                 fill="hsl(var(--primary-foreground))"
                                 fontSize={11}
