@@ -582,7 +582,7 @@ export default function AdminDashboard({
            <GradeManagement gradingScale={gradingScale} setGradingScale={setGradingScale} />
         </TabsContent>
         <TabsContent value="consistency" className="pt-4">
-          <ConsistencyValidator results={initialResults} />
+          <ConsistencyValidator results={initialResults} gradingScale={gradingScale} />
         </TabsContent>
       </Tabs>
       <Dialog open={isNotificationDialogOpen} onOpenChange={setIsNotificationDialogOpen}>

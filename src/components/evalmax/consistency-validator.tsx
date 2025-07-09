@@ -5,15 +5,51 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Sparkles } from 'lucide-react';
 import { validateGradeConsistency, type ValidateGradeConsistencyOutput } from '@/ai/flows/grade-consistency-validation';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Badge } from '../ui/badge';
-import type { EvaluationResult } from '@/lib/types';
+import type { EvaluationResult, Grade, GradeInfo } from '@/lib/types';
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, LabelList } from 'recharts';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from '@/components/ui/chart';
 
 interface ConsistencyValidatorProps {
   results: EvaluationResult[];
+  gradingScale: Record<NonNullable<Grade>, GradeInfo>;
 }
 
-export function ConsistencyValidator({ results }: ConsistencyValidatorProps) {
+const chartConfig = {
+  value: {
+    label: '인원수',
+    color: 'hsl(var(--primary))',
+  },
+} satisfies ChartConfig;
+
+const CustomXAxisTick = (props: any) => {
+    const { x, y, payload, gradingScale } = props;
+    const grade = payload.value as Grade;
+
+    if (!grade || !gradingScale[grade]) {
+        return null;
+    }
+    
+    const score = gradingScale[grade].score;
+
+    return (
+        <g transform={`translate(${x},${y})`}>
+            <text x={0} y={0} dy={12} textAnchor="middle" fill="hsl(var(--foreground))" fontSize={12} fontWeight="500">
+                {grade}
+            </text>
+            <text x={0} y={0} dy={26} textAnchor="middle" fill="hsl(var(--muted-foreground))" fontSize={11}>
+                ({score}점)
+            </text>
+        </g>
+    );
+};
+
+export function ConsistencyValidator({ results, gradingScale }: ConsistencyValidatorProps) {
   const [loading, setLoading] = React.useState(false);
   const [report, setReport] = React.useState<ValidateGradeConsistencyOutput | null>(null);
 
@@ -64,6 +100,23 @@ export function ConsistencyValidator({ results }: ConsistencyValidatorProps) {
     }
   };
 
+  const chartData = React.useMemo(() => {
+    if (!report) return [];
+    const totalCount = report.overallDistribution.reduce((acc, curr) => acc + curr.count, 0);
+    return [...report.overallDistribution]
+    .filter(d => gradingScale[d.grade as Grade] !== undefined)
+    .sort((a,b) => {
+        const scoreA = gradingScale[a.grade as Grade]?.score ?? -1;
+        const scoreB = gradingScale[b.grade as Grade]?.score ?? -1;
+        return scoreB - scoreA;
+    })
+    .map(item => ({
+        name: item.grade,
+        value: item.count,
+        percentage: totalCount > 0 ? (item.count / totalCount) * 100 : 0,
+    }));
+}, [report, gradingScale]);
+
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -106,27 +159,55 @@ export function ConsistencyValidator({ results }: ConsistencyValidatorProps) {
                 <h3 className="font-semibold text-lg mb-2">요약</h3>
                 <p className="text-sm text-muted-foreground">{report.summary}</p>
               </div>
+              
               <div>
                 <h3 className="font-semibold text-lg mb-2">전체 등급 분포</h3>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>등급</TableHead>
-                      <TableHead className="text-right">인원 (명)</TableHead>
-                      <TableHead className="text-right">비율 (%)</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {report.overallDistribution.map((item) => (
-                      <TableRow key={item.grade}>
-                        <TableCell className="font-medium">{item.grade}</TableCell>
-                        <TableCell className="text-right">{item.count}</TableCell>
-                        <TableCell className="text-right">{item.percentage.toFixed(1)}%</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                <div className="h-[220px]">
+                  <ChartContainer config={chartConfig} className="w-full h-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart accessibilityLayer data={chartData} margin={{ top: 20, right: 10, left: 0, bottom: 20 }}>
+                        <XAxis
+                          dataKey="name"
+                          tickLine={false}
+                          axisLine={false}
+                          tick={<CustomXAxisTick gradingScale={gradingScale} />}
+                          height={40}
+                          interval={0}
+                        />
+                        <YAxis
+                          stroke="hsl(var(--muted-foreground))"
+                          fontSize={12}
+                          tickLine={false}
+                          axisLine={false}
+                          tickFormatter={(value) => `${value}`}
+                          allowDecimals={false}
+                          width={25}
+                        />
+                        <ChartTooltip
+                          cursor={{ fill: 'hsl(var(--muted))' }}
+                          content={<ChartTooltipContent />}
+                        />
+                        <Bar
+                          dataKey="value"
+                          fill="var(--color-value)"
+                          radius={[4, 4, 0, 0]}
+                        >
+                            <LabelList dataKey="value" position="top" offset={5} fontSize={12} formatter={(value: number) => value > 0 ? value : ''} />
+                            <LabelList 
+                                dataKey="percentage" 
+                                position="insideTop"
+                                offset={4}
+                                fill="hsl(var(--primary-foreground))"
+                                fontSize={11}
+                                formatter={(value: number) => value > 0 ? `${value.toFixed(1)}%` : ''}
+                            />
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </ChartContainer>
+                </div>
               </div>
+
               <div>
                 <h3 className="font-semibold text-lg mb-2">주요 발견 사항</h3>
                 <div className="space-y-3">
