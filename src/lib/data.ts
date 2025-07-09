@@ -25,25 +25,25 @@ export const mockEmployees: Employee[] = [
 ];
 
 export const mockEvaluations: Evaluation[] = [
-  { id: 'eval-1', employeeId: 'E0000003', year: 2025, month: 7, grade: 'A+', memo: '프로젝트 기여도 높음' },
-  { id: 'eval-2', employeeId: 'E0000004', year: 2025, month: 7, grade: 'B+' },
-  { id: 'eval-3', employeeId: 'E0000005', year: 2025, month: 7, grade: 'B', memo: '마감일 준수' },
-  { id: 'eval-4', employeeId: 'E0000006', year: 2025, month: 7, grade: 'A' },
-  { id: 'eval-5', employeeId: 'E0000007', year: 2025, month: 7, grade: 'B-' },
-  { id: 'eval-6', employeeId: 'E0000008', year: 2025, month: 7, grade: 'C' },
-  { id: 'eval-7', employeeId: 'E1911042', year: 2025, month: 7, grade: 'S' },
-  { id: 'eval-8', employeeId: 'E0000002', year: 2025, month: 7, grade: 'A' },
-  { id: 'eval-9', employeeId: 'E0000009', year: 2025, month: 7, grade: 'A' },
+  { id: 'eval-1', employeeId: 'E0000003', year: 2025, month: 7, grade: null, memo: '프로젝트 기여도 높음' },
+  { id: 'eval-2', employeeId: 'E0000004', year: 2025, month: 7, grade: null },
+  { id: 'eval-3', employeeId: 'E0000005', year: 2025, month: 7, grade: null, memo: '마감일 준수' },
+  { id: 'eval-4', employeeId: 'E0000006', year: 2025, month: 7, grade: null },
+  { id: 'eval-5', employeeId: 'E0000007', year: 2025, month: 7, grade: null },
+  { id: 'eval-6', employeeId: 'E0000008', year: 2025, month: 7, grade: null },
+  { id: 'eval-7', employeeId: 'E1911042', year: 2025, month: 7, grade: null },
+  { id: 'eval-8', employeeId: 'E0000002', year: 2025, month: 7, grade: null },
+  { id: 'eval-9', employeeId: 'E0000009', year: 2025, month: 7, grade: null },
 ];
 
 export const calculateFinalAmount = (gradeAmount: number, workRate: number): number => {
+  let calculatedAmount = 0;
   if (workRate >= 0.7) {
-    return gradeAmount;
+    calculatedAmount = gradeAmount;
+  } else if (workRate >= 0.25) {
+    calculatedAmount = gradeAmount * workRate;
   }
-  if (workRate >= 0.25) {
-    return gradeAmount * workRate;
-  }
-  return 0;
+  return Math.ceil(calculatedAmount / 10) * 10;
 };
 
 export const positionSortOrder: Record<string, number> = {
