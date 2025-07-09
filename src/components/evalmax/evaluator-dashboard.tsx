@@ -95,8 +95,27 @@ type SortConfig = {
 type Groups = Record<string, { name: string; members: EvaluationResult[] }>;
 
 
+const getBGroupIndicatorStyle = (workRate: number): { style: React.CSSProperties, className: string } => {
+    if (workRate >= 0.7 || workRate < 0.25) return { style: {}, className: 'bg-gray-100' };
+
+    const normalized = (workRate - 0.25) / (0.70 - 0.25);
+
+    const hue = 210; // Blue, matching primary
+    const saturation = 50 + (normalized * 50); // From 50% to 100%
+    const lightness = 85 - (normalized * 45); // From 85% down to 40%
+
+    const style = {
+        backgroundColor: `hsl(${hue}, ${saturation}%, ${lightness}%)`,
+    };
+
+    const className = lightness > 60 ? 'text-blue-900' : 'text-white';
+
+    return { style, className };
+};
+
+
 // Helper component for a single draggable table row
-const DraggableTableRow = ({ employee, gradingScale, selected, onSelect, onGradeChange, onMemoChange, onSave }: {
+const DraggableTableRow = ({ employee, gradingScale, selected, onSelect, onGradeChange, onMemoChange, onSave, isBGroupView }: {
     employee: EvaluationResult,
     gradingScale: Record<NonNullable<Grade>, GradeInfo>,
     selected: boolean,
@@ -104,6 +123,7 @@ const DraggableTableRow = ({ employee, gradingScale, selected, onSelect, onGrade
     onGradeChange: (id: string, grade: Grade) => void,
     onMemoChange: (id: string, memo: string) => void,
     onSave: () => void,
+    isBGroupView: boolean;
 }) => {
     const {
         attributes,
@@ -134,7 +154,22 @@ const DraggableTableRow = ({ employee, gradingScale, selected, onSelect, onGrade
                   </Button>
                 </div>
             </TableCell>
-            <TableCell className="whitespace-nowrap py-1 px-2">{employee.uniqueId}</TableCell>
+            {isBGroupView ? (
+                <TableCell className="py-1 px-2">
+                    <div className="flex items-center justify-center">
+                        {(() => {
+                            const { style, className } = getBGroupIndicatorStyle(employee.workRate);
+                            return (
+                                <div className={cn("flex items-center justify-center rounded-full text-xs font-semibold w-24 h-6", className)} style={style}>
+                                    {employee.detailedGroup1}
+                                </div>
+                            );
+                        })()}
+                    </div>
+                </TableCell>
+            ) : (
+                <TableCell className="whitespace-nowrap py-1 px-2">{employee.uniqueId}</TableCell>
+            )}
             <TableCell className="whitespace-nowrap py-1 px-2">{employee.company}</TableCell>
             <TableCell className="whitespace-nowrap py-1 px-2">{employee.department}</TableCell>
             <TableCell className="font-medium whitespace-nowrap py-1 px-2">{employee.name}</TableCell>
@@ -439,6 +474,7 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, handleRe
 
   const activeEmployee = activeId ? myEmployees.find(emp => emp.id === activeId) : null;
   const isBulkDrag = activeId ? selectedIds.has(activeId) && selectedIds.size > 1 : false;
+  const isBGroupView = activeTab === 'B. 별도평가';
 
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
@@ -510,9 +546,10 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, handleRe
                           <Table>
                               <TableHeader><TableRow>
                                   <TableHead className="w-[80px] p-2"><Checkbox checked={isIndeterminate ? 'indeterminate' : allSelectedInGroup} onCheckedChange={(checked) => handleToggleGroupSelection(group, Boolean(checked))} aria-label={`Select all in ${group.name}`}/></TableHead>
-                                  <TableHead className="whitespace-nowrap py-2 px-2">ID</TableHead><TableHead className="whitespace-nowrap py-2 px-2">회사</TableHead><TableHead className="whitespace-nowrap py-2 px-2">소속부서</TableHead><TableHead className="whitespace-nowrap py-2 px-2">이름</TableHead><TableHead className="whitespace-nowrap py-2 px-2">직책</TableHead><TableHead className="whitespace-nowrap py-2 px-2">성장레벨</TableHead><TableHead className="whitespace-nowrap py-2 px-2">근무율</TableHead><TableHead className="whitespace-nowrap py-2 px-2">등급</TableHead><TableHead className="whitespace-nowrap py-2 px-2">점수</TableHead><TableHead className="whitespace-nowrap w-[200px] py-2 px-2">비고</TableHead>
+                                  <TableHead className="whitespace-nowrap py-2 px-2">{isBGroupView ? '구분' : 'ID'}</TableHead>
+                                  <TableHead className="whitespace-nowrap py-2 px-2">회사</TableHead><TableHead className="whitespace-nowrap py-2 px-2">소속부서</TableHead><TableHead className="whitespace-nowrap py-2 px-2">이름</TableHead><TableHead className="whitespace-nowrap py-2 px-2">직책</TableHead><TableHead className="whitespace-nowrap py-2 px-2">성장레벨</TableHead><TableHead className="whitespace-nowrap py-2 px-2">근무율</TableHead><TableHead className="whitespace-nowrap py-2 px-2">등급</TableHead><TableHead className="whitespace-nowrap py-2 px-2">점수</TableHead><TableHead className="whitespace-nowrap w-[200px] py-2 px-2">비고</TableHead>
                               </TableRow></TableHeader>
-                              <TableBody>{group.members.map(emp => (<DraggableTableRow key={emp.id} employee={emp} gradingScale={gradingScale} selected={selectedIds.has(emp.id)} onSelect={handleToggleSelection} onGradeChange={handleGradeChange} onMemoChange={handleMemoChange} onSave={handleSave} />))}</TableBody>
+                              <TableBody>{group.members.map(emp => (<DraggableTableRow key={emp.id} employee={emp} gradingScale={gradingScale} selected={selectedIds.has(emp.id)} onSelect={handleToggleSelection} onGradeChange={handleGradeChange} onMemoChange={handleMemoChange} onSave={handleSave} isBGroupView={isBGroupView} />))}</TableBody>
                           </Table>
                           </SortableContext>
                       </CardContent>
@@ -547,7 +584,24 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, handleRe
       )}
 
       <div className="flex justify-end mt-4"><Button onClick={handleSave} size="lg"><Check className="mr-2"/> 모든 평가 저장</Button></div>
-      <DragOverlay>{activeId && activeEmployee ? (<Table className="bg-background shadow-lg relative"><TableBody><TableRow><TableCell className="p-1 w-[80px]"><div className='flex items-center gap-1'><Checkbox checked={selectedIds.has(activeId)} readOnly /><Button variant="ghost" size="icon" className="cursor-grabbing h-8 w-8"><GripVertical className="h-4 w-4" /></Button></div>{isBulkDrag && <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">{selectedIds.size}</div>}</TableCell><TableCell className="whitespace-nowrap py-1 px-2">{activeEmployee.uniqueId}</TableCell><TableCell className="whitespace-nowrap py-1 px-2">{activeEmployee.company}</TableCell><TableCell className="whitespace-nowrap py-1 px-2">{activeEmployee.department}</TableCell><TableCell className="font-medium whitespace-nowrap py-1 px-2">{activeEmployee.name}</TableCell><TableCell className="whitespace-nowrap py-1 px-2">{activeEmployee.title}</TableCell><TableCell className="whitespace-nowrap py-1 px-2">{activeEmployee.growthLevel}</TableCell><TableCell className="whitespace-nowrap py-1 px-2">{(activeEmployee.workRate * 100).toFixed(1)}%</TableCell><TableCell className="whitespace-nowrap py-1 px-2">{activeEmployee.grade}</TableCell><TableCell className="whitespace-nowrap py-1 px-2">{activeEmployee.score}</TableCell><TableCell className="py-1 px-2">{activeEmployee.memo}</TableCell></TableRow></TableBody></Table>) : null}</DragOverlay>
+      <DragOverlay>{activeId && activeEmployee ? (<Table className="bg-background shadow-lg relative"><TableBody><TableRow><TableCell className="p-1 w-[80px]"><div className='flex items-center gap-1'><Checkbox checked={selectedIds.has(activeId)} readOnly /><Button variant="ghost" size="icon" className="cursor-grabbing h-8 w-8"><GripVertical className="h-4 w-4" /></Button></div>{isBulkDrag && <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">{selectedIds.size}</div>}</TableCell>
+      {isBGroupView ? (
+          <TableCell className="py-1 px-2">
+              <div className="flex items-center justify-center">
+                  {(() => {
+                      const { style, className } = getBGroupIndicatorStyle(activeEmployee.workRate);
+                      return (
+                          <div className={cn("flex items-center justify-center rounded-full text-xs font-semibold w-24 h-6", className)} style={style}>
+                              {activeEmployee.detailedGroup1}
+                          </div>
+                      );
+                  })()}
+              </div>
+          </TableCell>
+      ) : (
+          <TableCell className="whitespace-nowrap py-1 px-2">{activeEmployee.uniqueId}</TableCell>
+      )}
+      <TableCell className="whitespace-nowrap py-1 px-2">{activeEmployee.company}</TableCell><TableCell className="whitespace-nowrap py-1 px-2">{activeEmployee.department}</TableCell><TableCell className="font-medium whitespace-nowrap py-1 px-2">{activeEmployee.name}</TableCell><TableCell className="whitespace-nowrap py-1 px-2">{activeEmployee.title}</TableCell><TableCell className="whitespace-nowrap py-1 px-2">{activeEmployee.growthLevel}</TableCell><TableCell className="whitespace-nowrap py-1 px-2">{(activeEmployee.workRate * 100).toFixed(1)}%</TableCell><TableCell className="whitespace-nowrap py-1 px-2">{activeEmployee.grade}</TableCell><TableCell className="whitespace-nowrap py-1 px-2">{activeEmployee.score}</TableCell><TableCell className="py-1 px-2">{activeEmployee.memo}</TableCell></TableRow></TableBody></Table>) : null}</DragOverlay>
       <Dialog open={isAddGroupDialogOpen} onOpenChange={setIsAddGroupDialogOpen}><DialogContent className="sm:max-w-2xl"><DialogHeader><DialogTitle>새 그룹 추가</DialogTitle><DialogDescription>새로운 평가 그룹을 만들고 멤버를 추가합니다.</DialogDescription></DialogHeader><div className="grid gap-4 py-4"><div className="grid grid-cols-4 items-center gap-4"><Label htmlFor="group-name" className="text-right">그룹 이름</Label><Input id="group-name" value={newGroupName} onChange={(e) => setNewGroupName(e.target.value)} className="col-span-3"/></div><Card><CardHeader><CardTitle>멤버 선택</CardTitle><div className="flex gap-2 pt-2"><Select value={departmentFilter} onValueChange={setDepartmentFilter}><SelectTrigger><SelectValue placeholder="소속부서 필터" /></SelectTrigger><SelectContent>{allDepartments.map(dep => <SelectItem key={dep} value={dep}>{dep === 'all' ? '모든 부서' : dep}</SelectItem>)}</SelectContent></Select><Select value={positionFilter} onValueChange={setPositionFilter}><SelectTrigger><SelectValue placeholder="직책 필터" /></SelectTrigger><SelectContent>{positionOptions.map(pos => <SelectItem key={pos} value={pos}>{pos === 'all' ? '모든 직책' : pos}</SelectItem>)}</SelectContent></Select></div></CardHeader><CardContent><ScrollArea className="h-[300px] border rounded-md"><Table><TableHeader><TableRow><TableHead><Checkbox checked={filteredEmployeesForDialog.length > 0 && idsForNewGroup.size === filteredEmployeesForDialog.length} onCheckedChange={(checked) => { const allIds = new Set(filteredEmployeesForDialog.map(e => e.id)); if (checked) setIdsForNewGroup(new Set([...idsForNewGroup, ...allIds])); else setIdsForNewGroup(new Set([...idsForNewGroup].filter(id => !allIds.has(id)))); }}/></TableHead><TableHead>이름</TableHead><TableHead>소속부서</TableHead><TableHead>직책</TableHead><TableHead>현재 그룹</TableHead></TableRow></TableHeader><TableBody>{filteredEmployeesForDialog.map(emp => (<TableRow key={emp.id}><TableCell><Checkbox checked={idsForNewGroup.has(emp.id)} onCheckedChange={(checked) => { const newIds = new Set(idsForNewGroup); if (checked) newIds.add(emp.id); else newIds.delete(emp.id); setIdsForNewGroup(newIds); }}/></TableCell><TableCell>{emp.name}</TableCell><TableCell>{emp.department}</TableCell><TableCell>{emp.title}</TableCell><TableCell>{emp.detailedGroup2}</TableCell></TableRow>))}</TableBody></Table></ScrollArea></CardContent></Card></div><DialogFooter><Button variant="outline" onClick={() => setIsAddGroupDialogOpen(false)}>취소</Button><Button onClick={handleCreateGroup}>그룹 생성</Button></DialogFooter></DialogContent></Dialog>
       <AlertDialog open={isClearConfirmOpen} onOpenChange={setIsClearConfirmOpen}>
         <AlertDialogContent2>

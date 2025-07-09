@@ -66,6 +66,7 @@ export type EvaluationResult = Employee & {
   finalAmount: number; // 최종금액
   evaluatorName: string; // 평가자 이름
   evaluationGroup: string; // 평가그룹(근무율 기준)
+  detailedGroup1: string; // 세부구분1(근무율별 상세구분)
   detailedGroup2: string; // 세부구분2(직책/성장레벨별 구분)
   memo?: string;
 };

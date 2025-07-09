@@ -7,7 +7,7 @@ import AdminDashboard from '@/components/evalmax/admin-dashboard';
 import EvaluatorDashboard from '@/components/evalmax/evaluator-dashboard';
 import EmployeeDashboard from '@/components/evalmax/employee-dashboard';
 import type { Employee, Evaluation, EvaluationResult, Grade, GradeInfo, User, EvaluatorView, EvaluationUploadData } from '@/lib/types';
-import { mockEmployees, gradingScale as initialGradingScale, calculateFinalAmount, mockEvaluations as initialMockEvaluations } from '@/lib/data';
+import { mockEmployees, gradingScale as initialGradingScale, calculateFinalAmount, mockEvaluations as initialMockEvaluations, getDetailedGroup1 } from '@/lib/data';
 import { useRouter } from 'next/navigation';
 import { Loader2, Bell } from 'lucide-react';
 import { Sidebar, type NavItem } from '@/components/evalmax/sidebar';
@@ -292,7 +292,7 @@ export default function Home() {
         const key = `${r.year}-${r.month}`;
         if (!acc[key]) acc[key] = [];
 
-        const { year, month, grade, score, payoutRate, gradeAmount, finalAmount, evaluatorName, evaluationGroup, detailedGroup2, memo, ...employeeData } = r;
+        const { year, month, grade, score, payoutRate, gradeAmount, finalAmount, evaluatorName, evaluationGroup, detailedGroup1, detailedGroup2, memo, ...employeeData } = r;
         acc[key].push(employeeData);
         return acc;
     }, {} as Record<string, Employee[]>);
@@ -420,6 +420,7 @@ export default function Home() {
         const evaluator = allEmployees.find(e => e.uniqueId === employee.evaluatorId);
 
         const evaluationGroup = getEvaluationGroup(employee.workRate);
+        const detailedGroup1 = getDetailedGroup1(employee.workRate);
         const detailedGroup2 = getDetailedGroup2(employee);
 
         return {
@@ -433,6 +434,7 @@ export default function Home() {
           finalAmount,
           evaluatorName: evaluator?.name || (employee.evaluatorId ? `ID: ${employee.evaluatorId}` : '미지정'),
           evaluationGroup,
+          detailedGroup1,
           detailedGroup2,
           memo: evaluation?.memo || employee.memo || ''
         };
@@ -456,6 +458,8 @@ export default function Home() {
         const gradeAmount = (employee.baseAmount || 0) * payoutRate;
         const finalAmount = calculateFinalAmount(gradeAmount, employee.workRate);
         const evaluator = allEmployees.find(e => e.uniqueId === employee.evaluatorId);
+        const detailedGroup1 = getDetailedGroup1(employee.workRate);
+        const detailedGroup2 = '기타'; // Simplified for all-time view; specific grouping logic might be complex here.
         return {
           ...employee,
           year,
@@ -467,7 +471,8 @@ export default function Home() {
           finalAmount,
           evaluatorName: evaluator?.name || (employee.evaluatorId ? `ID: ${employee.evaluatorId}` : '미지정'),
           evaluationGroup: '', 
-          detailedGroup2: '',
+          detailedGroup1,
+          detailedGroup2,
           memo: evaluation?.memo || employee.memo || '',
         };
       });

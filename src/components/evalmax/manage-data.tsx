@@ -202,6 +202,7 @@ export default function ManageData({ onEmployeeUpload, onEvaluationUpload, resul
         '성장레벨': r.growthLevel,
         '실근무율': r.workRate,
         '평가그룹': r.evaluationGroup,
+        '세부구분1': r.detailedGroup1,
         '세부구분2': r.detailedGroup2,
         '평가자 ID': r.evaluatorId,
         '평가자': r.evaluatorName,
@@ -214,7 +215,7 @@ export default function ManageData({ onEmployeeUpload, onEvaluationUpload, resul
 
     const headers = [
         'ID', '이름', '회사', '소속부서', '직책', '성장레벨', 
-        '실근무율', '평가그룹', '세부구분2', '평가자 ID', '평가자', 
+        '실근무율', '평가그룹', '세부구분1', '세부구분2', '평가자 ID', '평가자', 
         '점수', '등급', '기준금액', '최종금액', '비고'
     ];
 

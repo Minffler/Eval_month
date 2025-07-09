@@ -57,3 +57,14 @@ export const positionSortOrder: Record<string, number> = {
 export function getPositionSortValue(title: string): number {
     return positionSortOrder[title] || 98; // other titles
 }
+
+export const getDetailedGroup1 = (workRate: number): string => {
+  if (workRate >= 0.7) return '70% 이상';
+  if (workRate < 0.25) return '25% 미만';
+  
+  const percentage = workRate * 100;
+  const lowerBound = Math.floor(percentage / 5) * 5;
+  const upperBound = lowerBound + 4;
+  
+  return `${upperBound}%~${lowerBound}%`;
+};
