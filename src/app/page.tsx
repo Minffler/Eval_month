@@ -85,9 +85,12 @@ const GRADING_SCALE_STORAGE_KEY = 'pl_eval_grading_scale';
 
 const getInitialDate = () => {
     const today = new Date();
-    // Set initial date to last month
-    const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-    return { year: lastMonth.getFullYear(), month: lastMonth.getMonth() + 1 };
+    const lastMonthDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    
+    const year = lastMonthDate.getFullYear();
+    const month = lastMonthDate.getMonth() + 1;
+
+    return { year, month };
 };
 
 export default function Home() {
@@ -96,15 +99,50 @@ export default function Home() {
   
   const [employees, setEmployees] = React.useState<Record<string, Employee[]>>(() => {
     if (typeof window === 'undefined') {
-      return { '2025-7': mockEmployees };
+        return { '2025-7': mockEmployees };
     }
+
+    let dataFromStorage: Record<string, Employee[]> | null = null;
     try {
-      const stored = window.localStorage.getItem(EMPLOYEES_STORAGE_KEY);
-      return stored ? JSON.parse(stored) : { '2025-7': mockEmployees };
+        const stored = window.localStorage.getItem(EMPLOYEES_STORAGE_KEY);
+        if (stored) {
+            dataFromStorage = JSON.parse(stored);
+        }
     } catch (error) {
-      console.error('Error reading employees from localStorage', error);
-      return { '2025-7': mockEmployees };
+        console.error('Error reading employees from localStorage', error);
+        dataFromStorage = null;
     }
+
+    let dataToProcess = dataFromStorage || { '2025-7': mockEmployees };
+
+    let wasUpdated = false;
+    const adminEmployeeData = mockEmployees.find(e => e.uniqueId === '1911042');
+
+    if (adminEmployeeData) {
+        Object.keys(dataToProcess).forEach(key => {
+            let adminFound = false;
+            dataToProcess[key] = dataToProcess[key].map(emp => {
+                if (emp.uniqueId === '1911042') {
+                    adminFound = true;
+                    if (emp.department !== adminEmployeeData.department || emp.title !== adminEmployeeData.title) {
+                        wasUpdated = true;
+                        return { ...emp, department: adminEmployeeData.department, title: adminEmployeeData.title, position: adminEmployeeData.position };
+                    }
+                }
+                return emp;
+            });
+        });
+    }
+
+    if (wasUpdated) {
+        try {
+            window.localStorage.setItem(EMPLOYEES_STORAGE_KEY, JSON.stringify(dataToProcess));
+        } catch (error) {
+            console.error('Error saving updated employees to localStorage', error);
+        }
+    }
+
+    return dataToProcess;
   });
 
   const [evaluations, setEvaluations] = React.useState<Record<string, Evaluation[]>>(() => {
@@ -175,11 +213,6 @@ export default function Home() {
     }
   }, [gradingScale]);
 
-
-  const dateKey = `${selectedDate.year}-${selectedDate.month}`;
-  const currentMonthEmployees = React.useMemo(() => employees[dateKey] || [], [employees, dateKey]);
-  const currentMonthEvaluations = React.useMemo(() => evaluations[dateKey] || [], [evaluations, dateKey]);
-  
   const allEmployees = React.useMemo(() => {
     return Object.values(employees).flat();
   }, [employees]);
@@ -401,75 +434,79 @@ export default function Home() {
   };
 
   React.useEffect(() => {
-    const getEvaluationGroup = (workRate: number): string => {
-        if (workRate >= 0.7) return 'A. 정규평가';
-        if (workRate >= 0.25) return 'B. 별도평가';
-        return 'C. 미평가';
-    };
-
-    const getDetailedGroup2 = (employee: Employee): string => {
-        const { position, growthLevel } = employee;
-
-        if (position === '팀장' || position === '지점장') {
-            return '팀장/지점장';
-        }
-        if (position === '지부장' || position === '센터장') {
-            return '지부장/센터장';
-        }
+    type MonthlyEmployee = Employee & { year: number; month: number };
     
-        if (growthLevel === 'Lv.1') {
-            return 'Lv.1';
-        }
-        if (growthLevel === 'Lv.2' || growthLevel === 'Lv.3') {
-            return 'Lv.2~3';
-        }
-
-        return '기타';
-    }
-
     const getFullEvaluationResults = (
-        currentEmployees: Employee[],
-        currentEvaluations: Evaluation[],
-        currentGradingScale: Record<NonNullable<Grade>, GradeInfo>
+        monthlyEmployees: MonthlyEmployee[],
+        allEvaluations: Record<string, Evaluation[]>,
+        currentGradingScale: Record<NonNullable<Grade>, GradeInfo>,
+        allTimeEmployees: Employee[]
     ): EvaluationResult[] => {
-      if (!currentEmployees) return [];
-      return currentEmployees.map(employee => {
-        const evaluation = currentEvaluations.find(e => e.employeeId === employee.id);
+      if (!monthlyEmployees) return [];
+      
+      return monthlyEmployees.map(employee => {
+        const monthEvaluations = allEvaluations[`${employee.year}-${employee.month}`] || [];
+        const evaluation = monthEvaluations.find(e => e.employeeId === employee.id);
         
         const grade = evaluation?.grade || null;
-        
         const gradeInfo = grade ? currentGradingScale[grade] : null;
         const score = gradeInfo ? gradeInfo.score : 0;
         const payoutRate = gradeInfo ? gradeInfo.payoutRate / 100 : 0;
         
         const gradeAmount = (employee.baseAmount || 0) * payoutRate;
         const finalAmount = calculateFinalAmount(gradeAmount, employee.workRate);
-        const evaluator = allEmployees.find(e => e.uniqueId === employee.evaluatorId);
+        const evaluator = allTimeEmployees.find(e => e.uniqueId === employee.evaluatorId);
 
-        const evaluationGroup = getEvaluationGroup(employee.workRate);
-        const detailedGroup1 = getDetailedGroup1(employee.workRate);
-        const detailedGroup2 = getDetailedGroup2(employee);
+        const getEvaluationGroup = (workRate: number): string => {
+            if (workRate >= 0.7) return 'A. 정규평가';
+            if (workRate >= 0.25) return 'B. 별도평가';
+            return 'C. 미평가';
+        };
+
+        const getDetailedGroup2 = (employee: Employee): string => {
+            const { position, growthLevel } = employee;
+            if (position === '팀장' || position === '지점장') return '팀장/지점장';
+            if (position === '지부장' || position === '센터장') return '지부장/센터장';
+            if (growthLevel === 'Lv.1') return 'Lv.1';
+            if (growthLevel === 'Lv.2' || growthLevel === 'Lv.3') return 'Lv.2~3';
+            return '기타';
+        }
 
         return {
           ...employee,
-          year: selectedDate.year,
-          month: selectedDate.month,
           grade,
           score,
           payoutRate,
           gradeAmount,
           finalAmount,
           evaluatorName: evaluator?.name || (employee.evaluatorId ? `ID: ${employee.evaluatorId}` : '미지정'),
-          evaluationGroup,
-          detailedGroup1,
-          detailedGroup2,
+          evaluationGroup: getEvaluationGroup(employee.workRate),
+          detailedGroup1: getDetailedGroup1(employee.workRate),
+          detailedGroup2: getDetailedGroup2(employee),
           memo: evaluation?.memo || employee.memo || ''
         };
       });
     };
+
+    const year = selectedDate.year;
+    const month = selectedDate.month;
+    let monthlyEmployees: MonthlyEmployee[] = [];
+
+    if (month === 0) { // All months selected
+        monthlyEmployees = Object.entries(employees)
+            .filter(([key]) => key.startsWith(`${year}-`))
+            .flatMap(([key, emps]) => {
+                const [, monthStr] = key.split('-');
+                const monthNum = parseInt(monthStr, 10);
+                return emps.map(e => ({ ...e, year, month: monthNum }));
+            });
+    } else { // Single month selected
+        const dateKey = `${year}-${month}`;
+        monthlyEmployees = (employees[dateKey] || []).map(e => ({ ...e, year, month }));
+    }
     
-    setResults(getFullEvaluationResults(currentMonthEmployees, currentMonthEvaluations, gradingScale));
-  }, [employees, evaluations, gradingScale, selectedDate, dateKey, currentMonthEmployees, currentMonthEvaluations, allEmployees]);
+    setResults(getFullEvaluationResults(monthlyEmployees, evaluations, gradingScale, allEmployees));
+  }, [employees, evaluations, gradingScale, selectedDate, allEmployees]);
 
   const renderDashboard = () => {
     const allTimeResults = Object.keys(employees).flatMap(dateKey => {

@@ -431,6 +431,24 @@ export default function AdminDashboard({
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between">
                       <CardTitle>평가자별 진행 현황</CardTitle>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          onClick={handleSelectIncompleteEvaluators}
+                          size="sm"
+                        >
+                          <ClipboardX className="mr-2 h-4 w-4" />
+                          미완료 평가자 선택
+                        </Button>
+                        <Button
+                          disabled={selectedEvaluators.size === 0}
+                          onClick={handleOpenNotificationDialog}
+                          size="sm"
+                        >
+                          <Bell className="mr-2 h-4 w-4" />
+                          선택된 평가자에게 알림 발송
+                        </Button>
+                      </div>
                     </CardHeader>
                     <CardContent>
                       <div className="border rounded-lg overflow-x-auto">
@@ -489,24 +507,6 @@ export default function AdminDashboard({
                             ))}
                           </TableBody>
                         </Table>
-                      </div>
-                      <div className="flex justify-end mt-4 gap-2">
-                        <Button
-                          variant="outline"
-                          onClick={handleSelectIncompleteEvaluators}
-                          size="sm"
-                        >
-                          <ClipboardX className="mr-2 h-4 w-4" />
-                          미완료 평가자 선택
-                        </Button>
-                        <Button
-                          disabled={selectedEvaluators.size === 0}
-                          onClick={handleOpenNotificationDialog}
-                          size="sm"
-                        >
-                          <Bell className="mr-2 h-4 w-4" />
-                          선택된 평가자에게 알림 발송
-                        </Button>
                       </div>
                     </CardContent>
                   </Card>

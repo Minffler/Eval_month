@@ -57,13 +57,15 @@ export default function Header({ selectedDate, onDateChange }: HeaderProps) {
 
   const getValidMonthsForYear = (year: number) => {
     const today = new Date();
+    // A month is available only after it has completely passed.
+    // e.g., July's evaluation data is available from August 1st.
     if (year < today.getFullYear()) {
       return allMonths; // Past years have all months available
     }
     if (year > today.getFullYear()) {
       return []; // Future years have no months available
     }
-    // For the current year, only past months are available
+    // For the current year, only months fully passed are available.
     return allMonths.filter(m => m < today.getMonth() + 1);
   };
   
@@ -94,6 +96,7 @@ export default function Header({ selectedDate, onDateChange }: HeaderProps) {
                         <SelectValue placeholder="월 선택" />
                     </SelectTrigger>
                     <SelectContent>
+                        <SelectItem value="0">전체 월</SelectItem>
                         {monthsForSelectedYear.map(month => (
                         <SelectItem key={month} value={String(month)}>
                             {month}월
