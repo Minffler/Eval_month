@@ -212,7 +212,7 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, handleRe
   onClearMyEvaluations: (year: number, month: number) => void;
 }) => {
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = React.useState<EvaluationGroupCategory>('전체');
+  const [activeTab, setActiveTab] = React.useState<EvaluationGroupCategory>('A. 정규평가');
   const [groups, setGroups] = React.useState<Groups>({});
   const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
   const [activeId, setActiveId] = React.useState<string | null>(null);
@@ -234,7 +234,6 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, handleRe
 
   const categorizedEmployees = React.useMemo(() => {
     const categories: Record<EvaluationGroupCategory, EvaluationResult[]> = {
-      '전체': myEmployees,
       'A. 정규평가': myEmployees.filter(emp => emp.evaluationGroup === 'A. 정규평가'),
       'B. 별도평가': myEmployees.filter(emp => emp.evaluationGroup === 'B. 별도평가'),
       'C. 미평가': myEmployees.filter(emp => emp.evaluationGroup === 'C. 미평가'),
@@ -482,7 +481,7 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, handleRe
         <Card>
           <Collapsible open={isChartOpen} onOpenChange={setIsChartOpen}>
             <CardHeader className="flex flex-col sm:flex-row justify-between sm:items-start gap-4 p-4">
-              <div className="flex-1"><CardTitle>평가 진행 현황</CardTitle><CardDescription>{selectedDate.year}년 {selectedDate.month}월 성과평가</CardDescription></div>
+              <div className="flex-1"><CardTitle>평가 진행 현황</CardTitle><CardDescription>{selectedDate.year}년 {selectedDate.month}월 성과평가 ({selectedDate.month === 12 ? 1 : selectedDate.month + 1}월 급여반영)</CardDescription></div>
               <div className="w-full sm:w-64 space-y-1">
                 <div className='flex justify-between items-baseline'><h4 className="font-semibold text-sm">종합 진행률</h4><span className="font-bold text-base text-primary">{totalCompletionRate.toFixed(1)}%</span></div>
                 <Progress value={totalCompletionRate} className="h-2" />
@@ -507,8 +506,8 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, handleRe
             </CollapsibleTrigger>
           </Collapsible>
         </Card>
-        <Tabs defaultValue="전체" onValueChange={(val) => setActiveTab(val as EvaluationGroupCategory)}>
-          <TabsList className="w-full grid grid-cols-4">{Object.keys(categorizedEmployees).map(category => (<TabsTrigger key={category} value={category}>{category} ({categorizedEmployees[category as EvaluationGroupCategory].length})</TabsTrigger>))}</TabsList>
+        <Tabs defaultValue="A. 정규평가" onValueChange={(val) => setActiveTab(val as EvaluationGroupCategory)}>
+          <TabsList className="w-full grid grid-cols-3">{Object.keys(categorizedEmployees).map(category => (<TabsTrigger key={category} value={category}>{category} ({categorizedEmployees[category as EvaluationGroupCategory].length})</TabsTrigger>))}</TabsList>
           <div className="flex justify-end my-4 gap-2">
             <Button onClick={handleOpenAddGroupDialog} variant="outline" size="sm"><PlusCircle className="mr-2 h-4 w-4" />새 그룹 추가</Button>
             <Button onClick={() => setIsClearConfirmOpen(true)} variant="destructive" size="sm" disabled={myEmployees.length === 0}>
