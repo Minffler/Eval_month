@@ -13,15 +13,15 @@ export const gradingScale: Record<NonNullable<Grade>, GradeInfo> = {
 };
 
 export const mockEmployees: Employee[] = [
-  { id: 'E1911042', uniqueId: '1911042', name: '김관리', company: 'OK', department: '인사팀', title: '팀장', position: '팀장', growthLevel: 'Lv.5', workRate: 1.0, group: '지점장/팀장', evaluatorId: '1911042', baseAmount: 8000000, memo: '' },
-  { id: 'E0000002', uniqueId: '0000002', name: '박평가', company: 'OK', department: '제품 개발', title: '팀장', position: '팀장', growthLevel: 'Lv.4', workRate: 1.0, group: '지점장/팀장', evaluatorId: '1911042', baseAmount: 7500000, memo: '' },
-  { id: 'E0000003', uniqueId: '0000003', name: '이주임', company: 'OK', department: '제품 개발', title: '팀원', position: '팀원', growthLevel: 'Lv.2', workRate: 0.95, group: 'Lv.2~3', evaluatorId: '0000002', baseAmount: 5000000, memo: '' },
-  { id: 'E0000004', uniqueId: '0000004', name: '최사원', company: 'OC', department: '제품 개발', title: '팀원', position: '팀원', growthLevel: 'Lv.1', workRate: 1.0, group: 'Lv.1', evaluatorId: '0000002', baseAmount: 4500000, memo: '' },
-  { id: 'E0000005', uniqueId: '0000005', name: '정대리', company: 'OCI', department: '디자인', title: '팀원', position: '팀원', growthLevel: 'Lv.3', workRate: 0.86, group: 'Lv.2~3', evaluatorId: '0000002', baseAmount: 5500000, memo: '' },
-  { id: 'E0000006', uniqueId: '0000006', name: '윤과장', company: 'OFI', department: '마케팅', title: '팀원', position: '팀원', growthLevel: 'Lv.4', workRate: 0.76, group: 'Lv.2~3', evaluatorId: '0000006', baseAmount: 6500000, memo: '' },
-  { id: 'E0000007', uniqueId: '0000007', name: '오차장', company: 'EX', department: 'QA', title: '팀원', position: '팀원', growthLevel: 'Lv.3', workRate: 0.52, group: 'Lv.2~3', evaluatorId: '0000002', baseAmount: 6000000, memo: '' },
-  { id: 'E0000008', uniqueId: '0000008', name: '강부장', company: 'OKDS', department: '영업', title: '팀원', position: '팀원', growthLevel: 'Lv.5', workRate: 0.11, group: '별도평가', evaluatorId: '1911042', baseAmount: 7000000, memo: '' },
-  { id: 'E0000009', uniqueId: '0000009', name: '한센터', company: 'OK', department: '고객센터', title: '센터장', position: '센터장', growthLevel: 'Lv.5', workRate: 1.0, group: '센터장/지부장', evaluatorId: '0000009', baseAmount: 7800000, memo: '' },
+  { id: 'E1911042', uniqueId: '1911042', name: '김관리', company: 'OK', department: '인사팀', title: '팀장', position: '팀장', growthLevel: 'Lv.5', workRate: 1.0, evaluatorId: '1911042', baseAmount: 8000000, memo: '' },
+  { id: 'E0000002', uniqueId: '0000002', name: '박평가', company: 'OK', department: '제품 개발', title: '팀장', position: '팀장', growthLevel: 'Lv.4', workRate: 1.0, evaluatorId: '1911042', baseAmount: 7500000, memo: '' },
+  { id: 'E0000003', uniqueId: '0000003', name: '이주임', company: 'OK', department: '제품 개발', title: '팀원', position: '팀원', growthLevel: 'Lv.2', workRate: 0.95, evaluatorId: '0000002', baseAmount: 5000000, memo: '' },
+  { id: 'E0000004', uniqueId: '0000004', name: '최사원', company: 'OC', department: '제품 개발', title: '팀원', position: '팀원', growthLevel: 'Lv.1', workRate: 1.0, evaluatorId: '0000002', baseAmount: 4500000, memo: '' },
+  { id: 'E0000005', uniqueId: '0000005', name: '정대리', company: 'OCI', department: '디자인', title: '팀원', position: '팀원', growthLevel: 'Lv.3', workRate: 0.86, evaluatorId: '0000002', baseAmount: 5500000, memo: '' },
+  { id: 'E0000006', uniqueId: '0000006', name: '윤과장', company: 'OFI', department: '마케팅', title: '팀원', position: '팀원', growthLevel: 'Lv.4', workRate: 0.76, evaluatorId: '0000006', baseAmount: 6500000, memo: '' },
+  { id: 'E0000007', uniqueId: '0000007', name: '오차장', company: 'EX', department: 'QA', title: '팀원', position: '팀원', growthLevel: 'Lv.3', workRate: 0.52, evaluatorId: '0000002', baseAmount: 6000000, memo: '' },
+  { id: 'E0000008', uniqueId: '0000008', name: '강부장', company: 'OKDS', department: '영업', title: '팀원', position: '팀원', growthLevel: 'Lv.5', workRate: 0.11, evaluatorId: '1911042', baseAmount: 7000000, memo: '' },
+  { id: 'E0000009', uniqueId: '0000009', name: '한센터', company: 'OK', department: '고객센터', title: '센터장', position: '센터장', growthLevel: 'Lv.5', workRate: 1.0, evaluatorId: '0000009', baseAmount: 7800000, memo: '' },
 ];
 
 export const mockEvaluations: Evaluation[] = [

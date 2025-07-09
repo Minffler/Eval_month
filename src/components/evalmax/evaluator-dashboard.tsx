@@ -188,9 +188,7 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, setSelec
   const categorizedEmployees = React.useMemo(() => {
     const categories: Record<EvaluationGroupCategory, EvaluationResult[]> = {
       '전체': myEmployees,
-      '70% 이상': myEmployees.filter(emp => emp.workRate >= 0.7 && emp.group !== '별도평가' && emp.group !== '미평가'),
-      '별도평가': myEmployees.filter(emp => emp.group === '별도평가'),
-      '미평가': myEmployees.filter(emp => emp.group === '미평가'),
+      '70% 이상': myEmployees.filter(emp => emp.workRate >= 0.7),
     };
     return categories;
   }, [myEmployees]);
@@ -360,7 +358,8 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, setSelec
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, `평가결과-${activeTab}`);
-    XLSX.writeFile(workbook, `PL월성과평가_${selectedDate.year}_${selectedDate.month}_평가자결과.xlsx`);
+    const fileName = `${selectedDate.year}.${String(selectedDate.month).padStart(2, '0')}_월성과데이터.xlsx`;
+    XLSX.writeFile(workbook, fileName);
   };
 
   const allDepartments = React.useMemo(() => ['all', ...Array.from(new Set(visibleEmployees.map(e => e.department)))], [visibleEmployees]);
@@ -438,7 +437,7 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, setSelec
           </Collapsible>
         </Card>
         <Tabs defaultValue="전체" onValueChange={(val) => setActiveTab(val as EvaluationGroupCategory)}>
-          <TabsList className="w-full grid grid-cols-4">{Object.keys(categorizedEmployees).map(category => (<TabsTrigger key={category} value={category}>{category} ({categorizedEmployees[category as EvaluationGroupCategory].length})</TabsTrigger>))}</TabsList>
+          <TabsList className="w-full grid grid-cols-2">{Object.keys(categorizedEmployees).map(category => (<TabsTrigger key={category} value={category}>{category} ({categorizedEmployees[category as EvaluationGroupCategory].length})</TabsTrigger>))}</TabsList>
           <div className="flex justify-end my-4 gap-2">
             <Button onClick={handleOpenAddGroupDialog} variant="outline" size="sm"><PlusCircle className="mr-2 h-4 w-4" />새 그룹 추가</Button>
             <Button onClick={handleDownloadExcel} variant="outline" size="sm"><Download className="mr-2 h-4 w-4" />현재 탭 엑셀 다운로드</Button>

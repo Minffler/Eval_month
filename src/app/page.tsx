@@ -203,28 +203,28 @@ export default function Home() {
       const key = `${year}-${month}`;
       
       setEmployees(prevEmps => {
-        let allEmpsState = {...prevEmps};
+        let allEmpsState = JSON.parse(JSON.stringify(prevEmps));
 
-        // Create a map of evaluator updates
+        // Step 1: Update evaluator names across all employee records.
         const evaluatorUpdates = new Map<string, string>();
         uploadedData.forEach(item => {
             if (item.evaluatorId && item.evaluatorName) {
-            evaluatorUpdates.set(item.evaluatorId, item.evaluatorName);
+                evaluatorUpdates.set(item.evaluatorId, item.evaluatorName);
             }
         });
 
-        // Update evaluator names across all months
         if (evaluatorUpdates.size > 0) {
             for (const monthKey in allEmpsState) {
-            allEmpsState[monthKey] = allEmpsState[monthKey].map(emp => {
-                if (evaluatorUpdates.has(emp.uniqueId)) {
-                return { ...emp, name: evaluatorUpdates.get(emp.uniqueId)! };
-                }
-                return emp;
-            });
+                allEmpsState[monthKey] = allEmpsState[monthKey].map((emp: Employee) => {
+                    if (evaluatorUpdates.has(emp.uniqueId)) {
+                        return { ...emp, name: evaluatorUpdates.get(emp.uniqueId)! };
+                    }
+                    return emp;
+                });
             }
         }
           
+        // Step 2: Update the specific employee records for the given month from the upload.
         const newEmpsForMonth = [...(allEmpsState[key] || [])];
         uploadedData.forEach(uploadItem => {
             const empIndex = newEmpsForMonth.findIndex(e => e.id === uploadItem.employeeId);
@@ -238,7 +238,6 @@ export default function Home() {
                 if (uploadItem.position !== undefined) updatedEmployee.position = uploadItem.position;
                 if (uploadItem.growthLevel !== undefined) updatedEmployee.growthLevel = uploadItem.growthLevel;
                 if (uploadItem.workRate !== undefined) updatedEmployee.workRate = uploadItem.workRate;
-                if (uploadItem.group !== undefined) updatedEmployee.group = uploadItem.group;
                 if (uploadItem.evaluatorId !== undefined) updatedEmployee.evaluatorId = uploadItem.evaluatorId;
                 if (uploadItem.baseAmount !== undefined) updatedEmployee.baseAmount = uploadItem.baseAmount;
                 if (uploadItem.memo !== undefined) updatedEmployee.memo = uploadItem.memo;
@@ -251,7 +250,8 @@ export default function Home() {
       });
 
       setEvaluations(prevEvals => {
-          const newEvalsForMonth = [...(prevEvals[key] || [])];
+          const newEvalsState = JSON.parse(JSON.stringify(prevEvals));
+          const newEvalsForMonth = [...(newEvalsState[key] || [])];
           uploadedData.forEach(uploadItem => {
               const evalIndex = newEvalsForMonth.findIndex(e => e.employeeId === uploadItem.employeeId);
               if (evalIndex > -1) {
@@ -269,7 +269,8 @@ export default function Home() {
                   newEvalsForMonth[evalIndex] = updatedEval;
               }
           });
-          return {...prevEvals, [key]: newEvalsForMonth};
+          newEvalsState[key] = newEvalsForMonth;
+          return newEvalsState;
       });
   };
 
@@ -332,11 +333,7 @@ export default function Home() {
     }
 
     const getDetailedGroup2 = (employee: Employee): string => {
-        const { position, growthLevel, group } = employee;
-
-        if (group === '별도평가' || group === '미평가') {
-            return group;
-        }
+        const { position, growthLevel } = employee;
 
         if (position === '팀장' || position === '지점장') {
             return '팀장/지점장';

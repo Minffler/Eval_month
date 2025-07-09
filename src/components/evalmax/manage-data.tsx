@@ -55,7 +55,6 @@ export default function ManageData({ onEmployeeUpload, onEvaluationUpload, resul
               workRate: parseFloat(String(row['실근무율'] || '0')) || 0,
               evaluatorId: String(row['평가자 ID'] || ''),
               baseAmount: Number(String(row['개인별 기준금액'] || '0').replace(/,/g, '')) || 0,
-              group: String(row['평가그룹'] || ''),
               memo: String(row['비고'] || ''),
             };
           });
@@ -111,7 +110,6 @@ export default function ManageData({ onEmployeeUpload, onEvaluationUpload, resul
                         position: row['직책'] ? String(row['직책']) : undefined,
                         growthLevel: row['성장레벨'] ? String(row['성장레벨']) : undefined,
                         workRate: workRateValue !== undefined && workRateValue !== null ? parseFloat(String(workRateValue)) : undefined,
-                        group: row['평가그룹'] ? String(row['평가그룹']) : undefined,
                         evaluatorId: row['평가자 ID'] ? String(row['평가자 ID']) : undefined,
                         evaluatorName: row['평가자'] ? String(row['평가자']) : undefined,
                         baseAmount: baseAmountValue !== undefined && baseAmountValue !== null ? Number(String(baseAmountValue).replace(/,/g, '')) : undefined,
@@ -151,7 +149,6 @@ export default function ManageData({ onEmployeeUpload, onEvaluationUpload, resul
         '직책': r.title,
         '성장레벨': r.growthLevel,
         '실근무율': r.workRate,
-        '평가그룹': r.group,
         '평가자 ID': r.evaluatorId,
         '개인별 기준금액': r.baseAmount,
         '비고': r.memo,
@@ -160,7 +157,7 @@ export default function ManageData({ onEmployeeUpload, onEvaluationUpload, resul
     const worksheet = XLSX.utils.json_to_sheet(dataForSheet.length > 0 ? dataForSheet : [{}], {
         header: [
             'ID', '이름', '회사', '소속부서', '직책', '성장레벨', 
-            '실근무율', '평가그룹', '평가자 ID', '개인별 기준금액', '비고'
+            '실근무율', '평가자 ID', '개인별 기준금액', '비고'
         ]
     });
     const workbook = XLSX.utils.book_new();
@@ -178,7 +175,6 @@ export default function ManageData({ onEmployeeUpload, onEvaluationUpload, resul
         '직책': r.title,
         '성장레벨': r.growthLevel,
         '실근무율': r.workRate,
-        '평가그룹': r.group,
         '세부구분1': r.detailedGroup1,
         '세부구분2': r.detailedGroup2,
         '평가자 ID': r.evaluatorId,
@@ -192,7 +188,7 @@ export default function ManageData({ onEmployeeUpload, onEvaluationUpload, resul
 
     const headers = [
         'ID', '이름', '회사', '소속부서', '직책', '성장레벨', 
-        '실근무율', '평가그룹', '세부구분1', '세부구분2', '평가자 ID', '평가자', 
+        '실근무율', '세부구분1', '세부구분2', '평가자 ID', '평가자', 
         '점수', '등급', '기준금액', '최종금액', '비고'
     ];
 

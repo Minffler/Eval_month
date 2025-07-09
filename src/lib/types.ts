@@ -25,7 +25,6 @@ export type Employee = {
   workRate: number; // 근무율
   evaluatorId: string; // 평가자 ID (고유사번)
   baseAmount: number; // 개인별 기준금액
-  group: string; // 평가그룹
   memo?: string;
 };
 
@@ -46,7 +45,7 @@ export type Evaluation = {
   memo?: string;
 };
 
-export type EvaluationGroupCategory = '전체' | '70% 이상' | '별도평가' | '미평가';
+export type EvaluationGroupCategory = '전체' | '70% 이상';
 
 
 export type EvaluationGroup = {

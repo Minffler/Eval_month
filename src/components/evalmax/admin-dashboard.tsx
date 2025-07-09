@@ -107,9 +107,7 @@ export default function AdminDashboard({
   const categorizedResults = React.useMemo(() => {
     const categories: Record<EvaluationGroupCategory, EvaluationResult[]> = {
       '전체': initialResults,
-      '70% 이상': initialResults.filter(emp => emp.workRate >= 0.7 && emp.group !== '별도평가' && emp.group !== '미평가'),
-      '별도평가': initialResults.filter(emp => emp.group === '별도평가'),
-      '미평가': initialResults.filter(emp => emp.group === '미평가'),
+      '70% 이상': initialResults.filter(emp => emp.workRate >= 0.7),
     };
     return categories;
   }, [initialResults]);
@@ -384,7 +382,8 @@ export default function AdminDashboard({
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, '평가결과');
-    XLSX.writeFile(workbook, `PL월성과평가_${selectedDate.year}_${selectedDate.month}_결과.xlsx`);
+    const fileName = `${selectedDate.year}.${String(selectedDate.month).padStart(2, '0')}_월성과데이터.xlsx`;
+    XLSX.writeFile(workbook, fileName);
   };
   
   const renderContent = () => {
@@ -499,7 +498,7 @@ export default function AdminDashboard({
         case 'all-results':
              return (
                  <Tabs defaultValue="전체" onValueChange={(val) => setActiveResultsTab(val as EvaluationGroupCategory)}>
-                    <TabsList className="grid w-full grid-cols-4 mb-4">
+                    <TabsList className="grid w-full grid-cols-2 mb-4">
                         {Object.keys(categorizedResults).map(category => (
                             <TabsTrigger key={category} value={category}>{category} ({categorizedResults[category as EvaluationGroupCategory].length})</TabsTrigger>
                         ))}
@@ -615,7 +614,7 @@ export default function AdminDashboard({
                                 <SelectContent>
                                     {evaluatorStats.map(stat => (
                                         <SelectItem key={stat.evaluatorUniqueId} value={stat.evaluatorUniqueId}>
-                                            {stat.evaluatorName} ({stat.evaluatorUniqueId})
+                                            {stat.evaluatorName} (ID: {stat.evaluatorUniqueId})
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
