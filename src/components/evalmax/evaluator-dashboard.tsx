@@ -44,7 +44,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Check, Download, ArrowUpDown, ArrowUp, ArrowDown, Edit, GripVertical, ChevronUp, ChevronDown, PlusCircle, Save, X, Trash2, Users } from 'lucide-react';
 import { Progress } from '../ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
-import { MonthSelector } from './month-selector';
 import { GradeHistogram } from './grade-histogram';
 import { Input } from '../ui/input';
 import * as XLSX from 'xlsx';
@@ -425,10 +424,6 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, setSelec
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold tracking-tight">평가 입력</h2>
-          <MonthSelector selectedDate={selectedDate} onDateChange={setSelectedDate} />
-        </div>
         <Card>
           <Collapsible open={isChartOpen} onOpenChange={setIsChartOpen}>
             <CardHeader className="flex flex-col sm:flex-row justify-between sm:items-start gap-4 p-4">

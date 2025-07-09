@@ -2,9 +2,8 @@
 
 import { useAuth } from '@/contexts/auth-context';
 import { RoleSwitcher } from './role-switcher';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Bell, LogOut } from 'lucide-react';
+import { Bell } from 'lucide-react';
 import {
   Popover,
   PopoverContent,
@@ -13,7 +12,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 
 export default function Header() {
-  const { user, role, setRole, logout } = useAuth();
+  const { user, role, setRole } = useAuth();
 
   const roleDisplay: Record<string, string> = {
     admin: '관리자',
@@ -73,20 +72,6 @@ export default function Header() {
             </div>
           </PopoverContent>
         </Popover>
-
-        <div className="flex items-center gap-3">
-          <Avatar className="h-9 w-9">
-            <AvatarImage src={user?.avatar} alt={user?.name} data-ai-hint="person avatar" />
-            <AvatarFallback>{user?.name.charAt(0)}</AvatarFallback>
-          </Avatar>
-          <div className="hidden md:flex flex-col text-left">
-            <span className="font-semibold text-sm">{user?.name}</span>
-            <span className="text-xs text-muted-foreground">{user?.title}</span>
-          </div>
-        </div>
-        <Button variant="ghost" onClick={logout} size="icon" className="rounded-full" aria-label="로그아웃">
-          <LogOut className="h-5 w-5" />
-        </Button>
     </div>
   );
 }
