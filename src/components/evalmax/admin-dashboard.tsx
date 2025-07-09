@@ -386,6 +386,7 @@ export default function AdminDashboard({
       '직책': r.title,
       '성장레벨': r.growthLevel,
       '평가그룹': r.evaluationGroup,
+      '세부구분1': r.detailedGroup1,
       '근무율': `${(r.workRate * 100).toFixed(1)}%`,
       '점수': r.score,
       '등급': r.grade,
@@ -634,7 +635,7 @@ export default function AdminDashboard({
                                 <SelectContent>
                                     {evaluatorStats.map(stat => (
                                         <SelectItem key={stat.evaluatorUniqueId} value={stat.evaluatorUniqueId}>
-                                            {stat.evaluatorName.startsWith('ID:') ? stat.evaluatorName : `${stat.evaluatorName} (ID: ${stat.evaluatorUniqueId})`}
+                                            {stat.evaluatorName.startsWith('ID:') ? stat.evaluatorName : `${stat.evaluatorName} (${stat.evaluatorUniqueId})`}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>

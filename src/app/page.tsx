@@ -209,99 +209,100 @@ export default function Home() {
   };
 
   const handleEvaluationUpload = (year: number, month: number, uploadedData: EvaluationUploadData[]) => {
-      const key = `${year}-${month}`;
-      
-      // Step 1: Create a map of evaluator name updates from the uploaded file.
-      // This map will be the source of truth for evaluator names.
-      const evaluatorNameUpdates = new Map<string, string>();
-      uploadedData.forEach(item => {
-          if (item.evaluatorId && item.evaluatorName) {
-              evaluatorNameUpdates.set(item.evaluatorId, item.evaluatorName);
-          }
-      });
+    const key = `${year}-${month}`;
 
-      // Step 2: Update the employees state.
-      setEmployees(prevEmps => {
-          let allEmpsState = JSON.parse(JSON.stringify(prevEmps));
-          
-          // Part A: Update evaluator names globally across all months.
-          // This ensures that if an evaluator's name changes, it's reflected everywhere.
-          if (evaluatorNameUpdates.size > 0) {
-              for (const monthKey in allEmpsState) {
-                  allEmpsState[monthKey] = allEmpsState[monthKey].map((emp: Employee) => {
-                      if (evaluatorNameUpdates.has(emp.uniqueId)) {
-                          return { ...emp, name: evaluatorNameUpdates.get(emp.uniqueId)! };
-                      }
-                      return emp;
-                  });
-              }
-          }
-            
-          // Part B: Update the data for the employees evaluated in the current month's upload.
-          const newEmpsForMonth = [...(allEmpsState[key] || [])];
-          uploadedData.forEach(uploadItem => {
-              const empIndex = newEmpsForMonth.findIndex(e => e.id === uploadItem.employeeId);
-              if (empIndex > -1) {
-                  const updatedEmployee = { ...newEmpsForMonth[empIndex] };
-                  
-                  // Merge properties from the upload file.
-                  if (uploadItem.name !== undefined) updatedEmployee.name = uploadItem.name;
-                  if (uploadItem.company !== undefined) updatedEmployee.company = uploadItem.company;
-                  if (uploadItem.department !== undefined) updatedEmployee.department = uploadItem.department;
-                  if (uploadItem.title !== undefined) updatedEmployee.title = uploadItem.title;
-                  if (uploadItem.position !== undefined) updatedEmployee.position = uploadItem.position;
-                  if (uploadItem.growthLevel !== undefined) updatedEmployee.growthLevel = uploadItem.growthLevel;
-                  if (uploadItem.workRate !== undefined) updatedEmployee.workRate = uploadItem.workRate;
-                  if (uploadItem.evaluatorId !== undefined) updatedEmployee.evaluatorId = uploadItem.evaluatorId;
-                  if (uploadItem.baseAmount !== undefined) updatedEmployee.baseAmount = uploadItem.baseAmount;
-                  if (uploadItem.memo !== undefined) updatedEmployee.memo = uploadItem.memo;
-                  
-                  newEmpsForMonth[empIndex] = updatedEmployee;
-              }
-              // Note: We don't add new employees here, that's handled by '대상자 업로드'.
-              // This function only updates existing employees and their evaluations.
-          });
-          allEmpsState[key] = newEmpsForMonth;
-          return allEmpsState;
-      });
+    setEmployees(prevEmps => {
+        const newState = JSON.parse(JSON.stringify(prevEmps));
+        
+        const evaluatorsInUpload = new Map<string, string>();
+        uploadedData.forEach(item => {
+            if (item.evaluatorId && item.evaluatorName) {
+                evaluatorsInUpload.set(item.evaluatorId, item.evaluatorName);
+            }
+        });
 
-      // Step 3: Update the evaluations state.
-      setEvaluations(prevEvals => {
-          const newEvalsState = JSON.parse(JSON.stringify(prevEvals));
-          const newEvalsForMonth = [...(newEvalsState[key] || [])];
-          
-          uploadedData.forEach(uploadItem => {
-              const evalIndex = newEvalsForMonth.findIndex(e => e.employeeId === uploadItem.employeeId);
-              
-              if (evalIndex > -1) {
-                  // If an evaluation record exists, update it.
-                  const updatedEval = { ...newEvalsForMonth[evalIndex] };
+        // Ensure all evaluators from the upload exist as employees. If not, create a stub record.
+        evaluatorsInUpload.forEach((name, id) => {
+            const evaluatorExists = Object.values(newState).flat().some((emp: Employee) => emp.uniqueId === id);
+            if (!evaluatorExists) {
+                const newEvaluatorStub: Employee = {
+                    id: `E${id}`,
+                    uniqueId: id,
+                    name: name,
+                    company: '', department: '', title: '', position: '',
+                    growthLevel: '', workRate: 1.0, evaluatorId: '', baseAmount: 0, memo: ''
+                };
+                if (!newState[key]) newState[key] = [];
+                newState[key].push(newEvaluatorStub);
+            }
+        });
 
-                  // Always allow overwriting grade and memo from the file.
-                  if (uploadItem.grade !== undefined) {
-                      updatedEval.grade = uploadItem.grade;
-                  }
-                  if (uploadItem.memo !== undefined) {
-                      updatedEval.memo = uploadItem.memo;
-                  }
-                  newEvalsForMonth[evalIndex] = updatedEval;
+        // Part A: Update evaluator names globally.
+        if (evaluatorsInUpload.size > 0) {
+            for (const monthKey in newState) {
+                newState[monthKey] = newState[monthKey].map((emp: Employee) => {
+                    if (evaluatorsInUpload.has(emp.uniqueId)) {
+                        return { ...emp, name: evaluatorsInUpload.get(emp.uniqueId)! };
+                    }
+                    return emp;
+                });
+            }
+        }
 
-              } else {
-                 // If no evaluation exists, create a new one.
-                 const newEval = {
+        // Part B: Update data for the employees evaluated in this month's upload.
+        const newEmpsForMonth = newState[key] ? [...newState[key]] : [];
+        uploadedData.forEach(uploadItem => {
+            const empIndex = newEmpsForMonth.findIndex(e => e.id === uploadItem.employeeId);
+            if (empIndex > -1) {
+                const existingEmp = newEmpsForMonth[empIndex];
+                newEmpsForMonth[empIndex] = {
+                    ...existingEmp,
+                    name: uploadItem.name ?? existingEmp.name,
+                    company: uploadItem.company ?? existingEmp.company,
+                    department: uploadItem.department ?? existingEmp.department,
+                    title: uploadItem.title ?? existingEmp.title,
+                    position: uploadItem.position ?? existingEmp.position,
+                    growthLevel: uploadItem.growthLevel ?? existingEmp.growthLevel,
+                    workRate: uploadItem.workRate ?? existingEmp.workRate,
+                    evaluatorId: uploadItem.evaluatorId ?? existingEmp.evaluatorId,
+                    baseAmount: uploadItem.baseAmount ?? existingEmp.baseAmount,
+                    memo: uploadItem.memo ?? existingEmp.memo,
+                };
+            }
+        });
+        newState[key] = newEmpsForMonth;
+
+        return newState;
+    });
+
+    setEvaluations(prevEvals => {
+        const newState = JSON.parse(JSON.stringify(prevEvals));
+        const newEvalsForMonth = newState[key] ? [...newState[key]] : [];
+        
+        uploadedData.forEach(uploadItem => {
+            const evalIndex = newEvalsForMonth.findIndex(e => e.employeeId === uploadItem.employeeId);
+            if (evalIndex > -1) {
+                const existingEval = newEvalsForMonth[evalIndex];
+                newEvalsForMonth[evalIndex] = {
+                    ...existingEval,
+                    grade: uploadItem.grade !== undefined ? uploadItem.grade : existingEval.grade,
+                    memo: uploadItem.memo !== undefined ? uploadItem.memo : existingEval.memo,
+                };
+            } else {
+                newEvalsForMonth.push({
                     id: `eval-${uploadItem.employeeId}-${year}-${month}`,
                     employeeId: uploadItem.employeeId,
                     year,
                     month,
-                    grade: uploadItem.grade || null,
+                    grade: uploadItem.grade,
                     memo: uploadItem.memo || '',
-                 }
-                 newEvalsForMonth.push(newEval);
-              }
-          });
-          newEvalsState[key] = newEvalsForMonth;
-          return newEvalsState;
-      });
+                });
+            }
+        });
+        
+        newState[key] = newEvalsForMonth;
+        return newState;
+    });
   };
 
   const handleResultsUpdate = (updatedResultsForMonth: EvaluationResult[]) => {

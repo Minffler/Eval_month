@@ -217,7 +217,7 @@ export default function EvaluatorManagement({
               <SelectContent>
                 {evaluators.map((evaluator) => (
                     <SelectItem key={evaluator.uniqueId} value={evaluator.uniqueId}>
-                        {evaluator.name} (ID: {evaluator.uniqueId})
+                        {`${evaluator.name} (${evaluator.uniqueId})`}
                     </SelectItem>
                 ))}
               </SelectContent>
@@ -253,7 +253,7 @@ export default function EvaluatorManagement({
                         </SelectTrigger>
                         <SelectContent>{evaluators.map((evaluator) => (
                             <SelectItem key={evaluator.uniqueId} value={evaluator.uniqueId}>
-                                {evaluator.name} (ID: {evaluator.uniqueId})
+                                {`${evaluator.name} (${evaluator.uniqueId})`}
                             </SelectItem>
                         ))}</SelectContent>
                       </Select>
