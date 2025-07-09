@@ -87,3 +87,9 @@ export type AppNotification = {
   isRead: boolean;
   recipientId: string; // uniqueId of the user who should see this
 };
+
+export type AttendanceType = {
+  id: string;
+  name: string;
+  deductionHours: number;
+};

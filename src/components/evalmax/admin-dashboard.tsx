@@ -53,6 +53,8 @@ import EvaluatorDashboard from './evaluator-dashboard';
 import EvaluatorManagement from './evaluator-management';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
 import { AmountDistributionChart } from './amount-distribution-chart';
+import WorkRateManagement from './work-rate-management';
+import AttendanceTypeManagement from './attendance-type-management';
 
 interface AdminDashboardProps {
   results: EvaluationResult[];
@@ -429,7 +431,7 @@ export default function AdminDashboard({
                       <div className="flex items-center justify-between p-4">
                           <CardTitle>등급 분포</CardTitle>
                           <div className="flex items-center gap-2">
-                            <Tabs value={dashboardFilter} onValueChange={setDashboardFilter}>
+                            <Tabs value={dashboardFilter} onValueChange={(val) => { if (val !== 'C. 미평가') setDashboardFilter(val)}}>
                                 <TabsList className="h-8">
                                     <TabsTrigger value="전체" className="text-xs px-2 py-1 h-auto">전체</TabsTrigger>
                                     <TabsTrigger value="A. 정규평가" className="text-xs px-2 py-1 h-auto">A.정규</TabsTrigger>
@@ -719,6 +721,10 @@ export default function AdminDashboard({
             return <GradeManagement gradingScale={gradingScale} setGradingScale={setGradingScale} />;
         case 'consistency-check':
             return <ConsistencyValidator results={initialResults} gradingScale={gradingScale} />;
+        case 'work-rate-view':
+            return <WorkRateManagement />;
+        case 'attendance-type-management':
+            return <AttendanceTypeManagement />;
         case 'notifications': {
             const notifications = [
                 { date: '2025.07.07 14:00', message: '2025년 6월 평가대상자가 업로드 되었습니다. 평가를 진행해주세요.' },

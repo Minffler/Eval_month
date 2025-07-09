@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Download, Trash2 } from 'lucide-react';
+import { Download, Trash2, Upload } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import type { Employee, Evaluation, EvaluationResult, Grade, EvaluationUploadData } from '@/lib/types';
 import { MonthSelector } from './month-selector';
@@ -226,51 +226,77 @@ export default function ManageData({ onEmployeeUpload, onEvaluationUpload, resul
     XLSX.writeFile(workbook, fileName);
   };
 
+  const handleGenericFileUpload = (file: File | undefined) => {
+    if (!file) return;
+    toast({
+      title: '파일 업로드 완료',
+      description: `${file.name} 파일이 업로드되었습니다. 추후 처리 로직이 구현될 예정입니다.`,
+    });
+  }
+
   return (
     <div className="space-y-6">
         <Tabs defaultValue="base-data">
             <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="base-data">평가 대상자 업로드</TabsTrigger>
-                <TabsTrigger value="eval-data">평가 데이터 업로드</TabsTrigger>
+                <TabsTrigger value="base-data">평가 대상자/데이터 업로드</TabsTrigger>
+                <TabsTrigger value="work-rate-data">근무율 산출 데이터 업로드</TabsTrigger>
             </TabsList>
             <TabsContent value="base-data">
                 <Card>
                     <CardHeader>
-                        <CardTitle>평가 대상자</CardTitle>
+                        <CardTitle>평가 대상자 및 데이터</CardTitle>
                         <CardDescription>
-                            엑셀 파일을 업로드하여 특정 월의 평가 대상자 정보를 업데이트하세요.
+                            엑셀 파일을 업로드하여 특정 월의 평가 대상자 정보 또는 평가 데이터를 업데이트하세요.
                         </CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                            <div className="grid w-full max-w-sm items-center gap-1.5">
-                            <Label htmlFor="employee-data">엑셀 파일 업로드</Label>
-                            <Input id="employee-data" type="file" accept=".xlsx, .xls" onChange={handleEmployeeFileUpload} ref={employeeFileInputRef} />
+                    <CardContent className="space-y-6">
+                        <div className="space-y-2">
+                            <Label>평가 대상자 업로드</Label>
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 border rounded-lg">
+                                <div className="grid w-full max-w-sm items-center gap-1.5">
+                                <Input id="employee-data" type="file" accept=".xlsx, .xls" onChange={handleEmployeeFileUpload} ref={employeeFileInputRef} />
+                                </div>
+                                <Button onClick={handleDownloadBaseTemplate} variant="outline" className="w-full sm:w-auto mt-auto">
+                                <Download className="mr-2 h-4 w-4" /> 양식 다운로드
+                                </Button>
                             </div>
-                            <Button onClick={handleDownloadBaseTemplate} variant="outline" className="w-full sm:w-auto mt-auto">
-                            <Download className="mr-2 h-4 w-4" /> 양식 다운로드
-                            </Button>
+                        </div>
+                         <div className="space-y-2">
+                            <Label>평가 데이터 업로드</Label>
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 border rounded-lg">
+                                <div className="grid w-full max-w-sm items-center gap-1.5">
+                                    <Input id="evaluation-data" type="file" accept=".xlsx, .xls" onChange={handleEvaluationFileUpload} ref={evaluationFileInputRef} />
+                                </div>
+                                <Button onClick={handleDownloadEvalTemplate} variant="outline" className="w-full sm:w-auto mt-auto">
+                                    <Download className="mr-2 h-4 w-4" /> 양식 다운로드
+                                </Button>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
             </TabsContent>
-            <TabsContent value="eval-data">
+            <TabsContent value="work-rate-data">
                  <Card>
                     <CardHeader>
-                        <CardTitle>평가 데이터</CardTitle>
+                        <CardTitle>근무율 산출 데이터 업데이트</CardTitle>
                         <CardDescription>
-                            등급, 비고 등 평가 결과가 포함된 엑셀 파일을 업로드합니다.
+                            근무율 산출에 필요한 파일들을 각각 업로드합니다.
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                            <div className="grid w-full max-w-sm items-center gap-1.5">
-                                <Label htmlFor="evaluation-data">엑셀 파일 업로드</Label>
-                                <Input id="evaluation-data" type="file" accept=".xlsx, .xls" onChange={handleEvaluationFileUpload} ref={evaluationFileInputRef} />
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="p-4 border rounded-lg space-y-2 flex flex-col items-center">
+                                <Label htmlFor="pregnancy-work-hours" className="text-center">임신기간 단축근로</Label>
+                                <Input id="pregnancy-work-hours" type="file" accept=".xlsx, .xls" onChange={(e) => handleGenericFileUpload(e.target.files?.[0])} />
                             </div>
-                            <Button onClick={handleDownloadEvalTemplate} variant="outline" className="w-full sm:w-auto mt-auto">
-                                <Download className="mr-2 h-4 w-4" /> 양식 다운로드
-                            </Button>
+                            <div className="p-4 border rounded-lg space-y-2 flex flex-col items-center">
+                                <Label htmlFor="childcare-work-hours" className="text-center">육아기, 가족돌봄 단축근로</Label>
+                                <Input id="childcare-work-hours" type="file" accept=".xlsx, .xls" onChange={(e) => handleGenericFileUpload(e.target.files?.[0])} />
+                            </div>
+                            <div className="p-4 border rounded-lg space-y-2 flex flex-col items-center">
+                                <Label htmlFor="attendance-management" className="text-center">일근태관리</Label>
+                                <Input id="attendance-management" type="file" accept=".xlsx, .xls" onChange={(e) => handleGenericFileUpload(e.target.files?.[0])} />
+                            </div>
                         </div>
                     </CardContent>
                 </Card>

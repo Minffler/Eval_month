@@ -23,6 +23,9 @@ import {
   Bot,
   Edit2,
   ListChecks,
+  Hourglass,
+  Gauge,
+  ListTodo,
 } from 'lucide-react';
 
 const adminNavItems: NavItem[] = [
@@ -46,6 +49,15 @@ const adminNavItems: NavItem[] = [
       { id: 'evaluator-management', label: '평가자 관리', icon: Users },
       { id: 'grade-management', label: '등급/점수 관리', icon: Settings },
     ],
+  },
+  {
+    id: 'work-rate-management',
+    label: '근무율 관리',
+    icon: Hourglass,
+    children: [
+      { id: 'work-rate-view', label: '근무율 조회', icon: Gauge },
+      { id: 'attendance-type-management', label: '근태 수치 관리', icon: ListTodo },
+    ]
   },
   {
     id: 'notifications',
