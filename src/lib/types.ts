@@ -79,3 +79,11 @@ export type EvaluationUploadData = {
   memo?: string;
   evaluatorName?: string;
 } & Partial<Omit<Employee, 'id' | 'uniqueId'>>;
+
+export type AppNotification = {
+  id: string;
+  date: string; // ISO date string
+  message: string;
+  isRead: boolean;
+  recipientId: string; // uniqueId of the user who should see this
+};

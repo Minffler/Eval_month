@@ -19,6 +19,7 @@ import type { User } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Separator } from '../ui/separator';
 import { TooltipProvider } from '../ui/tooltip';
+import { useNotifications } from '@/contexts/notification-context';
 
 export type NavItem = {
   id: string;
@@ -38,8 +39,14 @@ interface SidebarProps {
 }
 
 export function Sidebar({ navItems, activeView, setActiveView, isOpen, setIsOpen, user, logout }: SidebarProps) {
-  const defaultOpen = navItems.map(item => item.id);
-  const [openAccordion, setOpenAccordion] = React.useState<string[]>(defaultOpen);
+  const [openAccordion, setOpenAccordion] = React.useState<string[]>([]);
+  const { unreadCount } = useNotifications();
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setOpenAccordion(navItems.map(item => item.id));
+    }
+  }, [isOpen, navItems]);
 
   const handleNavClick = (id: string, hasChildren: boolean) => {
     if (!hasChildren) {
@@ -47,14 +54,21 @@ export function Sidebar({ navItems, activeView, setActiveView, isOpen, setIsOpen
     }
   };
 
-  const NavLink = ({ item }: { item: NavItem }) => (
+  const NavLink = ({ item, hasUnread }: { item: NavItem, hasUnread: boolean }) => (
     <Button
       variant={activeView === item.id ? 'secondary' : 'ghost'}
       className={cn("w-full justify-start gap-3", !isOpen && "justify-center")}
       onClick={() => handleNavClick(item.id, !!item.children)}
       title={item.label}
     >
-      <item.icon className="h-5 w-5 flex-shrink-0" />
+        <div className="relative">
+            <item.icon className="h-5 w-5 flex-shrink-0" />
+            {hasUnread && (
+                <span className={cn("absolute top-0 right-0 flex h-2.5 w-2.5", isOpen ? "-mr-1" : "-mt-0.5 -mr-0.5")}>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                </span>
+            )}
+        </div>
       {isOpen && <span className="truncate">{item.label}</span>}
     </Button>
   );
@@ -87,8 +101,11 @@ export function Sidebar({ navItems, activeView, setActiveView, isOpen, setIsOpen
         <ScrollArea className="flex-1">
           <nav className="flex-1 space-y-1 p-2">
               {navItems.map((item) => {
+                const isNotificationItem = item.id === 'notifications';
+                const hasUnread = unreadCount > 0 && isNotificationItem;
+
                 if (!item.children) {
-                  return <NavLink key={item.id} item={item} />;
+                  return <NavLink key={item.id} item={item} hasUnread={hasUnread} />;
                 }
 
                 if (isOpen) {
@@ -109,7 +126,7 @@ export function Sidebar({ navItems, activeView, setActiveView, isOpen, setIsOpen
                         </AccordionTrigger>
                         <AccordionContent className="pl-6 pb-0 space-y-1">
                             {item.children.map((child) => (
-                                <NavLink key={child.id} item={child} />
+                                <NavLink key={child.id} item={child} hasUnread={false} />
                             ))}
                         </AccordionContent>
                       </AccordionItem>

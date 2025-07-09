@@ -102,13 +102,13 @@ const getBGroupIndicatorStyle = (workRate: number): { style: React.CSSProperties
 
     const hue = 210; // Blue, matching primary
     const saturation = 50 + (normalized * 50); // From 50% to 100%
-    const lightness = 85 - (normalized * 45); // From 85% down to 40%
+    const lightness = 95 - (normalized * 35); // From 95% down to 60%
 
     const style = {
         backgroundColor: `hsl(${hue}, ${saturation}%, ${lightness}%)`,
     };
 
-    const className = lightness > 60 ? 'text-blue-900' : 'text-white';
+    const className = 'text-blue-900';
 
     return { style, className };
 };
@@ -609,7 +609,7 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, handleRe
       <div className="flex justify-between mt-4">
         <Button onClick={() => setIsClearConfirmOpen(true)} variant="destructive" size="lg" disabled={myEmployees.length === 0}>
             <Trash2 className="mr-2 h-4 w-4" />
-            데이터 삭제
+            평가이력 삭제
         </Button>
         <Button onClick={handleSave} size="lg"><Check className="mr-2"/> 모든 평가 저장</Button>
       </div>

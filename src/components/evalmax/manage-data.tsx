@@ -287,11 +287,11 @@ export default function ManageData({ onEmployeeUpload, onEvaluationUpload, resul
             <CardContent className="flex flex-col sm:flex-row gap-4">
                 <Button variant="destructive" onClick={() => setDialogOpen('deleteEmployees')} disabled={results.length === 0}>
                     <Trash2 className="mr-2 h-4 w-4" />
-                    기존 대상자데이터 삭제
+                    대상자 삭제
                 </Button>
                 <Button variant="destructive" onClick={() => setDialogOpen('resetEvaluations')} disabled={results.length === 0}>
                     <Trash2 className="mr-2 h-4 w-4" />
-                    기존 평가데이터 초기화
+                    평가이력 초기화
                 </Button>
             </CardContent>
         </Card>
