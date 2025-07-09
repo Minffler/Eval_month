@@ -28,8 +28,13 @@ import { Checkbox } from '@/components/ui/checkbox';
 import type { EvaluationResult, Employee } from '@/lib/types';
 import { getPositionSortValue } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, ChevronsUpDown, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 
 interface EvaluatorManagementProps {
   results: EvaluationResult[];
@@ -42,62 +47,155 @@ type SortConfig = {
   direction: 'ascending' | 'descending';
 } | null;
 
+
+interface MultiSelectFilterProps {
+  title: string;
+  options: readonly string[];
+  selected: Set<string>;
+  onSelectionChange: (newSelection: Set<string>) => void;
+  searchable?: boolean;
+  className?: string;
+}
+
+const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
+  title,
+  options,
+  selected,
+  onSelectionChange,
+  searchable = false,
+  className,
+}) => {
+  const [search, setSearch] = React.useState('');
+  const [isOpen, setIsOpen] = React.useState(false);
+
+  const filteredOptions = searchable
+    ? options.filter(option => option.toLowerCase().includes(search.toLowerCase()))
+    : options;
+
+  const handleToggle = (option: string) => {
+    const newSelection = new Set(selected);
+    if (newSelection.has(option)) {
+      newSelection.delete(option);
+    } else {
+      newSelection.add(option);
+    }
+    onSelectionChange(newSelection);
+  };
+  
+  const selectedLabel = selected.size > 0 
+    ? selected.size > 2
+      ? `${selected.size}개 선택됨`
+      : Array.from(selected).join(', ')
+    : `모든 ${title}`;
+
+  return (
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="outline" role="combobox" aria-expanded={isOpen} className={cn("w-full sm:w-[180px] justify-between", className)}>
+          <span className="truncate">{selectedLabel}</span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[250px] p-0" align="start">
+        {searchable && (
+          <div className="p-2">
+            <Input
+              placeholder={`${title} 검색...`}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+        )}
+        <ScrollArea className="h-64">
+          <div className="p-2 space-y-1">
+             <div
+                className="flex items-center gap-2 p-2 rounded-md cursor-pointer hover:bg-accent"
+                onClick={() => onSelectionChange(new Set())}
+              >
+              <Checkbox checked={selected.size === 0} readOnly />
+              <Label className="font-normal cursor-pointer w-full">{`모든 ${title}`}</Label>
+            </div>
+            {filteredOptions.map((option) => (
+              <div
+                key={option}
+                className="flex items-center gap-2 p-2 rounded-md cursor-pointer hover:bg-accent"
+                onClick={() => handleToggle(option)}
+              >
+                <Checkbox checked={selected.has(option)} readOnly />
+                <Label className="font-normal cursor-pointer w-full">{option}</Label>
+              </div>
+            ))}
+          </div>
+        </ScrollArea>
+      </PopoverContent>
+    </Popover>
+  );
+};
+
+
 export default function EvaluatorManagement({
   results,
   allEmployees,
   handleResultsUpdate,
 }: EvaluatorManagementProps) {
   const [filteredResults, setFilteredResults] = React.useState(results);
-  const [companyFilter, setCompanyFilter] = React.useState('all');
-  const [departmentFilter, setDepartmentFilter] = React.useState('all');
-  const [titleFilter, setTitleFilter] = React.useState('all');
-  const [sortConfig, setSortConfig] = React.useState<SortConfig>(null);
+  const [companyFilter, setCompanyFilter] = React.useState<Set<string>>(new Set());
+  const [departmentFilter, setDepartmentFilter] = React.useState<Set<string>>(new Set());
+  const [titleFilter, setTitleFilter] = React.useState<Set<string>>(new Set());
+  const [sortConfig, setSortConfig] = React.useState<SortConfig>({ key: 'evaluatorName', direction: 'ascending' });
   const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
   const [bulkEvaluatorId, setBulkEvaluatorId] = React.useState('');
   const [currentGroupEvaluator, setCurrentGroupEvaluator] = React.useState<string>('필터를 선택하세요');
   const { toast } = useToast();
 
   const evaluators = React.useMemo(() => {
-    const evaluatorUniqueIds = new Set(allEmployees.map(e => e.evaluatorId).filter(Boolean));
-    return allEmployees.filter(e => evaluatorUniqueIds.has(e.uniqueId));
+    return allEmployees.filter(e => e.roles?.includes('evaluator') || allEmployees.some(emp => emp.evaluatorId === e.uniqueId));
   }, [allEmployees]);
   
   React.useEffect(() => {
     let newFilteredResults = [...results];
 
-    if (companyFilter !== 'all') {
-      newFilteredResults = newFilteredResults.filter((r) => r.company === companyFilter);
+    if (companyFilter.size > 0) {
+      newFilteredResults = newFilteredResults.filter((r) => r.company && companyFilter.has(r.company));
     }
-    if (departmentFilter !== 'all') {
-      newFilteredResults = newFilteredResults.filter((r) => r.department === departmentFilter);
+    if (departmentFilter.size > 0) {
+      newFilteredResults = newFilteredResults.filter((r) => r.department && departmentFilter.has(r.department));
     }
-    if (titleFilter !== 'all') {
-        if (titleFilter === '팀원') {
-            newFilteredResults = newFilteredResults.filter((r) => !['지부장', '센터장', '팀장', '지점장'].includes(r.title));
-        } else {
-            newFilteredResults = newFilteredResults.filter((r) => r.title === titleFilter);
-        }
+    if (titleFilter.size > 0) {
+      newFilteredResults = newFilteredResults.filter(r => {
+          const isLeader = ['지부장', '센터장', '팀장', '지점장'].includes(r.title);
+          if (titleFilter.has(r.title)) return true;
+          if (titleFilter.has('팀원') && !isLeader) return true;
+          return false;
+      });
     }
     
     // Determine the current evaluator for the filtered group
-    if (companyFilter === 'all' && departmentFilter === 'all' && titleFilter === 'all') {
+    if (companyFilter.size === 0 && departmentFilter.size === 0 && titleFilter.size === 0) {
         setCurrentGroupEvaluator('필터를 선택하여 그룹을 지정해주세요.');
-    } else {
-        if (newFilteredResults.length > 0) {
-            const firstEvaluatorName = newFilteredResults[0].evaluatorName;
-            const allSame = newFilteredResults.every(r => r.evaluatorName === firstEvaluatorName);
-            if (allSame) {
-                setCurrentGroupEvaluator(firstEvaluatorName || '미지정');
-            } else {
-                setCurrentGroupEvaluator('여러 평가자');
-            }
+    } else if (newFilteredResults.length > 0) {
+        const firstEvaluatorId = newFilteredResults[0].evaluatorId;
+        const allSame = newFilteredResults.every(r => r.evaluatorId === firstEvaluatorId);
+        if (allSame) {
+            const evaluator = allEmployees.find(e => e.uniqueId === firstEvaluatorId);
+            setCurrentGroupEvaluator(evaluator ? `${evaluator.name} (${evaluator.uniqueId})` : '미지정');
         } else {
-            setCurrentGroupEvaluator('해당 그룹 없음');
+            setCurrentGroupEvaluator('여러 평가자');
         }
+    } else {
+        setCurrentGroupEvaluator('해당 그룹 없음');
     }
 
     if (sortConfig !== null) {
       newFilteredResults.sort((a, b) => {
+        if (sortConfig.key === 'evaluatorName') {
+            const aUnassigned = !a.evaluatorId;
+            const bUnassigned = !b.evaluatorId;
+            if (aUnassigned !== bUnassigned) {
+                return sortConfig.direction === 'ascending' ? (aUnassigned ? -1 : 1) : (aUnassigned ? 1 : -1);
+            }
+        }
+        
         if (sortConfig.key === 'title') {
             const orderA = getPositionSortValue(a.title);
             const orderB = getPositionSortValue(b.title);
@@ -118,11 +216,12 @@ export default function EvaluatorManagement({
     }
 
     setFilteredResults(newFilteredResults);
-  }, [companyFilter, departmentFilter, titleFilter, results, sortConfig]);
+    setSelectedIds(new Set());
+  }, [companyFilter, departmentFilter, titleFilter, results, sortConfig, allEmployees]);
 
-  const allCompanies = ['all', ...Array.from(new Set(results.map((r) => r.company).filter(Boolean)))];
-  const allDepartments = ['all', ...Array.from(new Set(results.map((r) => r.department).filter(Boolean)))];
-  const allTitles = ['all', '지부장', '센터장', '팀장', '지점장', '팀원'];
+  const allCompanies = React.useMemo(() => [...new Set(results.map((r) => r.company).filter(Boolean))], [results]);
+  const allDepartments = React.useMemo(() => [...new Set(results.map((r) => r.department).filter(Boolean))], [results]);
+  const allTitles = ['지부장', '센터장', '팀장', '지점장', '팀원'];
 
   const requestSort = (key: keyof EvaluationResult) => {
     let direction: 'ascending' | 'descending' = 'ascending';
@@ -156,7 +255,7 @@ export default function EvaluatorManagement({
     const updatedResults = results.map((r) => {
       if (r.id === employeeId) {
         const evaluator = allEmployees.find(u => u.uniqueId === newEvaluatorId);
-        return { ...r, evaluatorId: newEvaluatorId, evaluatorName: evaluator?.name || `ID: ${newEvaluatorId}` };
+        return { ...r, evaluatorId: newEvaluatorId, evaluatorName: newEvaluatorId ? (evaluator?.name || `ID: ${newEvaluatorId}`) : '미지정' };
       }
       return r;
     });
@@ -172,10 +271,10 @@ export default function EvaluatorManagement({
       });
       return;
     }
+    const evaluator = allEmployees.find(u => u.uniqueId === bulkEvaluatorId);
     const updatedResults = results.map(r => {
       if (selectedIds.has(r.id)) {
-        const evaluator = allEmployees.find(u => u.uniqueId === bulkEvaluatorId);
-        return { ...r, evaluatorId: bulkEvaluatorId, evaluatorName: evaluator?.name || `ID: ${bulkEvaluatorId}` };
+        return { ...r, evaluatorId: bulkEvaluatorId, evaluatorName: bulkEvaluatorId ? (evaluator?.name || `ID: ${bulkEvaluatorId}`) : '미지정' };
       }
       return r;
     });
@@ -201,9 +300,10 @@ export default function EvaluatorManagement({
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-x-2 gap-y-4 items-end">
-            <Select value={companyFilter} onValueChange={setCompanyFilter}><SelectTrigger className="w-full sm:w-[150px]"><SelectValue placeholder="회사 선택" /></SelectTrigger><SelectContent>{allCompanies.map((c) => (<SelectItem key={c} value={c}>{c === 'all' ? '모든 회사' : c}</SelectItem>))}</SelectContent></Select>
-            <Select value={departmentFilter} onValueChange={setDepartmentFilter}><SelectTrigger className="w-full sm:w-[150px]"><SelectValue placeholder="소속부서 선택" /></SelectTrigger><SelectContent>{allDepartments.map((d) => (<SelectItem key={d} value={d}>{d === 'all' ? '모든 부서' : d}</SelectItem>))}</SelectContent></Select>
-            <Select value={titleFilter} onValueChange={setTitleFilter}><SelectTrigger className="w-full sm:w-[150px]"><SelectValue placeholder="직책 선택" /></SelectTrigger><SelectContent>{allTitles.map((p) => (<SelectItem key={p} value={p}>{p === 'all' ? '모든 직책' : p}</SelectItem>))}</SelectContent></Select>
+            <MultiSelectFilter title="회사" options={allCompanies} selected={companyFilter} onSelectionChange={setCompanyFilter} />
+            <MultiSelectFilter title="부서" options={allDepartments} selected={departmentFilter} onSelectionChange={setDepartmentFilter} searchable />
+            <MultiSelectFilter title="직책" options={allTitles} selected={titleFilter} onSelectionChange={setTitleFilter} />
+            
             <div className={cn("p-2 rounded-md", 
               currentGroupEvaluator === '필터를 선택하여 그룹을 지정해주세요.' ? 'text-muted-foreground' : 'bg-muted')}>
                 <p className="text-sm font-medium">현재 담당자: <span className="font-bold text-primary">{currentGroupEvaluator}</span></p>
@@ -215,6 +315,7 @@ export default function EvaluatorManagement({
             <Select value={bulkEvaluatorId} onValueChange={setBulkEvaluatorId}>
               <SelectTrigger className="w-full sm:w-[250px]"><SelectValue placeholder="평가자 선택" /></SelectTrigger>
               <SelectContent>
+                <SelectItem value="">미지정</SelectItem>
                 {evaluators.map((evaluator) => (
                     <SelectItem key={evaluator.uniqueId} value={evaluator.uniqueId}>
                         {`${evaluator.name} (${evaluator.uniqueId})`}
@@ -249,13 +350,16 @@ export default function EvaluatorManagement({
                     <TableCell>
                       <Select value={result.evaluatorId || ''} onValueChange={(newEvaluatorId) => handleEvaluatorChange(result.id, newEvaluatorId)}>
                         <SelectTrigger className="w-[220px]">
-                            <SelectValue placeholder="평가자 선택" />
+                            <SelectValue placeholder="미지정" />
                         </SelectTrigger>
-                        <SelectContent>{evaluators.map((evaluator) => (
-                            <SelectItem key={evaluator.uniqueId} value={evaluator.uniqueId}>
-                                {`${evaluator.name} (${evaluator.uniqueId})`}
-                            </SelectItem>
-                        ))}</SelectContent>
+                        <SelectContent>
+                          <SelectItem value="">미지정</SelectItem>
+                          {evaluators.map((evaluator) => (
+                              <SelectItem key={evaluator.uniqueId} value={evaluator.uniqueId}>
+                                  {`${evaluator.name} (${evaluator.uniqueId})`}
+                              </SelectItem>
+                          ))}
+                        </SelectContent>
                       </Select>
                     </TableCell>
                   </TableRow>
