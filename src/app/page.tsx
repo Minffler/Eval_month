@@ -292,7 +292,30 @@ export default function Home() {
     }
 
     const getDetailedGroup2 = (employee: Employee): string => {
-        return employee.group || '기타';
+        const { position, growthLevel, group } = employee;
+
+        // Handle special evaluation groups first
+        if (group === '별도평가' || group === '미평가') {
+            return group;
+        }
+
+        if (position === '팀장' || position === '지점장') {
+            return '팀장/지점장';
+        }
+        if (position === '지부장' || position === '센터장') {
+            return '지부장/센터장';
+        }
+    
+        // For other positions (like '팀원'), use growth level
+        if (growthLevel === 'Lv.1') {
+            return 'Lv.1';
+        }
+        if (growthLevel === 'Lv.2' || growthLevel === 'Lv.3') {
+            return 'Lv.2~3';
+        }
+
+        // Fallback for all other cases.
+        return '기타';
     }
 
     const getFullEvaluationResults = (
