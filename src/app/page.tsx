@@ -171,8 +171,8 @@ export default function Home() {
 
 
   const dateKey = `${selectedDate.year}-${selectedDate.month}`;
-  const currentMonthEmployees = employees[dateKey] || [];
-  const currentMonthEvaluations = evaluations[dateKey] || [];
+  const currentMonthEmployees = React.useMemo(() => employees[dateKey] || [], [employees, dateKey]);
+  const currentMonthEvaluations = React.useMemo(() => evaluations[dateKey] || [], [evaluations, dateKey]);
   
   const allEmployees = React.useMemo(() => {
     return Object.values(employees).flat();
