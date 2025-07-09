@@ -149,7 +149,7 @@ export default function EvaluatorManagement({
   const { toast } = useToast();
 
   const evaluators = React.useMemo(() => {
-    return allEmployees.filter(e => e.roles?.includes('evaluator') || allEmployees.some(emp => emp.evaluatorId === e.uniqueId));
+    return allEmployees.filter(e => allEmployees.some(emp => emp.evaluatorId === e.uniqueId));
   }, [allEmployees]);
   
   React.useEffect(() => {
@@ -252,10 +252,11 @@ export default function EvaluatorManagement({
   };
 
   const handleEvaluatorChange = (employeeId: string, newEvaluatorId: string) => {
+    const finalEvaluatorId = newEvaluatorId === 'unassigned' ? '' : newEvaluatorId;
     const updatedResults = results.map((r) => {
       if (r.id === employeeId) {
-        const evaluator = allEmployees.find(u => u.uniqueId === newEvaluatorId);
-        return { ...r, evaluatorId: newEvaluatorId, evaluatorName: newEvaluatorId ? (evaluator?.name || `ID: ${newEvaluatorId}`) : '미지정' };
+        const evaluator = allEmployees.find(u => u.uniqueId === finalEvaluatorId);
+        return { ...r, evaluatorId: finalEvaluatorId, evaluatorName: finalEvaluatorId ? (evaluator?.name || `ID: ${finalEvaluatorId}`) : '미지정' };
       }
       return r;
     });
@@ -271,10 +272,11 @@ export default function EvaluatorManagement({
       });
       return;
     }
-    const evaluator = allEmployees.find(u => u.uniqueId === bulkEvaluatorId);
+    const finalEvaluatorId = bulkEvaluatorId === 'unassigned' ? '' : bulkEvaluatorId;
+    const evaluator = allEmployees.find(u => u.uniqueId === finalEvaluatorId);
     const updatedResults = results.map(r => {
       if (selectedIds.has(r.id)) {
-        return { ...r, evaluatorId: bulkEvaluatorId, evaluatorName: bulkEvaluatorId ? (evaluator?.name || `ID: ${bulkEvaluatorId}`) : '미지정' };
+        return { ...r, evaluatorId: finalEvaluatorId, evaluatorName: finalEvaluatorId ? (evaluator?.name || `ID: ${finalEvaluatorId}`) : '미지정' };
       }
       return r;
     });
@@ -315,7 +317,7 @@ export default function EvaluatorManagement({
             <Select value={bulkEvaluatorId} onValueChange={setBulkEvaluatorId}>
               <SelectTrigger className="w-full sm:w-[250px]"><SelectValue placeholder="평가자 선택" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">미지정</SelectItem>
+                <SelectItem value="unassigned">미지정</SelectItem>
                 {evaluators.map((evaluator) => (
                     <SelectItem key={evaluator.uniqueId} value={evaluator.uniqueId}>
                         {`${evaluator.name} (${evaluator.uniqueId})`}
@@ -353,7 +355,7 @@ export default function EvaluatorManagement({
                             <SelectValue placeholder="미지정" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">미지정</SelectItem>
+                          <SelectItem value="unassigned">미지정</SelectItem>
                           {evaluators.map((evaluator) => (
                               <SelectItem key={evaluator.uniqueId} value={evaluator.uniqueId}>
                                   {`${evaluator.name} (${evaluator.uniqueId})`}
