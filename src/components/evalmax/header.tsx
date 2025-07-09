@@ -10,7 +10,13 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
-import { MonthSelector } from './month-selector';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useNotifications } from '@/contexts/notification-context';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -35,13 +41,67 @@ export default function Header({ selectedDate, onDateChange }: HeaderProps) {
     return null;
   }
 
+  const currentClientYear = new Date().getFullYear();
+  const availableYears = Array.from({ length: Math.max(0, currentClientYear - 2025 + 1) }, (_, i) => 2025 + i).reverse();
+  const allMonths = Array.from({ length: 12 }, (_, i) => i + 1);
+
+  const handleYearChange = (yearStr: string) => {
+    const newYear = parseInt(yearStr, 10);
+    onDateChange({ year: newYear, month: selectedDate.month });
+  };
+  
+  const handleMonthChange = (monthStr: string) => {
+    const newMonth = parseInt(monthStr, 10);
+    onDateChange({ year: selectedDate.year, month: newMonth });
+  };
+
+  const getValidMonthsForYear = (year: number) => {
+    const today = new Date();
+    if (year < today.getFullYear()) {
+      return allMonths; // Past years have all months available
+    }
+    if (year > today.getFullYear()) {
+      return []; // Future years have no months available
+    }
+    // For the current year, only past months are available
+    return allMonths.filter(m => m < today.getMonth() + 1);
+  };
+  
+  const monthsForSelectedYear = getValidMonthsForYear(selectedDate.year);
+
+
   return (
     <div className="flex w-full items-center justify-between">
         <div className="flex items-center gap-4">
             <h1 className="text-xl font-semibold font-headline flex-shrink-0">
                 {roleDisplay[role]} 대시보드
             </h1>
-            <MonthSelector selectedDate={selectedDate} onDateChange={onDateChange} />
+            <div className="flex items-center gap-2">
+                 <Select value={String(selectedDate.year)} onValueChange={handleYearChange}>
+                    <SelectTrigger className="w-auto min-w-[110px]">
+                        <SelectValue placeholder="연도 선택" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {availableYears.map(year => (
+                        <SelectItem key={year} value={String(year)}>
+                            {year}년
+                        </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+                <Select value={String(selectedDate.month)} onValueChange={handleMonthChange}>
+                    <SelectTrigger className="w-auto min-w-[90px]">
+                        <SelectValue placeholder="월 선택" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {monthsForSelectedYear.map(month => (
+                        <SelectItem key={month} value={String(month)}>
+                            {month}월
+                        </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
         </div>
         
         <div className="flex items-center gap-2">

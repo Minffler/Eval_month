@@ -18,7 +18,6 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import type { User } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Separator } from '../ui/separator';
-import { TooltipProvider } from '../ui/tooltip';
 import { useNotifications } from '@/contexts/notification-context';
 
 export type NavItem = {
@@ -167,37 +166,29 @@ export function Sidebar({ navItems, activeView, setActiveView, isOpen, setIsOpen
               })}
           </nav>
         </ScrollArea>
-        <div className="mt-auto">
-            <Separator />
-            {isOpen ? (
-                <Popover>
-                    <PopoverTrigger className="w-full">{userProfile}</PopoverTrigger>
-                    <PopoverContent className="w-56 mb-2" side="top" align="start">
-                        <Button variant="ghost" onClick={logout} className="w-full justify-start">
-                            <LogOut className="mr-2 h-4 w-4" />
-                            로그아웃
-                        </Button>
-                    </PopoverContent>
-                </Popover>
-            ) : (
-                <TooltipProvider delayDuration={0}>
-                    <Popover>
-                        <PopoverTrigger asChild>{userProfile}</PopoverTrigger>
-                        <PopoverContent className="w-56 mb-2" side="right" align="start">
-                            <div className="p-2 space-y-1">
-                                <p className="font-bold">{user?.name}</p>
-                                <p className="text-sm text-muted-foreground">{user?.department} / {user?.title}</p>
-                            </div>
-                            <Separator className="my-1"/>
-                             <Button variant="ghost" onClick={logout} className="w-full justify-start">
-                                <LogOut className="mr-2 h-4 w-4" />
-                                로그아웃
-                            </Button>
-                        </PopoverContent>
-                    </Popover>
-                </TooltipProvider>
-            )}
+        <div className="mt-auto border-t">
+          <Popover>
+            <PopoverTrigger asChild>
+              <div className="cursor-pointer hover:bg-muted/50">
+                {userProfile}
+              </div>
+            </PopoverTrigger>
+            <PopoverContent side={isOpen ? 'top' : 'right'} align="start" className="w-auto mb-2">
+              <div className="p-2 space-y-1">
+                <p className="font-semibold">{user?.name}</p>
+                <p className="text-sm text-muted-foreground">{user?.department} / {user?.title}</p>
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          <div className="p-2 border-t">
+            <Button variant="ghost" onClick={logout} className={cn("w-full justify-start gap-3", !isOpen && "justify-center")} title="로그아웃">
+              <LogOut className="h-5 w-5" />
+              {isOpen && <span>로그아웃</span>}
+            </Button>
+          </div>
         </div>
+
         <Button
             variant="ghost"
             size="icon"

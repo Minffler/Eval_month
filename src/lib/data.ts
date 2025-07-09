@@ -13,7 +13,7 @@ export const gradingScale: Record<NonNullable<Grade>, GradeInfo> = {
 };
 
 export const mockEmployees: Employee[] = [
-  { id: 'E1911042', uniqueId: '1911042', name: '김관리', company: 'OK', department: '인사팀', title: '팀장', position: '팀장', growthLevel: 'Lv.5', workRate: 1.0, evaluatorId: '1911042', baseAmount: 8000000, memo: '' },
+  { id: 'E1911042', uniqueId: '1911042', name: '김관리', company: 'OK', department: '인사기획팀', title: '팀원', position: '팀원', growthLevel: 'Lv.5', workRate: 1.0, evaluatorId: '1911042', baseAmount: 8000000, memo: '' },
   { id: 'E0000002', uniqueId: '0000002', name: '박평가', company: 'OK', department: '제품 개발', title: '팀장', position: '팀장', growthLevel: 'Lv.4', workRate: 1.0, evaluatorId: '1911042', baseAmount: 7500000, memo: '' },
   { id: 'E0000003', uniqueId: '0000003', name: '이주임', company: 'OK', department: '제품 개발', title: '팀원', position: '팀원', growthLevel: 'Lv.2', workRate: 0.95, evaluatorId: '0000002', baseAmount: 5000000, memo: '' },
   { id: 'E0000004', uniqueId: '0000004', name: '최사원', company: 'OC', department: '제품 개발', title: '팀원', position: '팀원', growthLevel: 'Lv.1', workRate: 1.0, evaluatorId: '0000002', baseAmount: 4500000, memo: '' },
