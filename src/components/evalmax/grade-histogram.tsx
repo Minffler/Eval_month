@@ -22,7 +22,7 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-const CustomYAxisTick = (props: any) => {
+const CustomXAxisTick = (props: any) => {
     const { x, y, payload, gradingScale } = props;
     const grade = payload.value as Grade;
 
@@ -34,10 +34,10 @@ const CustomYAxisTick = (props: any) => {
 
     return (
         <g transform={`translate(${x},${y})`}>
-            <text x={0} y={0} dx={-4} textAnchor="end" fill="hsl(var(--foreground))" fontSize={12} fontWeight="500">
+            <text x={0} y={0} dy={12} textAnchor="middle" fill="hsl(var(--foreground))" fontSize={12} fontWeight="500">
                 {grade}
             </text>
-            <text x={0} y={0} dy={14} dx={-4} textAnchor="end" fill="hsl(var(--muted-foreground))" fontSize={11}>
+            <text x={0} y={0} dy={26} textAnchor="middle" fill="hsl(var(--muted-foreground))" fontSize={11}>
                 ({score}점)
             </text>
         </g>
@@ -70,16 +70,23 @@ export function GradeHistogram({
 
 
   return (
-    <div className="h-[220px]">
+    <div className="h-[250px]">
       <ChartContainer config={chartConfig} className="w-full h-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
-            layout="vertical"
             accessibilityLayer
             data={sortedData}
-            margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
+            margin={{ top: 30, right: 10, left: 10, bottom: 20 }}
           >
             <XAxis
+              dataKey="name"
+              tickLine={false}
+              axisLine={false}
+              tick={<CustomXAxisTick gradingScale={gradingScale} />}
+              height={40}
+              interval={0}
+            />
+            <YAxis
               type="number"
               stroke="hsl(var(--muted-foreground))"
               fontSize={12}
@@ -88,15 +95,6 @@ export function GradeHistogram({
               tickFormatter={(value) => `${value}`}
               allowDecimals={false}
             />
-            <YAxis
-              type="category"
-              dataKey="name"
-              tickLine={false}
-              axisLine={false}
-              tick={<CustomYAxisTick gradingScale={gradingScale} />}
-              width={80}
-              interval={0}
-            />
             <ChartTooltip
               cursor={{ fill: 'hsl(var(--muted))' }}
               content={<ChartTooltipContent />}
@@ -104,14 +102,13 @@ export function GradeHistogram({
             <Bar
               dataKey="value"
               fill="var(--color-value)"
-              radius={[0, 4, 4, 0]}
-              layout="vertical"
+              radius={[4, 4, 0, 0]}
             >
-                <LabelList dataKey="value" position="right" offset={5} fontSize={12} formatter={(value: number) => value > 0 ? value : ''} />
+                <LabelList dataKey="value" position="top" offset={5} fontSize={12} formatter={(value: number) => value > 0 ? value : ''} />
                 <LabelList 
                     dataKey="percentage" 
-                    position="insideRight"
-                    offset={4}
+                    position="insideTop"
+                    offset={10}
                     fill="hsl(var(--primary-foreground))"
                     fontSize={11}
                     formatter={(value: number) => value > 0 ? `${value.toFixed(1)}%` : ''}
