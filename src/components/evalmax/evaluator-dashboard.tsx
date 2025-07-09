@@ -65,6 +65,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '../ui/label';
 import { ScrollArea } from '../ui/scroll-area';
+import { Badge } from '../ui/badge';
 
 interface EvaluatorDashboardProps {
   allResults: EvaluationResult[];
@@ -86,7 +87,7 @@ type Groups = Record<string, { name: string; members: EvaluationResult[] }>;
 
 
 // Helper component for a single draggable table row
-const DraggableTableRow = ({ employee, gradingScale, selected, onSelect, onGradeChange, onMemoChange, onSave }: {
+const DraggableTableRow = ({ employee, gradingScale, selected, onSelect, onGradeChange, onMemoChange, onSave, activeId }: {
     employee: EvaluationResult,
     gradingScale: Record<NonNullable<Grade>, GradeInfo>,
     selected: boolean,
@@ -94,6 +95,7 @@ const DraggableTableRow = ({ employee, gradingScale, selected, onSelect, onGrade
     onGradeChange: (id: string, grade: Grade) => void,
     onMemoChange: (id: string, memo: string) => void,
     onSave: () => void,
+    activeId: string | null;
 }) => {
     const {
         attributes,
@@ -101,18 +103,17 @@ const DraggableTableRow = ({ employee, gradingScale, selected, onSelect, onGrade
         setNodeRef,
         transform,
         transition,
+        isDragging,
     } = useSortable({ id: employee.id });
 
     const style = {
         transform: CSS.Transform.toString(transform),
         transition,
+        opacity: isDragging ? 0.5 : 1,
     };
     
-    const isBulkDrag = React.useContext(DndContext)?.active?.id !== employee.id && selected;
-
-
     return (
-        <TableRow ref={setNodeRef} style={style} data-state={selected ? "selected" : "unselected"} className={cn(isBulkDrag && "opacity-50")}>
+        <TableRow ref={setNodeRef} style={style} data-state={selected ? "selected" : "unselected"}>
             <TableCell className="p-2 w-[80px]">
                 <div className='flex items-center gap-1'>
                   <Checkbox
@@ -264,44 +265,60 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, setSelec
     toast({ title: '성공!', description: '평가가 성공적으로 저장되었습니다.' });
   };
 
+  const findGroupAndMemberInfo = (id: string, groupsSource: Groups) => {
+    for (const key in groupsSource) {
+      const memberIndex = groupsSource[key].members.findIndex((m: EvaluationResult) => m.id === id);
+      if (memberIndex > -1) return { groupKey: key, index: memberIndex, member: groupsSource[key].members[memberIndex] };
+    }
+    return null;
+  }
+
   const handleDragStart = (event: DragStartEvent) => setActiveId(event.active.id as string);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     setActiveId(null);
     if (!over || active.id === over.id) return;
+
     const activeId = active.id as string;
+    const overId = over.id as string;
+
     const isBulkDrag = selectedIds.has(activeId) && selectedIds.size > 1;
     const movedIds = isBulkDrag ? Array.from(selectedIds) : [activeId];
-    setGroups(prev => {
-      const newGroups = JSON.parse(JSON.stringify(prev));
-      const findItemAndGroup = (id: string, groupsSource: Groups) => {
-        for (const key in groupsSource) {
-          const memberIndex = groupsSource[key].members.findIndex((m: EvaluationResult) => m.id === id);
-          if (memberIndex > -1) return { groupKey: key, index: memberIndex, member: groupsSource[key].members[memberIndex] };
+
+    setGroups(currentGroups => {
+        const newGroups = JSON.parse(JSON.stringify(currentGroups));
+
+        const sourceInfos = movedIds.map(id => findGroupAndMemberInfo(id, newGroups)).filter(Boolean) as {groupKey: string, index: number, member: EvaluationResult}[];
+        const overInfo = findGroupAndMemberInfo(overId, newGroups);
+        
+        let destinationGroupKey = overInfo?.groupKey;
+        let destinationIndex = overInfo?.index ?? 0;
+
+        if (!destinationGroupKey) {
+            const isDroppingOnGroup = Object.keys(newGroups).includes(overId);
+            if(isDroppingOnGroup) {
+              destinationGroupKey = overId;
+              destinationIndex = newGroups[overId].members.length;
+            } else {
+              return currentGroups; // Invalid drop target
+            }
         }
-        return null;
-      }
-      const overGroupKey = Object.keys(newGroups).find(key => key === over.id || newGroups[key].members.some((m: EvaluationResult) => m.id === over.id));
-      if (!overGroupKey) return prev;
-      let overIndex = newGroups[overGroupKey].members.findIndex((m: EvaluationResult) => m.id === over.id);
-      if (overIndex === -1) overIndex = newGroups[overGroupKey].members.length;
-      const movedItems: EvaluationResult[] = [];
-      const sourceGroupKeys: Record<string, string> = {};
-      movedIds.forEach(id => {
-          const itemInfo = findItemAndGroup(id, prev);
-          if (itemInfo) {
-              movedItems.push(itemInfo.member);
-              sourceGroupKeys[id] = itemInfo.groupKey;
-          }
-      });
-      movedItems.forEach(item => {
-        const itemInfo = findItemAndGroup(item.id, newGroups);
-        if(itemInfo) newGroups[itemInfo.groupKey].members.splice(itemInfo.index, 1);
-      });
-      newGroups[overGroupKey].members.splice(overIndex, 0, ...movedItems);
-      return newGroups;
+        
+        const movedItems: EvaluationResult[] = [];
+        sourceInfos.sort((a, b) => b.index - a.index).forEach(info => {
+            const [item] = newGroups[info.groupKey].members.splice(info.index, 1);
+            movedItems.unshift(item); // Keep original order
+        });
+        
+        newGroups[destinationGroupKey!].members.splice(destinationIndex, 0, ...movedItems);
+
+        return newGroups;
     });
+
+    if (isBulkDrag) {
+      setSelectedIds(new Set());
+    }
   };
 
   const handleToggleSelection = (id: string, checked: boolean) => {
@@ -435,7 +452,7 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, setSelec
                                   <TableHead className="w-[80px] p-2"><Checkbox checked={isIndeterminate ? 'indeterminate' : allSelectedInGroup} onCheckedChange={(checked) => handleToggleGroupSelection(group, Boolean(checked))} aria-label={`Select all in ${group.name}`}/></TableHead>
                                   <TableHead className="whitespace-nowrap py-2 px-2">고유사번</TableHead><TableHead className="whitespace-nowrap py-2 px-2">회사</TableHead><TableHead className="whitespace-nowrap py-2 px-2">소속부서</TableHead><TableHead className="whitespace-nowrap py-2 px-2">이름</TableHead><TableHead className="whitespace-nowrap py-2 px-2">직책</TableHead><TableHead className="whitespace-nowrap py-2 px-2">성장레벨</TableHead><TableHead className="whitespace-nowrap py-2 px-2">근무율</TableHead><TableHead className="whitespace-nowrap py-2 px-2">등급</TableHead><TableHead className="whitespace-nowrap py-2 px-2">점수</TableHead><TableHead className="whitespace-nowrap w-[200px] py-2 px-2">비고</TableHead>
                               </TableRow></TableHeader>
-                              <TableBody>{group.members.map(emp => (<DraggableTableRow key={emp.id} employee={emp} gradingScale={gradingScale} selected={selectedIds.has(emp.id)} onSelect={handleToggleSelection} onGradeChange={handleGradeChange} onMemoChange={handleMemoChange} onSave={handleSave}/>))}</TableBody>
+                              <TableBody>{group.members.map(emp => (<DraggableTableRow key={emp.id} employee={emp} gradingScale={gradingScale} selected={selectedIds.has(emp.id)} onSelect={handleToggleSelection} onGradeChange={handleGradeChange} onMemoChange={handleMemoChange} onSave={handleSave} activeId={activeId} />))}</TableBody>
                           </Table>
                           </SortableContext>
                       </CardContent>
