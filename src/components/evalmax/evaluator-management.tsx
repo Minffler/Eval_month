@@ -29,6 +29,7 @@ import type { EvaluationResult, User } from '@/lib/types';
 import { mockUsers, getPositionSortValue } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface EvaluatorManagementProps {
   results: EvaluationResult[];
@@ -47,14 +48,42 @@ export default function EvaluatorManagement({
   const [filteredResults, setFilteredResults] = React.useState(results);
   const [companyFilter, setCompanyFilter] = React.useState('all');
   const [departmentFilter, setDepartmentFilter] = React.useState('all');
-  const [positionFilter, setPositionFilter] = React.useState('all');
+  const [titleFilter, setTitleFilter] = React.useState('all');
   const [sortConfig, setSortConfig] = React.useState<SortConfig>(null);
   const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
   const [bulkEvaluatorId, setBulkEvaluatorId] = React.useState('');
+  const [currentGroupEvaluator, setCurrentGroupEvaluator] = React.useState<string>('필터를 선택하세요');
   const { toast } = useToast();
 
   React.useEffect(() => {
     let newFilteredResults = [...results];
+
+    if (companyFilter !== 'all') {
+      newFilteredResults = newFilteredResults.filter((r) => r.company === companyFilter);
+    }
+    if (departmentFilter !== 'all') {
+      newFilteredResults = newFilteredResults.filter((r) => r.department === departmentFilter);
+    }
+    if (titleFilter !== 'all') {
+        newFilteredResults = newFilteredResults.filter((r) => r.title === titleFilter);
+    }
+    
+    // Determine the current evaluator for the filtered group
+    if (companyFilter === 'all' && departmentFilter === 'all' && titleFilter === 'all') {
+        setCurrentGroupEvaluator('필터를 선택하여 그룹을 지정해주세요.');
+    } else {
+        if (newFilteredResults.length > 0) {
+            const firstEvaluatorName = newFilteredResults[0].evaluatorName;
+            const allSame = newFilteredResults.every(r => r.evaluatorName === firstEvaluatorName);
+            if (allSame) {
+                setCurrentGroupEvaluator(firstEvaluatorName || '미지정');
+            } else {
+                setCurrentGroupEvaluator('여러 평가자');
+            }
+        } else {
+            setCurrentGroupEvaluator('해당 그룹 없음');
+        }
+    }
 
     if (sortConfig !== null) {
       newFilteredResults.sort((a, b) => {
@@ -77,26 +106,12 @@ export default function EvaluatorManagement({
       });
     }
 
-    if (companyFilter !== 'all') {
-      newFilteredResults = newFilteredResults.filter((r) => r.company === companyFilter);
-    }
-    if (departmentFilter !== 'all') {
-      newFilteredResults = newFilteredResults.filter((r) => r.department === departmentFilter);
-    }
-    if (positionFilter !== 'all') {
-        if (positionFilter === '-') {
-            newFilteredResults = newFilteredResults.filter((r) => !['팀장', '지점장', '센터장', '지부장'].includes(r.position));
-        } else {
-            newFilteredResults = newFilteredResults.filter((r) => r.position === positionFilter);
-        }
-    }
-    
     setFilteredResults(newFilteredResults);
-  }, [companyFilter, departmentFilter, positionFilter, results, sortConfig]);
+  }, [companyFilter, departmentFilter, titleFilter, results, sortConfig]);
 
   const allCompanies = ['all', ...Array.from(new Set(results.map((r) => r.company)))];
   const allDepartments = ['all', ...Array.from(new Set(results.map((r) => r.department)))];
-  const allPositions = ['all', '팀장', '지점장', '센터장', '지부장', '-'];
+  const allTitles = ['all', '지부장', '센터장', '팀장', '지점장', '팀원'];
   const evaluators = mockUsers.filter(u => u.roles.includes('evaluator'));
 
   const evaluatorDepartments = React.useMemo(() => {
@@ -188,12 +203,17 @@ export default function EvaluatorManagement({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap gap-2 mb-4">
-            <Select value={companyFilter} onValueChange={setCompanyFilter}><SelectTrigger className="w-full sm:w-[180px]"><SelectValue placeholder="회사 선택" /></SelectTrigger><SelectContent>{allCompanies.map((c) => (<SelectItem key={c} value={c}>{c === 'all' ? '모든 회사' : c}</SelectItem>))}</SelectContent></Select>
-            <Select value={departmentFilter} onValueChange={setDepartmentFilter}><SelectTrigger className="w-full sm:w-[180px]"><SelectValue placeholder="소속부서 선택" /></SelectTrigger><SelectContent>{allDepartments.map((d) => (<SelectItem key={d} value={d}>{d === 'all' ? '모든 부서' : d}</SelectItem>))}</SelectContent></Select>
-            <Select value={positionFilter} onValueChange={setPositionFilter}><SelectTrigger className="w-full sm:w-[180px]"><SelectValue placeholder="직책 선택" /></SelectTrigger><SelectContent>{allPositions.map((p) => (<SelectItem key={p} value={p}>{p === 'all' ? '모든 직책' : p === '-' ? '없음' : p}</SelectItem>))}</SelectContent></Select>
+          <div className="flex flex-wrap gap-x-2 gap-y-4 items-end">
+            <Select value={companyFilter} onValueChange={setCompanyFilter}><SelectTrigger className="w-full sm:w-[150px]"><SelectValue placeholder="회사 선택" /></SelectTrigger><SelectContent>{allCompanies.map((c) => (<SelectItem key={c} value={c}>{c === 'all' ? '모든 회사' : c}</SelectItem>))}</SelectContent></Select>
+            <Select value={departmentFilter} onValueChange={setDepartmentFilter}><SelectTrigger className="w-full sm:w-[150px]"><SelectValue placeholder="소속부서 선택" /></SelectTrigger><SelectContent>{allDepartments.map((d) => (<SelectItem key={d} value={d}>{d === 'all' ? '모든 부서' : d}</SelectItem>))}</SelectContent></Select>
+            <Select value={titleFilter} onValueChange={setTitleFilter}><SelectTrigger className="w-full sm:w-[150px]"><SelectValue placeholder="직책 선택" /></SelectTrigger><SelectContent>{allTitles.map((p) => (<SelectItem key={p} value={p}>{p === 'all' ? '모든 직책' : p}</SelectItem>))}</SelectContent></Select>
+            <div className={cn("p-2 rounded-md", 
+              currentGroupEvaluator === '필터를 선택하여 그룹을 지정해주세요.' ? 'text-muted-foreground' : 'bg-muted')}>
+                <p className="text-sm font-medium">현재 담당자: <span className="font-bold text-primary">{currentGroupEvaluator}</span></p>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2 mb-4 p-4 border rounded-lg items-center">
+
+          <div className="flex flex-wrap gap-2 my-4 p-4 border rounded-lg items-center">
             <p className="font-semibold text-sm">선택한 {selectedIds.size}명</p>
             <Select value={bulkEvaluatorId} onValueChange={setBulkEvaluatorId}><SelectTrigger className="w-full sm:w-[250px]"><SelectValue placeholder="평가자 선택" /></SelectTrigger><SelectContent>{evaluators.map((evaluator) => { const depts = evaluatorDepartments[evaluator.id]; const deptString = depts ? `(${[...depts].slice(0, 2).join(', ')}${[...depts].size > 2 ? ', ...' : ''})` : ''; return (<SelectItem key={evaluator.id} value={evaluator.id}>{evaluator.name} {deptString}</SelectItem>);})}</SelectContent></Select>
             <Button onClick={handleBulkAssign}>일괄 할당</Button>
