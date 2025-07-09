@@ -42,7 +42,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Check, Download, ArrowUpDown, ArrowUp, ArrowDown, Edit2, GripVertical, ChevronUp, ChevronDown, PlusCircle, Building, Briefcase } from 'lucide-react';
+import { Check, Download, ArrowUpDown, ArrowUp, ArrowDown, Edit, GripVertical, ChevronUp, ChevronDown, PlusCircle, Save, X } from 'lucide-react';
 import { Progress } from '../ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { MonthSelector } from './month-selector';
@@ -439,7 +439,7 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, setSelec
                                <Button size="sm" onClick={handleUpdateGroupName}>저장</Button><Button size="sm" variant="ghost" onClick={handleCancelEditing}>취소</Button>
                             </div>
                            ) : (
-                            <><CardTitle>{group.name}</CardTitle><Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleStartEditing(groupKey, group.name)}><Edit2 className="h-4 w-4" /></Button></>
+                            <><CardTitle>{group.name}</CardTitle><Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleStartEditing(groupKey, group.name)}><Edit className="h-4 w-4" /></Button></>
                            )}
                           </div>
                           <div className="text-sm"><span className="font-semibold">그룹 점수 현황: </span><span className={usedScore > availableScore ? 'text-destructive font-bold' : ''}>{usedScore}</span> / {availableScore} 점</div>
@@ -556,50 +556,139 @@ const AllResultsView = ({ allResults, gradingScale }: {
   )
 }
 
-const AssignmentManagementView = ({ myEmployees }: { myEmployees: EvaluationResult[] }) => {
-  const managedCompanies = React.useMemo(() => [...new Set(myEmployees.map(e => e.company))], [myEmployees]);
-  const managedDepartments = React.useMemo(() => [...new Set(myEmployees.map(e => e.department))], [myEmployees]);
+const AssignmentManagementView = ({ myEmployees, currentMonthResults, handleResultsUpdate }: {
+  myEmployees: EvaluationResult[];
+  currentMonthResults: EvaluationResult[];
+  handleResultsUpdate: (updatedResults: EvaluationResult[]) => void;
+}) => {
+  const [editingDepartment, setEditingDepartment] = React.useState<string | null>(null);
+  const [newDepartmentName, setNewDepartmentName] = React.useState('');
+  const { toast } = useToast();
+
+  const managedDepartments = React.useMemo(() => {
+    const departmentCounts: Record<string, number> = {};
+    myEmployees.forEach(emp => {
+      if (emp.department) {
+        departmentCounts[emp.department] = (departmentCounts[emp.department] || 0) + 1;
+      }
+    });
+    return Object.entries(departmentCounts).map(([name, count]) => ({ name, count })).sort((a,b) => a.name.localeCompare(b.name));
+  }, [myEmployees]);
+
+  const handleStartEditing = (deptName: string) => {
+    setEditingDepartment(deptName);
+    setNewDepartmentName(deptName);
+  };
+
+  const handleCancelEditing = () => {
+    setEditingDepartment(null);
+    setNewDepartmentName('');
+  };
+
+  const handleSaveDepartmentName = () => {
+    const trimmedName = newDepartmentName.trim();
+    if (!editingDepartment || !trimmedName) {
+      handleCancelEditing();
+      return;
+    }
+    
+    if (editingDepartment === trimmedName) {
+      handleCancelEditing();
+      return;
+    }
+
+    const isNameTaken = currentMonthResults.some(r => r.department === trimmedName && r.department !== editingDepartment);
+    if (isNameTaken) {
+      toast({
+        variant: "destructive",
+        title: "오류",
+        description: `부서명 '${trimmedName}'은(는) 이번 달에 이미 존재합니다.`,
+      });
+      return;
+    }
+
+    const updatedResults = currentMonthResults.map(r => {
+      if (r.department === editingDepartment) {
+        return { ...r, department: trimmedName };
+      }
+      return r;
+    });
+
+    handleResultsUpdate(updatedResults);
+    toast({
+      title: "부서명 변경 완료",
+      description: `이번 달 평가에서 '${editingDepartment}'이(가) '${trimmedName}'(으)로 변경되었습니다.`,
+    });
+    handleCancelEditing();
+  };
 
   return (
     <div className="space-y-4">
       <h2 className="text-2xl font-bold tracking-tight">담당 소속 관리</h2>
       <Card>
         <CardHeader>
-          <CardTitle>담당 소속 정보</CardTitle>
-          <CardDescription>현재 평가 담당으로 지정된 소속 정보입니다.</CardDescription>
+          <CardTitle>담당 부서 관리</CardTitle>
+          <CardDescription>
+            담당하고 있는 부서의 명칭을 수정할 수 있습니다. 변경사항은 현재 선택된 월의 평가에만 적용됩니다.
+          </CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-6 md:grid-cols-2">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">담당 회사</CardTitle>
-              <Building className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              {managedCompanies.length > 0 ? (
-                <ul className="space-y-1 text-sm list-disc pl-5">
-                  {managedCompanies.map(c => <li key={c}>{c}</li>)}
-                </ul>
-              ) : <p className="text-sm text-muted-foreground">담당 회사가 없습니다.</p>}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">담당 부서</CardTitle>
-              <Briefcase className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              {managedDepartments.length > 0 ? (
-                <ul className="space-y-1 text-sm list-disc pl-5">
-                  {managedDepartments.map(d => <li key={d}>{d}</li>)}
-                </ul>
-              ) : <p className="text-sm text-muted-foreground">담당 부서가 없습니다.</p>}
-            </CardContent>
-          </Card>
+        <CardContent>
+          <div className="border rounded-lg">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>부서명</TableHead>
+                  <TableHead className="text-right">담당 인원</TableHead>
+                  <TableHead className="w-[120px] text-center">수정</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {managedDepartments.map(({ name, count }) => (
+                  <TableRow key={name}>
+                    <TableCell className="font-medium">
+                      {editingDepartment === name ? (
+                        <Input
+                          value={newDepartmentName}
+                          onChange={(e) => setNewDepartmentName(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') handleSaveDepartmentName(); if (e.key === 'Escape') handleCancelEditing() } }
+                          onBlur={handleSaveDepartmentName}
+                          autoFocus
+                          className="h-8"
+                        />
+                      ) : (
+                        name
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {count}명
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {editingDepartment === name ? (
+                        <div className="flex gap-1 justify-center">
+                           <Button size="icon" className="h-8 w-8" onClick={handleSaveDepartmentName}>
+                            <Save className="h-4 w-4" />
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={handleCancelEditing}>
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button variant="outline" size="sm" onClick={() => handleStartEditing(name)}>
+                          <Edit className="mr-2 h-4 w-4" />
+                          이름 변경
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>
-  )
-}
+  );
+};
 
 
 export default function EvaluatorDashboard({ allResults, currentMonthResults, gradingScale, selectedDate, setSelectedDate, handleResultsUpdate, evaluatorUser, activeView }: EvaluatorDashboardProps) {
@@ -632,7 +721,11 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
       case 'all-results':
         return <AllResultsView allResults={myAllTimeResults} gradingScale={gradingScale} />;
       case 'assignment-management':
-        return <AssignmentManagementView myEmployees={myEmployees} />;
+        return <AssignmentManagementView 
+                 myEmployees={myEmployees} 
+                 currentMonthResults={currentMonthResults} 
+                 handleResultsUpdate={handleResultsUpdate} 
+               />;
       default:
         return <div>선택된 뷰가 없습니다.</div>;
     }
