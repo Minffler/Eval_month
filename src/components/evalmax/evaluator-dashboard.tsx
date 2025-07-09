@@ -467,7 +467,7 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, handleRe
   
   const handleClearData = () => {
     onClearMyEvaluations(selectedDate.year, selectedDate.month);
-    toast({ title: '초기화 완료', description: '담당하는 대상자의 평가 데이터가 초기화되었습니다.' });
+    toast({ title: '삭제 완료', description: '담당하는 대상자의 평가 데이터가 삭제되었습니다.' });
     setIsClearConfirmOpen(false);
   };
 
@@ -508,12 +508,8 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, handleRe
         </Card>
         <Tabs defaultValue="A. 정규평가" onValueChange={(val) => setActiveTab(val as EvaluationGroupCategory)}>
           <TabsList className="w-full grid grid-cols-3">{Object.keys(categorizedEmployees).map(category => (<TabsTrigger key={category} value={category}>{category} ({categorizedEmployees[category as EvaluationGroupCategory].length})</TabsTrigger>))}</TabsList>
-          <div className="flex justify-end my-4 gap-2">
+          <div className="flex justify-between my-4 gap-2">
             <Button onClick={handleOpenAddGroupDialog} variant="outline" size="sm"><PlusCircle className="mr-2 h-4 w-4" />새 그룹 추가</Button>
-            <Button onClick={() => setIsClearConfirmOpen(true)} variant="destructive" size="sm" disabled={myEmployees.length === 0}>
-                <Trash2 className="mr-2 h-4 w-4" />
-                해당 월 평가 데이터 삭제
-            </Button>
             <Button onClick={handleDownloadExcel} variant="outline" size="sm"><Download className="mr-2 h-4 w-4" />현재 탭 엑셀 다운로드</Button>
           </div>
           <TabsContent value={activeTab} className="pt-0">
@@ -582,7 +578,13 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, handleRe
         </div>
       )}
 
-      <div className="flex justify-end mt-4"><Button onClick={handleSave} size="lg"><Check className="mr-2"/> 모든 평가 저장</Button></div>
+      <div className="flex justify-between mt-4">
+        <Button onClick={() => setIsClearConfirmOpen(true)} variant="destructive" size="lg" disabled={myEmployees.length === 0}>
+            <Trash2 className="mr-2 h-4 w-4" />
+            데이터 삭제
+        </Button>
+        <Button onClick={handleSave} size="lg"><Check className="mr-2"/> 모든 평가 저장</Button>
+      </div>
       <DragOverlay>{activeId && activeEmployee ? (<Table className="bg-background shadow-lg relative"><TableBody><TableRow><TableCell className="p-1 w-[80px]"><div className='flex items-center gap-1'><Checkbox checked={selectedIds.has(activeId)} readOnly /><Button variant="ghost" size="icon" className="cursor-grabbing h-8 w-8"><GripVertical className="h-4 w-4" /></Button></div>{isBulkDrag && <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">{selectedIds.size}</div>}</TableCell>
       {isBGroupView ? (
           <TableCell className="py-1 px-2">
@@ -605,9 +607,9 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, handleRe
       <AlertDialog open={isClearConfirmOpen} onOpenChange={setIsClearConfirmOpen}>
         <AlertDialogContent2>
             <AlertDialogHeader2>
-                <AlertDialogTitle2>평가 데이터 초기화</AlertDialogTitle2>
+                <AlertDialogTitle2>평가 데이터 삭제</AlertDialogTitle2>
                 <AlertDialogDescription2>
-                    {selectedDate.year}년 {selectedDate.month}월의 담당 평가 대상자 {myEmployees.length}명의 평가 데이터를 모두 초기화(등급 및 비고 삭제)합니다. 진행하시겠습니까?
+                    {selectedDate.year}년 {selectedDate.month}월의 담당 평가 대상자 {myEmployees.length}명의 평가 데이터를 모두 삭제(등급 및 비고 삭제)합니다. 진행하시겠습니까?
                 </AlertDialogDescription2>
             </AlertDialogHeader2>
             <AlertDialogFooter2>
