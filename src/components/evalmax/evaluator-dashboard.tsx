@@ -179,6 +179,7 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, setSelec
   const [idsForNewGroup, setIdsForNewGroup] = React.useState<Set<string>>(new Set());
   const [departmentFilter, setDepartmentFilter] = React.useState('all');
   const [positionFilter, setPositionFilter] = React.useState('all');
+  const [bulkGrade, setBulkGrade] = React.useState<Grade | ''>('');
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -389,6 +390,34 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, setSelec
     toast({ title: '성공', description: `'${newGroupName.trim()}' 그룹이 생성되었습니다.` });
     setIsAddGroupDialogOpen(false);
   };
+
+  const handleBulkGradeApply = () => {
+    if (!bulkGrade) return;
+
+    setGroups(prevGroups => {
+        const newGroups = JSON.parse(JSON.stringify(prevGroups));
+        selectedIds.forEach(employeeId => {
+            for (const key in newGroups) {
+                const memberIndex = newGroups[key].members.findIndex((m: EvaluationResult) => m.id === employeeId);
+                if (memberIndex !== -1) {
+                    const score = bulkGrade ? gradingScale[bulkGrade]?.score || 0 : 0;
+                    newGroups[key].members[memberIndex].grade = bulkGrade;
+                    newGroups[key].members[memberIndex].score = score;
+                    break; 
+                }
+            }
+        });
+        return newGroups;
+    });
+    
+    toast({
+        title: '일괄 적용 완료',
+        description: `${selectedIds.size}명의 등급이 '${bulkGrade}'(으)로 변경되었습니다.`
+    });
+    
+    setSelectedIds(new Set());
+    setBulkGrade('');
+  };
   
   const activeEmployee = activeId ? myEmployees.find(emp => emp.id === activeId) : null;
   const isBulkDrag = activeId ? selectedIds.has(activeId) && selectedIds.size > 1 : false;
@@ -459,8 +488,32 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, setSelec
             }) : (<Card><CardContent className="pt-6"><p className="text-center text-muted-foreground">이 분류에 해당하는 평가 대상자가 없습니다.</p></CardContent></Card>)}
           </TabsContent>
         </Tabs>
-        <div className="flex justify-end mt-4"><Button onClick={handleSave} size="lg"><Check className="mr-2"/> 모든 평가 저장</Button></div>
       </div>
+
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-20">
+          <Card className="flex items-center gap-4 p-3 shadow-lg animate-in fade-in-50 slide-in-from-bottom-5">
+            <p className="text-sm font-medium">{selectedIds.size}명 선택됨</p>
+            <Select value={bulkGrade || ''} onValueChange={(g) => setBulkGrade(g as Grade)}>
+              <SelectTrigger className="w-[140px] h-9">
+                <SelectValue placeholder="등급 일괄 적용" />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.keys(gradingScale).map(grade => (
+                  <SelectItem key={grade} value={grade}>{grade}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button onClick={handleBulkGradeApply} disabled={!bulkGrade} size="sm">적용</Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelectedIds(new Set())}>
+              <X className="h-4 w-4" />
+              <span className="sr-only">선택 해제</span>
+            </Button>
+          </Card>
+        </div>
+      )}
+
+      <div className="flex justify-end mt-4"><Button onClick={handleSave} size="lg"><Check className="mr-2"/> 모든 평가 저장</Button></div>
       <DragOverlay>{activeId && activeEmployee ? (<Table className="bg-background shadow-lg relative"><TableBody><TableRow><TableCell className="p-1 w-[80px]"><div className='flex items-center gap-1'><Checkbox checked={selectedIds.has(activeId)} readOnly /><Button variant="ghost" size="icon" className="cursor-grabbing h-8 w-8"><GripVertical className="h-4 w-4" /></Button></div>{isBulkDrag && <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">{selectedIds.size}</div>}</TableCell><TableCell className="whitespace-nowrap py-1 px-2">{activeEmployee.uniqueId}</TableCell><TableCell className="whitespace-nowrap py-1 px-2">{activeEmployee.company}</TableCell><TableCell className="whitespace-nowrap py-1 px-2">{activeEmployee.department}</TableCell><TableCell className="font-medium whitespace-nowrap py-1 px-2">{activeEmployee.name}</TableCell><TableCell className="whitespace-nowrap py-1 px-2">{activeEmployee.title}</TableCell><TableCell className="whitespace-nowrap py-1 px-2">{activeEmployee.growthLevel}</TableCell><TableCell className="whitespace-nowrap py-1 px-2">{(activeEmployee.workRate * 100).toFixed(1)}%</TableCell><TableCell className="whitespace-nowrap py-1 px-2">{activeEmployee.grade}</TableCell><TableCell className="whitespace-nowrap py-1 px-2">{activeEmployee.score}</TableCell><TableCell className="py-1 px-2">{activeEmployee.memo}</TableCell></TableRow></TableBody></Table>) : null}</DragOverlay>
       <Dialog open={isAddGroupDialogOpen} onOpenChange={setIsAddGroupDialogOpen}><DialogContent className="sm:max-w-2xl"><DialogHeader><DialogTitle>새 그룹 추가</DialogTitle><DialogDescription>새로운 평가 그룹을 만들고 멤버를 추가합니다.</DialogDescription></DialogHeader><div className="grid gap-4 py-4"><div className="grid grid-cols-4 items-center gap-4"><Label htmlFor="group-name" className="text-right">그룹 이름</Label><Input id="group-name" value={newGroupName} onChange={(e) => setNewGroupName(e.target.value)} className="col-span-3"/></div><Card><CardHeader><CardTitle>멤버 선택</CardTitle><div className="flex gap-2 pt-2"><Select value={departmentFilter} onValueChange={setDepartmentFilter}><SelectTrigger><SelectValue placeholder="소속부서 필터" /></SelectTrigger><SelectContent>{allDepartments.map(dep => <SelectItem key={dep} value={dep}>{dep === 'all' ? '모든 부서' : dep}</SelectItem>)}</SelectContent></Select><Select value={positionFilter} onValueChange={setPositionFilter}><SelectTrigger><SelectValue placeholder="직책 필터" /></SelectTrigger><SelectContent>{positionOptions.map(pos => <SelectItem key={pos} value={pos}>{pos === 'all' ? '모든 직책' : pos}</SelectItem>)}</SelectContent></Select></div></CardHeader><CardContent><ScrollArea className="h-[300px] border rounded-md"><Table><TableHeader><TableRow><TableHead><Checkbox checked={filteredEmployeesForDialog.length > 0 && idsForNewGroup.size === filteredEmployeesForDialog.length} onCheckedChange={(checked) => { const allIds = new Set(filteredEmployeesForDialog.map(e => e.id)); if (checked) setIdsForNewGroup(new Set([...idsForNewGroup, ...allIds])); else setIdsForNewGroup(new Set([...idsForNewGroup].filter(id => !allIds.has(id)))); }}/></TableHead><TableHead>이름</TableHead><TableHead>소속부서</TableHead><TableHead>직책</TableHead><TableHead>현재 그룹</TableHead></TableRow></TableHeader><TableBody>{filteredEmployeesForDialog.map(emp => (<TableRow key={emp.id}><TableCell><Checkbox checked={idsForNewGroup.has(emp.id)} onCheckedChange={(checked) => { const newIds = new Set(idsForNewGroup); if (checked) newIds.add(emp.id); else newIds.delete(emp.id); setIdsForNewGroup(newIds); }}/></TableCell><TableCell>{emp.name}</TableCell><TableCell>{emp.department}</TableCell><TableCell>{emp.title}</TableCell><TableCell>{emp.detailedGroup2}</TableCell></TableRow>))}</TableBody></Table></ScrollArea></CardContent></Card></div><DialogFooter><Button variant="outline" onClick={() => setIsAddGroupDialogOpen(false)}>취소</Button><Button onClick={handleCreateGroup}>그룹 생성</Button></DialogFooter></DialogContent></Dialog>
     </DndContext>
