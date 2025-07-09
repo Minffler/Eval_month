@@ -176,7 +176,7 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
   const [newGroupName, setNewGroupName] = React.useState('');
   const [idsForNewGroup, setIdsForNewGroup] = React.useState<Set<string>>(new Set());
   const [departmentFilter, setDepartmentFilter] = React.useState('all');
-  const [titleFilter, setTitleFilter] = React.useState('all');
+  const [positionFilter, setPositionFilter] = React.useState('all');
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -426,21 +426,31 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
 
   // Add Group Dialog related logic
   const allDepartments = React.useMemo(() => ['all', ...Array.from(new Set(visibleEmployees.map(e => e.department)))], [visibleEmployees]);
-  const allTitles = React.useMemo(() => ['all', ...Array.from(new Set(visibleEmployees.map(e => e.title)))], [visibleEmployees]);
+  const positionOptions = ['all', '팀장', '지점장', '센터장', '지부장', '직책 없음'];
+  const validPositions = ['팀장', '지점장', '센터장', '지부장'];
 
   const filteredEmployeesForDialog = React.useMemo(() => {
     return visibleEmployees.filter(emp => {
       const depMatch = departmentFilter === 'all' || emp.department === departmentFilter;
-      const titleMatch = titleFilter === 'all' || emp.title === titleFilter;
-      return depMatch && titleMatch;
+      
+      let posMatch = true;
+      if (positionFilter !== 'all') {
+        if (positionFilter === '직책 없음') {
+          posMatch = !validPositions.includes(emp.position);
+        } else {
+          posMatch = emp.position === positionFilter;
+        }
+      }
+
+      return depMatch && posMatch;
     });
-  }, [visibleEmployees, departmentFilter, titleFilter]);
+  }, [visibleEmployees, departmentFilter, positionFilter]);
 
   const handleOpenAddGroupDialog = () => {
       setNewGroupName('');
       setIdsForNewGroup(new Set());
       setDepartmentFilter('all');
-      setTitleFilter('all');
+      setPositionFilter('all');
       setIsAddGroupDialogOpen(true);
   };
 
@@ -707,10 +717,10 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
                                 {allDepartments.map(dep => <SelectItem key={dep} value={dep}>{dep === 'all' ? '모든 부서' : dep}</SelectItem>)}
                             </SelectContent>
                         </Select>
-                        <Select value={titleFilter} onValueChange={setTitleFilter}>
+                        <Select value={positionFilter} onValueChange={setPositionFilter}>
                             <SelectTrigger><SelectValue placeholder="직책 필터" /></SelectTrigger>
                             <SelectContent>
-                                {allTitles.map(title => <SelectItem key={title} value={title}>{title === 'all' ? '모든 직책' : title}</SelectItem>)}
+                                {positionOptions.map(pos => <SelectItem key={pos} value={pos}>{pos === 'all' ? '모든 직책' : pos}</SelectItem>)}
                             </SelectContent>
                         </Select>
                     </div>
