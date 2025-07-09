@@ -52,6 +52,7 @@ import { Textarea } from '../ui/textarea';
 import EvaluatorDashboard from './evaluator-dashboard';
 import EvaluatorManagement from './evaluator-management';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
+import { AmountDistributionChart } from './amount-distribution-chart';
 
 interface AdminDashboardProps {
   results: EvaluationResult[];
@@ -109,8 +110,8 @@ export default function AdminDashboard({
   const [sortConfig, setSortConfig] = React.useState<SortConfig>(null);
   const [evaluatorStatsSortConfig, setEvaluatorStatsSortConfig] = React.useState<EvaluatorStatsSortConfig>({ key: 'rate', direction: 'ascending' });
   const [selectedEvaluatorId, setSelectedEvaluatorId] = React.useState<string>('');
-  const [isDistributionChartOpen, setIsDistributionChartOpen] = React.useState(false);
-  const [isAllResultsChartOpen, setIsAllResultsChartOpen] = React.useState(true);
+  const [isDistributionChartOpen, setIsDistributionChartOpen] = React.useState(true);
+  const [dashboardFilter, setDashboardFilter] = React.useState('전체');
   const { toast } = useToast();
 
   React.useEffect(() => {
@@ -130,11 +131,25 @@ export default function AdminDashboard({
 
   const visibleResults = categorizedResults[activeResultsTab];
   
-  const overallGradeDistribution = Object.keys(gradingScale).map(grade => ({
+  const filteredDashboardData = React.useMemo(() => {
+    const isLeader = (r: EvaluationResult) => ['팀장', '지점장', '지부장', '센터장'].includes(r.position);
+    switch(dashboardFilter) {
+      case 'A. 정규평가': return initialResults.filter(r => r.evaluationGroup === 'A. 정규평가');
+      case 'B. 별도평가': return initialResults.filter(r => r.evaluationGroup === 'B. 별도평가');
+      case 'C. 미평가': return initialResults.filter(r => r.evaluationGroup === 'C. 미평가');
+      case '직책자': return initialResults.filter(isLeader);
+      case '비직책자': return initialResults.filter(r => !isLeader(r));
+      case '전체':
+      default:
+        return initialResults;
+    }
+  }, [initialResults, dashboardFilter]);
+
+  const overallGradeDistribution = React.useMemo(() => Object.keys(gradingScale).map(grade => ({
     name: grade,
-    value: initialResults.filter(r => r.grade === grade).length,
-  }));
-  
+    value: filteredDashboardData.filter(r => r.grade === grade).length,
+  })), [filteredDashboardData, gradingScale]);
+
   const evaluatorStats = React.useMemo(() => {
     const statsByUniqueId: Record<string, { total: number; completed: number; evaluatorName: string; }> = {};
 
@@ -411,21 +426,31 @@ export default function AdminDashboard({
                 <div className="space-y-4">
                   <Card>
                     <Collapsible open={isDistributionChartOpen} onOpenChange={setIsDistributionChartOpen}>
-                        <div className="flex w-full cursor-pointer items-center justify-between p-4 rounded-t-lg hover:bg-muted/50">
+                      <div className="flex items-center justify-between p-4">
+                          <CardTitle>등급 분포</CardTitle>
+                          <div className="flex items-center gap-2">
+                            <Tabs value={dashboardFilter} onValueChange={setDashboardFilter}>
+                                <TabsList className="h-8">
+                                    <TabsTrigger value="전체" className="text-xs px-2 py-1 h-auto">전체</TabsTrigger>
+                                    <TabsTrigger value="A. 정규평가" className="text-xs px-2 py-1 h-auto">A.정규</TabsTrigger>
+                                    <TabsTrigger value="B. 별도평가" className="text-xs px-2 py-1 h-auto">B.별도</TabsTrigger>
+                                    <TabsTrigger value="C. 미평가" className="text-xs px-2 py-1 h-auto">C.미평가</TabsTrigger>
+                                    <TabsTrigger value="직책자" className="text-xs px-2 py-1 h-auto">직책자</TabsTrigger>
+                                    <TabsTrigger value="비직책자" className="text-xs px-2 py-1 h-auto">비직책자</TabsTrigger>
+                                </TabsList>
+                            </Tabs>
                             <CollapsibleTrigger asChild>
-                              <div className="flex items-center gap-2 w-full">
-                                <CardTitle>전체 등급 분포</CardTitle>
-                                <Button variant="ghost" size="icon" className="h-6 w-6 ml-auto">
-                                  {isDistributionChartOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    {isDistributionChartOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                                 </Button>
-                              </div>
                             </CollapsibleTrigger>
-                        </div>
-                        <CollapsibleContent>
-                          <CardContent>
-                            <GradeHistogram data={overallGradeDistribution} gradingScale={gradingScale} />
-                          </CardContent>
-                        </CollapsibleContent>
+                          </div>
+                      </div>
+                      <CollapsibleContent>
+                        <CardContent className="pt-0">
+                          <GradeHistogram data={overallGradeDistribution} gradingScale={gradingScale} />
+                        </CardContent>
+                      </CollapsibleContent>
                     </Collapsible>
                   </Card>
 
@@ -516,25 +541,15 @@ export default function AdminDashboard({
         case 'all-results':
              return (
                  <div className="space-y-4">
-                     <Card>
-                        <Collapsible open={isAllResultsChartOpen} onOpenChange={setIsAllResultsChartOpen}>
-                            <div className="flex w-full cursor-pointer items-center justify-between p-4 rounded-t-lg hover:bg-muted/50">
-                                <CollapsibleTrigger asChild>
-                                <div className="flex items-center gap-2 w-full">
-                                    <CardTitle>전체 등급 분포</CardTitle>
-                                    <Button variant="ghost" size="icon" className="h-6 w-6 ml-auto">
-                                    {isAllResultsChartOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                                    </Button>
-                                </div>
-                                </CollapsibleTrigger>
-                            </div>
-                            <CollapsibleContent>
-                            <CardContent>
-                                <GradeHistogram data={overallGradeDistribution} gradingScale={gradingScale} />
-                            </CardContent>
-                            </CollapsibleContent>
-                        </Collapsible>
-                     </Card>
+                    <Card>
+                      <CardHeader>
+                          <CardTitle>최종금액 분포</CardTitle>
+                          <CardDescription>평가그룹별 최종 지급금액 분포입니다.</CardDescription>
+                      </CardHeader>
+                    <CardContent>
+                        <AmountDistributionChart data={visibleResults} />
+                    </CardContent>
+                    </Card>
                      <Tabs defaultValue="전체" onValueChange={(val) => setActiveResultsTab(val as EvaluationGroupCategory)}>
                         <TabsList className="grid w-full grid-cols-4 mb-4">
                             {Object.keys(categorizedResults).map(category => (
@@ -655,7 +670,7 @@ export default function AdminDashboard({
                                     <SelectValue placeholder="평가자를 선택하세요" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {evaluatorStats.map(stat => (
+                                    {sortedEvaluatorStats.map(stat => (
                                         <SelectItem key={stat.evaluatorUniqueId} value={stat.evaluatorUniqueId}>
                                             {`${stat.evaluatorName} ${stat.evaluatorUniqueId} (${stat.total})`}
                                         </SelectItem>

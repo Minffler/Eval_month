@@ -214,7 +214,7 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, handleRe
   onClearMyEvaluations: (year: number, month: number) => void;
 }) => {
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = React.useState<EvaluationGroupCategory>('A. 정규평가');
+  const [activeTab, setActiveTab] = React.useState<EvaluationGroupCategory | '전체'>('A. 정규평가');
   const [groups, setGroups] = React.useState<Groups>({});
   const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
   const [activeId, setActiveId] = React.useState<string | null>(null);
@@ -235,7 +235,7 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, handleRe
   );
 
   const categorizedEmployees = React.useMemo(() => {
-    const categories: Partial<Record<EvaluationGroupCategory, EvaluationResult[]>> = {
+    const categories: Partial<Record<EvaluationGroupCategory | '전체', EvaluationResult[]>> = {
       'A. 정규평가': myEmployees.filter(emp => emp.evaluationGroup === 'A. 정규평가'),
       'B. 별도평가': myEmployees.filter(emp => emp.evaluationGroup === 'B. 별도평가'),
       'C. 미평가': myEmployees.filter(emp => emp.evaluationGroup === 'C. 미평가'),
@@ -527,7 +527,7 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, handleRe
             </CollapsibleTrigger>
           </Collapsible>
         </Card>
-        <Tabs defaultValue="A. 정규평가" onValueChange={(val) => setActiveTab(val as EvaluationGroupCategory)}>
+        <Tabs defaultValue="A. 정규평가" onValueChange={(val) => setActiveTab(val as EvaluationGroupCategory | '전체')}>
           <TabsList className="w-full grid grid-cols-4">{Object.entries(categorizedEmployees).map(([category, employees]) => (<TabsTrigger key={category} value={category}>{category} ({employees?.length ?? 0})</TabsTrigger>))}</TabsList>
           <div className="flex justify-between my-4 gap-2">
             <Button onClick={handleOpenAddGroupDialog} variant="outline" size="sm"><PlusCircle className="mr-2 h-4 w-4" />새 그룹 추가</Button>
@@ -802,7 +802,7 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, allEmploye
     });
     return Object.entries(groups)
       .map(([key, value]) => ({ ...value, id: key }))
-      .sort((a,b) => a.department.localeCompare(b.department));
+      .sort((a,b) => b.count - a.count);
   }, [myEmployees]);
 
   const handleShowDetails = (group: { company: string; department: string; position: string; count: number; }) => {
@@ -912,9 +912,9 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, allEmploye
                 <TableRow>
                     <TableHead>회사</TableHead>
                     <TableHead>부서</TableHead>
-                    <TableHead>직책</TableHead>
-                    <TableHead className="text-right">담당 인원</TableHead>
-                    <TableHead className="w-[100px] text-center">담당 해제</TableHead>
+                    <TableHead className="text-center">직책</TableHead>
+                    <TableHead className="text-center">담당 인원</TableHead>
+                    <TableHead className="text-center">담당 해제</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -923,9 +923,9 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, allEmploye
                     <TableRow key={group.id}>
                       <TableCell>{group.company}</TableCell>
                       <TableCell>{group.department}</TableCell>
-                      <TableCell>{group.position}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
+                      <TableCell className="text-center">{group.position}</TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-2">
                           <span>{group.count}명</span>
                           <Button variant="outline" size="sm" className="h-7 px-2 py-1" onClick={() => handleShowDetails(group)}>상세보기</Button>
                         </div>
