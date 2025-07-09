@@ -42,7 +42,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Check, Download, ArrowUpDown, ArrowUp, ArrowDown, Edit2, GripVertical, ChevronUp, ChevronDown } from 'lucide-react';
+import { Check, Download, ArrowUpDown, ArrowUp, ArrowDown, Edit2, GripVertical, ChevronUp, ChevronDown, PlusCircle } from 'lucide-react';
 import { Progress } from '../ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { MonthSelector } from './month-selector';
@@ -55,6 +55,16 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Label } from '../ui/label';
+import { ScrollArea } from '../ui/scroll-area';
 
 interface EvaluatorDashboardProps {
   allResults: EvaluationResult[];
@@ -139,6 +149,7 @@ const DraggableTableRow = ({ employee, gradingScale, selected, onSelect, onGrade
                     onChange={(e) => onMemoChange(employee.id, e.target.value)}
                     onBlur={onSave}
                     className="h-8"
+                    placeholder=''
                 />
             </TableCell>
         </TableRow>
@@ -160,6 +171,12 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
   const [editingGroupId, setEditingGroupId] = React.useState<string | null>(null);
   const [editingGroupName, setEditingGroupName] = React.useState('');
   const [isChartOpen, setIsChartOpen] = React.useState(false);
+
+  const [isAddGroupDialogOpen, setIsAddGroupDialogOpen] = React.useState(false);
+  const [newGroupName, setNewGroupName] = React.useState('');
+  const [idsForNewGroup, setIdsForNewGroup] = React.useState<Set<string>>(new Set());
+  const [departmentFilter, setDepartmentFilter] = React.useState('all');
+  const [titleFilter, setTitleFilter] = React.useState('all');
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -407,6 +424,54 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
     XLSX.writeFile(workbook, `PL월성과평가_${selectedDate.year}_${selectedDate.month}_평가자결과.xlsx`);
   };
 
+  // Add Group Dialog related logic
+  const allDepartments = React.useMemo(() => ['all', ...Array.from(new Set(visibleEmployees.map(e => e.department)))], [visibleEmployees]);
+  const allTitles = React.useMemo(() => ['all', ...Array.from(new Set(visibleEmployees.map(e => e.title)))], [visibleEmployees]);
+
+  const filteredEmployeesForDialog = React.useMemo(() => {
+    return visibleEmployees.filter(emp => {
+      const depMatch = departmentFilter === 'all' || emp.department === departmentFilter;
+      const titleMatch = titleFilter === 'all' || emp.title === titleFilter;
+      return depMatch && titleMatch;
+    });
+  }, [visibleEmployees, departmentFilter, titleFilter]);
+
+  const handleOpenAddGroupDialog = () => {
+      setNewGroupName('');
+      setIdsForNewGroup(new Set());
+      setDepartmentFilter('all');
+      setTitleFilter('all');
+      setIsAddGroupDialogOpen(true);
+  };
+
+  const handleCreateGroup = () => {
+    if (!newGroupName.trim()) {
+      toast({ variant: 'destructive', title: '오류', description: '그룹 이름을 입력해주세요.' });
+      return;
+    }
+    if (idsForNewGroup.size === 0) {
+      toast({ variant: 'destructive', title: '오류', description: '그룹에 추가할 멤버를 한 명 이상 선택해주세요.' });
+      return;
+    }
+  
+    if (Object.keys(groups).includes(newGroupName.trim())) {
+      toast({ variant: 'destructive', title: '오류', description: '이미 존재하는 그룹 이름입니다.' });
+      return;
+    }
+  
+    const finalUpdatedResults = allResults.map(res => {
+      if (idsForNewGroup.has(res.id)) {
+        return { ...res, detailedGroup2: newGroupName.trim() };
+      }
+      return res;
+    });
+  
+    handleResultsUpdate(finalUpdatedResults);
+  
+    toast({ title: '성공', description: `'${newGroupName.trim()}' 그룹이 생성되었습니다.` });
+    setIsAddGroupDialogOpen(false);
+  };
+
   if (!user) return <div>로딩중...</div>;
 
   const activeEmployee = activeId ? myEmployees.find(emp => emp.id === activeId) : null;
@@ -470,7 +535,11 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
               ))}
           </TabsList>
 
-          <div className="flex justify-end my-4">
+          <div className="flex justify-end my-4 gap-2">
+              <Button onClick={handleOpenAddGroupDialog} variant="outline" size="sm">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                새 그룹 추가
+              </Button>
               <Button onClick={handleDownloadExcel} variant="outline" size="sm">
                 <Download className="mr-2 h-4 w-4" />
                 현재 탭 엑셀 다운로드
@@ -606,6 +675,102 @@ export default function EvaluatorDashboard({ allResults, gradingScale, selectedD
             </Table>
         ) : null}
     </DragOverlay>
+
+    <Dialog open={isAddGroupDialogOpen} onOpenChange={setIsAddGroupDialogOpen}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>새 그룹 추가</DialogTitle>
+            <DialogDescription>
+              새로운 평가 그룹을 만들고 멤버를 추가합니다.
+            </DialogDescription>
+          </DialogHeader>
+            <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="group-name" className="text-right">
+                    그룹 이름
+                </Label>
+                <Input
+                    id="group-name"
+                    value={newGroupName}
+                    onChange={(e) => setNewGroupName(e.target.value)}
+                    className="col-span-3"
+                />
+                </div>
+
+                <Card>
+                <CardHeader>
+                    <CardTitle>멤버 선택</CardTitle>
+                    <div className="flex gap-2 pt-2">
+                        <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                            <SelectTrigger><SelectValue placeholder="소속부서 필터" /></SelectTrigger>
+                            <SelectContent>
+                                {allDepartments.map(dep => <SelectItem key={dep} value={dep}>{dep === 'all' ? '모든 부서' : dep}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                        <Select value={titleFilter} onValueChange={setTitleFilter}>
+                            <SelectTrigger><SelectValue placeholder="직책 필터" /></SelectTrigger>
+                            <SelectContent>
+                                {allTitles.map(title => <SelectItem key={title} value={title}>{title === 'all' ? '모든 직책' : title}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <ScrollArea className="h-[300px] border rounded-md">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>
+                                    <Checkbox
+                                        checked={filteredEmployeesForDialog.length > 0 && idsForNewGroup.size === filteredEmployeesForDialog.length}
+                                        onCheckedChange={(checked) => {
+                                            const allIds = new Set(filteredEmployeesForDialog.map(e => e.id));
+                                            if (checked) {
+                                                setIdsForNewGroup(new Set([...idsForNewGroup, ...allIds]));
+                                            } else {
+                                                setIdsForNewGroup(new Set([...idsForNewGroup].filter(id => !allIds.has(id))));
+                                            }
+                                        }}
+                                    />
+                                </TableHead>
+                                <TableHead>이름</TableHead>
+                                <TableHead>소속부서</TableHead>
+                                <TableHead>직책</TableHead>
+                                <TableHead>현재 그룹</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                        {filteredEmployeesForDialog.map(emp => (
+                            <TableRow key={emp.id}>
+                            <TableCell>
+                                <Checkbox
+                                    checked={idsForNewGroup.has(emp.id)}
+                                    onCheckedChange={(checked) => {
+                                        const newIds = new Set(idsForNewGroup);
+                                        if (checked) newIds.add(emp.id);
+                                        else newIds.delete(emp.id);
+                                        setIdsForNewGroup(newIds);
+                                    }}
+                                />
+                            </TableCell>
+                            <TableCell>{emp.name}</TableCell>
+                            <TableCell>{emp.department}</TableCell>
+                            <TableCell>{emp.title}</TableCell>
+                            <TableCell>{emp.detailedGroup2}</TableCell>
+                            </TableRow>
+                        ))}
+                        </TableBody>
+                    </Table>
+                    </ScrollArea>
+                </CardContent>
+                </Card>
+            </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddGroupDialogOpen(false)}>취소</Button>
+            <Button onClick={handleCreateGroup}>그룹 생성</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DndContext>
   );
 }
