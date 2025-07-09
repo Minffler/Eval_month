@@ -349,7 +349,7 @@ export default function Home() {
           payoutRate,
           gradeAmount,
           finalAmount,
-          evaluatorName: evaluator?.name || '미지정',
+          evaluatorName: evaluator?.name || (employee.evaluatorId ? `ID: ${employee.evaluatorId}` : '미지정'),
           detailedGroup1,
           detailedGroup2,
           memo: evaluation?.memo || employee.memo || ''
@@ -383,7 +383,7 @@ export default function Home() {
           payoutRate,
           gradeAmount,
           finalAmount,
-          evaluatorName: evaluator?.name || '미지정',
+          evaluatorName: evaluator?.name || (employee.evaluatorId ? `ID: ${employee.evaluatorId}` : '미지정'),
           detailedGroup1: '', 
           detailedGroup2: '',
           memo: evaluation?.memo || employee.memo || '',

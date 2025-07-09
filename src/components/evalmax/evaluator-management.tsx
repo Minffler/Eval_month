@@ -191,7 +191,7 @@ export default function EvaluatorManagement({
     const updatedResults = results.map((r) => {
       if (r.id === employeeId) {
         const evaluator = allEmployees.find(u => u.uniqueId === newEvaluatorId);
-        return { ...r, evaluatorId: newEvaluatorId, evaluatorName: evaluator?.name || '미지정' };
+        return { ...r, evaluatorId: newEvaluatorId, evaluatorName: evaluator?.name || (newEvaluatorId ? `ID: ${newEvaluatorId}` : '미지정') };
       }
       return r;
     });
@@ -210,7 +210,7 @@ export default function EvaluatorManagement({
     const updatedResults = results.map(r => {
       if (selectedIds.has(r.id)) {
         const evaluator = allEmployees.find(u => u.uniqueId === bulkEvaluatorId);
-        return { ...r, evaluatorId: bulkEvaluatorId, evaluatorName: evaluator?.name || '미지정' };
+        return { ...r, evaluatorId: bulkEvaluatorId, evaluatorName: evaluator?.name || (bulkEvaluatorId ? `ID: ${bulkEvaluatorId}` : '미지정') };
       }
       return r;
     });

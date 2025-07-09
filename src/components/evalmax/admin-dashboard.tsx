@@ -131,8 +131,7 @@ export default function AdminDashboard({
       const id = r.evaluatorId;
       
       if (!statsByUniqueId[id]) {
-        const evaluatorEmployee = allEmployees.find(e => e.uniqueId === id);
-        statsByUniqueId[id] = { total: 0, completed: 0, evaluatorName: evaluatorEmployee?.name || `ID: ${id}` };
+        statsByUniqueId[id] = { total: 0, completed: 0, evaluatorName: r.evaluatorName };
       }
       statsByUniqueId[id].total++;
       if (r.grade) {
@@ -148,7 +147,7 @@ export default function AdminDashboard({
       pending: data.total - data.completed,
       rate: data.total > 0 ? (data.completed / data.total) * 100 : 0,
     }));
-  }, [initialResults, allEmployees]);
+  }, [initialResults]);
 
   const sortedEvaluatorStats = React.useMemo(() => {
     let sortableItems: EvaluatorStat[] = [...evaluatorStats];
