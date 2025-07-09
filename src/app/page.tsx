@@ -211,6 +211,8 @@ export default function Home() {
   const handleEvaluationUpload = (year: number, month: number, uploadedData: EvaluationUploadData[]) => {
       const key = `${year}-${month}`;
       
+      // Step 1: Create a map of evaluator name updates from the uploaded file.
+      // This map will be the source of truth for evaluator names.
       const evaluatorNameUpdates = new Map<string, string>();
       uploadedData.forEach(item => {
           if (item.evaluatorId && item.evaluatorName) {
@@ -218,68 +220,74 @@ export default function Home() {
           }
       });
 
+      // Step 2: Update the employees state.
       setEmployees(prevEmps => {
-        let allEmpsState = JSON.parse(JSON.stringify(prevEmps));
-        
-        // Part 1: Update evaluator names globally across all months
-        if (evaluatorNameUpdates.size > 0) {
-            for (const monthKey in allEmpsState) {
-                allEmpsState[monthKey] = allEmpsState[monthKey].map((emp: Employee) => {
-                    // If this employee is an evaluator whose name is in the update list, update their name.
-                    if (evaluatorNameUpdates.has(emp.uniqueId)) {
-                        return { ...emp, name: evaluatorNameUpdates.get(emp.uniqueId)! };
-                    }
-                    return emp;
-                });
-            }
-        }
+          let allEmpsState = JSON.parse(JSON.stringify(prevEmps));
           
-        // Part 2: Update the data for the evaluated employees for the specific month of the upload.
-        const newEmpsForMonth = [...(allEmpsState[key] || [])];
-        uploadedData.forEach(uploadItem => {
-            const empIndex = newEmpsForMonth.findIndex(e => e.id === uploadItem.employeeId);
-            if (empIndex > -1) {
-                const updatedEmployee = { ...newEmpsForMonth[empIndex] };
-                
-                if (uploadItem.name !== undefined) updatedEmployee.name = uploadItem.name;
-                if (uploadItem.company !== undefined) updatedEmployee.company = uploadItem.company;
-                if (uploadItem.department !== undefined) updatedEmployee.department = uploadItem.department;
-                if (uploadItem.title !== undefined) updatedEmployee.title = uploadItem.title;
-                if (uploadItem.position !== undefined) updatedEmployee.position = uploadItem.position;
-                if (uploadItem.growthLevel !== undefined) updatedEmployee.growthLevel = uploadItem.growthLevel;
-                if (uploadItem.workRate !== undefined) updatedEmployee.workRate = uploadItem.workRate;
-                if (uploadItem.evaluatorId !== undefined) updatedEmployee.evaluatorId = uploadItem.evaluatorId;
-                if (uploadItem.baseAmount !== undefined) updatedEmployee.baseAmount = uploadItem.baseAmount;
-                if (uploadItem.memo !== undefined) updatedEmployee.memo = uploadItem.memo;
-                
-                newEmpsForMonth[empIndex] = updatedEmployee;
-            }
-        });
-        allEmpsState[key] = newEmpsForMonth;
-        return allEmpsState;
+          // Part A: Update evaluator names globally across all months.
+          // This ensures that if an evaluator's name changes, it's reflected everywhere.
+          if (evaluatorNameUpdates.size > 0) {
+              for (const monthKey in allEmpsState) {
+                  allEmpsState[monthKey] = allEmpsState[monthKey].map((emp: Employee) => {
+                      if (evaluatorNameUpdates.has(emp.uniqueId)) {
+                          return { ...emp, name: evaluatorNameUpdates.get(emp.uniqueId)! };
+                      }
+                      return emp;
+                  });
+              }
+          }
+            
+          // Part B: Update the data for the employees evaluated in the current month's upload.
+          const newEmpsForMonth = [...(allEmpsState[key] || [])];
+          uploadedData.forEach(uploadItem => {
+              const empIndex = newEmpsForMonth.findIndex(e => e.id === uploadItem.employeeId);
+              if (empIndex > -1) {
+                  const updatedEmployee = { ...newEmpsForMonth[empIndex] };
+                  
+                  // Merge properties from the upload file.
+                  if (uploadItem.name !== undefined) updatedEmployee.name = uploadItem.name;
+                  if (uploadItem.company !== undefined) updatedEmployee.company = uploadItem.company;
+                  if (uploadItem.department !== undefined) updatedEmployee.department = uploadItem.department;
+                  if (uploadItem.title !== undefined) updatedEmployee.title = uploadItem.title;
+                  if (uploadItem.position !== undefined) updatedEmployee.position = uploadItem.position;
+                  if (uploadItem.growthLevel !== undefined) updatedEmployee.growthLevel = uploadItem.growthLevel;
+                  if (uploadItem.workRate !== undefined) updatedEmployee.workRate = uploadItem.workRate;
+                  if (uploadItem.evaluatorId !== undefined) updatedEmployee.evaluatorId = uploadItem.evaluatorId;
+                  if (uploadItem.baseAmount !== undefined) updatedEmployee.baseAmount = uploadItem.baseAmount;
+                  if (uploadItem.memo !== undefined) updatedEmployee.memo = uploadItem.memo;
+                  
+                  newEmpsForMonth[empIndex] = updatedEmployee;
+              }
+              // Note: We don't add new employees here, that's handled by '대상자 업로드'.
+              // This function only updates existing employees and their evaluations.
+          });
+          allEmpsState[key] = newEmpsForMonth;
+          return allEmpsState;
       });
 
+      // Step 3: Update the evaluations state.
       setEvaluations(prevEvals => {
           const newEvalsState = JSON.parse(JSON.stringify(prevEvals));
           const newEvalsForMonth = [...(newEvalsState[key] || [])];
+          
           uploadedData.forEach(uploadItem => {
               const evalIndex = newEvalsForMonth.findIndex(e => e.employeeId === uploadItem.employeeId);
+              
               if (evalIndex > -1) {
-                  const currentEval = newEvalsForMonth[evalIndex];
-                  const updatedEval = { ...currentEval };
+                  // If an evaluation record exists, update it.
+                  const updatedEval = { ...newEvalsForMonth[evalIndex] };
 
-                  // Only update grade if it wasn't set before.
-                  if (currentEval.grade === null || currentEval.grade === undefined) {
+                  // Always allow overwriting grade and memo from the file.
+                  if (uploadItem.grade !== undefined) {
                       updatedEval.grade = uploadItem.grade;
                   }
-                  
                   if (uploadItem.memo !== undefined) {
-                    updatedEval.memo = uploadItem.memo;
+                      updatedEval.memo = uploadItem.memo;
                   }
-
                   newEvalsForMonth[evalIndex] = updatedEval;
+
               } else {
-                 // If no evaluation exists, create a new one. This ensures new employees get an evaluation record.
+                 // If no evaluation exists, create a new one.
                  const newEval = {
                     id: `eval-${uploadItem.employeeId}-${year}-${month}`,
                     employeeId: uploadItem.employeeId,
