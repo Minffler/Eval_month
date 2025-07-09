@@ -10,6 +10,8 @@ import type { Employee, Evaluation, EvaluationResult, Grade, GradeInfo, User } f
 import { mockEmployees, gradingScale as initialGradingScale, calculateFinalAmount, mockUsers, mockEvaluations as initialMockEvaluations } from '@/lib/data';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
+import { Sidebar } from '@/components/evalmax/sidebar';
+import { cn } from '@/lib/utils';
 
 export default function Home() {
   const { user, role, loading } = useAuth();
@@ -20,6 +22,10 @@ export default function Home() {
   const [gradingScale, setGradingScale] = React.useState(initialGradingScale);
   const [results, setResults] = React.useState<EvaluationResult[]>([]);
   const [selectedDate, setSelectedDate] = React.useState({ year: 2025, month: 7 });
+
+  // New state for admin view
+  const [isSidebarOpen, setIsSidebarOpen] = React.useState(true);
+  const [activeView, setActiveView] = React.useState('dashboard');
 
   React.useEffect(() => {
     if (!loading && !user) {
@@ -211,6 +217,7 @@ export default function Home() {
                   selectedDate={selectedDate}
                   setSelectedDate={setSelectedDate}
                   handleResultsUpdate={handleResultsUpdate}
+                  activeView={activeView}
                 />;
       case 'evaluator':
         return <EvaluatorDashboard 
@@ -268,6 +275,25 @@ export default function Home() {
 
   if (!user) {
     return null;
+  }
+  
+  if (role === 'admin') {
+      return (
+        <div className="flex h-screen bg-background overflow-hidden">
+            <Sidebar
+                activeView={activeView}
+                setActiveView={setActiveView}
+                isOpen={isSidebarOpen}
+                setIsOpen={setIsSidebarOpen}
+            />
+            <div className={cn("flex flex-col flex-1 transition-all duration-300 ease-in-out", isSidebarOpen ? "ml-64" : "ml-16")}>
+                <Header />
+                <main className="flex-1 overflow-y-auto">
+                    {renderDashboard()}
+                </main>
+            </div>
+        </div>
+      )
   }
 
   return (

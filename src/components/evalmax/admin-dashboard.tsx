@@ -42,6 +42,7 @@ import {
 } from '@/components/ui/dialog';
 import { Textarea } from '../ui/textarea';
 import EvaluatorDashboard from './evaluator-dashboard';
+import EvaluatorManagement from './evaluator-management';
 
 interface AdminDashboardProps {
   results: EvaluationResult[];
@@ -52,6 +53,7 @@ interface AdminDashboardProps {
   selectedDate: { year: number; month: number };
   setSelectedDate: (date: { year: number; month: number }) => void;
   handleResultsUpdate: (updatedResults: EvaluationResult[]) => void;
+  activeView: string;
 }
 
 type SortConfig = {
@@ -67,10 +69,11 @@ export default function AdminDashboard({
   setGradingScale,
   selectedDate,
   setSelectedDate,
-  handleResultsUpdate
+  handleResultsUpdate,
+  activeView,
 }: AdminDashboardProps) {
   const [results, setResults] = React.useState<EvaluationResult[]>(initialResults);
-  const [activeTab, setActiveTab] = React.useState<EvaluationGroupCategory>('전체');
+  const [activeResultsTab, setActiveResultsTab] = React.useState<EvaluationGroupCategory>('전체');
   const [selectedEvaluators, setSelectedEvaluators] = React.useState<Set<string>>(new Set());
   const [isNotificationDialogOpen, setIsNotificationDialogOpen] = React.useState(false);
   const [notificationMessage, setNotificationMessage] = React.useState('');
@@ -93,7 +96,7 @@ export default function AdminDashboard({
     return categories;
   }, [initialResults]);
 
-  const visibleResults = categorizedResults[activeTab];
+  const visibleResults = categorizedResults[activeResultsTab];
   
   const overallGradeDistribution = Object.keys(gradingScale).map(grade => ({
     name: grade,
@@ -321,271 +324,261 @@ export default function AdminDashboard({
     XLSX.utils.book_append_sheet(workbook, worksheet, '평가결과');
     XLSX.writeFile(workbook, `PL월성과평가_${selectedDate.year}_${selectedDate.month}_결과.xlsx`);
   };
+  
+  const renderContent = () => {
+    switch(activeView) {
+        case 'dashboard':
+            return (
+                <div className="space-y-4">
+                  <GradeHistogram data={overallGradeDistribution} gradingScale={gradingScale} title="전체 등급 분포" />
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>평가자별 진행 현황</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="border rounded-lg overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="w-[50px]">
+                                <Checkbox
+                                  checked={isIndeterminateEvaluatorSelection ? 'indeterminate' : isAllEvaluatorsSelected}
+                                  onCheckedChange={(checked) => handleSelectAllEvaluators(Boolean(checked))}
+                                  aria-label="모든 평가자 선택"
+                                />
+                              </TableHead>
+                              <TableHead className="whitespace-nowrap">평가자사번</TableHead>
+                              <TableHead className="whitespace-nowrap">평가자</TableHead>
+                              <TableHead className="whitespace-nowrap text-center">대상 인원</TableHead>
+                              <TableHead className="whitespace-nowrap text-center">완료</TableHead>
+                              <TableHead className="whitespace-nowrap text-center">미입력</TableHead>
+                              <TableHead className="whitespace-nowrap text-center w-[200px]">완료율</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {evaluatorStats.map(stat => (
+                              <TableRow key={stat.evaluatorId}>
+                                <TableCell>
+                                  <Checkbox
+                                    checked={selectedEvaluators.has(stat.evaluatorId)}
+                                    onCheckedChange={(checked) => handleSelectEvaluator(stat.evaluatorId, Boolean(checked))}
+                                    aria-label={`${stat.evaluatorName} 선택`}
+                                  />
+                                </TableCell>
+                                <TableCell className="whitespace-nowrap font-mono text-xs">{stat.evaluatorUniqueId}</TableCell>
+                                <TableCell className="font-medium whitespace-nowrap">{stat.evaluatorName}</TableCell>
+                                <TableCell className="text-center whitespace-nowrap">{stat.total}</TableCell>
+                                <TableCell className="text-center whitespace-nowrap">{stat.completed}</TableCell>
+                                <TableCell className="text-center whitespace-nowrap">{stat.pending}</TableCell>
+                                <TableCell className="text-center whitespace-nowrap">
+                                  <div className="flex items-center justify-center gap-2">
+                                    <Progress value={stat.rate} className="w-full h-2" />
+                                    <span className="text-muted-foreground text-xs w-16 text-right">{stat.rate.toFixed(1)}%</span>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                      <div className="flex justify-end mt-4 gap-2">
+                        <Button
+                          variant="outline"
+                          onClick={handleSelectIncompleteEvaluators}
+                          size="sm"
+                        >
+                          <ClipboardX className="mr-2 h-4 w-4" />
+                          미완료 평가자 선택
+                        </Button>
+                        <Button
+                          disabled={selectedEvaluators.size === 0}
+                          onClick={handleOpenNotificationDialog}
+                          size="sm"
+                        >
+                          <Bell className="mr-2 h-4 w-4" />
+                          선택된 평가자에게 알림 발송
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+            );
+        case 'all-results':
+             return (
+                 <Tabs defaultValue="전체" onValueChange={(val) => setActiveResultsTab(val as EvaluationGroupCategory)}>
+                    <TabsList className="grid w-full grid-cols-4 mb-4">
+                        {Object.keys(categorizedResults).map(category => (
+                            <TabsTrigger key={category} value={category}>{category} ({categorizedResults[category as EvaluationGroupCategory].length})</TabsTrigger>
+                        ))}
+                    </TabsList>
+                    
+                    <div className="flex justify-end mb-4">
+                      <Button onClick={handleDownloadExcel} variant="outline">
+                        <Download className="mr-2 h-4 w-4" />
+                        엑셀 다운로드
+                      </Button>
+                    </div>
+                    <div className="border rounded-lg overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('uniqueId')}>
+                            <div className="flex items-center">고유사번 {getSortIcon('uniqueId')}</div>
+                          </TableHead>
+                          <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('company')}>
+                             <div className="flex items-center">회사 {getSortIcon('company')}</div>
+                          </TableHead>
+                          <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('department')}>
+                            <div className="flex items-center">소속부서 {getSortIcon('department')}</div>
+                          </TableHead>
+                          <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('name')}>
+                            <div className="flex items-center">이름 {getSortIcon('name')}</div>
+                          </TableHead>
+                          <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('title')}>
+                            <div className="flex items-center">직책/성장레벨 {getSortIcon('title')}</div>
+                          </TableHead>
+                          <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('workRate')}>
+                            <div className="flex items-center">근무율 {getSortIcon('workRate')}</div>
+                          </TableHead>
+                          <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('score')}>
+                            <div className="flex items-center">점수 {getSortIcon('score')}</div>
+                          </TableHead>
+                          <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('grade')}>
+                            <div className="flex items-center">등급 {getSortIcon('grade')}</div>
+                          </TableHead>
+                          <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('baseAmount')}>
+                            <div className="flex items-center">기준금액 {getSortIcon('baseAmount')}</div>
+                          </TableHead>
+                          <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('gradeAmount')}>
+                            <div className="flex items-center">등급금액 {getSortIcon('gradeAmount')}</div>
+                          </TableHead>
+                          <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('finalAmount')}>
+                            <div className="flex items-center">최종금액 {getSortIcon('finalAmount')}</div>
+                          </TableHead>
+                          <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('evaluatorName')}>
+                            <div className="flex items-center">평가자 {getSortIcon('evaluatorName')}</div>
+                          </TableHead>
+                          <TableHead className="whitespace-nowrap min-w-[200px]">비고</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {sortedVisibleResults.map(r => (
+                            <TableRow key={r.id}>
+                              <TableCell className="py-1 px-2 whitespace-nowrap">{r.uniqueId}</TableCell>
+                              <TableCell className="py-1 px-2 whitespace-nowrap">{r.company}</TableCell>
+                              <TableCell className="py-1 px-2 whitespace-nowrap">{r.department}</TableCell>
+                              <TableCell className="py-1 px-2 font-medium whitespace-nowrap">{r.name}</TableCell>
+                              <TableCell className="py-1 px-2 whitespace-nowrap">
+                                {['팀장', '지점장', '센터장', '지부장'].includes(r.position)
+                                  ? r.title
+                                  : r.growthLevel}
+                              </TableCell>
+                              <TableCell className="py-1 px-2 whitespace-nowrap">{(r.workRate * 100).toFixed(1)}%</TableCell>
+                              <TableCell className="py-1 px-2 whitespace-nowrap">{r.score}</TableCell>
+                              <TableCell className="py-1 px-2 whitespace-nowrap">
+                                <Select value={r.grade || ''} onValueChange={(g) => handleGradeChange(r.id, g)}>
+                                    <SelectTrigger className="w-[80px] h-8">
+                                        <SelectValue placeholder="선택" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                    {Object.keys(gradingScale).map(grade => (
+                                        <SelectItem key={grade} value={grade}>{grade}</SelectItem>
+                                    ))}
+                                    </SelectContent>
+                                </Select>
+                              </TableCell>
+                              <TableCell className="py-1 px-2 whitespace-nowrap">
+                                <Input 
+                                  type="text"
+                                  defaultValue={formatCurrency(r.baseAmount)}
+                                  onBlur={(e) => handleBaseAmountChange(r.id, e.target.value)}
+                                  className="w-28 text-right h-8"
+                                />
+                              </TableCell>
+                              <TableCell className="py-1 px-2 whitespace-nowrap text-right">{formatCurrency(r.gradeAmount)}</TableCell>
+                              <TableCell className="py-1 px-2 whitespace-nowrap text-right">{formatCurrency(r.finalAmount)}</TableCell>
+                              <TableCell className="py-1 px-2 whitespace-nowrap">{r.evaluatorName}</TableCell>
+                              <TableCell className="py-1 px-2 whitespace-nowrap">
+                                <Input
+                                  defaultValue={r.memo || ''}
+                                  onBlur={(e) => handleMemoChange(r.id, e.target.value)}
+                                  className="w-full h-8"
+                                  placeholder=''
+                                />
+                              </TableCell>
+                            </TableRow>
+                          )
+                        )}
+                      </TableBody>
+                    </Table>
+                    </div>
+                  </Tabs>
+             );
+        case 'evaluator-view':
+            return (
+                <div className="space-y-4">
+                    <Card>
+                        <CardHeader className="flex flex-col sm:flex-row items-center justify-between p-4">
+                            <div>
+                                <CardTitle>평가자별 현황 보기</CardTitle>
+                                <CardDescription>특정 평가자의 대시보드를 확인합니다.</CardDescription>
+                            </div>
+                            <Select onValueChange={setSelectedEvaluatorId} value={selectedEvaluatorId}>
+                                <SelectTrigger className="w-full sm:w-[280px] mt-2 sm:mt-0">
+                                    <SelectValue placeholder="평가자를 선택하세요" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {evaluatorStats.map(stat => (
+                                        <SelectItem key={stat.evaluatorId} value={stat.evaluatorId}>
+                                            {stat.evaluatorUniqueId} {stat.evaluatorName}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </CardHeader>
+                    </Card>
+
+                    {selectedEvaluator ? (
+                        <EvaluatorDashboard
+                            allResults={initialResults}
+                            gradingScale={gradingScale}
+                            selectedDate={selectedDate}
+                            setSelectedDate={setSelectedDate} 
+                            handleResultsUpdate={handleResultsUpdate}
+                            evaluatorUser={selectedEvaluator}
+                        />
+                    ) : (
+                        <Card className="flex items-center justify-center h-64">
+                          <p className="text-center text-muted-foreground">
+                            평가자를 선택하면 해당 평가자의 대시보드가 여기에 표시됩니다.
+                          </p>
+                        </Card>
+                    )}
+                </div>
+            );
+        case 'file-upload':
+            return <ManageData onEmployeeUpload={onEmployeeUpload} onEvaluationUpload={onEvaluationUpload} results={initialResults} />;
+        case 'evaluator-management':
+            return <EvaluatorManagement results={initialResults} handleResultsUpdate={handleResultsUpdate} />;
+        case 'grade-management':
+            return <GradeManagement gradingScale={gradingScale} setGradingScale={setGradingScale} />;
+        case 'consistency-check':
+            return <ConsistencyValidator results={initialResults} gradingScale={gradingScale} />;
+        default:
+            return <div>선택된 뷰가 없습니다.</div>
+    }
+  }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 p-4 md:p-6 lg:p-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <h2 className="text-2xl font-bold tracking-tight">관리자 개요</h2>
         <div className="flex flex-wrap items-center gap-2">
           <MonthSelector selectedDate={selectedDate} onDateChange={setSelectedDate} />
         </div>
       </div>
-      <Tabs defaultValue="dashboard">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="dashboard">
-            <LayoutDashboard className="mr-2 h-4 w-4" /> 대시보드
-          </TabsTrigger>
-          <TabsTrigger value="results">
-            <FileCheck className="mr-2 h-4 w-4" /> 전체 결과
-          </TabsTrigger>
-          <TabsTrigger value="evaluator-view">
-            <Eye className="mr-2 h-4 w-4" /> 평가자별 현황
-          </TabsTrigger>
-           <TabsTrigger value="manage-data">
-            <Upload className="mr-2 h-4 w-4" /> 데이터 관리
-          </TabsTrigger>
-          <TabsTrigger value="grade-management">
-            <Settings className="mr-2 h-4 w-4" /> 등급/점수 관리
-          </TabsTrigger>
-          <TabsTrigger value="consistency">
-            <Bot className="mr-2 h-4 w-4" /> AI 일관성 검토
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="dashboard" className="space-y-4 pt-4">
-          <GradeHistogram data={overallGradeDistribution} gradingScale={gradingScale} />
-          <Card>
-            <CardHeader>
-              <CardTitle>평가자별 진행 현황</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="border rounded-lg overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[50px]">
-                        <Checkbox
-                          checked={isIndeterminateEvaluatorSelection ? 'indeterminate' : isAllEvaluatorsSelected}
-                          onCheckedChange={(checked) => handleSelectAllEvaluators(Boolean(checked))}
-                          aria-label="모든 평가자 선택"
-                        />
-                      </TableHead>
-                      <TableHead className="whitespace-nowrap">평가자사번</TableHead>
-                      <TableHead className="whitespace-nowrap">평가자</TableHead>
-                      <TableHead className="whitespace-nowrap text-center">대상 인원</TableHead>
-                      <TableHead className="whitespace-nowrap text-center">완료</TableHead>
-                      <TableHead className="whitespace-nowrap text-center">미입력</TableHead>
-                      <TableHead className="whitespace-nowrap text-center w-[200px]">완료율</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {evaluatorStats.map(stat => (
-                      <TableRow key={stat.evaluatorId}>
-                        <TableCell>
-                          <Checkbox
-                            checked={selectedEvaluators.has(stat.evaluatorId)}
-                            onCheckedChange={(checked) => handleSelectEvaluator(stat.evaluatorId, Boolean(checked))}
-                            aria-label={`${stat.evaluatorName} 선택`}
-                          />
-                        </TableCell>
-                        <TableCell className="whitespace-nowrap font-mono text-xs">{stat.evaluatorUniqueId}</TableCell>
-                        <TableCell className="font-medium whitespace-nowrap">{stat.evaluatorName}</TableCell>
-                        <TableCell className="text-center whitespace-nowrap">{stat.total}</TableCell>
-                        <TableCell className="text-center whitespace-nowrap">{stat.completed}</TableCell>
-                        <TableCell className="text-center whitespace-nowrap">{stat.pending}</TableCell>
-                        <TableCell className="text-center whitespace-nowrap">
-                          <div className="flex items-center justify-center gap-2">
-                            <Progress value={stat.rate} className="w-full h-2" />
-                            <span className="text-muted-foreground text-xs w-16 text-right">{stat.rate.toFixed(1)}%</span>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-              <div className="flex justify-end mt-4 gap-2">
-                <Button
-                  variant="outline"
-                  onClick={handleSelectIncompleteEvaluators}
-                  size="sm"
-                >
-                  <ClipboardX className="mr-2 h-4 w-4" />
-                  미완료 평가자 선택
-                </Button>
-                <Button
-                  disabled={selectedEvaluators.size === 0}
-                  onClick={handleOpenNotificationDialog}
-                  size="sm"
-                >
-                  <Bell className="mr-2 h-4 w-4" />
-                  선택된 평가자에게 알림 발송
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="results" className="pt-4">
-          <Tabs defaultValue="전체" onValueChange={(val) => setActiveTab(val as EvaluationGroupCategory)}>
-            <TabsList className="grid w-full grid-cols-4 mb-4">
-                {Object.keys(categorizedResults).map(category => (
-                    <TabsTrigger key={category} value={category}>{category} ({categorizedResults[category as EvaluationGroupCategory].length})</TabsTrigger>
-                ))}
-            </TabsList>
-            
-            <div className="flex justify-end mb-4">
-              <Button onClick={handleDownloadExcel} variant="outline">
-                <Download className="mr-2 h-4 w-4" />
-                엑셀 다운로드
-              </Button>
-            </div>
-            <div className="border rounded-lg overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('uniqueId')}>
-                    <div className="flex items-center">고유사번 {getSortIcon('uniqueId')}</div>
-                  </TableHead>
-                  <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('company')}>
-                     <div className="flex items-center">회사 {getSortIcon('company')}</div>
-                  </TableHead>
-                  <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('department')}>
-                    <div className="flex items-center">소속부서 {getSortIcon('department')}</div>
-                  </TableHead>
-                  <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('name')}>
-                    <div className="flex items-center">이름 {getSortIcon('name')}</div>
-                  </TableHead>
-                  <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('title')}>
-                    <div className="flex items-center">직책/성장레벨 {getSortIcon('title')}</div>
-                  </TableHead>
-                  <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('workRate')}>
-                    <div className="flex items-center">근무율 {getSortIcon('workRate')}</div>
-                  </TableHead>
-                  <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('score')}>
-                    <div className="flex items-center">점수 {getSortIcon('score')}</div>
-                  </TableHead>
-                  <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('grade')}>
-                    <div className="flex items-center">등급 {getSortIcon('grade')}</div>
-                  </TableHead>
-                  <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('baseAmount')}>
-                    <div className="flex items-center">기준금액 {getSortIcon('baseAmount')}</div>
-                  </TableHead>
-                  <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('gradeAmount')}>
-                    <div className="flex items-center">등급금액 {getSortIcon('gradeAmount')}</div>
-                  </TableHead>
-                  <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('finalAmount')}>
-                    <div className="flex items-center">최종금액 {getSortIcon('finalAmount')}</div>
-                  </TableHead>
-                  <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('evaluatorName')}>
-                    <div className="flex items-center">평가자 {getSortIcon('evaluatorName')}</div>
-                  </TableHead>
-                  <TableHead className="whitespace-nowrap min-w-[200px]">비고</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sortedVisibleResults.map(r => (
-                    <TableRow key={r.id}>
-                      <TableCell className="py-1 px-2 whitespace-nowrap">{r.uniqueId}</TableCell>
-                      <TableCell className="py-1 px-2 whitespace-nowrap">{r.company}</TableCell>
-                      <TableCell className="py-1 px-2 whitespace-nowrap">{r.department}</TableCell>
-                      <TableCell className="py-1 px-2 font-medium whitespace-nowrap">{r.name}</TableCell>
-                      <TableCell className="py-1 px-2 whitespace-nowrap">
-                        {['팀장', '지점장', '센터장', '지부장'].includes(r.position)
-                          ? r.title
-                          : r.growthLevel}
-                      </TableCell>
-                      <TableCell className="py-1 px-2 whitespace-nowrap">{(r.workRate * 100).toFixed(1)}%</TableCell>
-                      <TableCell className="py-1 px-2 whitespace-nowrap">{r.score}</TableCell>
-                      <TableCell className="py-1 px-2 whitespace-nowrap">
-                        <Select value={r.grade || ''} onValueChange={(g) => handleGradeChange(r.id, g)}>
-                            <SelectTrigger className="w-[80px] h-8">
-                                <SelectValue placeholder="선택" />
-                            </SelectTrigger>
-                            <SelectContent>
-                            {Object.keys(gradingScale).map(grade => (
-                                <SelectItem key={grade} value={grade}>{grade}</SelectItem>
-                            ))}
-                            </SelectContent>
-                        </Select>
-                      </TableCell>
-                      <TableCell className="py-1 px-2 whitespace-nowrap">
-                        <Input 
-                          type="text"
-                          defaultValue={formatCurrency(r.baseAmount)}
-                          onBlur={(e) => handleBaseAmountChange(r.id, e.target.value)}
-                          className="w-28 text-right h-8"
-                        />
-                      </TableCell>
-                      <TableCell className="py-1 px-2 whitespace-nowrap text-right">{formatCurrency(r.gradeAmount)}</TableCell>
-                      <TableCell className="py-1 px-2 whitespace-nowrap text-right">{formatCurrency(r.finalAmount)}</TableCell>
-                      <TableCell className="py-1 px-2 whitespace-nowrap">{r.evaluatorName}</TableCell>
-                      <TableCell className="py-1 px-2 whitespace-nowrap">
-                        <Input
-                          defaultValue={r.memo || ''}
-                          onBlur={(e) => handleMemoChange(r.id, e.target.value)}
-                          className="w-full h-8"
-                          placeholder=''
-                        />
-                      </TableCell>
-                    </TableRow>
-                  )
-                )}
-              </TableBody>
-            </Table>
-            </div>
-          </Tabs>
-        </TabsContent>
-        <TabsContent value="evaluator-view" className="pt-4 space-y-4">
-            <Card>
-                <CardHeader className="flex flex-col sm:flex-row items-center justify-between p-4">
-                    <div>
-                        <CardTitle>평가자별 현황 보기</CardTitle>
-                        <CardDescription>특정 평가자의 대시보드를 확인합니다.</CardDescription>
-                    </div>
-                    <Select onValueChange={setSelectedEvaluatorId} value={selectedEvaluatorId}>
-                        <SelectTrigger className="w-full sm:w-[280px] mt-2 sm:mt-0">
-                            <SelectValue placeholder="평가자를 선택하세요" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {evaluatorStats.map(stat => (
-                                <SelectItem key={stat.evaluatorId} value={stat.evaluatorId}>
-                                    {stat.evaluatorUniqueId} {stat.evaluatorName}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </CardHeader>
-            </Card>
-
-            {selectedEvaluator ? (
-                <EvaluatorDashboard
-                    allResults={initialResults}
-                    gradingScale={gradingScale}
-                    selectedDate={selectedDate}
-                    setSelectedDate={setSelectedDate} 
-                    handleResultsUpdate={handleResultsUpdate}
-                    evaluatorUser={selectedEvaluator}
-                />
-            ) : (
-                <Card className="flex items-center justify-center h-64">
-                  <p className="text-center text-muted-foreground">
-                    평가자를 선택하면 해당 평가자의 대시보드가 여기에 표시됩니다.
-                  </p>
-                </Card>
-            )}
-        </TabsContent>
-        <TabsContent value="manage-data" className="pt-4">
-          <ManageData onEmployeeUpload={onEmployeeUpload} onEvaluationUpload={onEvaluationUpload} results={initialResults} />
-        </TabsContent>
-        <TabsContent value="grade-management" className="pt-4">
-           <GradeManagement gradingScale={gradingScale} setGradingScale={setGradingScale} />
-        </TabsContent>
-        <TabsContent value="consistency" className="pt-4">
-          <ConsistencyValidator results={initialResults} gradingScale={gradingScale} />
-        </TabsContent>
-      </Tabs>
-      <Dialog open={isNotificationDialogOpen} onOpenChange={setIsNotificationDialogOpen}>
+      {renderContent()}
+       <Dialog open={isNotificationDialogOpen} onOpenChange={setIsNotificationDialogOpen}>
         <DialogContent className="sm:max-w-[525px]">
           <DialogHeader>
             <DialogTitle>알림 메시지 설정</DialogTitle>
