@@ -69,14 +69,54 @@ const evaluatorNavItems: NavItem[] = [
   },
 ];
 
+const EMPLOYEES_STORAGE_KEY = 'pl_eval_employees';
+const EVALUATIONS_STORAGE_KEY = 'pl_eval_evaluations';
+const GRADING_SCALE_STORAGE_KEY = 'pl_eval_grading_scale';
+
 
 export default function Home() {
   const { user, role, loading } = useAuth();
   const router = useRouter();
   
-  const [employees, setEmployees] = React.useState<Record<string, Employee[]>>({ '2025-7': mockEmployees });
-  const [evaluations, setEvaluations] = React.useState<Record<string, Evaluation[]>>({ '2025-7': initialMockEvaluations });
-  const [gradingScale, setGradingScale] = React.useState(initialGradingScale);
+  const [employees, setEmployees] = React.useState<Record<string, Employee[]>>(() => {
+    if (typeof window === 'undefined') {
+      return { '2025-7': mockEmployees };
+    }
+    try {
+      const stored = window.localStorage.getItem(EMPLOYEES_STORAGE_KEY);
+      return stored ? JSON.parse(stored) : { '2025-7': mockEmployees };
+    } catch (error) {
+      console.error('Error reading employees from localStorage', error);
+      return { '2025-7': mockEmployees };
+    }
+  });
+
+  const [evaluations, setEvaluations] = React.useState<Record<string, Evaluation[]>>(() => {
+    if (typeof window === 'undefined') {
+      return { '2025-7': initialMockEvaluations };
+    }
+    try {
+      const stored = window.localStorage.getItem(EVALUATIONS_STORAGE_KEY);
+      return stored ? JSON.parse(stored) : { '2025-7': initialMockEvaluations };
+    } catch (error) {
+      console.error('Error reading evaluations from localStorage', error);
+      return { '2025-7': initialMockEvaluations };
+    }
+  });
+
+  const [gradingScale, setGradingScale] = React.useState<Record<NonNullable<Grade>, GradeInfo>>(() => {
+    if (typeof window === 'undefined') {
+      return initialGradingScale;
+    }
+    try {
+      const stored = window.localStorage.getItem(GRADING_SCALE_STORAGE_KEY);
+      return stored ? JSON.parse(stored) : initialGradingScale;
+    } catch (error) {
+      console.error('Error reading grading scale from localStorage', error);
+      return initialGradingScale;
+    }
+  });
+  
   const [results, setResults] = React.useState<EvaluationResult[]>([]);
   const [selectedDate, setSelectedDate] = React.useState({ year: 2025, month: 7 });
 
@@ -94,6 +134,30 @@ export default function Home() {
       router.push('/login');
     }
   }, [user, loading, router]);
+
+  React.useEffect(() => {
+    try {
+      window.localStorage.setItem(EMPLOYEES_STORAGE_KEY, JSON.stringify(employees));
+    } catch (error) {
+      console.error('Error saving employees to localStorage', error);
+    }
+  }, [employees]);
+
+  React.useEffect(() => {
+    try {
+      window.localStorage.setItem(EVALUATIONS_STORAGE_KEY, JSON.stringify(evaluations));
+    } catch (error) {
+      console.error('Error saving evaluations to localStorage', error);
+    }
+  }, [evaluations]);
+
+  React.useEffect(() => {
+    try {
+      window.localStorage.setItem(GRADING_SCALE_STORAGE_KEY, JSON.stringify(gradingScale));
+    } catch (error) {
+      console.error('Error saving grading scale to localStorage', error);
+    }
+  }, [gradingScale]);
 
 
   const dateKey = `${selectedDate.year}-${selectedDate.month}`;
@@ -162,51 +226,71 @@ export default function Home() {
   };
 
   const handleResultsUpdate = (updatedResultsForMonth: EvaluationResult[]) => {
-      // Find all results for the current month from the full `results` list to get a complete picture
-      const currentMonthOriginalResults = results.filter(r => r.year === selectedDate.year && r.month === selectedDate.month);
-      const updatedIds = new Set(updatedResultsForMonth.map(r => r.id));
-      
-      // Combine updated results with the ones that were not in the scope of update (e.g. from other evaluators)
-      const allResultsForMonth = [
-          ...updatedResultsForMonth,
-          ...currentMonthOriginalResults.filter(r => !updatedIds.has(r.id))
-      ];
+      // This is now more complex because we need to update potentially multiple months
+      const allEmployeeIdsInUpdate = new Set(updatedResultsForMonth.map(r => r.id));
 
-      // Rebuild employees array from the comprehensive results
-      const updatedEmployees = allResultsForMonth.map(r => {
-          const employee: Employee = {
-            id: r.id,
-            uniqueId: r.uniqueId,
-            name: r.name,
-            company: r.company,
-            department: r.department,
-            title: r.title,
-            position: r.position,
-            growthLevel: r.growthLevel,
-            workRate: r.workRate,
-            evaluatorId: r.evaluatorId,
-            baseAmount: r.baseAmount,
-            group: r.detailedGroup2, // Use detailedGroup2 as the new group
-          };
-          return employee;
-      });
-      
-      const key = `${selectedDate.year}-${selectedDate.month}`;
-      setEmployees(prev => ({...prev, [key]: updatedEmployees}));
+      setEmployees(prev => {
+          const newEmployeesState = { ...prev };
+          for (const key in newEmployeesState) {
+              newEmployeesState[key] = newEmployeesState[key].map(emp => {
+                  if (allEmployeeIdsInUpdate.has(emp.id)) {
+                      const updatedData = updatedResultsForMonth.find(r => r.id === emp.id && `${r.year}-${r.month}` === key);
+                      if (updatedData) {
+                          return {
+                              ...emp,
+                              evaluatorId: updatedData.evaluatorId,
+                              // Keep other fields as they might be month-specific
+                          };
+                      }
+                  }
+                  return emp;
+              });
+          }
+          
+          const currentMonthKey = `${selectedDate.year}-${selectedDate.month}`;
+          if (newEmployeesState[currentMonthKey]) {
+             newEmployeesState[currentMonthKey] = updatedResultsForMonth.map(r => {
+                const existingEmp = newEmployeesState[currentMonthKey].find(e => e.id === r.id) || {};
+                return {
+                  ...existingEmp,
+                  id: r.id,
+                  uniqueId: r.uniqueId,
+                  name: r.name,
+                  company: r.company,
+                  department: r.department,
+                  title: r.title,
+                  position: r.position,
+                  growthLevel: r.growthLevel,
+                  workRate: r.workRate,
+                  evaluatorId: r.evaluatorId,
+                  baseAmount: r.baseAmount,
+                  group: r.detailedGroup2,
+                }
+             });
+          }
 
-      // Rebuild evaluations array, preserving existing IDs
-      const updatedMonthEvaluations = allResultsForMonth.map(r => {
-        const existingEval = currentMonthEvaluations.find(e => e.employeeId === r.id);
-        return {
-            id: existingEval?.id || `eval-${r.id}-${r.year}-${r.month}`,
-            employeeId: r.id,
-            year: r.year,
-            month: r.month,
-            grade: r.grade,
-            memo: r.memo
-        };
+          return newEmployeesState;
       });
-      setEvaluations(prev => ({...prev, [key]: updatedMonthEvaluations}));
+
+      setEvaluations(prev => {
+          const newEvalsState = { ...prev };
+          const currentMonthKey = `${selectedDate.year}-${selectedDate.month}`;
+
+          if (newEvalsState[currentMonthKey]) {
+            newEvalsState[currentMonthKey] = updatedResultsForMonth.map(r => {
+                const existingEval = newEvalsState[currentMonthKey].find(e => e.employeeId === r.id);
+                return {
+                    id: existingEval?.id || `eval-${r.id}-${r.year}-${r.month}`,
+                    employeeId: r.id,
+                    year: r.year,
+                    month: r.month,
+                    grade: r.grade,
+                    memo: r.memo
+                };
+            });
+          }
+          return newEvalsState;
+      });
   };
 
   React.useEffect(() => {
