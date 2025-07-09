@@ -123,41 +123,6 @@ export default function EvaluatorManagement({
   const allCompanies = ['all', ...Array.from(new Set(results.map((r) => r.company)))];
   const allDepartments = ['all', ...Array.from(new Set(results.map((r) => r.department)))];
   const allTitles = ['all', '지부장', '센터장', '팀장', '지점장', '팀원'];
-  
-  const evaluatorDeptStrings = React.useMemo(() => {
-    const deptsByEvaluator: Record<string, Record<string, number>> = {};
-    for (const r of allEmployees) {
-        if (r.evaluatorId) {
-            const evaluator = allEmployees.find(e => e.uniqueId === r.evaluatorId);
-            if(evaluator) {
-              if (!deptsByEvaluator[evaluator.uniqueId]) {
-                  deptsByEvaluator[evaluator.uniqueId] = {};
-              }
-              const dept = r.department || '미지정';
-              deptsByEvaluator[evaluator.uniqueId][dept] = (deptsByEvaluator[evaluator.uniqueId][dept] || 0) + 1;
-            }
-        }
-    }
-    
-    const deptStrings: Record<string, string> = {};
-    for (const evaluator of evaluators) {
-        const depts = deptsByEvaluator[evaluator.uniqueId];
-        if (depts) {
-          const sortedDeptNames = Object.entries(depts)
-              .sort(([, countA], [, countB]) => countB - countA)
-              .map(([deptName]) => deptName);
-
-          if (sortedDeptNames.length > 0) {
-              deptStrings[evaluator.uniqueId] = `(${sortedDeptNames.slice(0, 2).join(', ')}${sortedDeptNames.length > 2 ? ', ...' : ''})`;
-          } else {
-              deptStrings[evaluator.uniqueId] = '';
-          }
-        } else {
-          deptStrings[evaluator.uniqueId] = '';
-        }
-    }
-    return deptStrings;
-}, [allEmployees, evaluators]);
 
   const requestSort = (key: keyof EvaluationResult) => {
     let direction: 'ascending' | 'descending' = 'ascending';
@@ -250,10 +215,11 @@ export default function EvaluatorManagement({
             <Select value={bulkEvaluatorId} onValueChange={setBulkEvaluatorId}>
               <SelectTrigger className="w-full sm:w-[250px]"><SelectValue placeholder="평가자 선택" /></SelectTrigger>
               <SelectContent>
-                {evaluators.map((evaluator) => { 
-                    const deptString = evaluatorDeptStrings[evaluator.uniqueId] || ''; 
-                    return (<SelectItem key={evaluator.uniqueId} value={evaluator.uniqueId}>{evaluator.name} {deptString}</SelectItem>);
-                })}
+                {evaluators.map((evaluator) => (
+                    <SelectItem key={evaluator.uniqueId} value={evaluator.uniqueId}>
+                        {evaluator.name} (ID: {evaluator.uniqueId})
+                    </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <Button onClick={handleBulkAssign}>일괄 할당</Button>
@@ -282,8 +248,14 @@ export default function EvaluatorManagement({
                     <TableCell>{result.title}</TableCell>
                     <TableCell>
                       <Select value={result.evaluatorId || ''} onValueChange={(newEvaluatorId) => handleEvaluatorChange(result.id, newEvaluatorId)}>
-                        <SelectTrigger className="w-[180px]"><SelectValue placeholder="평가자 선택" /></SelectTrigger>
-                        <SelectContent>{evaluators.map((evaluator) => (<SelectItem key={evaluator.uniqueId} value={evaluator.uniqueId}>{evaluator.name}</SelectItem>))}</SelectContent>
+                        <SelectTrigger className="w-[220px]">
+                            <SelectValue placeholder="평가자 선택" />
+                        </SelectTrigger>
+                        <SelectContent>{evaluators.map((evaluator) => (
+                            <SelectItem key={evaluator.uniqueId} value={evaluator.uniqueId}>
+                                {evaluator.name} (ID: {evaluator.uniqueId})
+                            </SelectItem>
+                        ))}</SelectContent>
                       </Select>
                     </TableCell>
                   </TableRow>

@@ -634,7 +634,7 @@ export default function AdminDashboard({
                                 <SelectContent>
                                     {evaluatorStats.map(stat => (
                                         <SelectItem key={stat.evaluatorUniqueId} value={stat.evaluatorUniqueId}>
-                                            {stat.evaluatorName} (ID: {stat.evaluatorUniqueId})
+                                            {stat.evaluatorName.startsWith('ID:') ? stat.evaluatorName : `${stat.evaluatorName} (ID: ${stat.evaluatorUniqueId})`}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
