@@ -27,7 +27,7 @@ import { Button } from '../ui/button';
 import { useToast } from '@/hooks/use-toast';
 import GradeManagement from './grade-management';
 import { MonthSelector } from './month-selector';
-import { calculateFinalAmount, mockUsers, mockEmployees, getPositionSortValue } from '@/lib/data';
+import { calculateFinalAmount, getPositionSortValue } from '@/lib/data';
 import * as XLSX from 'xlsx';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
 import { Progress } from '../ui/progress';
@@ -47,6 +47,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/colla
 
 interface AdminDashboardProps {
   results: EvaluationResult[];
+  allEmployees: Employee[];
   onEmployeeUpload: (year: number, month: number, employees: Employee[]) => void;
   onEvaluationUpload: (year: number, month: number, evaluations: (Pick<Evaluation, 'employeeId' | 'grade' | 'memo'> & { baseAmount?: number | undefined })[]) => void;
   gradingScale: Record<NonNullable<Grade>, GradeInfo>;
@@ -64,6 +65,7 @@ type SortConfig = {
 
 export default function AdminDashboard({ 
   results: initialResults, 
+  allEmployees,
   onEmployeeUpload,
   onEvaluationUpload,
   gradingScale, 
@@ -106,44 +108,40 @@ export default function AdminDashboard({
   }));
   
   const evaluatorStats = React.useMemo(() => {
-    const statsById: Record<string, { total: number; completed: number; evaluatorName: string; evaluatorUniqueId: string }> = {};
+    const statsByUniqueId: Record<string, { total: number; completed: number; evaluatorName: string; }> = {};
 
     initialResults.forEach(r => {
       if (!r.evaluatorId) return;
 
       const id = r.evaluatorId;
-      const name = r.evaluatorName || '미지정';
-
-      if (!statsById[id]) {
-        const evaluatorUser = mockUsers.find(u => u.id === id);
-        const evaluatorEmployee = evaluatorUser ? mockEmployees.find(e => e.id === evaluatorUser.employeeId) : null;
-        const uniqueId = evaluatorEmployee ? evaluatorEmployee.uniqueId : 'N/A';
-        statsById[id] = { total: 0, completed: 0, evaluatorName: name, evaluatorUniqueId: uniqueId };
+      
+      if (!statsByUniqueId[id]) {
+        const evaluatorEmployee = allEmployees.find(e => e.uniqueId === id);
+        statsByUniqueId[id] = { total: 0, completed: 0, evaluatorName: evaluatorEmployee?.name || `ID: ${id}` };
       }
-      statsById[id].total++;
+      statsByUniqueId[id].total++;
       if (r.grade) {
-        statsById[id].completed++;
+        statsByUniqueId[id].completed++;
       }
     });
 
-    return Object.entries(statsById).map(([id, data]) => ({
-      evaluatorId: id,
-      evaluatorUniqueId: data.evaluatorUniqueId,
+    return Object.entries(statsByUniqueId).map(([id, data]) => ({
+      evaluatorUniqueId: id,
       evaluatorName: data.evaluatorName,
       total: data.total,
       completed: data.completed,
       pending: data.total - data.completed,
       rate: data.total > 0 ? (data.completed / data.total) * 100 : 0,
     })).sort((a, b) => a.evaluatorName.localeCompare(b.evaluatorName));
-  }, [initialResults]);
+  }, [initialResults, allEmployees]);
   
   const isAllEvaluatorsSelected = evaluatorStats.length > 0 && selectedEvaluators.size === evaluatorStats.length;
   const isIndeterminateEvaluatorSelection = selectedEvaluators.size > 0 && !isAllEvaluatorsSelected;
 
   const selectedEvaluator = React.useMemo(() => {
     if (!selectedEvaluatorId) return null;
-    return mockUsers.find(u => u.id === selectedEvaluatorId) || null;
-  }, [selectedEvaluatorId]);
+    return allEmployees.find(u => u.uniqueId === selectedEvaluatorId) || null;
+  }, [selectedEvaluatorId, allEmployees]);
 
   const sortedVisibleResults = React.useMemo(() => {
     let sortableItems = [...visibleResults];
@@ -194,7 +192,7 @@ export default function AdminDashboard({
 
   const handleSelectAllEvaluators = (checked: boolean) => {
     if (checked) {
-      const allEvaluatorIds = new Set(evaluatorStats.map(s => s.evaluatorId));
+      const allEvaluatorIds = new Set(evaluatorStats.map(s => s.evaluatorUniqueId));
       setSelectedEvaluators(allEvaluatorIds);
     } else {
       setSelectedEvaluators(new Set());
@@ -214,7 +212,7 @@ export default function AdminDashboard({
   const handleSelectIncompleteEvaluators = () => {
     const incompleteEvaluatorIds = evaluatorStats
       .filter(stat => stat.rate < 100)
-      .map(stat => stat.evaluatorId);
+      .map(stat => stat.evaluatorUniqueId);
     setSelectedEvaluators(new Set(incompleteEvaluatorIds));
     if (incompleteEvaluatorIds.length > 0) {
       toast({
@@ -237,7 +235,7 @@ export default function AdminDashboard({
   const handleSendNotifications = () => {
     const monthYearString = `${selectedDate.year}년 ${selectedDate.month}월`;
     selectedEvaluators.forEach(evaluatorId => {
-        const stat = evaluatorStats.find(s => s.evaluatorId === evaluatorId);
+        const stat = evaluatorStats.find(s => s.evaluatorUniqueId === evaluatorId);
         if (stat) {
             const message = notificationMessage
                 .replace(/<평가자이름>/g, stat.evaluatorName)
@@ -389,11 +387,11 @@ export default function AdminDashboard({
                           </TableHeader>
                           <TableBody>
                             {evaluatorStats.map(stat => (
-                              <TableRow key={stat.evaluatorId}>
+                              <TableRow key={stat.evaluatorUniqueId}>
                                 <TableCell>
                                   <Checkbox
-                                    checked={selectedEvaluators.has(stat.evaluatorId)}
-                                    onCheckedChange={(checked) => handleSelectEvaluator(stat.evaluatorId, Boolean(checked))}
+                                    checked={selectedEvaluators.has(stat.evaluatorUniqueId)}
+                                    onCheckedChange={(checked) => handleSelectEvaluator(stat.evaluatorUniqueId, Boolean(checked))}
                                     aria-label={`${stat.evaluatorName} 선택`}
                                   />
                                 </TableCell>
@@ -557,7 +555,7 @@ export default function AdminDashboard({
                                 </SelectTrigger>
                                 <SelectContent>
                                     {evaluatorStats.map(stat => (
-                                        <SelectItem key={stat.evaluatorId} value={stat.evaluatorId}>
+                                        <SelectItem key={stat.evaluatorUniqueId} value={stat.evaluatorUniqueId}>
                                             {stat.evaluatorUniqueId} {stat.evaluatorName}
                                         </SelectItem>
                                     ))}
@@ -569,7 +567,7 @@ export default function AdminDashboard({
                     {selectedEvaluator ? (
                         <EvaluatorDashboard
                             allResults={initialResults}
-                            currentMonthResults={results.filter(r => r.evaluatorId === selectedEvaluator.id)}
+                            currentMonthResults={results.filter(r => r.evaluatorId === selectedEvaluator?.uniqueId)}
                             gradingScale={gradingScale}
                             selectedDate={selectedDate}
                             setSelectedDate={setSelectedDate} 
@@ -589,7 +587,7 @@ export default function AdminDashboard({
         case 'file-upload':
             return <ManageData onEmployeeUpload={onEmployeeUpload} onEvaluationUpload={onEvaluationUpload} results={initialResults} />;
         case 'evaluator-management':
-            return <EvaluatorManagement results={initialResults} handleResultsUpdate={handleResultsUpdate} />;
+            return <EvaluatorManagement results={initialResults} allEmployees={allEmployees} handleResultsUpdate={handleResultsUpdate} />;
         case 'grade-management':
             return <GradeManagement gradingScale={gradingScale} setGradingScale={setGradingScale} />;
         case 'consistency-check':

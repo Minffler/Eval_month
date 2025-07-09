@@ -2,8 +2,10 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import type { User, Role } from '@/lib/types';
-import { mockUsers, mockEmployees } from '@/lib/data';
+import type { User, Role, Employee } from '@/lib/types';
+import { mockEmployees } from '@/lib/data';
+
+const EMPLOYEES_STORAGE_KEY = 'pl_eval_employees';
 
 interface AuthContextType {
   user: User | null;
@@ -15,6 +17,23 @@ interface AuthContextType {
 }
 
 const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
+
+const getAllEmployeesFromStorage = (): Employee[] => {
+    if (typeof window === 'undefined') {
+        return mockEmployees;
+    }
+    try {
+        const storedData = localStorage.getItem(EMPLOYEES_STORAGE_KEY);
+        if (storedData) {
+            const parsedData = JSON.parse(storedData);
+            // Data is stored as Record<string, Employee[]>, so we flatten it
+            return Object.values(parsedData).flat();
+        }
+        return mockEmployees;
+    } catch {
+        return mockEmployees;
+    }
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = React.useState<User | null>(null);
@@ -42,16 +61,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async (uniqueId: string, pass: string): Promise<boolean> => {
       if (uniqueId !== pass) return false;
 
-      const employee = mockEmployees.find((e) => e.uniqueId === uniqueId);
+      const allEmployees = getAllEmployeesFromStorage();
+      const employee = allEmployees.find((e) => e.uniqueId === uniqueId);
+      
       if (!employee) return false;
 
-      const foundUser = mockUsers.find((u) => u.employeeId === employee.id);
-      if (!foundUser) return false;
+      // Determine roles dynamically
+      const roles: Role[] = ['employee'];
+      const evaluatorUniqueIds = new Set(allEmployees.map(e => e.evaluatorId).filter(Boolean));
+      
+      if (evaluatorUniqueIds.has(uniqueId)) {
+          roles.push('evaluator');
+      }
+      if (uniqueId === '1911042') { // Special case for admin
+          if (!roles.includes('admin')) {
+            roles.push('admin');
+          }
+      }
+      
+      const userToLogin: User = {
+        id: `user-from-${employee.id}`,
+        employeeId: employee.id,
+        uniqueId: employee.uniqueId,
+        name: employee.name,
+        roles: roles.reverse(), // admin/evaluator preferred as default
+        avatar: `https://placehold.co/100x100.png?text=${employee.name.charAt(0)}`,
+        title: employee.title,
+        department: employee.department,
+      };
 
-      setUser(foundUser);
-      setRole(foundUser.roles[0]);
-      localStorage.setItem('pl-eval-user', JSON.stringify(foundUser));
-      // No need to push, the page component will react to the state change
+      setUser(userToLogin);
+      setRole(userToLogin.roles[0]);
+      localStorage.setItem('pl-eval-user', JSON.stringify(userToLogin));
       return true;
     },
     []

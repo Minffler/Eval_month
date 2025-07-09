@@ -3,6 +3,7 @@ export type Role = 'admin' | 'evaluator' | 'employee' | null;
 export type User = {
   id: string;
   employeeId: string;
+  uniqueId: string;
   name: string;
   roles: Role[];
   avatar: string;
@@ -22,7 +23,7 @@ export type Employee = {
   position: string; // 호칭
   growthLevel: string; // 성장레벨
   workRate: number; // 근무율
-  evaluatorId: string; // 평가자사번
+  evaluatorId: string; // 평가자 고유사번
   baseAmount: number; // 개인별 기준금액
   group: string; // 평가그룹
 };

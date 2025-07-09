@@ -12,40 +12,28 @@ export const gradingScale: Record<NonNullable<Grade>, GradeInfo> = {
   D: { score: 0, payoutRate: 0, description: '미흡' },
 };
 
-export const mockUsers: User[] = [
-  { id: 'user-1', employeeId: 'E001', name: '김관리', roles: ['admin'], avatar: 'https://placehold.co/100x100.png', title: '팀장', department: '인사팀' },
-  { id: 'user-2', employeeId: 'E002', name: '박평가', roles: ['evaluator', 'employee'], avatar: 'https://placehold.co/100x100.png', title: '팀장', department: '제품 개발' },
-  { id: 'user-3', employeeId: 'E003', name: '이주임', roles: ['employee'], avatar: 'https://placehold.co/100x100.png', title: '팀원', department: '제품 개발' },
-  { id: 'user-4', employeeId: 'E004', name: '최사원', roles: ['employee'], avatar: 'https://placehold.co/100x100.png', title: '팀원', department: '제품 개발' },
-  { id: 'user-5', employeeId: 'E005', name: '정대리', roles: ['employee'], avatar: 'https://placehold.co/100x100.png', title: '팀원', department: '디자인' },
-  { id: 'user-6', employeeId: 'E006', name: '윤과장', roles: ['evaluator', 'employee'], avatar: 'https://placehold.co/100x100.png', title: '팀원', department: '마케팅' },
-  { id: 'user-7', employeeId: 'E007', name: '오차장', roles: ['employee'], avatar: 'https://placehold.co/100x100.png', title: '팀원', department: 'QA' },
-  { id: 'user-8', employeeId: 'E008', name: '강부장', roles: ['employee'], avatar: 'https://placehold.co/100x100.png', title: '팀원', department: '영업' },
-  { id: 'user-9', employeeId: 'E009', name: '한센터', roles: ['evaluator', 'employee'], avatar: 'https://placehold.co/100x100.png', title: '센터장', department: '고객센터' },
-];
-
 export const mockEmployees: Employee[] = [
-  { id: 'E001', uniqueId: '1911042', name: '김관리', company: 'OK', department: '인사팀', title: '팀장', position: '팀장', growthLevel: 'Lv.5', workRate: 1.0, group: '지점장/팀장', evaluatorId: 'user-1', baseAmount: 8000000 },
-  { id: 'E002', uniqueId: '0000002', name: '박평가', company: 'OK', department: '제품 개발', title: '팀장', position: '팀장', growthLevel: 'Lv.4', workRate: 1.0, group: '지점장/팀장', evaluatorId: 'user-1', baseAmount: 7500000 },
-  { id: 'E003', uniqueId: '0000003', name: '이주임', company: 'OK', department: '제품 개발', title: '팀원', position: '팀원', growthLevel: 'Lv.2', workRate: 0.95, group: 'Lv.2~3', evaluatorId: 'user-2', baseAmount: 5000000 },
-  { id: 'E004', uniqueId: '0000004', name: '최사원', company: 'OC', department: '제품 개발', title: '팀원', position: '팀원', growthLevel: 'Lv.1', workRate: 1.0, group: 'Lv.1', evaluatorId: 'user-2', baseAmount: 4500000 },
-  { id: 'E005', uniqueId: '0000005', name: '정대리', company: 'OCI', department: '디자인', title: '팀원', position: '팀원', growthLevel: 'Lv.3', workRate: 0.86, group: 'Lv.2~3', evaluatorId: 'user-2', baseAmount: 5500000 },
-  { id: 'E006', uniqueId: '0000006', name: '윤과장', company: 'OFI', department: '마케팅', title: '팀원', position: '팀원', growthLevel: 'Lv.4', workRate: 0.76, group: 'Lv.2~3', evaluatorId: 'user-6', baseAmount: 6500000 },
-  { id: 'E007', uniqueId: '0000007', name: '오차장', company: 'EX', department: 'QA', title: '팀원', position: '팀원', growthLevel: 'Lv.3', workRate: 0.52, group: 'Lv.2~3', evaluatorId: 'user-2', baseAmount: 6000000 },
-  { id: 'E008', uniqueId: '0000008', name: '강부장', company: 'OKDS', department: '영업', title: '팀원', position: '팀원', growthLevel: 'Lv.5', workRate: 0.11, group: '별도평가', evaluatorId: 'user-1', baseAmount: 7000000 },
-  { id: 'E009', uniqueId: '0000009', name: '한센터', company: 'OK', department: '고객센터', title: '센터장', position: '센터장', growthLevel: 'Lv.5', workRate: 1.0, group: '센터장/지부장', evaluatorId: 'user-9', baseAmount: 7800000 },
+  { id: 'E1911042', uniqueId: '1911042', name: '김관리', company: 'OK', department: '인사팀', title: '팀장', position: '팀장', growthLevel: 'Lv.5', workRate: 1.0, group: '지점장/팀장', evaluatorId: '1911042', baseAmount: 8000000 },
+  { id: 'E0000002', uniqueId: '0000002', name: '박평가', company: 'OK', department: '제품 개발', title: '팀장', position: '팀장', growthLevel: 'Lv.4', workRate: 1.0, group: '지점장/팀장', evaluatorId: '1911042', baseAmount: 7500000 },
+  { id: 'E0000003', uniqueId: '0000003', name: '이주임', company: 'OK', department: '제품 개발', title: '팀원', position: '팀원', growthLevel: 'Lv.2', workRate: 0.95, group: 'Lv.2~3', evaluatorId: '0000002', baseAmount: 5000000 },
+  { id: 'E0000004', uniqueId: '0000004', name: '최사원', company: 'OC', department: '제품 개발', title: '팀원', position: '팀원', growthLevel: 'Lv.1', workRate: 1.0, group: 'Lv.1', evaluatorId: '0000002', baseAmount: 4500000 },
+  { id: 'E0000005', uniqueId: '0000005', name: '정대리', company: 'OCI', department: '디자인', title: '팀원', position: '팀원', growthLevel: 'Lv.3', workRate: 0.86, group: 'Lv.2~3', evaluatorId: '0000002', baseAmount: 5500000 },
+  { id: 'E0000006', uniqueId: '0000006', name: '윤과장', company: 'OFI', department: '마케팅', title: '팀원', position: '팀원', growthLevel: 'Lv.4', workRate: 0.76, group: 'Lv.2~3', evaluatorId: '0000006', baseAmount: 6500000 },
+  { id: 'E0000007', uniqueId: '0000007', name: '오차장', company: 'EX', department: 'QA', title: '팀원', position: '팀원', growthLevel: 'Lv.3', workRate: 0.52, group: 'Lv.2~3', evaluatorId: '0000002', baseAmount: 6000000 },
+  { id: 'E0000008', uniqueId: '0000008', name: '강부장', company: 'OKDS', department: '영업', title: '팀원', position: '팀원', growthLevel: 'Lv.5', workRate: 0.11, group: '별도평가', evaluatorId: '1911042', baseAmount: 7000000 },
+  { id: 'E0000009', uniqueId: '0000009', name: '한센터', company: 'OK', department: '고객센터', title: '센터장', position: '센터장', growthLevel: 'Lv.5', workRate: 1.0, group: '센터장/지부장', evaluatorId: '0000009', baseAmount: 7800000 },
 ];
 
 export const mockEvaluations: Evaluation[] = [
-  { id: 'eval-1', employeeId: 'E003', year: 2025, month: 7, grade: 'A+', memo: '프로젝트 기여도 높음' },
-  { id: 'eval-2', employeeId: 'E004', year: 2025, month: 7, grade: 'B+' },
-  { id: 'eval-3', employeeId: 'E005', year: 2025, month: 7, grade: 'B', memo: '마감일 준수' },
-  { id: 'eval-4', employeeId: 'E006', year: 2025, month: 7, grade: 'A' },
-  { id: 'eval-5', employeeId: 'E007', year: 2025, month: 7, grade: 'B-' },
-  { id: 'eval-6', employeeId: 'E008', year: 2025, month: 7, grade: 'C' },
-  { id: 'eval-7', employeeId: 'E001', year: 2025, month: 7, grade: 'S' },
-  { id: 'eval-8', employeeId: 'E002', year: 2025, month: 7, grade: 'A' },
-  { id: 'eval-9', employeeId: 'E009', year: 2025, month: 7, grade: 'A' },
+  { id: 'eval-1', employeeId: 'E0000003', year: 2025, month: 7, grade: 'A+', memo: '프로젝트 기여도 높음' },
+  { id: 'eval-2', employeeId: 'E0000004', year: 2025, month: 7, grade: 'B+' },
+  { id: 'eval-3', employeeId: 'E0000005', year: 2025, month: 7, grade: 'B', memo: '마감일 준수' },
+  { id: 'eval-4', employeeId: 'E0000006', year: 2025, month: 7, grade: 'A' },
+  { id: 'eval-5', employeeId: 'E0000007', year: 2025, month: 7, grade: 'B-' },
+  { id: 'eval-6', employeeId: 'E0000008', year: 2025, month: 7, grade: 'C' },
+  { id: 'eval-7', employeeId: 'E1911042', year: 2025, month: 7, grade: 'S' },
+  { id: 'eval-8', employeeId: 'E0000002', year: 2025, month: 7, grade: 'A' },
+  { id: 'eval-9', employeeId: 'E0000009', year: 2025, month: 7, grade: 'A' },
 ];
 
 export const calculateFinalAmount = (gradeAmount: number, workRate: number): number => {

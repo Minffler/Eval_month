@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useAuth } from '@/contexts/auth-context';
-import type { EvaluationResult, Grade, GradeInfo, EvaluationGroupCategory, User, EvaluatorView } from '@/lib/types';
+import type { EvaluationResult, Grade, GradeInfo, EvaluationGroupCategory, User, EvaluatorView, Employee } from '@/lib/types';
 import {
   DndContext,
   closestCenter,
@@ -64,7 +64,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '../ui/label';
 import { ScrollArea } from '../ui/scroll-area';
-import { getPositionSortValue, mockUsers, mockEmployees } from '@/lib/data';
+import { getPositionSortValue } from '@/lib/data';
 
 interface EvaluatorDashboardProps {
   allResults: EvaluationResult[];
@@ -73,7 +73,7 @@ interface EvaluatorDashboardProps {
   selectedDate: { year: number; month: number };
   setSelectedDate: (date: { year: number; month: number }) => void;
   handleResultsUpdate: (updatedResults: EvaluationResult[]) => void;
-  evaluatorUser?: User;
+  evaluatorUser?: Employee | null;
   activeView: EvaluatorView;
 }
 
@@ -601,7 +601,7 @@ const AllResultsView = ({ allResults, gradingScale }: {
               </TableRow></TableHeader>
               <TableBody>
                 {sortedFilteredResults.length > 0 ? sortedFilteredResults.sort((a,b) => b.month - a.month).map(result => (
-                  <TableRow key={`${result.year}-${result.month}`}>
+                  <TableRow key={`${result.year}-${result.month}-${result.id}`}>
                     <TableCell>{result.year}년 {result.month}월</TableCell>
                     <TableCell>{result.company}</TableCell>
                     <TableCell>{result.department}</TableCell>
@@ -625,13 +625,14 @@ const AllResultsView = ({ allResults, gradingScale }: {
 interface AssignmentManagementViewProps {
   myEmployees: EvaluationResult[];
   currentMonthResults: EvaluationResult[];
+  allEmployees: Employee[];
   handleResultsUpdate: (updatedResults: EvaluationResult[]) => void;
   evaluatorId: string;
   evaluatorName: string;
 }
 
 
-const AssignmentManagementView = ({ myEmployees, currentMonthResults, handleResultsUpdate, evaluatorId, evaluatorName }: AssignmentManagementViewProps) => {
+const AssignmentManagementView = ({ myEmployees, currentMonthResults, allEmployees, handleResultsUpdate, evaluatorId, evaluatorName }: AssignmentManagementViewProps) => {
   const { toast } = useToast();
   
   const [company, setCompany] = React.useState('');
@@ -682,15 +683,14 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, handleResu
     }
     
     const firstMember = targetEmployees[0];
-    const currentEvaluator = firstMember.evaluatorId ? mockUsers.find(u => u.id === firstMember.evaluatorId) : null;
-    const currentEvaluatorEmployee = currentEvaluator ? mockEmployees.find(e => e.id === currentEvaluator.employeeId) : null;
+    const currentEvaluator = allEmployees.find(e => e.uniqueId === firstMember.evaluatorId);
     
     setGroupToChange({
       company,
       department: trimmedDepartment,
       position,
       currentEvaluatorName: currentEvaluator?.name || '미지정',
-      currentEvaluatorUniqueId: currentEvaluatorEmployee?.uniqueId || 'N/A',
+      currentEvaluatorUniqueId: currentEvaluator?.uniqueId || 'N/A',
       memberCount: targetEmployees.length,
     });
     setIsConfirmDialogOpen(true);
@@ -699,8 +699,7 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, handleResu
   const handleConfirmChange = () => {
     if (!groupToChange) return;
     
-    const currentEvaluatorUser = mockUsers.find(u => u.name === groupToChange.currentEvaluatorName);
-    if (currentEvaluatorUser?.id === evaluatorId) {
+    if (groupToChange.currentEvaluatorUniqueId === evaluatorId) {
         toast({ title: '정보', description: '이미 담당하고 있는 소속입니다.' });
         setIsConfirmDialogOpen(false);
         setGroupToChange(null);
@@ -709,7 +708,7 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, handleResu
 
     const updatedResults = currentMonthResults.map(res => {
       if (res.company === groupToChange.company && res.department === groupToChange.department && res.position === groupToChange.position) {
-        return { ...res, evaluatorId, evaluatorName };
+        return { ...res, evaluatorId: evaluatorId, evaluatorName: evaluatorName };
       }
       return res;
     });
@@ -732,7 +731,7 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, handleResu
     const [company, department, position] = groupKey.split('|');
     const updatedResults = currentMonthResults.map(res => {
       if (res.evaluatorId === evaluatorId && res.company === company && res.department === department && res.position === position) {
-        return { ...res, evaluatorId: '', evaluatorName: 'N/A' };
+        return { ...res, evaluatorId: '', evaluatorName: '미지정' };
       }
       return res;
     });
@@ -802,19 +801,38 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, handleResu
 
 export default function EvaluatorDashboard({ allResults, currentMonthResults, gradingScale, selectedDate, setSelectedDate, handleResultsUpdate, evaluatorUser, activeView }: EvaluatorDashboardProps) {
   const { user: authUser } = useAuth();
-  const user = evaluatorUser || authUser;
+  const [effectiveUser, setEffectiveUser] = React.useState<User | null>(null);
+
+  React.useEffect(() => {
+    if (evaluatorUser) { // This is an Employee object from Admin view
+        // Construct a User object from the Employee object to use consistently
+        const constructedUser: User = {
+            id: `user-from-${evaluatorUser.id}`,
+            employeeId: evaluatorUser.id,
+            uniqueId: evaluatorUser.uniqueId,
+            name: evaluatorUser.name,
+            roles: ['evaluator', 'employee'], // Assume roles for simplicity in this view
+            avatar: 'https://placehold.co/100x100.png',
+            title: evaluatorUser.title,
+            department: evaluatorUser.department,
+        };
+        setEffectiveUser(constructedUser);
+    } else {
+        setEffectiveUser(authUser);
+    }
+  }, [evaluatorUser, authUser]);
   
   const myEmployees = React.useMemo(() => {
-    if (!user) return [];
-    return currentMonthResults.filter(r => r.evaluatorId === user.id);
-  }, [user, currentMonthResults]);
+    if (!effectiveUser) return [];
+    return currentMonthResults.filter(r => r.evaluatorId === effectiveUser.uniqueId);
+  }, [effectiveUser, currentMonthResults]);
   
   const myAllTimeResults = React.useMemo(() => {
-    if (!user) return [];
-    return allResults.filter(r => r.evaluatorId === user.id);
-  }, [user, allResults]);
+    if (!effectiveUser) return [];
+    return allResults.filter(r => r.evaluatorId === effectiveUser.uniqueId);
+  }, [effectiveUser, allResults]);
 
-  if (!user) return <div className="p-4 md:p-6 lg:p-8">로딩중...</div>;
+  if (!effectiveUser) return <div className="p-4 md:p-6 lg:p-8">로딩중...</div>;
 
   const renderContent = () => {
     switch(activeView) {
@@ -832,10 +850,11 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
       case 'assignment-management':
         return <AssignmentManagementView 
                  myEmployees={myEmployees} 
-                 currentMonthResults={currentMonthResults} 
+                 currentMonthResults={currentMonthResults}
+                 allEmployees={allResults}
                  handleResultsUpdate={handleResultsUpdate}
-                 evaluatorId={user.id}
-                 evaluatorName={user.name}
+                 evaluatorId={effectiveUser.uniqueId}
+                 evaluatorName={effectiveUser.name}
                />;
       default:
         return <div>선택된 뷰가 없습니다.</div>;

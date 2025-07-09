@@ -25,14 +25,15 @@ import {
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import type { EvaluationResult, User } from '@/lib/types';
-import { mockUsers, getPositionSortValue } from '@/lib/data';
+import type { EvaluationResult, Employee } from '@/lib/types';
+import { getPositionSortValue } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface EvaluatorManagementProps {
   results: EvaluationResult[];
+  allEmployees: Employee[];
   handleResultsUpdate: (updatedResults: EvaluationResult[]) => void;
 }
 
@@ -43,6 +44,7 @@ type SortConfig = {
 
 export default function EvaluatorManagement({
   results,
+  allEmployees,
   handleResultsUpdate,
 }: EvaluatorManagementProps) {
   const [filteredResults, setFilteredResults] = React.useState(results);
@@ -55,6 +57,11 @@ export default function EvaluatorManagement({
   const [currentGroupEvaluator, setCurrentGroupEvaluator] = React.useState<string>('필터를 선택하세요');
   const { toast } = useToast();
 
+  const evaluators = React.useMemo(() => {
+    const evaluatorUniqueIds = new Set(allEmployees.map(e => e.evaluatorId).filter(Boolean));
+    return allEmployees.filter(e => evaluatorUniqueIds.has(e.uniqueId));
+  }, [allEmployees]);
+  
   React.useEffect(() => {
     let newFilteredResults = [...results];
 
@@ -116,39 +123,41 @@ export default function EvaluatorManagement({
   const allCompanies = ['all', ...Array.from(new Set(results.map((r) => r.company)))];
   const allDepartments = ['all', ...Array.from(new Set(results.map((r) => r.department)))];
   const allTitles = ['all', '지부장', '센터장', '팀장', '지점장', '팀원'];
-  const evaluators = mockUsers.filter(u => u.roles.includes('evaluator'));
-
+  
   const evaluatorDeptStrings = React.useMemo(() => {
     const deptsByEvaluator: Record<string, Record<string, number>> = {};
-    for (const r of results) {
+    for (const r of allEmployees) {
         if (r.evaluatorId) {
-            if (!deptsByEvaluator[r.evaluatorId]) {
-                deptsByEvaluator[r.evaluatorId] = {};
+            const evaluator = allEmployees.find(e => e.uniqueId === r.evaluatorId);
+            if(evaluator) {
+              if (!deptsByEvaluator[evaluator.uniqueId]) {
+                  deptsByEvaluator[evaluator.uniqueId] = {};
+              }
+              const dept = r.department || '미지정';
+              deptsByEvaluator[evaluator.uniqueId][dept] = (deptsByEvaluator[evaluator.uniqueId][dept] || 0) + 1;
             }
-            const dept = r.department || '미지정';
-            deptsByEvaluator[r.evaluatorId][dept] = (deptsByEvaluator[r.evaluatorId][dept] || 0) + 1;
         }
     }
     
     const deptStrings: Record<string, string> = {};
-    for (const evaluatorId of evaluators.map(e => e.id)) {
-        const depts = deptsByEvaluator[evaluatorId];
+    for (const evaluator of evaluators) {
+        const depts = deptsByEvaluator[evaluator.uniqueId];
         if (depts) {
           const sortedDeptNames = Object.entries(depts)
               .sort(([, countA], [, countB]) => countB - countA)
               .map(([deptName]) => deptName);
 
           if (sortedDeptNames.length > 0) {
-              deptStrings[evaluatorId] = `(${sortedDeptNames.slice(0, 2).join(', ')}${sortedDeptNames.length > 2 ? ', ...' : ''})`;
+              deptStrings[evaluator.uniqueId] = `(${sortedDeptNames.slice(0, 2).join(', ')}${sortedDeptNames.length > 2 ? ', ...' : ''})`;
           } else {
-              deptStrings[evaluatorId] = '';
+              deptStrings[evaluator.uniqueId] = '';
           }
         } else {
-          deptStrings[evaluatorId] = '';
+          deptStrings[evaluator.uniqueId] = '';
         }
     }
     return deptStrings;
-}, [results, evaluators]);
+}, [allEmployees, evaluators]);
 
   const requestSort = (key: keyof EvaluationResult) => {
     let direction: 'ascending' | 'descending' = 'ascending';
@@ -181,8 +190,8 @@ export default function EvaluatorManagement({
   const handleEvaluatorChange = (employeeId: string, newEvaluatorId: string) => {
     const updatedResults = results.map((r) => {
       if (r.id === employeeId) {
-        const evaluator = mockUsers.find(u => u.id === newEvaluatorId);
-        return { ...r, evaluatorId: newEvaluatorId, evaluatorName: evaluator?.name || 'N/A' };
+        const evaluator = allEmployees.find(u => u.uniqueId === newEvaluatorId);
+        return { ...r, evaluatorId: newEvaluatorId, evaluatorName: evaluator?.name || '미지정' };
       }
       return r;
     });
@@ -200,8 +209,8 @@ export default function EvaluatorManagement({
     }
     const updatedResults = results.map(r => {
       if (selectedIds.has(r.id)) {
-        const evaluator = mockUsers.find(u => u.id === bulkEvaluatorId);
-        return { ...r, evaluatorId: bulkEvaluatorId, evaluatorName: evaluator?.name || 'N/A' };
+        const evaluator = allEmployees.find(u => u.uniqueId === bulkEvaluatorId);
+        return { ...r, evaluatorId: bulkEvaluatorId, evaluatorName: evaluator?.name || '미지정' };
       }
       return r;
     });
@@ -242,8 +251,8 @@ export default function EvaluatorManagement({
               <SelectTrigger className="w-full sm:w-[250px]"><SelectValue placeholder="평가자 선택" /></SelectTrigger>
               <SelectContent>
                 {evaluators.map((evaluator) => { 
-                    const deptString = evaluatorDeptStrings[evaluator.id] || ''; 
-                    return (<SelectItem key={evaluator.id} value={evaluator.id}>{evaluator.name} {deptString}</SelectItem>);
+                    const deptString = evaluatorDeptStrings[evaluator.uniqueId] || ''; 
+                    return (<SelectItem key={evaluator.uniqueId} value={evaluator.uniqueId}>{evaluator.name} {deptString}</SelectItem>);
                 })}
               </SelectContent>
             </Select>
@@ -274,7 +283,7 @@ export default function EvaluatorManagement({
                     <TableCell>
                       <Select value={result.evaluatorId} onValueChange={(newEvaluatorId) => handleEvaluatorChange(result.id, newEvaluatorId)}>
                         <SelectTrigger className="w-[180px]"><SelectValue placeholder="평가자 선택" /></SelectTrigger>
-                        <SelectContent>{evaluators.map((evaluator) => (<SelectItem key={evaluator.id} value={evaluator.id}>{evaluator.name}</SelectItem>))}</SelectContent>
+                        <SelectContent>{evaluators.map((evaluator) => (<SelectItem key={evaluator.uniqueId} value={evaluator.uniqueId}>{evaluator.name}</SelectItem>))}</SelectContent>
                       </Select>
                     </TableCell>
                   </TableRow>

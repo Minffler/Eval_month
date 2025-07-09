@@ -52,8 +52,8 @@ export default function ManageData({ onEmployeeUpload, onEvaluationUpload, resul
               name: String(row['이름'] || ''),
               company: String(row['회사'] || ''),
               department: String(row['소속부서'] || ''),
-              title: String(row['직책'] || ''),
-              position: String(row['호칭'] || ''),
+              title: String(row['직책'] || '팀원'),
+              position: String(row['직책'] || '팀원'),
               growthLevel: String(row['성장레벨'] || ''),
               workRate: parseFloat(String(row['실근무율'] || '0')) || 0,
               evaluatorId: String(row['평가자사번'] || ''),
@@ -133,39 +133,35 @@ export default function ManageData({ onEmployeeUpload, onEvaluationUpload, resul
   const handleDownloadBaseTemplate = () => {
     const dataForSheet = results.map(r => ({
         '고유사번': r.uniqueId,
-        '사번': r.id,
         '이름': r.name,
         '회사': r.company,
         '소속부서': r.department,
-        '호칭': r.position,
         '직책': r.title,
         '성장레벨': r.growthLevel,
         '실근무율': r.workRate,
         '평가그룹': r.group,
         '평가자사번': r.evaluatorId,
-        '평가자이름': r.evaluatorName,
         '개인별 기준금액': r.baseAmount,
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(dataForSheet.length > 0 ? dataForSheet : [{}], {
         header: [
-            '고유사번', '사번', '이름', '회사', '소속부서', '호칭', '직책', '성장레벨', 
-            '실근무율', '평가그룹', '평가자사번', '평가자이름', '개인별 기준금액'
+            '고유사번', '이름', '회사', '소속부서', '직책', '성장레벨', 
+            '실근무율', '평가그룹', '평가자사번', '개인별 기준금액'
         ]
     });
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, '대상자 양식');
-    XLSX.writeFile(workbook, 'evaluation_base_template.xlsx');
+    const fileName = `${selectedDate.year}.${String(selectedDate.month).padStart(2,'0')}_월성과대상자.xlsx`;
+    XLSX.writeFile(workbook, fileName);
   };
 
   const handleDownloadEvalTemplate = () => {
     const dataForSheet = results.map(r => ({
         '고유사번': r.uniqueId,
-        '사번': r.id,
         '이름': r.name,
         '회사': r.company,
         '소속부서': r.department,
-        '호칭': r.position,
         '직책': r.title,
         '성장레벨': r.growthLevel,
         '실근무율': r.workRate,
@@ -177,21 +173,21 @@ export default function ManageData({ onEmployeeUpload, onEvaluationUpload, resul
         '점수': r.score,
         '등급': r.grade,
         '기준금액': r.baseAmount,
-        '등급금액': r.gradeAmount,
         '최종금액': r.finalAmount,
         '비고': r.memo,
     }));
 
     const headers = [
-        '고유사번', '사번', '이름', '회사', '소속부서', '호칭', '직책', '성장레벨', 
+        '고유사번', '이름', '회사', '소속부서', '직책', '성장레벨', 
         '실근무율', '평가그룹', '세부구분1', '세부구분2', '평가자사번', '평가자이름', 
-        '점수', '등급', '기준금액', '등급금액', '최종금액', '비고'
+        '점수', '등급', '기준금액', '최종금액', '비고'
     ];
 
     const worksheet = XLSX.utils.json_to_sheet(dataForSheet.length > 0 ? dataForSheet : [{}], { header: headers });
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, '평가데이터 양식');
-    XLSX.writeFile(workbook, 'evaluation_data_template.xlsx');
+    const fileName = `${selectedDate.year}.${String(selectedDate.month).padStart(2, '0')}_월성과데이터.xlsx`;
+    XLSX.writeFile(workbook, fileName);
   };
 
   return (

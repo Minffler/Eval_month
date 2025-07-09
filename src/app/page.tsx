@@ -7,7 +7,7 @@ import AdminDashboard from '@/components/evalmax/admin-dashboard';
 import EvaluatorDashboard from '@/components/evalmax/evaluator-dashboard';
 import EmployeeDashboard from '@/components/evalmax/employee-dashboard';
 import type { Employee, Evaluation, EvaluationResult, Grade, GradeInfo, User, EvaluatorView } from '@/lib/types';
-import { mockEmployees, gradingScale as initialGradingScale, calculateFinalAmount, mockUsers, mockEvaluations as initialMockEvaluations } from '@/lib/data';
+import { mockEmployees, gradingScale as initialGradingScale, calculateFinalAmount, mockEvaluations as initialMockEvaluations } from '@/lib/data';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { Sidebar, type NavItem } from '@/components/evalmax/sidebar';
@@ -163,6 +163,10 @@ export default function Home() {
   const dateKey = `${selectedDate.year}-${selectedDate.month}`;
   const currentMonthEmployees = employees[dateKey] || [];
   const currentMonthEvaluations = evaluations[dateKey] || [];
+  
+  const allEmployees = React.useMemo(() => {
+    return Object.values(employees).flat();
+  }, [employees]);
 
   const handleEmployeeUpload = (year: number, month: number, newEmployees: Employee[]) => {
     const key = `${year}-${month}`;
@@ -226,72 +230,50 @@ export default function Home() {
   };
 
   const handleResultsUpdate = (updatedResultsForMonth: EvaluationResult[]) => {
-      // This is now more complex because we need to update potentially multiple months
-      const allEmployeeIdsInUpdate = new Set(updatedResultsForMonth.map(r => r.id));
+    const allEmployeeIdsInUpdate = new Set(updatedResultsForMonth.map(r => r.id));
+    const currentMonthKey = `${selectedDate.year}-${selectedDate.month}`;
 
-      setEmployees(prev => {
-          const newEmployeesState = { ...prev };
-          for (const key in newEmployeesState) {
-              newEmployeesState[key] = newEmployeesState[key].map(emp => {
-                  if (allEmployeeIdsInUpdate.has(emp.id)) {
-                      const updatedData = updatedResultsForMonth.find(r => r.id === emp.id && `${r.year}-${r.month}` === key);
-                      if (updatedData) {
-                          return {
-                              ...emp,
-                              evaluatorId: updatedData.evaluatorId,
-                              // Keep other fields as they might be month-specific
-                          };
-                      }
-                  }
-                  return emp;
-              });
-          }
-          
-          const currentMonthKey = `${selectedDate.year}-${selectedDate.month}`;
-          if (newEmployeesState[currentMonthKey]) {
-             newEmployeesState[currentMonthKey] = updatedResultsForMonth.map(r => {
-                const existingEmp = newEmployeesState[currentMonthKey].find(e => e.id === r.id) || {};
-                return {
-                  ...existingEmp,
-                  id: r.id,
-                  uniqueId: r.uniqueId,
-                  name: r.name,
-                  company: r.company,
-                  department: r.department,
-                  title: r.title,
-                  position: r.position,
-                  growthLevel: r.growthLevel,
-                  workRate: r.workRate,
-                  evaluatorId: r.evaluatorId,
-                  baseAmount: r.baseAmount,
-                  group: r.detailedGroup2,
-                }
-             });
-          }
+    const updatedEmployeesByMonth = updatedResultsForMonth.reduce((acc, r) => {
+        const key = `${r.year}-${r.month}`;
+        if (!acc[key]) acc[key] = [];
 
-          return newEmployeesState;
-      });
+        const { year, month, grade, score, payoutRate, gradeAmount, finalAmount, evaluatorName, detailedGroup1, detailedGroup2, memo, ...employeeData } = r;
+        acc[key].push(employeeData);
+        return acc;
+    }, {} as Record<string, Employee[]>);
 
-      setEvaluations(prev => {
-          const newEvalsState = { ...prev };
-          const currentMonthKey = `${selectedDate.year}-${selectedDate.month}`;
+    const updatedEvaluationsByMonth = updatedResultsForMonth.reduce((acc, r) => {
+        const key = `${r.year}-${r.month}`;
+        if (!acc[key]) acc[key] = [];
+        acc[key].push({
+            id: `eval-${r.id}-${r.year}-${r.month}`,
+            employeeId: r.id,
+            year: r.year,
+            month: r.month,
+            grade: r.grade,
+            memo: r.memo
+        });
+        return acc;
+    }, {} as Record<string, Evaluation[]>);
 
-          if (newEvalsState[currentMonthKey]) {
-            newEvalsState[currentMonthKey] = updatedResultsForMonth.map(r => {
-                const existingEval = newEvalsState[currentMonthKey].find(e => e.employeeId === r.id);
-                return {
-                    id: existingEval?.id || `eval-${r.id}-${r.year}-${r.month}`,
-                    employeeId: r.id,
-                    year: r.year,
-                    month: r.month,
-                    grade: r.grade,
-                    memo: r.memo
-                };
-            });
-          }
-          return newEvalsState;
-      });
-  };
+
+    setEmployees(prev => {
+        const newState = { ...prev };
+        for(const key in updatedEmployeesByMonth) {
+            newState[key] = updatedEmployeesByMonth[key];
+        }
+        return newState;
+    });
+
+    setEvaluations(prev => {
+        const newState = { ...prev };
+        for(const key in updatedEvaluationsByMonth) {
+            newState[key] = updatedEvaluationsByMonth[key];
+        }
+        return newState;
+    });
+};
+
 
   React.useEffect(() => {
     const getDetailedGroup1 = (workRate: number): string => {
@@ -326,7 +308,7 @@ export default function Home() {
         
         const gradeAmount = (employee.baseAmount || 0) * payoutRate;
         const finalAmount = calculateFinalAmount(gradeAmount, employee.workRate);
-        const evaluator = mockUsers.find(u => u.id === employee.evaluatorId);
+        const evaluator = allEmployees.find(e => e.uniqueId === employee.evaluatorId);
 
         const detailedGroup1 = getDetailedGroup1(employee.workRate);
         const detailedGroup2 = getDetailedGroup2(employee);
@@ -340,7 +322,7 @@ export default function Home() {
           payoutRate,
           gradeAmount,
           finalAmount,
-          evaluatorName: evaluator?.name || 'N/A',
+          evaluatorName: evaluator?.name || '미지정',
           detailedGroup1,
           detailedGroup2,
           memo: evaluation?.memo || ''
@@ -349,7 +331,7 @@ export default function Home() {
     };
     
     setResults(getFullEvaluationResults(currentMonthEmployees, currentMonthEvaluations, gradingScale));
-  }, [employees, evaluations, gradingScale, selectedDate, dateKey, currentMonthEmployees, currentMonthEvaluations]);
+  }, [employees, evaluations, gradingScale, selectedDate, dateKey, currentMonthEmployees, currentMonthEvaluations, allEmployees]);
 
   const renderDashboard = () => {
     const allTimeResults = Object.keys(employees).flatMap(dateKey => {
@@ -364,7 +346,7 @@ export default function Home() {
         const payoutRate = gradeInfo ? gradeInfo.payoutRate / 100 : 0;
         const gradeAmount = (employee.baseAmount || 0) * payoutRate;
         const finalAmount = calculateFinalAmount(gradeAmount, employee.workRate);
-        const evaluator = mockUsers.find(u => u.id === employee.evaluatorId);
+        const evaluator = allEmployees.find(e => e.uniqueId === employee.evaluatorId);
         return {
           ...employee,
           year,
@@ -374,7 +356,7 @@ export default function Home() {
           payoutRate,
           gradeAmount,
           finalAmount,
-          evaluatorName: evaluator?.name || 'N/A',
+          evaluatorName: evaluator?.name || '미지정',
           detailedGroup1: '', 
           detailedGroup2: '',
         };
@@ -385,6 +367,7 @@ export default function Home() {
       case 'admin':
         return <AdminDashboard 
                   results={results}
+                  allEmployees={allEmployees}
                   onEmployeeUpload={handleEmployeeUpload}
                   onEvaluationUpload={handleEvaluationUpload}
                   gradingScale={gradingScale}
