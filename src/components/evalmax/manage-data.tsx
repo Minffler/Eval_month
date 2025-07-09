@@ -141,13 +141,14 @@ export default function ManageData({ onEmployeeUpload, onEvaluationUpload, resul
         '실근무율': r.workRate,
         '평가그룹': r.group,
         '평가자사번': r.evaluatorId,
+        '평가자이름': r.evaluatorName,
         '개인별 기준금액': r.baseAmount,
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(dataForSheet.length > 0 ? dataForSheet : [{}], {
         header: [
             '고유사번', '이름', '회사', '소속부서', '직책', '성장레벨', 
-            '실근무율', '평가그룹', '평가자사번', '개인별 기준금액'
+            '실근무율', '평가그룹', '평가자사번', '평가자이름', '개인별 기준금액'
         ]
     });
     const workbook = XLSX.utils.book_new();

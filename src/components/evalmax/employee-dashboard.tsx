@@ -6,8 +6,14 @@ import type { EvaluationResult, Grade, GradeInfo } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronUp } from 'lucide-react';
 import { GradeHistogram } from './grade-histogram';
+import { Button } from '@/components/ui/button';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 
 interface EmployeeDashboardProps {
   allResults: EvaluationResult[];
@@ -24,6 +30,7 @@ export default function EmployeeDashboard({ allResults, gradingScale }: Employee
   const [selectedYear, setSelectedYear] = React.useState(new Date().getFullYear().toString());
   const [employeeResults, setEmployeeResults] = React.useState<EvaluationResult[]>([]);
   const [sortConfig, setSortConfig] = React.useState<SortConfig>(null);
+  const [isChartOpen, setIsChartOpen] = React.useState(true);
 
   React.useEffect(() => {
     if (user) {
@@ -88,17 +95,18 @@ export default function EmployeeDashboard({ allResults, gradingScale }: Employee
   };
 
   const gradeDistribution = React.useMemo(() => {
-      if (!filteredResults) return [];
+    const counts = filteredResults.reduce((acc, result) => {
+        if (result.grade) {
+            acc[result.grade] = (acc[result.grade] || 0) + 1;
+        }
+        return acc;
+    }, {} as Record<string, number>);
 
-      const counts = filteredResults.reduce((acc, result) => {
-          if (result.grade) {
-              acc[result.grade] = (acc[result.grade] || 0) + 1;
-          }
-          return acc;
-      }, {} as Record<string, number>);
-
-      return Object.entries(counts).map(([name, value]) => ({ name, value }));
-  }, [filteredResults]);
+    return Object.keys(gradingScale).map((grade) => ({
+      name: grade,
+      value: counts[grade] || 0,
+    }));
+  }, [filteredResults, gradingScale]);
 
 
   if (!user) {
@@ -131,17 +139,32 @@ export default function EmployeeDashboard({ allResults, gradingScale }: Employee
         <CardContent className="space-y-8">
             <div>
               <h3 className="text-lg font-semibold mb-2">연간 등급 분포</h3>
-              {gradeDistribution.length > 0 ? (
-                <Card>
-                  <CardContent className="pt-6">
-                    <GradeHistogram data={gradeDistribution} gradingScale={gradingScale} />
-                  </CardContent>
-                </Card>
-              ) : (
-                  <div className="flex items-center justify-center h-40 rounded-lg border border-dashed">
-                    <p className="text-muted-foreground">선택한 연도의 등급 데이터가 없습니다.</p>
-                  </div>
-              )}
+               <Card>
+                <Collapsible open={isChartOpen} onOpenChange={setIsChartOpen}>
+                <CollapsibleTrigger asChild>
+                    <div className="flex w-full cursor-pointer items-center justify-between p-4 rounded-t-lg hover:bg-muted/50">
+                        <h4 className="font-semibold">등급 분포 차트</h4>
+                        <Button variant="ghost" size="icon" className="h-6 w-6">
+                            <span className="sr-only">차트 보기/숨기기</span>
+                            {isChartOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                        </Button>
+                    </div>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  {gradeDistribution.some(d => d.value > 0) ? (
+                    <CardContent className="pt-0">
+                      <GradeHistogram data={gradeDistribution} gradingScale={gradingScale} />
+                    </CardContent>
+                  ) : (
+                    <CardContent>
+                      <div className="flex items-center justify-center h-40 rounded-lg border-dashed border-2">
+                        <p className="text-muted-foreground">선택한 연도의 등급 데이터가 없습니다.</p>
+                      </div>
+                    </CardContent>
+                  )}
+                </CollapsibleContent>
+                </Collapsible>
+            </Card>
             </div>
 
             <div>
