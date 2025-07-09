@@ -189,7 +189,7 @@ export default function Home() {
                     employeeId: emp.id,
                     year,
                     month,
-                    grade: 'B' as Grade,
+                    grade: null,
                     memo: emp.memo || '',
                 };
             }
