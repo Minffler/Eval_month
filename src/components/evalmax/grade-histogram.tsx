@@ -67,6 +67,48 @@ export function GradeHistogram({
     })),
     [data, gradingScale, totalCount]
   );
+  
+  const CombinedLabel = (props: any) => {
+    const { x, y, width, height, index } = props;
+    const item = sortedData[index];
+
+    if (!item || item.value <= 0) {
+      return null;
+    }
+
+    const countText = item.value;
+    const percentageText = `${item.percentage.toFixed(1)}%`;
+
+    // If the bar is too short, render both labels above the bar
+    if (height < 30) {
+      return (
+        <g>
+          {/* Count label (higher up) */}
+          <text x={x + width / 2} y={y - 20} textAnchor="middle" fontSize={12} fill="hsl(var(--foreground))">
+            {countText}
+          </text>
+          {/* Percentage label (closer to bar) */}
+          <text x={x + width / 2} y={y - 5} textAnchor="middle" fontSize={11} fill="hsl(var(--muted-foreground))">
+            {percentageText}
+          </text>
+        </g>
+      );
+    }
+
+    // If the bar is tall enough, render count above and percentage inside
+    return (
+      <g>
+        {/* Count label */}
+        <text x={x + width / 2} y={y - 5} textAnchor="middle" fontSize={12} fill="hsl(var(--foreground))">
+          {countText}
+        </text>
+        {/* Percentage label */}
+        <text x={x + width / 2} y={y + 14} textAnchor="middle" fontSize={11} fill="hsl(var(--primary-foreground))">
+          {percentageText}
+        </text>
+      </g>
+    );
+  };
 
 
   return (
@@ -104,15 +146,7 @@ export function GradeHistogram({
               fill="var(--color-value)"
               radius={[4, 4, 0, 0]}
             >
-                <LabelList dataKey="value" position="top" offset={5} fontSize={12} formatter={(value: number) => value > 0 ? value : ''} />
-                <LabelList 
-                    dataKey="percentage" 
-                    position="insideTop"
-                    offset={10}
-                    fill="hsl(var(--primary-foreground))"
-                    fontSize={11}
-                    formatter={(value: number) => value > 0 ? `${value.toFixed(1)}%` : ''}
-                />
+              <LabelList dataKey="value" content={<CombinedLabel />} />
             </Bar>
           </BarChart>
         </ResponsiveContainer>

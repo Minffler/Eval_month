@@ -115,7 +115,43 @@ export function ConsistencyValidator({ results, gradingScale }: ConsistencyValid
         value: item.count,
         percentage: totalCount > 0 ? (item.count / totalCount) * 100 : 0,
     }));
-}, [report, gradingScale]);
+  }, [report, gradingScale]);
+
+  const CombinedLabel = (props: any) => {
+    const { x, y, width, height, index } = props;
+    const item = chartData[index];
+
+    if (!item || item.value <= 0) {
+      return null;
+    }
+
+    const countText = item.value;
+    const percentageText = `${item.percentage.toFixed(1)}%`;
+
+    if (height < 30) {
+      return (
+        <g>
+          <text x={x + width / 2} y={y - 20} textAnchor="middle" fontSize={12} fill="hsl(var(--foreground))">
+            {countText}
+          </text>
+          <text x={x + width / 2} y={y - 5} textAnchor="middle" fontSize={11} fill="hsl(var(--muted-foreground))">
+            {percentageText}
+          </text>
+        </g>
+      );
+    }
+
+    return (
+      <g>
+        <text x={x + width / 2} y={y - 5} textAnchor="middle" fontSize={12} fill="hsl(var(--foreground))">
+          {countText}
+        </text>
+        <text x={x + width / 2} y={y + 14} textAnchor="middle" fontSize={11} fill="hsl(var(--primary-foreground))">
+          {percentageText}
+        </text>
+      </g>
+    );
+  };
 
 
   return (
@@ -196,15 +232,7 @@ export function ConsistencyValidator({ results, gradingScale }: ConsistencyValid
                           fill="var(--color-value)"
                           radius={[4, 4, 0, 0]}
                         >
-                            <LabelList dataKey="value" position="top" offset={5} fontSize={12} formatter={(value: number) => value > 0 ? value : ''} />
-                            <LabelList 
-                                dataKey="percentage" 
-                                position="insideTop"
-                                offset={10}
-                                fill="hsl(var(--primary-foreground))"
-                                fontSize={11}
-                                formatter={(value: number) => value > 0 ? `${value.toFixed(1)}%` : ''}
-                            />
+                          <LabelList dataKey="value" content={<CombinedLabel />} />
                         </Bar>
                       </BarChart>
                     </ResponsiveContainer>
