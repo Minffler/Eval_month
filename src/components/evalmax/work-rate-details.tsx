@@ -12,12 +12,32 @@ import {
   TableFooter
 } from '@/components/ui/table';
 import { Input } from '../ui/input';
-import { Search, ArrowUpDown, ArrowUp, ArrowDown, Download } from 'lucide-react';
+import { Search, ArrowUpDown, ArrowUp, ArrowDown, Download, PlusCircle } from 'lucide-react';
+import type { Employee } from '@/lib/types';
 import type { ShortenedWorkDetail, DailyAttendanceDetail } from '@/lib/work-rate-calculator';
 import { Button } from '../ui/button';
 import * as XLSX from 'xlsx';
 import { Progress } from '../ui/progress';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/auth-context';
+import { useNotifications } from '@/contexts/notification-context';
+import { toast } from '@/hooks/use-toast';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Label } from '../ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 type SortConfig<T> = {
   key: keyof T;
@@ -28,6 +48,7 @@ interface WorkRateDetailsProps {
   type: 'shortenedWork' | 'dailyAttendance';
   data: any[];
   selectedDate: { year: number, month: number };
+  allEmployees: Employee[];
 }
 
 const ShortenedWorkTypeIcon = ({ type }: { type: '임신' | '육아/돌봄' }) => {
@@ -51,19 +72,25 @@ const ShortenedWorkTypeIcon = ({ type }: { type: '임신' | '육아/돌봄' }) =
 const DailyAttendanceIcon = ({ isShortenedDay }: { isShortenedDay: boolean }) => {
     const text = isShortenedDay ? 'Y' : 'N';
     const style = isShortenedDay
-        ? { backgroundColor: 'hsl(25, 20%, 92%)', color: 'hsl(25, 25%, 35%)' }
-        : { backgroundColor: 'hsl(30, 20%, 98%)', color: 'hsl(210, 5%, 60%)' };
+        ? { backgroundColor: 'hsl(25, 20%, 92%)' }
+        : { backgroundColor: 'hsl(30, 20%, 98%)' };
+    const textColor = isShortenedDay ? 'text-stone-800' : 'text-stone-400';
     
     return (
-        <div className="mx-auto flex h-6 w-6 items-center justify-center rounded-md text-xs font-semibold" style={style}>
+        <div className={cn("mx-auto flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold", textColor)} style={style}>
             {text}
         </div>
     );
 };
 
-export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDetailsProps) {
+
+export default function WorkRateDetails({ type, data, selectedDate, allEmployees }: WorkRateDetailsProps) {
+  const { user } = useAuth();
+  const { addNotification } = useNotifications();
   const [searchTerm, setSearchTerm] = React.useState('');
   const [sortConfig, setSortConfig] = React.useState<SortConfig<any>>(null);
+  const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+  const [formData, setFormData] = React.useState<any>({});
   
   const filteredData = React.useMemo(() => {
     if (!searchTerm) return data;
@@ -137,6 +164,106 @@ export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDe
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, '상세내역');
     XLSX.writeFile(workbook, fileName);
+  };
+
+  const handleOpenDialog = () => {
+    setFormData({});
+    setIsDialogOpen(true);
+  };
+  
+  const handleFormChange = (field: string, value: string) => {
+    setFormData((prev: any) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmitForApproval = () => {
+    if (!user) {
+      toast({ variant: 'destructive', title: '오류', description: '로그인 정보가 없습니다.' });
+      return;
+    }
+    
+    // 1. Find employee and evaluator
+    const employee = allEmployees.find(e => e.uniqueId === formData.uniqueId);
+    if (!employee) {
+      toast({ variant: 'destructive', title: '오류', description: '해당 ID의 직원을 찾을 수 없습니다.' });
+      return;
+    }
+    const evaluator = allEmployees.find(e => e.uniqueId === employee.evaluatorId);
+    
+    const dataType = type === 'shortenedWork' ? '단축근로' : '일근태';
+    const message = `[결재요청] ${employee.name}님의 ${dataType} 데이터 변경 요청이 있습니다.`;
+
+    if (user.roles?.includes('admin')) {
+        // Admin auto-approval
+        // TODO: Implement actual data saving logic here. For now, just show a toast.
+        toast({ title: '자동 승인 완료', description: '관리자 권한으로 데이터가 즉시 저장 및 반영되었습니다.' });
+    } else {
+        // Start approval workflow
+        addNotification({ recipientId: employee.uniqueId, message }); // Notify self
+        if (evaluator) {
+            addNotification({ recipientId: evaluator.uniqueId, message }); // Notify evaluator
+        }
+        addNotification({ recipientId: '1911042', message }); // Notify admin
+        toast({ title: '결재 상신 완료', description: '결재 라인에 따라 알림이 발송되었습니다.' });
+    }
+
+    setIsDialogOpen(false);
+  };
+
+  const renderDialogContent = () => {
+    if (type === 'shortenedWork') {
+      return (
+        <div className="space-y-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="uniqueId" className="text-right">ID</Label>
+              <Input id="uniqueId" value={formData.uniqueId || ''} onChange={(e) => handleFormChange('uniqueId', e.target.value)} className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="type" className="text-right">구분</Label>
+                <Select value={formData.type || ''} onValueChange={(value) => handleFormChange('type', value)}>
+                    <SelectTrigger className="col-span-3">
+                        <SelectValue placeholder="구분 선택" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="임신">임신</SelectItem>
+                        <SelectItem value="육아/돌봄">육아/돌봄</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="startDate" className="text-right">시작일</Label>
+              <Input id="startDate" type="date" value={formData.startDate || ''} onChange={(e) => handleFormChange('startDate', e.target.value)} className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="endDate" className="text-right">종료일</Label>
+              <Input id="endDate" type="date" value={formData.endDate || ''} onChange={(e) => handleFormChange('endDate', e.target.value)} className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="startTime" className="text-right">출근시각</Label>
+              <Input id="startTime" type="time" value={formData.startTime || ''} onChange={(e) => handleFormChange('startTime', e.target.value)} className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="endTime" className="text-right">퇴근시각</Label>
+              <Input id="endTime" type="time" value={formData.endTime || ''} onChange={(e) => handleFormChange('endTime', e.target.value)} className="col-span-3" />
+            </div>
+        </div>
+      );
+    }
+    return (
+        <div className="space-y-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="uniqueId" className="text-right">ID</Label>
+              <Input id="uniqueId" value={formData.uniqueId || ''} onChange={(e) => handleFormChange('uniqueId', e.target.value)} className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="date" className="text-right">일자</Label>
+              <Input id="date" type="date" value={formData.date || ''} onChange={(e) => handleFormChange('date', e.target.value)} className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="type" className="text-right">근태 종류</Label>
+              <Input id="type" value={formData.type || ''} onChange={(e) => handleFormChange('type', e.target.value)} className="col-span-3" />
+            </div>
+        </div>
+    );
   };
   
   const renderShortenedWorkTable = () => {
@@ -244,6 +371,7 @@ export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDe
   const description = `${selectedDate.year}년 ${selectedDate.month}월 ${type === 'shortenedWork' ? '단축근로' : '일근태'} 상세 내역입니다.`;
 
   return (
+    <>
     <Card>
         <CardHeader>
           <div className="flex flex-col sm:flex-row justify-between sm:items-start gap-2">
@@ -256,15 +384,21 @@ export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDe
               엑셀 다운로드
             </Button>
           </div>
-            <div className="relative mt-4 max-w-md">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                    type="search"
-                    placeholder="이름 또는 ID로 검색..."
-                    className="w-full pl-8"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                />
+            <div className="flex items-center gap-2 mt-4">
+                <div className="relative flex-grow max-w-md">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        type="search"
+                        placeholder="이름 또는 ID로 검색..."
+                        className="w-full pl-8"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+                 <Button onClick={handleOpenDialog} variant="outline" size="sm">
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    데이터 추가/변경
+                </Button>
             </div>
         </CardHeader>
         <CardContent>
@@ -280,5 +414,24 @@ export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDe
             </div>
         </CardContent>
     </Card>
+
+    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <DialogContent>
+        <DialogHeader>
+            <DialogTitle>데이터 추가/변경</DialogTitle>
+            <DialogDescription>
+                {type === 'shortenedWork' ? '단축근로' : '일근태'} 정보를 입력하고 결재를 상신합니다.
+            </DialogDescription>
+        </DialogHeader>
+        <div className="py-4">
+            {renderDialogContent()}
+        </div>
+        <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>취소</Button>
+            <Button onClick={handleSubmitForApproval}>결재상신</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

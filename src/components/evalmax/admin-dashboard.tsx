@@ -237,7 +237,7 @@ export default function AdminDashboard({
             const orderA = getPositionSortValue(a.title);
             const orderB = getPositionSortValue(b.title);
             if (orderA !== orderB) {
-                return sortConfig.direction === 'ascending' ? orderA - orderB : orderB - orderA;
+                return sortConfig.direction === 'ascending' ? orderA - orderB : orderB - a;
             }
         }
 
@@ -774,9 +774,9 @@ export default function AdminDashboard({
         case 'attendance-type-management':
             return <AttendanceTypeManagement attendanceTypes={attendanceTypes} setAttendanceTypes={setAttendanceTypes} holidays={holidays} setHolidays={setHolidays} />;
         case 'shortened-work-details':
-            return <WorkRateDetails type="shortenedWork" data={workRateDetails.shortenedWorkDetails} selectedDate={selectedDate} />;
+            return <WorkRateDetails type="shortenedWork" data={workRateDetails.shortenedWorkDetails} selectedDate={selectedDate} allEmployees={allEmployees} />;
         case 'daily-attendance-details':
-            return <WorkRateDetails type="dailyAttendance" data={workRateDetails.dailyAttendanceDetails} selectedDate={selectedDate} />;
+            return <WorkRateDetails type="dailyAttendance" data={workRateDetails.dailyAttendanceDetails} selectedDate={selectedDate} allEmployees={allEmployees} />;
         case 'notifications': {
             return (
                 <Card>
