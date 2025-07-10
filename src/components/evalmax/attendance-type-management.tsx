@@ -63,8 +63,8 @@ export default function AttendanceTypeManagement({ attendanceTypes, setAttendanc
 
   const handleAddNewType = () => {
     setLocalTypes([
-      ...localTypes,
       { id: `att-${Date.now()}`, name: '', deductionDays: 0 },
+      ...localTypes,
     ]);
   };
 
@@ -105,13 +105,13 @@ export default function AttendanceTypeManagement({ attendanceTypes, setAttendanc
   const handleAddNewHoliday = () => {
     const newId = `hol-${Date.now()}`;
     setLocalHolidays([
-      ...localHolidays,
       { id: newId, date: `${selectedYear}-`, name: '' },
+      ...localHolidays,
     ]);
   };
 
-  const handleRemoveHoliday = (index: number) => {
-    const newHolidays = localHolidays.filter((_, i) => i !== index);
+  const handleRemoveHoliday = (idToRemove: string) => {
+    const newHolidays = localHolidays.filter((h) => h.id !== idToRemove);
     setLocalHolidays(newHolidays);
   };
   
@@ -131,14 +131,15 @@ export default function AttendanceTypeManagement({ attendanceTypes, setAttendanc
 
   const handleSaveHolidays = () => {
     const errors: Record<string, string> = {};
-    for(const holiday of localHolidays) {
+    const holidaysForYear = localHolidays.filter(h => h.date.startsWith(String(selectedYear)));
+
+    for(const holiday of holidaysForYear) {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(holiday.date)) {
         errors[holiday.id] = `날짜 형식이 올바르지 않습니다 (YYYY-MM-DD): ${holiday.date}`;
       } else if (holiday.name.trim() === '') {
         errors[holiday.id] = `공휴일명을 입력해주세요.`;
       }
     }
-
     setHolidayErrors(errors);
     
     if (Object.keys(errors).length > 0) {
@@ -146,14 +147,18 @@ export default function AttendanceTypeManagement({ attendanceTypes, setAttendanc
       return;
     }
 
-    setHolidays([...localHolidays].sort((a, b) => a.date.localeCompare(b.date)));
-    toast({ title: '저장 완료', description: '공휴일 변경사항이 성공적으로 저장되었습니다.' });
+    // Preserve holidays from other years and update only the current year's
+    const otherYearsHolidays = localHolidays.filter(h => !h.date.startsWith(String(selectedYear)));
+    const updatedHolidays = [...otherYearsHolidays, ...holidaysForYear].sort((a, b) => a.date.localeCompare(b.date));
+    
+    setHolidays(updatedHolidays);
+    toast({ title: '저장 완료', description: `${selectedYear}년 공휴일 변경사항이 성공적으로 저장되었습니다.` });
   }
   
   const currentClientYear = new Date().getFullYear();
   const availableYears = Array.from({ length: Math.max(0, currentClientYear - 2022 + 1) }, (_, i) => 2023 + i).reverse();
 
-  const filteredHolidays = localHolidays.filter(h => h.date.startsWith(String(selectedYear)));
+  const filteredHolidays = localHolidays.filter(h => h.date.startsWith(String(selectedYear))).sort((a,b) => a.date.localeCompare(b.date));
 
   return (
     <div className="space-y-6">
@@ -266,7 +271,7 @@ export default function AttendanceTypeManagement({ attendanceTypes, setAttendanc
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredHolidays.map((holiday, idx) => {
+                {filteredHolidays.map((holiday) => {
                   const index = localHolidays.findIndex(h => h.id === holiday.id);
                   return (
                     <TableRow key={holiday.id}>
@@ -287,11 +292,11 @@ export default function AttendanceTypeManagement({ attendanceTypes, setAttendanc
                           className="w-40 h-8"
                         />
                       </TableCell>
-                      <TableCell className="py-1 px-2">
+                      <TableCell className="py-1 px-2 text-right">
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleRemoveHoliday(index)}
+                          onClick={() => handleRemoveHoliday(holiday.id)}
                           className="h-8 w-8"
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
