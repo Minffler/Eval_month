@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -277,10 +278,22 @@ export default function WorkRateManagement({ results, workRateDetails, selectedD
   const subtotal = detailDialog.data.reduce((acc, curr) => acc + (curr.totalDeductionHours || 0), 0);
 
   const columnConfig: { id: DeductionType; label: string; }[] = [
-    { id: 'attendance', label: '근태(H)' },
-    { id: 'pregnancy', label: '임신(H)' },
-    { id: 'care', label: '육아/돌봄(H)' },
+    { id: 'attendance', label: '근태' },
+    { id: 'pregnancy', label: '임신' },
+    { id: 'care', label: '육아/돌봄' },
   ];
+
+  const handleToggleColumn = (columnId: DeductionType) => {
+    setVisibleColumns(prev => {
+        const next = new Set(prev);
+        if (next.has(columnId)) {
+            next.delete(columnId);
+        } else {
+            next.add(columnId);
+        }
+        return next;
+    });
+  };
 
   return (
     <>
@@ -294,40 +307,28 @@ export default function WorkRateManagement({ results, workRateDetails, selectedD
                 </CardDescription>
               </div>
               <div className="flex gap-2">
-                 <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm">
-                            <Settings2 className="mr-2 h-4 w-4" />
-                            표시 열 선택
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>표시할 열 선택</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        {columnConfig.map(col => (
-                            <DropdownMenuCheckboxItem
-                                key={col.id}
-                                checked={visibleColumns.has(col.id)}
-                                onCheckedChange={(checked) => {
-                                    setVisibleColumns(prev => {
-                                        const next = new Set(prev);
-                                        if (checked) next.add(col.id);
-                                        else next.delete(col.id);
-                                        return next;
-                                    });
-                                }}
-                            >
-                                {col.label}
-                            </DropdownMenuCheckboxItem>
-                        ))}
-                    </DropdownMenuContent>
-                </DropdownMenu>
                 <Button onClick={handleDownloadExcel} variant="outline" size="sm">
                   <Download className="mr-2 h-4 w-4" />
                   엑셀 다운로드
                 </Button>
                 <Button onClick={handleApplyWorkRate} size="sm">근무율 반영</Button>
               </div>
+            </div>
+             <div className="flex items-center gap-4 pt-4">
+                <span className="text-sm font-semibold text-muted-foreground">미근로시간 포함 항목:</span>
+                <div className="flex gap-2">
+                    {columnConfig.map(col => (
+                        <Button
+                            key={col.id}
+                            variant={visibleColumns.has(col.id) ? 'secondary' : 'outline'}
+                            size="sm"
+                            onClick={() => handleToggleColumn(col.id)}
+                            className="text-xs h-7 px-2"
+                        >
+                            {col.label}
+                        </Button>
+                    ))}
+                </div>
             </div>
             <div className="pt-2 text-sm text-muted-foreground">
                 <span className="font-semibold text-foreground">월 소정근로시간:</span> 8시간 * {businessDays}일 = <span className="font-bold text-primary">{monthlyStandardHours}</span>시간
