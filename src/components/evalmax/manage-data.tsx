@@ -178,7 +178,7 @@ export default function ManageData({
       } catch (error: any) {
         toast({ variant: 'destructive', title: '파일 처리 오류', description: error.message || '파일 처리 중 오류가 발생했습니다.' });
       } finally {
-        if(fileInputRef.current) fileInputRef.current.value = "";
+        if(event.target) event.target.value = "";
       }
     }
   };
@@ -210,36 +210,38 @@ export default function ManageData({
     infoTooltip?: string;
     dataCount?: number;
   }) => (
-      <Card>
-          <CardHeader>
-              <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                      <CardTitle>{title}</CardTitle>
-                      {infoTooltip && (
-                          <TooltipProvider>
-                              <Tooltip>
-                                  <TooltipTrigger asChild>
-                                      <Info className="h-4 w-4 text-muted-foreground cursor-pointer" />
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                      <pre className="text-xs bg-muted p-2 rounded-md font-mono">{infoTooltip}</pre>
-                                  </TooltipContent>
-                              </Tooltip>
-                          </TooltipProvider>
-                      )}
-                  </div>
-                  {onDataClear && <Button variant="destructive" size="sm" onClick={onDataClear} disabled={dataCount === 0}><Trash2 className="mr-2 h-4 w-4" />초기화</Button>}
-              </div>
-              <CardDescription>{description}</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col sm:flex-row items-center gap-4">
-              <div className="grid w-full max-w-sm items-center gap-1.5">
-                  <Input id={fileType} type="file" accept=".xlsx, .xls" onChange={onFileUpload} ref={fileType === 'employees' ? fileInputRef : undefined} />
-                  {dataCount > 0 && <p className="text-xs text-muted-foreground">{dataCount}개 데이터가 업로드되었습니다.</p>}
-              </div>
-              {onTemplateDownload && <Button onClick={onTemplateDownload} variant="outline" className="w-full sm:w-auto"><Download className="mr-2 h-4 w-4" />양식 다운로드</Button>}
-          </CardContent>
-      </Card>
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <CardTitle>{title}</CardTitle>
+            {infoTooltip && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-6 w-6">
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <pre className="text-xs bg-muted text-muted-foreground p-2 rounded-md font-mono whitespace-pre-wrap max-w-xs">{infoTooltip}</pre>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+          </div>
+          {onDataClear && <Button variant="destructive" size="sm" onClick={onDataClear} disabled={dataCount === 0}><Trash2 className="mr-2 h-4 w-4" />초기화</Button>}
+        </div>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col sm:flex-row items-center gap-4">
+        <div className="grid w-full max-w-sm items-center gap-1.5">
+          <Input id={fileType} type="file" accept=".xlsx, .xls" onChange={onFileUpload} onClick={(e) => (e.currentTarget.value = '')} />
+          {dataCount > 0 && <p className="text-xs text-muted-foreground">{dataCount}개 데이터가 업로드되었습니다.</p>}
+        </div>
+        {onTemplateDownload && <Button onClick={onTemplateDownload} variant="outline" className="w-full sm:w-auto"><Download className="mr-2 h-4 w-4" />양식 다운로드</Button>}
+      </CardContent>
+    </Card>
   );
 
   return (
@@ -253,7 +255,7 @@ export default function ManageData({
             onDataClear={() => setDialogOpen({ type: 'deleteEmployees' })}
             fileType="employees"
             dataCount={results.length}
-            infoTooltip={`ID: uniqueId, 고유사번, 사번\n이름: name, 성명, 피평가자\n...외 다수`}
+            infoTooltip={`[필수] 고유사번: '고유사번', '사번', 'ID'\n[선택] 이름: '이름', '성명', '피평가자'\n...외 회사, 부서, 직책 등`}
         />
 
         <h2 className="text-2xl font-bold mt-8">2. 근무 데이터 업로드</h2>
@@ -265,7 +267,7 @@ export default function ManageData({
                 fileType="shortenedWork"
                 onDataClear={() => setDialogOpen({ type: 'resetWorkData', workDataType: 'shortenedWorkHours' })}
                 dataCount={workRateInputs.shortenedWorkHours?.length || 0}
-                infoTooltip={`사번: 고유사번, 사번, ID\n성명: 이름, 성명\n시작일: 시작일, 시작일자\n종료일: 종료일, 종료일자\n출근시각: 출근시각\n퇴근시각: 퇴근시각`}
+                infoTooltip={`[필수] 고유사번: '고유사번', '사번', 'ID'\n[필수] 시작일: '시작일', '시작일자'\n[필수] 종료일: '종료일', '종료일자'\n[필수] 출근시각/퇴근시각`}
             />
             <UploadCard
                 title="일근태"
@@ -274,7 +276,7 @@ export default function ManageData({
                 fileType="dailyAttendance"
                 onDataClear={() => setDialogOpen({ type: 'resetWorkData', workDataType: 'dailyAttendance' })}
                 dataCount={workRateInputs.dailyAttendance?.length || 0}
-                infoTooltip={`사번: 고유사번, 사번, ID\n성명: 이름, 성명\n사용일: 일자\n근태종류: 근태`}
+                infoTooltip={`[필수] 고유사번: '고유사번', '사번', 'ID'\n[필수] 사용일: '일자'\n[필수] 근태종류: '근태'`}
             />
         </div>
 
