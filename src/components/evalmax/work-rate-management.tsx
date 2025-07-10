@@ -156,7 +156,7 @@ export default function WorkRateManagement({ results, workRateDetails, selectedD
     if (rate >= 0.7) {
         return "text-foreground";
     } else if (rate >= 0.25) {
-        return "bg-yellow-100 text-yellow-800";
+        return "bg-yellow-100/60 text-yellow-900";
     } else {
         return "bg-stone-200 text-stone-700";
     }
@@ -192,14 +192,14 @@ export default function WorkRateManagement({ results, workRateDetails, selectedD
                             <TableHead className="cursor-pointer text-right" onClick={() => requestSort('deductionHoursPregnancy')}><div className="flex items-center justify-end">임신(H){getSortIcon('deductionHoursPregnancy')}</div></TableHead>
                             <TableHead className="cursor-pointer text-right" onClick={() => requestSort('deductionHoursCare')}><div className="flex items-center justify-end">육아/돌봄(H){getSortIcon('deductionHoursCare')}</div></TableHead>
                             <TableHead className="cursor-pointer text-right" onClick={() => requestSort('totalDeductionHours')}><div className="flex items-center justify-end">미근로시간{getSortIcon('totalDeductionHours')}</div></TableHead>
-                            <TableHead className="cursor-pointer text-right" onClick={() => requestSort('totalWorkHours')}><div className="flex items-center justify-end min-w-[250px]">미근로/근로 시간{getSortIcon('totalWorkHours')}</div></TableHead>
+                            <TableHead className="cursor-pointer text-right min-w-[250px]" onClick={() => requestSort('totalWorkHours')}><div className="flex items-center justify-end">근로/미근로 시간{getSortIcon('totalWorkHours')}</div></TableHead>
                             <TableHead className="cursor-pointer text-right" onClick={() => requestSort('monthlyWorkRate')}><div className="flex items-center justify-end">근무율{getSortIcon('monthlyWorkRate')}</div></TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                       {sortedData.map(summary => (
                         <TableRow key={summary.uniqueId}>
-                          <TableCell>{summary.uniqueId}</TableCell>
+                          <TableCell className="tabular-nums">{summary.uniqueId}</TableCell>
                           <TableCell>{summary.name}</TableCell>
                           <TableCell className="text-right tabular-nums">{summary.deductionHoursAttendance.toFixed(2)}</TableCell>
                           <TableCell className="text-right tabular-nums">{summary.deductionHoursPregnancy.toFixed(2)}</TableCell>
@@ -207,11 +207,11 @@ export default function WorkRateManagement({ results, workRateDetails, selectedD
                           <TableCell className="text-right tabular-nums">{summary.totalDeductionHours.toFixed(2)}</TableCell>
                           <TableCell className="text-right">
                              <Progress 
-                                value={monthlyStandardHours - summary.totalWorkHours} 
-                                max={monthlyStandardHours}
-                                leftLabel={summary.totalDeductionHours.toFixed(2)}
-                                rightLabel={summary.totalWorkHours.toFixed(2)}
-                                reverse={true}
+                                value={summary.monthlyWorkRate}
+                                max={1}
+                                leftLabel={summary.totalWorkHours.toFixed(2)}
+                                rightLabel={summary.totalDeductionHours.toFixed(2)}
+                                indicatorClassName="bg-[hsl(var(--chart-1))]"
                                 className="w-[220px] ml-auto"
                             />
                           </TableCell>

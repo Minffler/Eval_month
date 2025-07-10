@@ -14,12 +14,13 @@ interface ProgressProps extends React.ComponentPropsWithoutRef<typeof ProgressPr
    * Default is false (fills from left). True fills from right.
    */
   reverse?: boolean;
+  indicatorClassName?: string;
 }
 
 const Progress = React.forwardRef<
   React.ElementRef<typeof ProgressPrimitive.Root>,
   ProgressProps
->(({ className, value, max = 100, leftLabel, rightLabel, reverse = false, ...props }, ref) => {
+>(({ className, value, max = 100, leftLabel, rightLabel, reverse = false, indicatorClassName, ...props }, ref) => {
   const percentage = (value && max) ? (value / max) * 100 : 0;
   
   return (
@@ -32,8 +33,8 @@ const Progress = React.forwardRef<
       {...props}
     >
       <ProgressPrimitive.Indicator
-        className={cn("h-full w-full flex-1 bg-primary/70 transition-all", reverse ? "origin-right" : "origin-left")}
-        style={{ transform: `scaleX(${percentage / 100})` }}
+        className={cn("h-full w-full flex-1 bg-primary/70 transition-all", reverse ? "origin-right" : "origin-left", indicatorClassName)}
+        style={{ transform: `scaleX(${reverse ? 1 - (percentage/100) : percentage / 100})` }}
       />
       {(leftLabel || rightLabel) && (
           <div className="absolute inset-0 flex items-center justify-between px-2 text-xs font-medium text-foreground">
