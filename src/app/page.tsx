@@ -26,8 +26,8 @@ import {
   Hourglass,
   Gauge,
   ListTodo,
-  FileText,
   CalendarDays,
+  CalendarClock,
 } from 'lucide-react';
 import { calculateWorkRateDetails } from '@/lib/work-rate-calculator';
 
@@ -49,7 +49,7 @@ const adminNavItems: NavItem[] = [
     icon: Hourglass,
     children: [
       { id: 'work-rate-view', label: '근무율 조회', icon: Gauge },
-      { id: 'shortened-work-details', label: '단축근로 상세', icon: FileText },
+      { id: 'shortened-work-details', label: '단축근로 상세', icon: CalendarClock },
       { id: 'daily-attendance-details', label: '일근태 상세', icon: CalendarDays },
       { id: 'attendance-type-management', label: '근태 수치 관리', icon: ListTodo },
     ]
@@ -775,7 +775,6 @@ export default function Home() {
   )
 
   if (role === 'admin') {
-      const notificationItem: NavItem = { id: 'notifications', label: '알림함', icon: Bell };
       return commonLayout(
         adminNavItems,
         adminActiveView,
@@ -786,7 +785,6 @@ export default function Home() {
   }
 
   if (role === 'evaluator') {
-      const notificationItem: NavItem = { id: 'notifications', label: '알림함', icon: Bell };
       return commonLayout(
         evaluatorNavItems,
         evaluatorActiveView,
