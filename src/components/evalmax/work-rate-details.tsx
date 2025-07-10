@@ -141,7 +141,7 @@ export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDe
                         <TableCell className="text-center">{item.endTime}</TableCell>
                         <TableCell>
                           <Progress 
-                              value={nonWorkHours}
+                              value={actualWorkHours}
                               max={8} 
                               leftLabel={String(actualWorkHours)} 
                               rightLabel={String(nonWorkHours)}
