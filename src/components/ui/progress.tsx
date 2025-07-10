@@ -44,8 +44,8 @@ const Progress = React.forwardRef<
       {...props}
     >
       <ProgressPrimitive.Indicator
-        className={cn("h-full w-full flex-1 transition-all", reverse ? "origin-right" : "origin-left", indicatorClassName)}
-        style={{ transform: `scaleX(${reverse ? 1 - (percentage/100) : percentage / 100})` }}
+        className={cn("h-full w-full flex-1 transition-all", indicatorClassName)}
+        style={{ transform: `translateX(${percentage}%)` }}
       />
       {(leftLabel || rightLabel) && (
           <div className="absolute inset-0 flex items-center justify-between px-2 text-xs font-medium text-foreground">

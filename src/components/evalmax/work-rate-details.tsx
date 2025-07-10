@@ -143,10 +143,9 @@ export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDe
                           <Progress 
                               value={nonWorkHours}
                               max={8} 
-                              leftLabel={String(actualWorkHours)} 
-                              rightLabel={String(nonWorkHours)}
-                              reverse={true}
-                              indicatorClassName="bg-amber-200"
+                              leftLabel={String(nonWorkHours)} 
+                              rightLabel={String(actualWorkHours)}
+                              indicatorClassName="bg-[hsl(var(--chart-1))]"
                           />
                         </TableCell>
                         <TableCell>{item.totalDeductionHours.toFixed(2)}</TableCell>
