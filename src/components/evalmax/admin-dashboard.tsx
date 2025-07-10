@@ -452,7 +452,7 @@ export default function AdminDashboard({
                 <div className="space-y-4">
                   <Card>
                     <Collapsible open={isDistributionChartOpen} onOpenChange={setIsDistributionChartOpen}>
-                      <CardHeader className="flex items-center justify-between">
+                      <CardHeader className="flex flex-row items-center justify-between">
                           <CardTitle>등급 분포</CardTitle>
                           <Tabs value={dashboardFilter} onValueChange={(val) => { if (val !== 'C. 미평가') setDashboardFilter(val)}}>
                               <TabsList className="h-8">
