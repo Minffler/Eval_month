@@ -547,7 +547,7 @@ export default function AdminDashboard({
                                 <TableCell className="text-center whitespace-nowrap">{stat.pending}</TableCell>
                                 <TableCell className="text-center whitespace-nowrap">
                                   <div className="flex items-center justify-center gap-2">
-                                    <Progress value={stat.rate} className="w-full h-2" />
+                                    <Progress value={stat.rate} indicatorClassName="bg-[hsl(var(--chart-1))]" className="w-full h-2" />
                                     <span className="text-muted-foreground text-xs w-16 text-right">{stat.rate.toFixed(1)}%</span>
                                   </div>
                                 </TableCell>
@@ -695,7 +695,7 @@ export default function AdminDashboard({
                     <Card>
                         <CardHeader className="flex flex-col sm:flex-row items-center justify-between p-4">
                             <div>
-                                <CardTitle>평가자별 현황 보기</CardTitle>
+                                <CardTitle>평가자별 조회</CardTitle>
                                 <CardDescription>특정 평가자의 대시보드를 확인합니다.</CardDescription>
                             </div>
                             <Select onValueChange={setSelectedEvaluatorId} value={selectedEvaluatorId}>
