@@ -48,7 +48,9 @@ export function Sidebar({ navItems, activeView, setActiveView, isOpen, setIsOpen
   }, [isOpen, navItems]);
 
   const handleNavClick = (id: string, hasChildren: boolean) => {
-    if (!hasChildren) {
+    // If it has children, the accordion will handle opening/closing.
+    // If it doesn't have children, or if the sidebar is closed, set the active view.
+    if (!hasChildren || !isOpen) {
       setActiveView(id);
     }
   };

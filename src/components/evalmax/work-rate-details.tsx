@@ -31,14 +31,21 @@ interface WorkRateDetailsProps {
 }
 
 const ShortenedWorkTypeIcon = ({ type }: { type: '임신' | '육아/돌봄' }) => {
+    let style: React.CSSProperties, className: string;
+
     switch (type) {
-      case '임신':
-        return <div className="mx-auto flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold text-stone-700" style={{ backgroundColor: 'hsl(25, 25%, 75%)' }}>임신</div>;
-      case '육아/돌봄':
-        return <div className="mx-auto flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold text-stone-800" style={{ backgroundColor: 'hsl(25, 20%, 92%)' }}>돌봄</div>;
-      default:
-        return <span>{type}</span>;
+        case '임신':
+            style = { backgroundColor: 'hsl(30, 20%, 98%)', color: 'hsl(210, 5%, 60%)' };
+            className = "mx-auto flex h-6 w-20 items-center justify-center rounded-md text-xs font-semibold";
+            break;
+        case '육아/돌봄':
+            style = { backgroundColor: 'hsl(25, 20%, 92%)', color: 'hsl(25, 25%, 35%)' };
+            className = "mx-auto flex h-6 w-20 items-center justify-center rounded-md text-xs font-semibold";
+            break;
+        default:
+            return <span>{type}</span>;
     }
+    return <div className={className} style={style}>{type}</div>;
 };
 
 const DailyAttendanceIcon = ({ isShortenedDay }: { isShortenedDay: boolean }) => {
@@ -171,7 +178,7 @@ export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDe
                               leftLabel={String(actualWorkHours)} 
                               rightLabel={String(nonWorkHours)}
                               indicatorClassName="bg-stone-200"
-                              className="w-[220px] mx-auto"
+                              className="w-[120px] mx-auto"
                           />
                         </TableCell>
                         <TableCell className="text-center font-bold">{item.totalDeductionHours.toFixed(2)}</TableCell>

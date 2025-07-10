@@ -290,7 +290,7 @@ export default function WorkRateManagement({ results, workRateDetails, selectedD
                                 leftLabel={String(summary.totalWorkHours)}
                                 rightLabel={String(summary.totalDeductionHours)}
                                 indicatorClassName="bg-stone-200"
-                                className="w-[220px] mx-auto"
+                                className="w-[120px] mx-auto"
                             />
                           </TableCell>
                           <TableCell className="text-center tabular-nums">
