@@ -119,7 +119,7 @@ export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDe
           <TableHead className="cursor-pointer" onClick={() => requestSort('businessDays')}><div className="flex items-center">일수(D){getSortIcon('businessDays')}</div></TableHead>
           <TableHead>출근시각</TableHead>
           <TableHead>퇴근시각</TableHead>
-          <TableHead className="cursor-pointer min-w-[180px]" onClick={() => requestSort('actualWorkHours')}><div className="flex items-center">실근로/미근로{getSortIcon('actualWorkHours')}</div></TableHead>
+          <TableHead className="cursor-pointer min-w-[200px] text-center" onClick={() => requestSort('actualWorkHours')}><div className="flex items-center justify-center">실근로/미근로(H){getSortIcon('actualWorkHours')}</div></TableHead>
           <TableHead className="cursor-pointer" onClick={() => requestSort('totalDeductionHours')}><div className="flex items-center">미근로시간{getSortIcon('totalDeductionHours')}</div></TableHead>
         </TableRow>
       </TableHeader>
@@ -136,11 +136,11 @@ export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDe
             <TableCell>{item.endTime}</TableCell>
             <TableCell>
               <Progress 
-                  value={8 - item.actualWorkHours}
+                  value={8 - Math.floor(item.actualWorkHours)}
                   max={8} 
                   leftLabel={String(Math.floor(item.actualWorkHours))} 
                   rightLabel={String(8 - Math.floor(item.actualWorkHours))}
-                  reverse={true}
+                  indicatorClassName="bg-[hsl(var(--chart-1))]"
               />
             </TableCell>
             <TableCell>{item.totalDeductionHours.toFixed(2)}</TableCell>
