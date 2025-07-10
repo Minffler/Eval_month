@@ -448,9 +448,9 @@ export default function AdminDashboard({
       case 'A':
         return <div className="mx-auto flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold text-stone-700" style={{ backgroundColor: 'hsl(25, 15%, 75%)' }}>{groupChar}</div>;
       case 'B':
-        return <div className="mx-auto flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold text-stone-800" style={{ backgroundColor: 'hsl(25, 20%, 88%)' }}>{groupChar}</div>;
+        return <div className="mx-auto flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold text-stone-800" style={{ backgroundColor: 'hsl(25, 20%, 92%)' }}>{groupChar}</div>;
       case 'C':
-        return <div className="mx-auto flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold text-stone-400" style={{ backgroundColor: 'hsl(30, 20%, 97%)' }}>{groupChar}</div>;
+        return <div className="mx-auto flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold text-stone-400" style={{ backgroundColor: 'hsl(30, 20%, 98%)' }}>{groupChar}</div>;
       default:
         return <span>{group}</span>;
     }
