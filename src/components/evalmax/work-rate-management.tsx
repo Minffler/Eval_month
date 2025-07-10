@@ -192,8 +192,8 @@ export default function WorkRateManagement({ results, workRateDetails, selectedD
                             <TableHead className="cursor-pointer text-right" onClick={() => requestSort('deductionHoursPregnancy')}><div className="flex items-center justify-end">임신(H){getSortIcon('deductionHoursPregnancy')}</div></TableHead>
                             <TableHead className="cursor-pointer text-right" onClick={() => requestSort('deductionHoursCare')}><div className="flex items-center justify-end">육아/돌봄(H){getSortIcon('deductionHoursCare')}</div></TableHead>
                             <TableHead className="cursor-pointer text-right" onClick={() => requestSort('totalDeductionHours')}><div className="flex items-center justify-end">미근로시간{getSortIcon('totalDeductionHours')}</div></TableHead>
+                            <TableHead className="cursor-pointer text-center" onClick={() => requestSort('monthlyWorkRate')}><div className="flex items-center justify-center">근무율{getSortIcon('monthlyWorkRate')}</div></TableHead>
                             <TableHead className="cursor-pointer text-center min-w-[250px]" onClick={() => requestSort('totalWorkHours')}><div className="flex items-center justify-center">근로/미근로 시간{getSortIcon('totalWorkHours')}</div></TableHead>
-                            <TableHead className="cursor-pointer text-right" onClick={() => requestSort('monthlyWorkRate')}><div className="flex items-center justify-end">근무율{getSortIcon('monthlyWorkRate')}</div></TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -205,21 +205,20 @@ export default function WorkRateManagement({ results, workRateDetails, selectedD
                           <TableCell className="text-right tabular-nums">{summary.deductionHoursPregnancy.toFixed(2)}</TableCell>
                           <TableCell className="text-right tabular-nums">{summary.deductionHoursCare.toFixed(2)}</TableCell>
                           <TableCell className="text-right tabular-nums">{summary.totalDeductionHours.toFixed(2)}</TableCell>
-                          <TableCell className="text-right">
-                             <Progress 
-                                value={summary.monthlyWorkRate}
-                                max={1}
-                                leftLabel={String(summary.totalDeductionHours)}
-                                rightLabel={String(summary.totalWorkHours)}
-                                reverse={true}
-                                indicatorClassName="bg-amber-200"
-                                className="w-[220px] ml-auto"
-                            />
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums">
+                          <TableCell className="text-center tabular-nums">
                             <div className={cn("px-2 py-1 rounded-md text-center font-semibold", getWorkRateStyle(summary.monthlyWorkRate))}>
                                 {(summary.monthlyWorkRate * 100).toFixed(1)}%
                             </div>
+                          </TableCell>
+                          <TableCell className="text-right">
+                             <Progress 
+                                value={summary.totalWorkHours}
+                                max={monthlyStandardHours}
+                                leftLabel={String(summary.totalDeductionHours)}
+                                rightLabel={String(summary.totalWorkHours)}
+                                indicatorClassName="bg-[var(--chart-1)]"
+                                className="w-[220px] ml-auto"
+                            />
                           </TableCell>
                         </TableRow>
                       ))}

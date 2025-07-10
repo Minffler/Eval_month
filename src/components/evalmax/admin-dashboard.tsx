@@ -543,12 +543,12 @@ export default function AdminDashboard({
                                 </TableCell>
                                 <TableCell className="whitespace-nowrap font-mono text-xs">{stat.evaluatorUniqueId}</TableCell>
                                 <TableCell className="font-medium whitespace-nowrap">{stat.evaluatorName}</TableCell>
-                                <TableCell className="text-center whitespace-nowrap">{stat.total}</TableCell>
-                                <TableCell className="text-center whitespace-nowrap">{stat.completed}</TableCell>
-                                <TableCell className="text-center whitespace-nowrap">{stat.pending}</TableCell>
+                                <TableCell className="text-center whitespace-nowrap">{stat.total || '-'}</TableCell>
+                                <TableCell className="text-center whitespace-nowrap">{stat.completed || '-'}</TableCell>
+                                <TableCell className={cn("text-center whitespace-nowrap", stat.pending > 0 && "text-primary")}>{stat.pending || '-'}</TableCell>
                                 <TableCell className="text-center whitespace-nowrap">
                                   <div className="flex items-center justify-center gap-2">
-                                    <Progress value={stat.rate} indicatorClassName={cn(stat.rate < 100 ? "bg-[hsl(var(--chart-2))]" : "bg-[hsl(var(--chart-1))]")} className="w-full h-2" />
+                                    <Progress value={stat.rate} indicatorClassName={cn(stat.rate < 100 ? "bg-[hsl(var(--chart-2))]" : "bg-orange-200")} className="w-full h-2" />
                                     <span className={cn("text-xs w-16 text-right", stat.rate < 100 ? "text-primary" : "text-muted-foreground")}>{stat.rate.toFixed(1)}%</span>
                                   </div>
                                 </TableCell>
