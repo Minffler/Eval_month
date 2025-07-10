@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/select';
 import { ConsistencyValidator } from './consistency-validator';
 import ManageData from './manage-data';
-import type { EvaluationResult, Grade, Employee, GradeInfo, Evaluation, EvaluationGroupCategory, User, EvaluationUploadData, WorkRateInputs } from '@/lib/types';
+import type { EvaluationResult, Grade, Employee, GradeInfo, Evaluation, EvaluationGroupCategory, User, EvaluationUploadData, WorkRateInputs, AttendanceType, Holiday } from '@/lib/types';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -56,6 +56,7 @@ import { AmountDistributionChart } from './amount-distribution-chart';
 import WorkRateManagement from './work-rate-management';
 import AttendanceTypeManagement from './attendance-type-management';
 import WorkRateDetails from './work-rate-details';
+import type { WorkRateDetailsResult } from '@/lib/work-rate-calculator';
 
 interface AdminDashboardProps {
   results: EvaluationResult[];
@@ -73,6 +74,11 @@ interface AdminDashboardProps {
   onWorkRateDataUpload: (year: number, month: number, type: keyof WorkRateInputs, data: any[]) => void;
   onClearWorkRateData: (year: number, month: number, type: keyof WorkRateInputs) => void;
   workRateInputs: Record<string, WorkRateInputs>;
+  attendanceTypes: AttendanceType[];
+  setAttendanceTypes: React.Dispatch<React.SetStateAction<AttendanceType[]>>;
+  holidays: Holiday[];
+  setHolidays: React.Dispatch<React.SetStateAction<Holiday[]>>;
+  workRateDetails: WorkRateDetailsResult;
 }
 
 type SortConfig = {
@@ -110,6 +116,11 @@ export default function AdminDashboard({
   onWorkRateDataUpload,
   onClearWorkRateData,
   workRateInputs,
+  attendanceTypes,
+  setAttendanceTypes,
+  holidays,
+  setHolidays,
+  workRateDetails,
 }: AdminDashboardProps) {
   const [results, setResults] = React.useState<EvaluationResult[]>(initialResults);
   const [activeResultsTab, setActiveResultsTab] = React.useState<EvaluationGroupCategory>('전체');
@@ -734,11 +745,11 @@ export default function AdminDashboard({
         case 'work-rate-view':
             return <WorkRateManagement />;
         case 'attendance-type-management':
-            return <AttendanceTypeManagement />;
+            return <AttendanceTypeManagement attendanceTypes={attendanceTypes} setAttendanceTypes={setAttendanceTypes} holidays={holidays} setHolidays={setHolidays} />;
         case 'shortened-work-details':
-            return <WorkRateDetails type="shortenedWork" data={currentWorkRateInputs.shortenedWorkHours} />;
+            return <WorkRateDetails type="shortenedWork" data={workRateDetails.shortenedWorkDetails} selectedDate={selectedDate} />;
         case 'daily-attendance-details':
-            return <WorkRateDetails type="dailyAttendance" data={currentWorkRateInputs.dailyAttendance} />;
+            return <WorkRateDetails type="dailyAttendance" data={workRateDetails.dailyAttendanceDetails} selectedDate={selectedDate} />;
         case 'notifications': {
             const notifications = [
                 { date: '2025.07.07 14:00', message: '2025년 6월 평가대상자가 업로드 되었습니다. 평가를 진행해주세요.' },

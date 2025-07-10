@@ -115,3 +115,9 @@ export type WorkRateInputs = {
     shortenedWorkHours: ShortenedWorkHourRecord[];
     dailyAttendance: DailyAttendanceRecord[];
 }
+
+export type Holiday = {
+    id: string;
+    date: string; // YYYY-MM-DD
+    name: string;
+}

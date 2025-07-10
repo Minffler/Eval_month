@@ -1,4 +1,4 @@
-import type { User, Employee, Grade, Evaluation, GradeInfo } from './types';
+import type { User, Employee, Grade, Evaluation, GradeInfo, AttendanceType } from './types';
 
 export const gradingScale: Record<NonNullable<Grade>, GradeInfo> = {
   S: { score: 150, payoutRate: 150, description: '최고 성과' },
@@ -11,6 +11,16 @@ export const gradingScale: Record<NonNullable<Grade>, GradeInfo> = {
   'C-': { score: 70, payoutRate: 70, description: '상당한 개선 필요' },
   D: { score: 0, payoutRate: 0, description: '미흡' },
 };
+
+export const initialAttendanceTypes: AttendanceType[] = [
+    { id: 'att-1', name: '연차', deductionDays: 1.00 },
+    { id: 'att-2', name: '오전반차', deductionDays: 0.50 },
+    { id: 'att-3', name: '오후반차', deductionDays: 0.50 },
+    { id: 'att-4', name: '오전반반차', deductionDays: 0.25 },
+    { id: 'att-5', name: '오후반반차', deductionDays: 0.25 },
+    { id: 'att-6', name: '병가', deductionDays: 1.00 },
+    { id: 'att-7', name: '공가', deductionDays: 1.00 },
+];
 
 export const mockEmployees: Employee[] = [
   { id: 'E1911042', uniqueId: '1911042', name: '김관리', company: 'OK', department: '인사기획팀', title: '팀원', position: '팀원', growthLevel: 'Lv.5', workRate: 1.0, evaluatorId: '1911042', baseAmount: 8000000, memo: '' },

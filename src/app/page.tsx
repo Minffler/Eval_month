@@ -6,8 +6,8 @@ import Header from '@/components/evalmax/header';
 import AdminDashboard from '@/components/evalmax/admin-dashboard';
 import EvaluatorDashboard from '@/components/evalmax/evaluator-dashboard';
 import EmployeeDashboard from '@/components/evalmax/employee-dashboard';
-import type { Employee, Evaluation, EvaluationResult, Grade, GradeInfo, User, EvaluatorView, EvaluationUploadData, WorkRateInputs } from '@/lib/types';
-import { mockEmployees, gradingScale as initialGradingScale, calculateFinalAmount, mockEvaluations as initialMockEvaluations, getDetailedGroup1 } from '@/lib/data';
+import type { Employee, Evaluation, EvaluationResult, Grade, GradeInfo, User, EvaluatorView, EvaluationUploadData, WorkRateInputs, AttendanceType, Holiday } from '@/lib/types';
+import { mockEmployees, gradingScale as initialGradingScale, calculateFinalAmount, mockEvaluations as initialMockEvaluations, getDetailedGroup1, initialAttendanceTypes } from '@/lib/data';
 import { useRouter } from 'next/navigation';
 import { Loader2, Bell } from 'lucide-react';
 import { Sidebar, type NavItem } from '@/components/evalmax/sidebar';
@@ -29,6 +29,7 @@ import {
   FileText,
   CalendarDays,
 } from 'lucide-react';
+import { calculateWorkRateDetails } from '@/lib/work-rate-calculator';
 
 const adminNavItems: NavItem[] = [
   {
@@ -99,6 +100,8 @@ const EMPLOYEES_STORAGE_KEY = 'pl_eval_employees';
 const EVALUATIONS_STORAGE_KEY = 'pl_eval_evaluations';
 const GRADING_SCALE_STORAGE_KEY = 'pl_eval_grading_scale';
 const WORK_RATE_INPUTS_STORAGE_KEY = 'pl_eval_work_rate_inputs';
+const ATTENDANCE_TYPES_STORAGE_KEY = 'pl_eval_attendance_types';
+const HOLIDAYS_STORAGE_KEY = 'pl_eval_holidays';
 
 const getInitialDate = () => {
     const today = new Date();
@@ -192,6 +195,7 @@ export default function Home() {
   
   const [results, setResults] = React.useState<EvaluationResult[]>([]);
   const [selectedDate, setSelectedDate] = React.useState(getInitialDate);
+  
   const [workRateInputs, setWorkRateInputs] = React.useState<Record<string, WorkRateInputs>>(() => {
     if (typeof window === 'undefined') return {};
     try {
@@ -202,6 +206,38 @@ export default function Home() {
       return {};
     }
   });
+
+  const [attendanceTypes, setAttendanceTypes] = React.useState<AttendanceType[]>(() => {
+    if (typeof window === 'undefined') return initialAttendanceTypes;
+    try {
+      const stored = localStorage.getItem(ATTENDANCE_TYPES_STORAGE_KEY);
+      return stored ? JSON.parse(stored) : initialAttendanceTypes;
+    } catch (error) {
+      console.error('Error reading attendance types from localStorage', error);
+      return initialAttendanceTypes;
+    }
+  });
+
+  const [holidays, setHolidays] = React.useState<Holiday[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const stored = localStorage.getItem(HOLIDAYS_STORAGE_KEY);
+      return stored ? JSON.parse(stored) : [];
+    } catch (error) {
+      console.error('Error reading holidays from localStorage', error);
+      return [];
+    }
+  });
+
+  const workRateDetails = React.useMemo(() => {
+      return calculateWorkRateDetails(
+          workRateInputs,
+          attendanceTypes,
+          holidays,
+          selectedDate.year,
+          selectedDate.month
+      );
+  }, [workRateInputs, attendanceTypes, holidays, selectedDate]);
 
 
   // State for admin view
@@ -250,6 +286,22 @@ export default function Home() {
         console.error('Error saving work rate inputs to localStorage', error);
     }
   }, [workRateInputs]);
+  
+  React.useEffect(() => {
+    try {
+        window.localStorage.setItem(ATTENDANCE_TYPES_STORAGE_KEY, JSON.stringify(attendanceTypes));
+    } catch (error) {
+        console.error('Error saving attendance types to localStorage', error);
+    }
+  }, [attendanceTypes]);
+  
+  React.useEffect(() => {
+    try {
+        window.localStorage.setItem(HOLIDAYS_STORAGE_KEY, JSON.stringify(holidays));
+    } catch (error) {
+        console.error('Error saving holidays to localStorage', error);
+    }
+  }, [holidays]);
 
 
   const allEmployees = React.useMemo(() => {
@@ -640,6 +692,11 @@ export default function Home() {
                   onWorkRateDataUpload={handleWorkRateDataUpload}
                   onClearWorkRateData={handleClearWorkRateData}
                   workRateInputs={workRateInputs}
+                  attendanceTypes={attendanceTypes}
+                  setAttendanceTypes={setAttendanceTypes}
+                  holidays={holidays}
+                  setHolidays={setHolidays}
+                  workRateDetails={workRateDetails}
                 />;
       case 'evaluator':
         return <EvaluatorDashboard 
