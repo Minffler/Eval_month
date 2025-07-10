@@ -9,6 +9,7 @@ import { Button } from '../ui/button';
 import { ArrowUpDown, Download, ArrowUp, ArrowDown } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Progress } from '../ui/progress';
+import { cn } from '@/lib/utils';
 
 interface WorkRateManagementProps {
   results: EvaluationResult[];
@@ -150,6 +151,16 @@ export default function WorkRateManagement({ results, workRateDetails, selectedD
     const fileName = `${selectedDate.year}.${selectedDate.month}_근무율.xlsx`;
     XLSX.writeFile(workbook, fileName);
   };
+  
+  const getWorkRateStyle = (rate: number): string => {
+    if (rate >= 0.7) {
+        return "text-foreground";
+    } else if (rate >= 0.25) {
+        return "bg-yellow-100 text-yellow-800";
+    } else {
+        return "bg-stone-200 text-stone-700";
+    }
+  };
 
   return (
     <Card>
@@ -195,15 +206,20 @@ export default function WorkRateManagement({ results, workRateDetails, selectedD
                           <TableCell className="text-right tabular-nums">{summary.deductionHoursCare.toFixed(2)}</TableCell>
                           <TableCell className="text-right tabular-nums">{summary.totalDeductionHours.toFixed(2)}</TableCell>
                           <TableCell className="text-right">
-                            <Progress 
-                                value={summary.totalDeductionHours} 
+                             <Progress 
+                                value={monthlyStandardHours - summary.totalWorkHours} 
                                 max={monthlyStandardHours}
                                 leftLabel={summary.totalDeductionHours.toFixed(2)}
                                 rightLabel={summary.totalWorkHours.toFixed(2)}
                                 reverse={true}
+                                className="w-[220px] ml-auto"
                             />
                           </TableCell>
-                          <TableCell className="font-bold text-primary text-right tabular-nums">{(summary.monthlyWorkRate * 100).toFixed(1)}%</TableCell>
+                          <TableCell className="text-right tabular-nums">
+                            <div className={cn("px-2 py-1 rounded-md text-center font-semibold", getWorkRateStyle(summary.monthlyWorkRate))}>
+                                {(summary.monthlyWorkRate * 100).toFixed(1)}%
+                            </div>
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
