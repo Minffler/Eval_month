@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/select';
 import { ConsistencyValidator } from './consistency-validator';
 import ManageData from './manage-data';
-import type { EvaluationResult, Grade, Employee, GradeInfo, Evaluation, EvaluationGroupCategory, User, EvaluationUploadData, WorkRateInputs, AttendanceType, Holiday } from '@/lib/types';
+import type { EvaluationResult, Grade, Employee, GradeInfo, EvaluationGroupCategory, User, EvaluationUploadData, WorkRateInputs, AttendanceType, Holiday } from '@/lib/types';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -57,6 +57,7 @@ import WorkRateManagement from './work-rate-management';
 import AttendanceTypeManagement from './attendance-type-management';
 import WorkRateDetails from './work-rate-details';
 import type { WorkRateDetailsResult } from '@/lib/work-rate-calculator';
+import { cn } from '@/lib/utils';
 
 interface AdminDashboardProps {
   results: EvaluationResult[];
@@ -547,8 +548,8 @@ export default function AdminDashboard({
                                 <TableCell className="text-center whitespace-nowrap">{stat.pending}</TableCell>
                                 <TableCell className="text-center whitespace-nowrap">
                                   <div className="flex items-center justify-center gap-2">
-                                    <Progress value={stat.rate} indicatorClassName="bg-[hsl(var(--chart-1))]" className="w-full h-2" />
-                                    <span className="text-muted-foreground text-xs w-16 text-right">{stat.rate.toFixed(1)}%</span>
+                                    <Progress value={stat.rate} indicatorClassName={cn(stat.rate < 100 ? "bg-[hsl(var(--chart-2))]" : "bg-[hsl(var(--chart-1))]")} className="w-full h-2" />
+                                    <span className={cn("text-xs w-16 text-right", stat.rate < 100 ? "text-primary" : "text-muted-foreground")}>{stat.rate.toFixed(1)}%</span>
                                   </div>
                                 </TableCell>
                               </TableRow>
