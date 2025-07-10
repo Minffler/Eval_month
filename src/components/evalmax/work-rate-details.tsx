@@ -177,7 +177,12 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
       let initialData: any = {};
   
       if (selectedRowId) {
-          const selectedRecord = data.find((item: any) => `${item.uniqueId}-${item.date || item.startDate}` === selectedRowId);
+          const selectedRecord = data.find((item: any) => {
+              const itemId = type === 'shortenedWork'
+                  ? `${item.uniqueId}-${item.startDate}-${item.endDate}-${item.type}`
+                  : `${item.uniqueId}-${item.date}`;
+              return itemId === selectedRowId;
+          });
           if (selectedRecord) {
               initialData = { ...selectedRecord };
           }
@@ -369,7 +374,7 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
             {tableData.map((item, index) => {
                 const actualWorkHours = item.actualWorkHours;
                 const nonWorkHours = 8 - actualWorkHours;
-                const rowId = `${item.uniqueId}-${item.startDate}`;
+                const rowId = `${item.uniqueId}-${item.startDate}-${item.endDate}-${item.type}`;
                 return (
                     <TableRow key={rowId}>
                         <TableCell className="px-2">
