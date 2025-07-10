@@ -12,8 +12,13 @@ import {
   TableFooter
 } from '@/components/ui/table';
 import { Input } from '../ui/input';
-import { Search } from 'lucide-react';
+import { Search, ArrowUpDown } from 'lucide-react';
 import type { ShortenedWorkDetail, DailyAttendanceDetail } from '@/lib/work-rate-calculator';
+
+type SortConfig<T> = {
+  key: keyof T;
+  direction: 'ascending' | 'descending';
+} | null;
 
 interface WorkRateDetailsProps {
   type: 'shortenedWork' | 'dailyAttendance';
@@ -23,6 +28,7 @@ interface WorkRateDetailsProps {
 
 export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDetailsProps) {
   const [searchTerm, setSearchTerm] = React.useState('');
+  const [sortConfig, setSortConfig] = React.useState<SortConfig<any>>(null);
   
   const filteredData = React.useMemo(() => {
     if (!searchTerm) return data;
@@ -31,6 +37,41 @@ export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDe
       item.uniqueId.includes(searchTerm)
     );
   }, [data, searchTerm]);
+
+  const sortedData = React.useMemo(() => {
+    let sortableItems = [...filteredData];
+    if (sortConfig !== null) {
+        sortableItems.sort((a, b) => {
+            const aValue = a[sortConfig.key] ?? '';
+            const bValue = b[sortConfig.key] ?? '';
+            if (aValue < bValue) {
+                return sortConfig.direction === 'ascending' ? -1 : 1;
+            }
+            if (aValue > bValue) {
+                return sortConfig.direction === 'ascending' ? 1 : -1;
+            }
+            return 0;
+        });
+    }
+    return sortableItems;
+  }, [filteredData, sortConfig]);
+
+  const requestSort = (key: keyof any) => {
+    let direction: 'ascending' | 'descending' = 'ascending';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
+        direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortIcon = (key: keyof any) => {
+    if (!sortConfig || sortConfig.key !== key) {
+        return <ArrowUpDown className="ml-2 h-4 w-4 opacity-30" />;
+    }
+    return sortConfig.direction === 'ascending' 
+        ? <ArrowUpDown className="ml-2 h-4 w-4 text-primary" /> 
+        : <ArrowUpDown className="ml-2 h-4 w-4 text-primary" />;
+  };
 
   const totalDeductionHours = React.useMemo(() => {
     if (type !== 'dailyAttendance' || !searchTerm) return 0;
@@ -41,19 +82,19 @@ export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDe
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>사번</TableHead>
-          <TableHead>이름</TableHead>
-          <TableHead>시작일</TableHead>
-          <TableHead>종료일</TableHead>
+          <TableHead className="cursor-pointer" onClick={() => requestSort('uniqueId')}>사번<ArrowUpDown className="ml-2 h-4 w-4 inline-block" /></TableHead>
+          <TableHead className="cursor-pointer" onClick={() => requestSort('name')}>이름<ArrowUpDown className="ml-2 h-4 w-4 inline-block" /></TableHead>
+          <TableHead className="cursor-pointer" onClick={() => requestSort('startDate')}>시작일<ArrowUpDown className="ml-2 h-4 w-4 inline-block" /></TableHead>
+          <TableHead className="cursor-pointer" onClick={() => requestSort('endDate')}>종료일<ArrowUpDown className="ml-2 h-4 w-4 inline-block" /></TableHead>
           <TableHead>출근시각</TableHead>
           <TableHead>퇴근시각</TableHead>
-          <TableHead>실근로시간</TableHead>
-          <TableHead>사용일수</TableHead>
-          <TableHead>총 차감시간</TableHead>
+          <TableHead className="cursor-pointer" onClick={() => requestSort('actualWorkHours')}>실근로시간<ArrowUpDown className="ml-2 h-4 w-4 inline-block" /></TableHead>
+          <TableHead className="cursor-pointer" onClick={() => requestSort('businessDays')}>사용일수<ArrowUpDown className="ml-2 h-4 w-4 inline-block" /></TableHead>
+          <TableHead className="cursor-pointer" onClick={() => requestSort('totalDeductionHours')}>총 차감시간<ArrowUpDown className="ml-2 h-4 w-4 inline-block" /></TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {filteredData.map((item: ShortenedWorkDetail, index) => (
+        {sortedData.map((item: ShortenedWorkDetail, index) => (
           <TableRow key={`${item.uniqueId}-${index}`}>
             <TableCell>{item.uniqueId}</TableCell>
             <TableCell>{item.name}</TableCell>
@@ -74,18 +115,18 @@ export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDe
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>사번</TableHead>
-          <TableHead>이름</TableHead>
-          <TableHead>일자</TableHead>
-          <TableHead>근태 종류</TableHead>
-          <TableHead>단축사용</TableHead>
-          <TableHead>실근로시간</TableHead>
-          <TableHead>차감일수</TableHead>
-          <TableHead>총 차감시간</TableHead>
+          <TableHead className="cursor-pointer" onClick={() => requestSort('uniqueId')}>사번<ArrowUpDown className="ml-2 h-4 w-4 inline-block" /></TableHead>
+          <TableHead className="cursor-pointer" onClick={() => requestSort('name')}>이름<ArrowUpDown className="ml-2 h-4 w-4 inline-block" /></TableHead>
+          <TableHead className="cursor-pointer" onClick={() => requestSort('date')}>일자<ArrowUpDown className="ml-2 h-4 w-4 inline-block" /></TableHead>
+          <TableHead className="cursor-pointer" onClick={() => requestSort('type')}>근태 종류<ArrowUpDown className="ml-2 h-4 w-4 inline-block" /></TableHead>
+          <TableHead className="cursor-pointer" onClick={() => requestSort('isShortenedDay')}>단축사용<ArrowUpDown className="ml-2 h-4 w-4 inline-block" /></TableHead>
+          <TableHead className="cursor-pointer" onClick={() => requestSort('actualWorkHours')}>실근로시간<ArrowUpDown className="ml-2 h-4 w-4 inline-block" /></TableHead>
+          <TableHead className="cursor-pointer" onClick={() => requestSort('deductionDays')}>차감일수<ArrowUpDown className="ml-2 h-4 w-4 inline-block" /></TableHead>
+          <TableHead className="cursor-pointer" onClick={() => requestSort('totalDeductionHours')}>총 차감시간<ArrowUpDown className="ml-2 h-4 w-4 inline-block" /></TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {filteredData.map((item: DailyAttendanceDetail, index) => (
+        {sortedData.map((item: DailyAttendanceDetail, index) => (
           <TableRow key={`${item.uniqueId}-${index}`}>
             <TableCell>{item.uniqueId}</TableCell>
             <TableCell>{item.name}</TableCell>

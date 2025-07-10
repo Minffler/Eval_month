@@ -4,9 +4,8 @@ import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Download, Info, Trash2, Upload, FileText } from 'lucide-react';
+import { Download, Info, Trash2, Upload } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import type { Employee, EvaluationResult, Grade, EvaluationUploadData, WorkRateInputs, ShortenedWorkHourRecord, DailyAttendanceRecord } from '@/lib/types';
 import {
@@ -39,12 +38,30 @@ interface ManageDataProps {
   workRateInputs: WorkRateInputs;
 }
 
+const headerMapping: Record<string, keyof any> = {
+    '고유사번': 'uniqueId', '사번': 'uniqueId', 'ID': 'uniqueId',
+    '성명': 'name', '이름': 'name', '피평가자': 'name',
+    '부서': 'department', '소속부서': 'department',
+    '시작일': 'startDate', '시작일자': 'startDate',
+    '종료일': 'endDate', '종료일자': 'endDate',
+    '출근시각': 'startTime', '퇴근시각': 'endTime',
+    '일자': 'date', '근태': 'type'
+};
+
+const mapRowToSchema = <T extends {}>(row: any): T => {
+    const newRow: any = {};
+    for (const key in row) {
+        const mappedKey = headerMapping[key.trim()] || key.trim();
+        newRow[mappedKey] = row[key];
+    }
+    return newRow as T;
+}
+
 export default function ManageData({ 
   onEmployeeUpload, 
   onEvaluationUpload, 
   results, 
   selectedDate, 
-  setSelectedDate, 
   onClearEmployeeData, 
   onClearEvaluationData,
   onWorkRateDataUpload,
@@ -84,7 +101,8 @@ export default function ManageData({
                 const sheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[sheetName];
                 const json = XLSX.utils.sheet_to_json<any>(worksheet);
-                resolve(parser(json));
+                const mappedJson = json.map(row => mapRowToSchema(row));
+                resolve(parser(mappedJson));
             } catch (error: any) {
                 reject(error);
             }
@@ -101,11 +119,11 @@ export default function ManageData({
         switch(uploadType) {
           case 'employees':
             const newEmployees = await parseExcelFile<Employee>(file, json => json.map((row, index) => {
-              const uniqueId = String(row['ID'] || '');
+              const uniqueId = String(row['uniqueId'] || '');
               if (!uniqueId) throw new Error(`${index + 2}번째 행에 ID가 없습니다.`);
               return {
-                id: `E${uniqueId}`, uniqueId, name: String(row['이름'] || ''),
-                company: String(row['회사'] || ''), department: String(row['소속부서'] || ''),
+                id: `E${uniqueId}`, uniqueId, name: String(row['name'] || ''),
+                company: String(row['회사'] || ''), department: String(row['department'] || ''),
                 title: String(row['직책'] || '팀원'), position: String(row['직책'] || '팀원'),
                 growthLevel: String(row['성장레벨'] || ''), workRate: parseFloat(String(row['실근무율'] || '0')) || 0,
                 evaluatorId: String(row['평가자 ID'] || ''), baseAmount: Number(String(row['개인별 기준금액'] || '0').replace(/,/g, '')) || 0,
@@ -116,13 +134,13 @@ export default function ManageData({
             break;
           case 'evaluations':
             const newEvals = await parseExcelFile<EvaluationUploadData>(file, json => json.map((row, index) => {
-              const uniqueId = String(row['ID'] || '');
+              const uniqueId = String(row['uniqueId'] || '');
               if (!uniqueId) throw new Error(`${index + 2}번째 행에 ID가 없습니다.`);
               const workRateValue = row['실근무율']; const baseAmountValue = row['기준금액'];
               return {
                   employeeId: `E${uniqueId}`,
-                  name: row['이름'] ? String(row['이름']) : undefined, company: row['회사'] ? String(row['회사']) : undefined,
-                  department: row['소속부서'] ? String(row['소속부서']) : undefined, title: row['직책'] ? String(row['직책']) : undefined,
+                  name: row['name'] ? String(row['name']) : undefined, company: row['회사'] ? String(row['회사']) : undefined,
+                  department: row['department'] ? String(row['department']) : undefined, title: row['직책'] ? String(row['직책']) : undefined,
                   position: row['직책'] ? String(row['직책']) : undefined, growthLevel: row['성장레벨'] ? String(row['성장레벨']) : undefined,
                   workRate: workRateValue !== undefined && workRateValue !== null ? parseFloat(String(workRateValue)) : undefined,
                   evaluatorId: row['평가자 ID'] ? String(row['평가자 ID']) : undefined, evaluatorName: row['평가자'] ? String(row['평가자']) : undefined,
@@ -134,23 +152,23 @@ export default function ManageData({
             break;
           case 'shortenedWork':
             const newShortenedWork = await parseExcelFile<ShortenedWorkHourRecord>(file, json => json.map((row, index) => {
-              const uniqueId = String(row['고유사번'] || row['사번'] || row['ID'] || '');
+              const uniqueId = String(row['uniqueId'] || '');
               if (!uniqueId) throw new Error(`${index + 2}번째 행에 사번이 없습니다.`);
               return {
-                uniqueId, name: String(row['성명'] || row['이름'] || ''),
-                startDate: String(row['시작일'] || ''), endDate: String(row['종료일'] || ''),
-                startTime: String(row['출근시각'] || ''), endTime: String(row['퇴근시각'] || '')
+                uniqueId, name: String(row['name'] || ''),
+                startDate: String(row['startDate'] || ''), endDate: String(row['endDate'] || ''),
+                startTime: String(row['startTime'] || ''), endTime: String(row['endTime'] || '')
               }
             }));
             onWorkRateDataUpload(selectedDate.year, selectedDate.month, 'shortenedWorkHours', newShortenedWork);
             break;
           case 'dailyAttendance':
             const newDailyAttendance = await parseExcelFile<DailyAttendanceRecord>(file, json => json.map((row, index) => {
-              const uniqueId = String(row['고유사번'] || row['사번'] || row['ID'] || '');
+              const uniqueId = String(row['uniqueId'] || '');
               if (!uniqueId) throw new Error(`${index + 2}번째 행에 사번이 없습니다.`);
               return {
-                uniqueId, name: String(row['성명'] || row['이름'] || ''),
-                date: String(row['일자'] || ''), type: String(row['근태'] || '')
+                uniqueId, name: String(row['name'] || ''),
+                date: String(row['date'] || ''), type: String(row['type'] || '')
               }
             }));
             onWorkRateDataUpload(selectedDate.year, selectedDate.month, 'dailyAttendance', newDailyAttendance);

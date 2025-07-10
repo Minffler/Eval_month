@@ -15,7 +15,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import type { AttendanceType, Holiday } from '@/lib/types';
 import { PlusCircle, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { initialAttendanceTypes } from '@/lib/data';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface AttendanceTypeManagementProps {
   attendanceTypes: AttendanceType[];
@@ -26,8 +32,8 @@ interface AttendanceTypeManagementProps {
 
 export default function AttendanceTypeManagement({ attendanceTypes, setAttendanceTypes, holidays, setHolidays }: AttendanceTypeManagementProps) {
   const { toast } = useToast();
+  const [selectedYear, setSelectedYear] = React.useState(new Date().getFullYear());
 
-  // For attendance types
   const handleTypeInputChange = (index: number, field: keyof AttendanceType, value: string) => {
     const newTypes = [...attendanceTypes];
     if (field === 'name') {
@@ -50,17 +56,29 @@ export default function AttendanceTypeManagement({ attendanceTypes, setAttendanc
     setAttendanceTypes(newTypes);
   };
   
-  // For holidays
-  const handleHolidayInputChange = (index: number, field: keyof Holiday, value: string) => {
+  const handleHolidayDateChange = (index: number, value: string) => {
     const newHolidays = [...holidays];
-    (newHolidays[index] as any)[field] = value;
+    let formattedValue = value.replace(/[^0-9]/g, '');
+    if (formattedValue.length > 4) {
+      formattedValue = `${formattedValue.slice(0, 4)}-${formattedValue.slice(4)}`;
+    }
+    if (formattedValue.length > 7) {
+      formattedValue = `${formattedValue.slice(0, 7)}-${formattedValue.slice(7)}`;
+    }
+    newHolidays[index].date = formattedValue.slice(0, 10);
     setHolidays(newHolidays);
   };
+
+  const handleHolidayNameChange = (index: number, value: string) => {
+    const newHolidays = [...holidays];
+    newHolidays[index].name = value;
+    setHolidays(newHolidays);
+  }
 
   const handleAddNewHoliday = () => {
     setHolidays([
       ...holidays,
-      { id: `hol-${Date.now()}`, date: '', name: '' },
+      { id: `hol-${Date.now()}`, date: `${selectedYear}-`, name: '' },
     ]);
   };
 
@@ -70,7 +88,6 @@ export default function AttendanceTypeManagement({ attendanceTypes, setAttendanc
   };
 
   const handleSaveChanges = () => {
-    // Validate attendance types
     const typeNames = attendanceTypes.map(t => t.name.trim());
     if (new Set(typeNames).size !== typeNames.length) {
         toast({ variant: "destructive", title: "오류", description: "근태명은 고유해야 합니다." });
@@ -81,7 +98,6 @@ export default function AttendanceTypeManagement({ attendanceTypes, setAttendanc
         return;
     }
     
-    // Validate holidays
     for(const holiday of holidays) {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(holiday.date)) {
         toast({ variant: "destructive", title: "오류", description: `날짜 형식이 올바르지 않습니다 (YYYY-MM-DD): ${holiday.date}` });
@@ -93,7 +109,6 @@ export default function AttendanceTypeManagement({ attendanceTypes, setAttendanc
       }
     }
     
-    // Save to localStorage (will be handled by useEffect in page.tsx)
     setAttendanceTypes([...attendanceTypes]);
     setHolidays([...holidays].sort((a, b) => a.date.localeCompare(b.date)));
 
@@ -102,6 +117,11 @@ export default function AttendanceTypeManagement({ attendanceTypes, setAttendanc
       description: '변경사항이 성공적으로 저장되었습니다.',
     });
   };
+  
+  const currentClientYear = new Date().getFullYear();
+  const availableYears = Array.from({ length: Math.max(0, currentClientYear - 2022 + 1) }, (_, i) => 2023 + i).reverse();
+
+  const filteredHolidays = holidays.filter(h => h.date.startsWith(String(selectedYear)));
 
   return (
     <div className="space-y-6">
@@ -167,10 +187,26 @@ export default function AttendanceTypeManagement({ attendanceTypes, setAttendanc
       
       <Card>
         <CardHeader>
-          <CardTitle>공휴일 관리</CardTitle>
-          <CardDescription>
-            영업일 계산 시 제외될 공휴일을 관리합니다.
-          </CardDescription>
+           <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>공휴일 관리</CardTitle>
+                <CardDescription>
+                  영업일 계산 시 제외될 공휴일을 관리합니다.
+                </CardDescription>
+              </div>
+               <Select value={String(selectedYear)} onValueChange={(yearStr) => setSelectedYear(parseInt(yearStr, 10))}>
+                  <SelectTrigger className="w-[120px]">
+                      <SelectValue placeholder="연도 선택" />
+                  </SelectTrigger>
+                  <SelectContent>
+                      {availableYears.map(year => (
+                      <SelectItem key={year} value={String(year)}>
+                          {year}년
+                      </SelectItem>
+                      ))}
+                  </SelectContent>
+              </Select>
+           </div>
         </CardHeader>
         <CardContent>
           <div className="border rounded-lg overflow-x-auto">
@@ -183,35 +219,38 @@ export default function AttendanceTypeManagement({ attendanceTypes, setAttendanc
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {holidays.map((holiday, index) => (
-                  <TableRow key={holiday.id}>
-                    <TableCell className="py-1 px-2">
-                      <Input
-                        value={holiday.date}
-                        onChange={(e) => handleHolidayInputChange(index, 'date', e.target.value)}
-                        className="w-40 h-8"
-                        placeholder="YYYY-MM-DD"
-                      />
-                    </TableCell>
-                    <TableCell className="py-1 px-2">
-                      <Input
-                        value={holiday.name}
-                        onChange={(e) => handleHolidayInputChange(index, 'name', e.target.value)}
-                        className="w-40 h-8"
-                      />
-                    </TableCell>
-                    <TableCell className="py-1 px-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleRemoveHoliday(index)}
-                        className="h-8 w-8"
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {filteredHolidays.map((holiday) => {
+                  const index = holidays.findIndex(h => h.id === holiday.id);
+                  return (
+                    <TableRow key={holiday.id}>
+                      <TableCell className="py-1 px-2">
+                        <Input
+                          value={holiday.date}
+                          onChange={(e) => handleHolidayDateChange(index, e.target.value)}
+                          className="w-40 h-8"
+                          placeholder="YYYY-MM-DD"
+                        />
+                      </TableCell>
+                      <TableCell className="py-1 px-2">
+                        <Input
+                          value={holiday.name}
+                          onChange={(e) => handleHolidayNameChange(index, e.target.value)}
+                          className="w-40 h-8"
+                        />
+                      </TableCell>
+                      <TableCell className="py-1 px-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRemoveHoliday(index)}
+                          className="h-8 w-8"
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>

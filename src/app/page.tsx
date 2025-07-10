@@ -451,6 +451,22 @@ export default function Home() {
               }
           };
       });
+
+      if (type === 'dailyAttendance') {
+          setAttendanceTypes(prevTypes => {
+              const existingTypeNames = new Set(prevTypes.map(t => t.name));
+              const newTypesFromData = new Set(data.map(d => d.type).filter(t => !existingTypeNames.has(t)));
+              if (newTypesFromData.size === 0) return prevTypes;
+              
+              const newTypesToAdd: AttendanceType[] = Array.from(newTypesFromData).map(typeName => ({
+                  id: `att-${Date.now()}-${Math.random()}`,
+                  name: typeName as string,
+                  deductionDays: 0, // Default to 0, user needs to set it
+              }));
+
+              return [...prevTypes, ...newTypesToAdd];
+          });
+      }
   };
 
   const handleClearWorkRateData = (year: number, month: number, type: keyof WorkRateInputs) => {
