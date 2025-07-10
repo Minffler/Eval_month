@@ -78,7 +78,7 @@ export default function AttendanceTypeManagement({ attendanceTypes, setAttendanc
   const handleAddNewHoliday = () => {
     setHolidays([
       ...holidays,
-      { id: `hol-${Date.now()}`, date: `${selectedYear}-`, name: '' },
+      { id: `hol-${Date.now()}`, date: '', name: '' },
     ]);
   };
 

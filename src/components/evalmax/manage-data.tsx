@@ -222,7 +222,7 @@ export default function ManageData({
                                       <Info className="h-4 w-4 text-muted-foreground cursor-pointer" />
                                   </TooltipTrigger>
                                   <TooltipContent>
-                                      <p>{infoTooltip}</p>
+                                      <pre className="text-xs bg-muted p-2 rounded-md font-mono">{infoTooltip}</pre>
                                   </TooltipContent>
                               </Tooltip>
                           </TooltipProvider>
@@ -253,6 +253,7 @@ export default function ManageData({
             onDataClear={() => setDialogOpen({ type: 'deleteEmployees' })}
             fileType="employees"
             dataCount={results.length}
+            infoTooltip={`ID: uniqueId, 고유사번, 사번\n이름: name, 성명, 피평가자\n...외 다수`}
         />
 
         <h2 className="text-2xl font-bold mt-8">2. 근무 데이터 업로드</h2>
@@ -264,7 +265,7 @@ export default function ManageData({
                 fileType="shortenedWork"
                 onDataClear={() => setDialogOpen({ type: 'resetWorkData', workDataType: 'shortenedWorkHours' })}
                 dataCount={workRateInputs.shortenedWorkHours?.length || 0}
-                infoTooltip="필수 컬럼: 고유사번, 성명, 시작일, 종료일, 출근시각, 퇴근시각"
+                infoTooltip={`사번: 고유사번, 사번, ID\n성명: 이름, 성명\n시작일: 시작일, 시작일자\n종료일: 종료일, 종료일자\n출근시각: 출근시각\n퇴근시각: 퇴근시각`}
             />
             <UploadCard
                 title="일근태"
@@ -273,7 +274,7 @@ export default function ManageData({
                 fileType="dailyAttendance"
                 onDataClear={() => setDialogOpen({ type: 'resetWorkData', workDataType: 'dailyAttendance' })}
                 dataCount={workRateInputs.dailyAttendance?.length || 0}
-                infoTooltip="필수 컬럼: 고유사번, 성명, 일자, 근태"
+                infoTooltip={`사번: 고유사번, 사번, ID\n성명: 이름, 성명\n사용일: 일자\n근태종류: 근태`}
             />
         </div>
 
