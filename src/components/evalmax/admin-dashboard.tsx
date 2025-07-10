@@ -330,7 +330,7 @@ export default function AdminDashboard({
   };
 
   const handleOpenNotificationDialog = () => {
-    setNotificationMessage(`<평가년월> 평가 마감 3일 전입니다. (현재 진행률 <%>`);
+    setNotificationMessage(`<평가년월> 평가 마감 3일 전입니다. (현재 진행률 <%>%`);
     setIsNotificationDialogOpen(true);
   };
   
@@ -446,7 +446,7 @@ export default function AdminDashboard({
     const groupChar = group.charAt(0);
     switch (groupChar) {
       case 'A':
-        return <div className="mx-auto flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold text-white" style={{ backgroundColor: 'hsl(25, 25%, 35%)' }}>{groupChar}</div>;
+        return <div className="mx-auto flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold text-white" style={{ backgroundColor: 'hsl(25, 25%, 55%)' }}>{groupChar}</div>;
       case 'B':
         return <div className="mx-auto flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold text-stone-800" style={{ backgroundColor: 'hsl(25, 20%, 88%)' }}>{groupChar}</div>;
       case 'C':
