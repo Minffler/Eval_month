@@ -192,7 +192,7 @@ export default function WorkRateManagement({ results, workRateDetails, selectedD
                             <TableHead className="cursor-pointer text-right" onClick={() => requestSort('deductionHoursPregnancy')}><div className="flex items-center justify-end">임신(H){getSortIcon('deductionHoursPregnancy')}</div></TableHead>
                             <TableHead className="cursor-pointer text-right" onClick={() => requestSort('deductionHoursCare')}><div className="flex items-center justify-end">육아/돌봄(H){getSortIcon('deductionHoursCare')}</div></TableHead>
                             <TableHead className="cursor-pointer text-right" onClick={() => requestSort('totalDeductionHours')}><div className="flex items-center justify-end">미근로시간{getSortIcon('totalDeductionHours')}</div></TableHead>
-                            <TableHead className="cursor-pointer text-right min-w-[250px]" onClick={() => requestSort('totalWorkHours')}><div className="flex items-center justify-end">근로/미근로 시간{getSortIcon('totalWorkHours')}</div></TableHead>
+                            <TableHead className="cursor-pointer text-right min-w-[250px]" onClick={() => requestSort('totalWorkHours')}><div className="flex items-center justify-end">미근로/근로 시간{getSortIcon('totalWorkHours')}</div></TableHead>
                             <TableHead className="cursor-pointer text-right" onClick={() => requestSort('monthlyWorkRate')}><div className="flex items-center justify-end">근무율{getSortIcon('monthlyWorkRate')}</div></TableHead>
                         </TableRow>
                     </TableHeader>
@@ -209,10 +209,11 @@ export default function WorkRateManagement({ results, workRateDetails, selectedD
                              <Progress 
                                 value={summary.monthlyWorkRate}
                                 max={1}
-                                leftLabel={summary.totalWorkHours.toFixed(2)}
-                                rightLabel={summary.totalDeductionHours.toFixed(2)}
+                                leftLabel={String(summary.totalDeductionHours.toFixed(2))}
+                                rightLabel={String(summary.totalWorkHours.toFixed(2))}
                                 indicatorClassName="bg-[hsl(var(--chart-1))]"
                                 className="w-[220px] ml-auto"
+                                reverse={true}
                             />
                           </TableCell>
                           <TableCell className="text-right tabular-nums">
