@@ -45,7 +45,8 @@ const headerMapping: Record<string, keyof any> = {
     '시작일': 'startDate', '시작일자': 'startDate',
     '종료일': 'endDate', '종료일자': 'endDate',
     '출근시각': 'startTime', '퇴근시각': 'endTime',
-    '일자': 'date', '근태': 'type'
+    '일자': 'date', '근태사용일': 'date',
+    '근태': 'type', '근태종류': 'type'
 };
 
 const mapRowToSchema = <T extends {}>(row: any): T => {
@@ -69,7 +70,6 @@ export default function ManageData({
   workRateInputs
 }: ManageDataProps) {
   const { toast } = useToast();
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [dialogOpen, setDialogOpen] = React.useState<{ type: 'deleteEmployees' | 'resetEvaluations' | 'resetWorkData', workDataType?: keyof WorkRateInputs } | null>(null);
 
   const handleClearEmployees = () => {
@@ -199,15 +199,27 @@ export default function ManageData({
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Data');
     XLSX.writeFile(workbook, fileName);
   };
+  
+  const getTooltipContent = (type: 'employees' | 'shortenedWork' | 'dailyAttendance' | 'evaluations') => {
+    const base = "[필수] 사번: '고유사번', '사번', 'ID'";
+    const name = "이름: '이름', '성명', '피평가자'";
+    switch(type) {
+      case 'employees': return `${base}\n${name}\n회사, 소속부서, 직책, 성장레벨, 실근무율, 평가자 ID, 개인별 기준금액, 비고`;
+      case 'evaluations': return `${base}\n${name}\n... 외 모든 직원 데이터 및 등급, 비고`;
+      case 'shortenedWork': return `${base}\n[필수] 시작일: '시작일', '시작일자'\n[필수] 종료일: '종료일', '종료일자'\n[필수] 출근시각, 퇴근시각`;
+      case 'dailyAttendance': return `${base}\n[필수] 사용일: '일자', '근태사용일'\n[필수] 근태종류: '근태', '근태종류'`;
+      default: return '';
+    }
+  }
 
-  const UploadCard = ({ title, description, onFileUpload, onTemplateDownload, onDataClear, fileType, infoTooltip, dataCount = 0 }: {
+  const UploadCard = ({ title, description, onFileUpload, onTemplateDownload, onDataClear, fileType, uploadType, dataCount = 0 }: {
     title: string;
     description: string;
     onFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onTemplateDownload?: () => void;
     onDataClear?: () => void;
     fileType: string;
-    infoTooltip?: string;
+    uploadType: 'employees' | 'shortenedWork' | 'dailyAttendance' | 'evaluations';
     dataCount?: number;
   }) => (
     <Card>
@@ -215,20 +227,20 @@ export default function ManageData({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <CardTitle>{title}</CardTitle>
-            {infoTooltip && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-6 w-6">
-                      <Info className="h-4 w-4 text-muted-foreground" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <pre className="text-xs bg-muted text-muted-foreground p-2 rounded-md font-mono whitespace-pre-wrap max-w-xs">{infoTooltip}</pre>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-6 w-6">
+                    <Info className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <pre className="text-xs bg-muted text-muted-foreground p-2 rounded-md font-mono whitespace-pre-wrap max-w-xs">
+                    {getTooltipContent(uploadType)}
+                  </pre>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
           {onDataClear && <Button variant="destructive" size="sm" onClick={onDataClear} disabled={dataCount === 0}><Trash2 className="mr-2 h-4 w-4" />초기화</Button>}
         </div>
@@ -254,8 +266,8 @@ export default function ManageData({
             onTemplateDownload={() => handleDownloadTemplate('employees')}
             onDataClear={() => setDialogOpen({ type: 'deleteEmployees' })}
             fileType="employees"
+            uploadType="employees"
             dataCount={results.length}
-            infoTooltip={`[필수] 고유사번: '고유사번', '사번', 'ID'\n[선택] 이름: '이름', '성명', '피평가자'\n...외 회사, 부서, 직책 등`}
         />
 
         <h2 className="text-2xl font-bold mt-8">2. 근무 데이터 업로드</h2>
@@ -265,18 +277,18 @@ export default function ManageData({
                 description="임신기, 육아기, 가족돌봄 등 단축근로 내역이 담긴 파일을 업로드합니다."
                 onFileUpload={(e) => handleFileUpload(e, 'shortenedWork')}
                 fileType="shortenedWork"
+                uploadType="shortenedWork"
                 onDataClear={() => setDialogOpen({ type: 'resetWorkData', workDataType: 'shortenedWorkHours' })}
                 dataCount={workRateInputs.shortenedWorkHours?.length || 0}
-                infoTooltip={`[필수] 고유사번: '고유사번', '사번', 'ID'\n[필수] 시작일: '시작일', '시작일자'\n[필수] 종료일: '종료일', '종료일자'\n[필수] 출근시각/퇴근시각`}
             />
             <UploadCard
                 title="일근태"
                 description="연차, 반차, 병가 등 일별 근태 사용 내역 파일을 업로드합니다."
                 onFileUpload={(e) => handleFileUpload(e, 'dailyAttendance')}
                 fileType="dailyAttendance"
+                uploadType="dailyAttendance"
                 onDataClear={() => setDialogOpen({ type: 'resetWorkData', workDataType: 'dailyAttendance' })}
                 dataCount={workRateInputs.dailyAttendance?.length || 0}
-                infoTooltip={`[필수] 고유사번: '고유사번', '사번', 'ID'\n[필수] 사용일: '일자'\n[필수] 근태종류: '근태'`}
             />
         </div>
 
@@ -288,6 +300,7 @@ export default function ManageData({
             onTemplateDownload={() => handleDownloadTemplate('evaluations')}
             onDataClear={() => setDialogOpen({ type: 'resetEvaluations' })}
             fileType="evaluations"
+            uploadType="evaluations"
             dataCount={results.filter(r => r.grade).length}
         />
 

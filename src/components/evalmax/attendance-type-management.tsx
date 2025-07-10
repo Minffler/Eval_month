@@ -94,7 +94,7 @@ export default function AttendanceTypeManagement({ attendanceTypes, setAttendanc
   const handleAddNewHoliday = () => {
     setLocalHolidays([
       ...localHolidays,
-      { id: `hol-${Date.now()}`, date: '', name: '' },
+      { id: `hol-${Date.now()}`, date: `${selectedYear}-`, name: '' },
     ]);
   };
 
@@ -160,8 +160,8 @@ export default function AttendanceTypeManagement({ attendanceTypes, setAttendanc
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="whitespace-nowrap py-2 px-3">차감 일수 (단위: 일)</TableHead>
                       <TableHead className="whitespace-nowrap py-2 px-3">근태명</TableHead>
+                      <TableHead className="whitespace-nowrap py-2 px-3">차감 일수 (단위: 일)</TableHead>
                       <TableHead></TableHead>
                     </TableRow>
                   </TableHeader>
@@ -170,17 +170,17 @@ export default function AttendanceTypeManagement({ attendanceTypes, setAttendanc
                       <TableRow key={type.id}>
                         <TableCell className="py-1 px-2">
                           <Input
-                            type="number"
-                            step="0.01"
-                            value={type.deductionDays}
-                            onChange={(e) => handleTypeInputChange(index, 'deductionDays', e.target.value)}
+                            value={type.name}
+                            onChange={(e) => handleTypeInputChange(index, 'name', e.target.value)}
                             className="w-40 h-8"
                           />
                         </TableCell>
                         <TableCell className="py-1 px-2">
                           <Input
-                            value={type.name}
-                            onChange={(e) => handleTypeInputChange(index, 'name', e.target.value)}
+                            type="number"
+                            step="0.01"
+                            value={type.deductionDays}
+                            onChange={(e) => handleTypeInputChange(index, 'deductionDays', e.target.value)}
                             className="w-40 h-8"
                           />
                         </TableCell>
@@ -220,7 +220,7 @@ export default function AttendanceTypeManagement({ attendanceTypes, setAttendanc
               <div>
                 <CardTitle>공휴일 관리</CardTitle>
                 <CardDescription>
-                  {selectedYear}년 영업일 계산 시 제외될 공휴일을 관리합니다.
+                  영업일 계산 시 제외될 공휴일을 관리합니다.
                 </CardDescription>
               </div>
                <Select value={String(selectedYear)} onValueChange={(yearStr) => setSelectedYear(parseInt(yearStr, 10))}>
@@ -248,7 +248,7 @@ export default function AttendanceTypeManagement({ attendanceTypes, setAttendanc
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredHolidays.map((holiday) => {
+                {filteredHolidays.map((holiday, idx) => {
                   const index = localHolidays.findIndex(h => h.id === holiday.id);
                   return (
                     <TableRow key={holiday.id}>
