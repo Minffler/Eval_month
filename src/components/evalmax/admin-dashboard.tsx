@@ -441,6 +441,20 @@ export default function AdminDashboard({
     const fileName = `${selectedDate.year}.${String(selectedDate.month).padStart(2, '0')}_월성과데이터.xlsx`;
     XLSX.writeFile(workbook, fileName);
   };
+
+  const EvaluationGroupIcon = ({ group }: { group: string }) => {
+    const groupChar = group.charAt(0);
+    switch (groupChar) {
+      case 'A':
+        return <div className="mx-auto flex h-6 w-6 items-center justify-center rounded-full bg-[#70483c] text-xs font-semibold text-white">{groupChar}</div>;
+      case 'B':
+        return <div className="mx-auto flex h-6 w-6 items-center justify-center rounded-full bg-[#d4c5be] text-xs font-semibold text-stone-800">{groupChar}</div>;
+      case 'C':
+        return <div className="mx-auto flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold text-stone-400">{groupChar}</div>;
+      default:
+        return <span>{group}</span>;
+    }
+  };
   
   const renderContent = () => {
     const key = `${selectedDate.year}-${selectedDate.month}`;
@@ -656,7 +670,9 @@ export default function AdminDashboard({
                                 <TableCell className="py-1 px-2 whitespace-nowrap">{r.department}</TableCell>
                                 <TableCell className="py-1 px-2 font-medium whitespace-nowrap">{r.name}</TableCell>
                                 <TableCell className="py-1 px-2 whitespace-nowrap">{r.title}</TableCell>
-                                <TableCell className="py-1 px-2 whitespace-nowrap">{r.evaluationGroup}</TableCell>
+                                <TableCell className="py-1 px-2 whitespace-nowrap">
+                                  <EvaluationGroupIcon group={r.evaluationGroup} />
+                                </TableCell>
                                 <TableCell className="py-1 px-2 whitespace-nowrap">{(r.workRate * 100).toFixed(1)}%</TableCell>
                                 <TableCell className="py-1 px-2 whitespace-nowrap">{r.score}</TableCell>
                                 <TableCell className="py-1 px-2 whitespace-nowrap">
