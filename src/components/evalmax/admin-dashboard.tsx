@@ -446,11 +446,11 @@ export default function AdminDashboard({
     const groupChar = group.charAt(0);
     switch (groupChar) {
       case 'A':
-        return <div className="mx-auto flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold text-white" style={{ backgroundColor: 'hsl(25, 25%, 55%)' }}>{groupChar}</div>;
+        return <div className="mx-auto flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold text-stone-700" style={{ backgroundColor: 'hsl(25, 15%, 75%)' }}>{groupChar}</div>;
       case 'B':
         return <div className="mx-auto flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold text-stone-800" style={{ backgroundColor: 'hsl(25, 20%, 88%)' }}>{groupChar}</div>;
       case 'C':
-        return <div className="mx-auto flex h-6 w-6 items-center justify-center rounded-full bg-muted/50 text-xs font-semibold text-stone-400">{groupChar}</div>;
+        return <div className="mx-auto flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold text-stone-400" style={{ backgroundColor: 'hsl(30, 20%, 97%)' }}>{groupChar}</div>;
       default:
         return <span>{group}</span>;
     }
