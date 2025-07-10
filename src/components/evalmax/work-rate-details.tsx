@@ -12,8 +12,10 @@ import {
   TableFooter
 } from '@/components/ui/table';
 import { Input } from '../ui/input';
-import { Search, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Search, ArrowUpDown, ArrowUp, ArrowDown, Download } from 'lucide-react';
 import type { ShortenedWorkDetail, DailyAttendanceDetail } from '@/lib/work-rate-calculator';
+import { Button } from '../ui/button';
+import * as XLSX from 'xlsx';
 
 type SortConfig<T> = {
   key: keyof T;
@@ -77,6 +79,31 @@ export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDe
     if (!searchTerm) return 0;
     return filteredData.reduce((acc, curr) => acc + (curr.totalDeductionHours || 0), 0);
   }, [filteredData, searchTerm]);
+  
+  const handleDownloadExcel = () => {
+    let dataToExport, fileName;
+    if (type === 'shortenedWork') {
+      dataToExport = sortedData.map((item: ShortenedWorkDetail) => ({
+        '고유사번': item.uniqueId, '이름': item.name, '구분': item.type,
+        '시작일': item.startDate, '종료일': item.endDate, '출근시각': item.startTime,
+        '퇴근시각': item.endTime, '실근로시간': item.actualWorkHours,
+        '사용일수': item.businessDays, '총 차감시간': item.totalDeductionHours,
+      }));
+      fileName = `${selectedDate.year}.${selectedDate.month}_단축근로상세.xlsx`;
+    } else {
+      dataToExport = sortedData.map((item: DailyAttendanceDetail) => ({
+        '고유사번': item.uniqueId, '이름': item.name, '일자': item.date,
+        '근태 종류': item.type, '단축사용': item.isShortenedDay ? 'Y' : 'N',
+        '실근로시간': item.actualWorkHours, '차감일수': item.deductionDays,
+        '총 차감시간': item.totalDeductionHours,
+      }));
+      fileName = `${selectedDate.year}.${selectedDate.month}_일근태상세.xlsx`;
+    }
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, '상세내역');
+    XLSX.writeFile(workbook, fileName);
+  };
   
   const renderShortenedWorkTable = () => (
     <Table>
@@ -166,8 +193,16 @@ export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDe
   return (
     <Card>
         <CardHeader>
-            <CardTitle>{title}</CardTitle>
-            <CardDescription>{description}</CardDescription>
+          <div className="flex flex-col sm:flex-row justify-between sm:items-start gap-2">
+            <div>
+              <CardTitle>{title}</CardTitle>
+              <CardDescription>{description}</CardDescription>
+            </div>
+            <Button onClick={handleDownloadExcel} variant="outline" size="sm">
+              <Download className="mr-2 h-4 w-4" />
+              엑셀 다운로드
+            </Button>
+          </div>
             <div className="relative mt-4 max-w-md">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input

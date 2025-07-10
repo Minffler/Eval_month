@@ -73,17 +73,16 @@ export function Sidebar({ navItems, activeView, setActiveView, isOpen, setIsOpen
   );
   
   const userProfile = user ? (
-    <div className="flex items-center gap-3 p-4">
-      <Avatar className={cn("h-10 w-10 transition-all", !isOpen && "h-9 w-9")}>
-        <AvatarImage src={user?.avatar} alt={user?.name} data-ai-hint="person avatar" />
-        <AvatarFallback>{user?.name.charAt(0)}</AvatarFallback>
-      </Avatar>
+    <div className="flex items-center justify-between gap-3 p-2">
       {isOpen && (
         <div className="flex flex-col text-left overflow-hidden">
             <span className="font-semibold text-sm truncate">{user?.name}</span>
             <span className="text-xs text-muted-foreground truncate">{user?.department} / {user?.title}</span>
         </div>
       )}
+      <Button variant="ghost" size="icon" className="rounded-full flex-shrink-0" onClick={logout}>
+          <LogOut className="h-5 w-5" />
+      </Button>
     </div>
   ) : null;
 
@@ -167,26 +166,7 @@ export function Sidebar({ navItems, activeView, setActiveView, isOpen, setIsOpen
           </nav>
         </ScrollArea>
         <div className="mt-auto border-t">
-          <Popover>
-            <PopoverTrigger asChild>
-              <div className="cursor-pointer hover:bg-muted/50">
-                {userProfile}
-              </div>
-            </PopoverTrigger>
-            <PopoverContent side={isOpen ? 'top' : 'right'} align="start" className="w-auto mb-2">
-              <div className="p-2 space-y-1">
-                <p className="font-semibold">{user?.name}</p>
-                <p className="text-sm text-muted-foreground">{user?.department} / {user?.title}</p>
-              </div>
-            </PopoverContent>
-          </Popover>
-
-          <div className="p-2 border-t">
-            <Button variant="ghost" onClick={logout} className={cn("w-full justify-start gap-3", !isOpen && "justify-center")} title="로그아웃">
-              <LogOut className="h-5 w-5" />
-              {isOpen && <span>로그아웃</span>}
-            </Button>
-          </div>
+          {userProfile}
         </div>
 
         <Button

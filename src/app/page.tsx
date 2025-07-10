@@ -44,16 +44,6 @@ const adminNavItems: NavItem[] = [
     ],
   },
   {
-    id: 'data-management',
-    label: '데이터 관리',
-    icon: Database,
-    children: [
-      { id: 'file-upload', label: '파일 업로드', icon: Upload },
-      { id: 'evaluator-management', label: '평가자 관리', icon: Users },
-      { id: 'grade-management', label: '등급/점수 관리', icon: Settings },
-    ],
-  },
-  {
     id: 'work-rate-management',
     label: '근무율 관리',
     icon: Hourglass,
@@ -63,6 +53,16 @@ const adminNavItems: NavItem[] = [
       { id: 'daily-attendance-details', label: '일근태 상세', icon: CalendarDays },
       { id: 'attendance-type-management', label: '근태 수치 관리', icon: ListTodo },
     ]
+  },
+  {
+    id: 'data-management',
+    label: '데이터 관리',
+    icon: Database,
+    children: [
+      { id: 'file-upload', label: '파일 업로드', icon: Upload },
+      { id: 'evaluator-management', label: '평가자 관리', icon: Users },
+      { id: 'grade-management', label: '등급/점수 관리', icon: Settings },
+    ],
   },
   {
     id: 'notifications',
