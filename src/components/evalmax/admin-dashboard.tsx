@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, FileCheck, Bot, Upload, LayoutDashboard, Settings, Download, Bell, ArrowUpDown, ArrowUp, ArrowDown, Eye, ClipboardX, ChevronUp, ChevronDown } from 'lucide-react';
+import { Users, FileCheck, Bot, Upload, LayoutDashboard, Settings, Download, Bell, ArrowUpDown, ArrowUp, ArrowDown, Eye, ClipboardX, ChevronUp, ChevronDown, CheckCircle2 } from 'lucide-react';
 import { GradeHistogram } from './grade-histogram';
 import {
   Table,
@@ -59,6 +59,8 @@ import WorkRateDetails from './work-rate-details';
 import type { WorkRateDetailsResult } from '@/lib/work-rate-calculator';
 import { cn } from '@/lib/utils';
 import { useNotifications } from '@/contexts/notification-context';
+import { format } from 'date-fns';
+import { ko } from 'date-fns/locale';
 
 interface AdminDashboardProps {
   results: EvaluationResult[];
@@ -136,7 +138,7 @@ export default function AdminDashboard({
   const [isPayoutChartOpen, setIsPayoutChartOpen] = React.useState(false);
   const [dashboardFilter, setDashboardFilter] = React.useState('전체');
   const { toast } = useToast();
-  const { addNotification } = useNotifications();
+  const { addNotification, notifications, markAllAsRead, unreadCount } = useNotifications();
 
   React.useEffect(() => {
     setResults(initialResults);
@@ -446,7 +448,7 @@ export default function AdminDashboard({
     const groupChar = group.charAt(0);
     switch (groupChar) {
       case 'A':
-        return <div className="mx-auto flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold text-stone-700" style={{ backgroundColor: 'hsl(25, 25%, 75%)' }}>{groupChar}</div>;
+        return <div className="mx-auto flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold text-stone-700" style={{ backgroundColor: 'hsl(25, 15%, 75%)' }}>{groupChar}</div>;
       case 'B':
         return <div className="mx-auto flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold text-stone-800" style={{ backgroundColor: 'hsl(25, 20%, 92%)' }}>{groupChar}</div>;
       case 'C':
@@ -776,26 +778,38 @@ export default function AdminDashboard({
         case 'daily-attendance-details':
             return <WorkRateDetails type="dailyAttendance" data={workRateDetails.dailyAttendanceDetails} selectedDate={selectedDate} />;
         case 'notifications': {
-            const notifications = [
-                { date: '2025.07.07 14:00', message: '2025년 6월 평가대상자가 업로드 되었습니다. 평가를 진행해주세요.' },
-                { date: '2025.07.15 09:00', message: '평가마감 기한이 3일 남았습니다. 근무율을 최종적으로 확인해주세요.' },
-                { date: '2025.07.18 18:00', message: '평가가 마감되었습니다. 마감 이후 수정은 불가합니다.' },
-            ];
             return (
                 <Card>
-                    <CardHeader>
-                        <CardTitle>알림함</CardTitle>
-                        <CardDescription>최근 알림 내역입니다.</CardDescription>
+                    <CardHeader className="flex flex-row justify-between items-center">
+                        <div>
+                            <CardTitle>알림함</CardTitle>
+                            <CardDescription>최근 알림 내역입니다.</CardDescription>
+                        </div>
+                        {unreadCount > 0 && (
+                             <Button variant="outline" size="sm" onClick={markAllAsRead}>
+                                <CheckCircle2 className="mr-2 h-4 w-4" />
+                                모두 읽음으로 표시
+                            </Button>
+                        )}
                     </CardHeader>
                     <CardContent>
-                        <ul className="space-y-4">
-                        {notifications.map((notification, index) => (
-                            <li key={index} className="p-3 rounded-md border bg-muted/50">
-                                <p className="text-sm font-medium">{notification.message}</p>
-                                <p className="text-xs text-muted-foreground mt-1">{notification.date}</p>
-                            </li>
-                        ))}
-                        </ul>
+                        {notifications.length > 0 ? (
+                            <ul className="space-y-4">
+                            {notifications.map((notification) => (
+                                <li key={notification.id} className={cn("p-3 rounded-md border", !notification.isRead && "bg-muted/50")}>
+                                    <p className="text-sm font-medium">{notification.message}</p>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        {format(new Date(notification.date), "yyyy.MM.dd HH:mm", { locale: ko })}
+                                    </p>
+                                </li>
+                            ))}
+                            </ul>
+                        ) : (
+                           <div className="flex flex-col items-center justify-center h-40 text-center">
+                                <Bell className="h-10 w-10 text-muted-foreground mb-4" />
+                                <p className="text-muted-foreground">새로운 알림이 없습니다.</p>
+                           </div>
+                        )}
                     </CardContent>
                 </Card>
             )

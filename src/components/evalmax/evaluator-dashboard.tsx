@@ -41,7 +41,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Check, Download, ArrowUpDown, ArrowUp, ArrowDown, Edit, GripVertical, ChevronUp, ChevronDown, PlusCircle, Save, X, Trash2, Users } from 'lucide-react';
+import { Check, Download, ArrowUpDown, ArrowUp, ArrowDown, Edit, GripVertical, ChevronUp, ChevronDown, PlusCircle, Save, X, Trash2, Users, Bell, CheckCircle2 } from 'lucide-react';
 import { Progress } from '../ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { GradeHistogram } from './grade-histogram';
@@ -74,6 +74,9 @@ import {
 import { Label } from '../ui/label';
 import { ScrollArea } from '../ui/scroll-area';
 import { getPositionSortValue } from '@/lib/data';
+import { useNotifications } from '@/contexts/notification-context';
+import { format } from 'date-fns';
+import { ko } from 'date-fns/locale';
 
 interface EvaluatorDashboardProps {
   allResults: EvaluationResult[];
@@ -1017,6 +1020,7 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, allEmploye
 export default function EvaluatorDashboard({ allResults, currentMonthResults, gradingScale, selectedDate, setSelectedDate, handleResultsUpdate, evaluatorUser, activeView, onClearMyEvaluations }: EvaluatorDashboardProps) {
   const { user: authUser } = useAuth();
   const [effectiveUser, setEffectiveUser] = React.useState<User | null>(null);
+  const { notifications, unreadCount, markAllAsRead } = useNotifications();
 
   React.useEffect(() => {
     if (evaluatorUser) { // This is an Employee object from Admin view
@@ -1071,27 +1075,39 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
                  evaluatorId={effectiveUser.uniqueId}
                  evaluatorName={effectiveUser.name}
                />;
-        case 'notifications': {
-            const notifications = [
-                { date: '2025.07.07 14:00', message: '2025년 6월 평가대상자가 업로드 되었습니다. 평가를 진행해주세요.' },
-                { date: '2025.07.15 09:00', message: '평가마감 기한이 3일 남았습니다. 근무율을 최종적으로 확인해주세요.' },
-                { date: '2025.07.18 18:00', message: '평가가 마감되었습니다. 마감 이후 수정은 불가합니다.' },
-            ];
+      case 'notifications': {
             return (
                 <Card>
-                    <CardHeader>
-                        <CardTitle>알림함</CardTitle>
-                        <CardDescription>최근 알림 내역입니다.</CardDescription>
+                    <CardHeader className="flex flex-row justify-between items-center">
+                        <div>
+                            <CardTitle>알림함</CardTitle>
+                            <CardDescription>최근 알림 내역입니다.</CardDescription>
+                        </div>
+                        {unreadCount > 0 && (
+                             <Button variant="outline" size="sm" onClick={markAllAsRead}>
+                                <CheckCircle2 className="mr-2 h-4 w-4" />
+                                모두 읽음으로 표시
+                            </Button>
+                        )}
                     </CardHeader>
                     <CardContent>
-                        <ul className="space-y-4">
-                        {notifications.map((notification, index) => (
-                            <li key={index} className="p-3 rounded-md border bg-muted/50">
-                                <p className="text-sm font-medium">{notification.message}</p>
-                                <p className="text-xs text-muted-foreground mt-1">{notification.date}</p>
-                            </li>
-                        ))}
-                        </ul>
+                        {notifications.length > 0 ? (
+                            <ul className="space-y-4">
+                            {notifications.map((notification) => (
+                                <li key={notification.id} className={cn("p-3 rounded-md border", !notification.isRead && "bg-muted/50")}>
+                                    <p className="text-sm font-medium">{notification.message}</p>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        {format(new Date(notification.date), "yyyy.MM.dd HH:mm", { locale: ko })}
+                                    </p>
+                                </li>
+                            ))}
+                            </ul>
+                        ) : (
+                           <div className="flex flex-col items-center justify-center h-40 text-center">
+                                <Bell className="h-10 w-10 text-muted-foreground mb-4" />
+                                <p className="text-muted-foreground">새로운 알림이 없습니다.</p>
+                           </div>
+                        )}
                     </CardContent>
                 </Card>
             )
