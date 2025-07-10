@@ -89,7 +89,7 @@ export const calculateWorkRateDetails = (
       const workHours = parseTime(record.endTime) - parseTime(record.startTime);
       let actualWorkHours = workHours;
       if (workHours >= 6) actualWorkHours -= 1;
-      else if (workHours === 4.5) actualWorkHours -= 0.5;
+      else if (workHours >= 4) actualWorkHours -= 0.5;
 
       const dailyDeductionHours = 8 - actualWorkHours;
       const businessDays = countBusinessDays(effectiveStartDate, effectiveEndDate, holidaySet);

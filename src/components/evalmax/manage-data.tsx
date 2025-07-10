@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Download, Trash2, Upload } from 'lucide-react';
+import { Download, Info, Trash2, Upload } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import type { Employee, EvaluationResult, Grade, EvaluationUploadData, WorkRateInputs, ShortenedWorkHourRecord, DailyAttendanceRecord, ShortenedWorkType } from '@/lib/types';
 import {
@@ -18,6 +18,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 interface ManageDataProps {
   results: EvaluationResult[];
@@ -33,7 +34,7 @@ interface ManageDataProps {
 }
 
 const headerMapping: Record<string, string> = {
-    '고유사번': 'uniqueId', '사번': 'uniqueId_alt', 'ID': 'uniqueId_alt',
+    '고유사번': 'uniqueId_primary', '사번': 'uniqueId_secondary', 'ID': 'uniqueId_tertiary',
     '성명': 'name', '이름': 'name', '피평가자': 'name',
     '부서': 'department', '소속부서': 'department',
     '시작일': 'startDate', '시작일자': 'startDate',
@@ -53,11 +54,11 @@ const mapRowToSchema = <T extends {}>(row: any): T => {
     }
     
     // Apply priority for uniqueId
-    const uniqueId = String(tempRow['uniqueId'] ?? tempRow['uniqueId_alt'] ?? '');
+    const uniqueId = String(tempRow['uniqueId_primary'] ?? tempRow['uniqueId_secondary'] ?? tempRow['uniqueId_tertiary'] ?? '');
     
     // Construct the final row, excluding temporary keys
     for(const key in tempRow) {
-        if (key !== 'uniqueId_alt') {
+        if (!key.startsWith('uniqueId_')) {
             newRow[key] = tempRow[key];
         }
     }
@@ -78,7 +79,7 @@ export default function ManageData({
   workRateInputs
 }: ManageDataProps) {
   const { toast } = useToast();
-  const [dialogOpen, setDialogOpen] = React.useState<{ type: 'deleteEmployees' | 'resetEvaluations' | 'resetWorkData', workDataType?: keyof WorkRateInputs } | null>(null);
+  const [dialogOpen, setDialogOpen] = React.useState<{ type: 'deleteEmployees' | 'resetEvaluations' | 'resetWorkData', workDataType?: 'shortenedWorkHours' | 'dailyAttendance' | 'shortenedWorkPregnancy' | 'shortenedWorkCare' } | null>(null);
 
   const handleClearEmployees = () => {
     onClearEmployeeData(selectedDate.year, selectedDate.month);
@@ -92,9 +93,20 @@ export default function ManageData({
     setDialogOpen(null);
   };
   
-  const handleResetWorkData = (type: keyof WorkRateInputs) => {
-    onClearWorkRateData(selectedDate.year, selectedDate.month, type);
-    const typeName = type === 'shortenedWorkHours' ? '단축근로' : '일근태';
+  const handleResetWorkData = () => {
+    if (!dialogOpen?.workDataType) return;
+
+    let typeName = '';
+    if (dialogOpen.workDataType === 'shortenedWorkPregnancy') {
+        onClearWorkRateData(selectedDate.year, selectedDate.month, 'shortenedWorkHours'); // This clears all, need to be specific if required
+        typeName = '임신기 단축근로';
+    } else if (dialogOpen.workDataType === 'shortenedWorkCare') {
+        onClearWorkRateData(selectedDate.year, selectedDate.month, 'shortenedWorkHours'); // This clears all
+        typeName = '육아/돌봄 단축근로';
+    } else if (dialogOpen.workDataType === 'dailyAttendance') {
+        onClearWorkRateData(selectedDate.year, selectedDate.month, 'dailyAttendance');
+        typeName = '일근태';
+    }
     toast({ title: '초기화 완료', description: `해당 월의 ${typeName} 데이터가 초기화되었습니다.` });
     setDialogOpen(null);
   }
@@ -212,102 +224,83 @@ export default function ManageData({
   
   return (
     <div className="space-y-6">
-        <h2 className="text-2xl font-bold">1. 대상자 업로드</h2>
+        <h2 className="text-2xl font-bold">1. 평가 대상자 관리</h2>
         <Card>
             <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle>평가 대상자</CardTitle>
-                  <Button variant="destructive" size="sm" onClick={() => setDialogOpen({type: 'deleteEmployees'})} disabled={results.length === 0}><Trash2 className="mr-2 h-4 w-4" />초기화</Button>
+                  <CardTitle>평가 대상자 업로드</CardTitle>
+                  <Button variant="destructive-outline" size="sm" onClick={() => setDialogOpen({type: 'deleteEmployees'})} disabled={results.length === 0}><Trash2 className="mr-2 h-4 w-4" />초기화</Button>
                 </div>
                 <CardDescription>월별 평가 대상자 정보를 엑셀 파일로 업로드합니다. 기존 데이터는 덮어쓰기 됩니다.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col sm:flex-row items-center gap-4">
-                <div className="grid w-full max-w-sm items-center gap-1.5">
+                <div className="grid w-full items-center gap-1.5 flex-1">
                     <Input id="employees" type="file" accept=".xlsx, .xls" onChange={(e) => handleFileUpload(e, 'employees')} onClick={(e) => (e.currentTarget.value = '')} />
-                    {results.length > 0 && <p className="text-xs text-muted-foreground">{results.length}개 데이터가 업로드되었습니다.</p>}
                 </div>
                 <Button onClick={() => handleDownloadTemplate('employees')} variant="outline" className="w-full sm:w-auto"><Download className="mr-2 h-4 w-4" />양식 다운로드</Button>
             </CardContent>
+            {results.length > 0 && <p className="text-xs text-muted-foreground px-6 pb-4">{results.length}명의 데이터가 업로드되었습니다.</p>}
         </Card>
 
-        <h2 className="text-2xl font-bold mt-8">2. 근무 데이터 업로드</h2>
+        <h2 className="text-2xl font-bold mt-8">2. 근무 데이터 관리</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>임신기 단축근로</CardTitle>
+                 <Button variant="destructive-outline" size="sm" onClick={() => setDialogOpen({type: 'resetWorkData', workDataType: 'shortenedWorkPregnancy'})} disabled={!workRateInputs.shortenedWorkHours?.some(r => r.type === '임신')}><Trash2 className="mr-2 h-4 w-4" />초기화</Button>
               </div>
               <CardDescription>임신기 단축근로 내역이 담긴 파일을 업로드합니다.</CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-col sm:flex-row items-center gap-4">
-              <div className="grid w-full max-w-sm items-center gap-1.5">
-                <Input id="shortenedWorkPregnancy" type="file" accept=".xlsx, .xls" onChange={(e) => handleFileUpload(e, 'shortenedWork', '임신')} onClick={(e) => (e.currentTarget.value = '')} />
-                {workRateInputs.shortenedWorkHours?.filter(r => r.type === '임신').length > 0 && <p className="text-xs text-muted-foreground">{workRateInputs.shortenedWorkHours.filter(r => r.type === '임신').length}개 데이터가 업로드되었습니다.</p>}
-              </div>
+            <CardContent>
+              <Input id="shortenedWorkPregnancy" type="file" accept=".xlsx, .xls" onChange={(e) => handleFileUpload(e, 'shortenedWork', '임신')} onClick={(e) => (e.currentTarget.value = '')} />
+              {workRateInputs.shortenedWorkHours?.filter(r => r.type === '임신').length > 0 && <p className="text-xs text-muted-foreground pt-2">{workRateInputs.shortenedWorkHours.filter(r => r.type === '임신').length}개 데이터가 업로드되었습니다.</p>}
             </CardContent>
           </Card>
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>육아/돌봄 단축근로</CardTitle>
+                 <Button variant="destructive-outline" size="sm" onClick={() => setDialogOpen({type: 'resetWorkData', workDataType: 'shortenedWorkCare'})} disabled={!workRateInputs.shortenedWorkHours?.some(r => r.type === '육아/돌봄')}><Trash2 className="mr-2 h-4 w-4" />초기화</Button>
               </div>
               <CardDescription>육아기, 가족돌봄 등 단축근로 내역이 담긴 파일을 업로드합니다.</CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-col sm:flex-row items-center gap-4">
-              <div className="grid w-full max-w-sm items-center gap-1.5">
-                <Input id="shortenedWorkCare" type="file" accept=".xlsx, .xls" onChange={(e) => handleFileUpload(e, 'shortenedWork', '육아/돌봄')} onClick={(e) => (e.currentTarget.value = '')} />
-                 {workRateInputs.shortenedWorkHours?.filter(r => r.type === '육아/돌봄').length > 0 && <p className="text-xs text-muted-foreground">{workRateInputs.shortenedWorkHours.filter(r => r.type === '육아/돌봄').length}개 데이터가 업로드되었습니다.</p>}
-              </div>
+            <CardContent>
+              <Input id="shortenedWorkCare" type="file" accept=".xlsx, .xls" onChange={(e) => handleFileUpload(e, 'shortenedWork', '육아/돌봄')} onClick={(e) => (e.currentTarget.value = '')} />
+               {workRateInputs.shortenedWorkHours?.filter(r => r.type === '육아/돌봄').length > 0 && <p className="text-xs text-muted-foreground pt-2">{workRateInputs.shortenedWorkHours.filter(r => r.type === '육아/돌봄').length}개 데이터가 업로드되었습니다.</p>}
             </CardContent>
           </Card>
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>일근태</CardTitle>
+                 <Button variant="destructive-outline" size="sm" onClick={() => setDialogOpen({type: 'resetWorkData', workDataType: 'dailyAttendance'})} disabled={!workRateInputs.dailyAttendance?.length}><Trash2 className="mr-2 h-4 w-4" />초기화</Button>
               </div>
               <CardDescription>연차, 반차, 병가 등 일별 근태 사용 내역 파일을 업로드합니다.</CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-col sm:flex-row items-center gap-4">
-              <div className="grid w-full max-w-sm items-center gap-1.5">
-                <Input id="dailyAttendance" type="file" accept=".xlsx, .xls" onChange={(e) => handleFileUpload(e, 'dailyAttendance')} onClick={(e) => (e.currentTarget.value = '')} />
-                {workRateInputs.dailyAttendance?.length > 0 && <p className="text-xs text-muted-foreground">{workRateInputs.dailyAttendance.length}개 데이터가 업로드되었습니다.</p>}
-              </div>
+            <CardContent>
+              <Input id="dailyAttendance" type="file" accept=".xlsx, .xls" onChange={(e) => handleFileUpload(e, 'dailyAttendance')} onClick={(e) => (e.currentTarget.value = '')} />
+              {workRateInputs.dailyAttendance?.length > 0 && <p className="text-xs text-muted-foreground pt-2">{workRateInputs.dailyAttendance.length}개 데이터가 업로드되었습니다.</p>}
             </CardContent>
-          </Card>
-           <Card>
-              <CardHeader>
-                  <CardTitle>근무 데이터 초기화</CardTitle>
-                  <CardDescription>업로드된 모든 종류의 근무 데이터를 초기화합니다.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                  <Button 
-                      variant="destructive" 
-                      onClick={() => setDialogOpen({ type: 'resetWorkData', workDataType: 'shortenedWorkHours' })}
-                      disabled={!workRateInputs.shortenedWorkHours?.length && !workRateInputs.dailyAttendance?.length}
-                  >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      모든 근무 데이터 초기화
-                  </Button>
-              </CardContent>
           </Card>
         </div>
 
-        <h2 className="text-2xl font-bold mt-8">3. 평가 데이터 업로드</h2>
+        <h2 className="text-2xl font-bold mt-8">3. 평가 결과 관리</h2>
         <Card>
              <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle>평가 데이터</CardTitle>
-                  <Button variant="destructive" size="sm" onClick={() => setDialogOpen({type: 'resetEvaluations'})} disabled={results.filter(r => r.grade).length === 0}><Trash2 className="mr-2 h-4 w-4" />초기화</Button>
+                  <CardTitle>평가 결과 업로드</CardTitle>
+                  <Button variant="destructive-outline" size="sm" onClick={() => setDialogOpen({type: 'resetEvaluations'})} disabled={results.filter(r => r.grade).length === 0}><Trash2 className="mr-2 h-4 w-4" />초기화</Button>
                 </div>
                 <CardDescription>등급, 비고 등 평가 결과가 포함된 엑셀 파일을 업로드하여 기존 데이터를 업데이트합니다.</CardDescription>
             </CardHeader>
              <CardContent className="flex flex-col sm:flex-row items-center gap-4">
-                <div className="grid w-full max-w-sm items-center gap-1.5">
+                <div className="grid w-full items-center gap-1.5 flex-1">
                     <Input id="evaluations" type="file" accept=".xlsx, .xls" onChange={(e) => handleFileUpload(e, 'evaluations')} onClick={(e) => (e.currentTarget.value = '')} />
-                    {results.filter(r => r.grade).length > 0 && <p className="text-xs text-muted-foreground">{results.filter(r => r.grade).length}개 데이터가 업로드되었습니다.</p>}
                 </div>
                 <Button onClick={() => handleDownloadTemplate('evaluations')} variant="outline" className="w-full sm:w-auto"><Download className="mr-2 h-4 w-4" />양식 다운로드</Button>
             </CardContent>
+            {results.filter(r => r.grade).length > 0 && <p className="text-xs text-muted-foreground px-6 pb-4">{results.filter(r => r.grade).length}명의 평가 결과가 업로드되었습니다.</p>}
         </Card>
 
         <AlertDialog open={dialogOpen !== null} onOpenChange={(open) => !open && setDialogOpen(null)}>
@@ -317,7 +310,7 @@ export default function ManageData({
                     <AlertDialogDescription>
                         {dialogOpen?.type === 'deleteEmployees' && `기존 대상자 ${results.length}명의 이력을 모두 삭제합니다. 이 작업은 되돌릴 수 없습니다.`}
                         {dialogOpen?.type === 'resetEvaluations' && `기존 대상자 ${results.filter(r => r.grade).length}명의 평가 데이터를 모두 초기화합니다. 이 작업은 되돌릴 수 없습니다.`}
-                        {dialogOpen?.type === 'resetWorkData' && `업로드된 모든 근무 데이터를 초기화합니다. 이 작업은 되돌릴 수 없습니다.`}
+                        {dialogOpen?.type === 'resetWorkData' && `선택한 근무 데이터를 초기화합니다. 이 작업은 되돌릴 수 없습니다.`}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -325,12 +318,7 @@ export default function ManageData({
                     <AlertDialogAction onClick={() => {
                         if (dialogOpen?.type === 'deleteEmployees') handleClearEmployees();
                         else if (dialogOpen?.type === 'resetEvaluations') handleResetEvaluations();
-                        else if (dialogOpen?.type === 'resetWorkData') {
-                            onClearWorkRateData(selectedDate.year, selectedDate.month, 'shortenedWorkHours');
-                            onClearWorkRateData(selectedDate.year, selectedDate.month, 'dailyAttendance');
-                            toast({ title: '초기화 완료', description: `해당 월의 모든 근무 데이터가 초기화되었습니다.` });
-                            setDialogOpen(null);
-                        }
+                        else if (dialogOpen?.type === 'resetWorkData') handleResetWorkData();
                     }}>
                         확인
                     </AlertDialogAction>

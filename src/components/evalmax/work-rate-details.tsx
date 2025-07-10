@@ -84,18 +84,19 @@ export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDe
     let dataToExport, fileName;
     if (type === 'shortenedWork') {
       dataToExport = sortedData.map((item: ShortenedWorkDetail) => ({
-        '고유사번': item.uniqueId, '이름': item.name, '구분': item.type,
-        '시작일': item.startDate, '종료일': item.endDate, '출근시각': item.startTime,
-        '퇴근시각': item.endTime, '실근로시간': item.actualWorkHours,
-        '사용일수': item.businessDays, '총 차감시간': item.totalDeductionHours,
+        'ID': item.uniqueId, '이름': item.name, '구분': item.type,
+        '시작일': item.startDate, '종료일': item.endDate, '일수(D)': item.businessDays,
+        '출근시각': item.startTime, '퇴근시각': item.endTime, 
+        '실근로(H)': Math.floor(item.actualWorkHours), '미근로(H)': 8 - Math.floor(item.actualWorkHours),
+        '미근로시간': item.totalDeductionHours,
       }));
       fileName = `${selectedDate.year}.${selectedDate.month}_단축근로상세.xlsx`;
     } else {
       dataToExport = sortedData.map((item: DailyAttendanceDetail) => ({
-        '고유사번': item.uniqueId, '이름': item.name, '일자': item.date,
+        'ID': item.uniqueId, '이름': item.name, '일자': item.date,
         '근태 종류': item.type, '단축사용': item.isShortenedDay ? 'Y' : 'N',
-        '실근로시간': item.actualWorkHours, '차감일수': item.deductionDays,
-        '총 차감시간': item.totalDeductionHours,
+        '일수(D)': item.deductionDays, '실근로(H)': item.actualWorkHours,
+        '미근로시간': item.totalDeductionHours,
       }));
       fileName = `${selectedDate.year}.${selectedDate.month}_일근태상세.xlsx`;
     }
@@ -109,16 +110,17 @@ export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDe
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="cursor-pointer" onClick={() => requestSort('uniqueId')}><div className="flex items-center">고유사번{getSortIcon('uniqueId')}</div></TableHead>
+          <TableHead className="cursor-pointer" onClick={() => requestSort('uniqueId')}><div className="flex items-center">ID{getSortIcon('uniqueId')}</div></TableHead>
           <TableHead className="cursor-pointer" onClick={() => requestSort('name')}><div className="flex items-center">이름{getSortIcon('name')}</div></TableHead>
           <TableHead className="cursor-pointer" onClick={() => requestSort('type')}><div className="flex items-center">구분{getSortIcon('type')}</div></TableHead>
           <TableHead className="cursor-pointer" onClick={() => requestSort('startDate')}><div className="flex items-center">시작일{getSortIcon('startDate')}</div></TableHead>
           <TableHead className="cursor-pointer" onClick={() => requestSort('endDate')}><div className="flex items-center">종료일{getSortIcon('endDate')}</div></TableHead>
+          <TableHead className="cursor-pointer" onClick={() => requestSort('businessDays')}><div className="flex items-center">일수(D){getSortIcon('businessDays')}</div></TableHead>
           <TableHead>출근시각</TableHead>
           <TableHead>퇴근시각</TableHead>
-          <TableHead className="cursor-pointer" onClick={() => requestSort('actualWorkHours')}><div className="flex items-center">실근로시간{getSortIcon('actualWorkHours')}</div></TableHead>
-          <TableHead className="cursor-pointer" onClick={() => requestSort('businessDays')}><div className="flex items-center">사용일수{getSortIcon('businessDays')}</div></TableHead>
-          <TableHead className="cursor-pointer" onClick={() => requestSort('totalDeductionHours')}><div className="flex items-center">총 차감시간{getSortIcon('totalDeductionHours')}</div></TableHead>
+          <TableHead className="cursor-pointer" onClick={() => requestSort('actualWorkHours')}><div className="flex items-center">실근로(H){getSortIcon('actualWorkHours')}</div></TableHead>
+          <TableHead>미근로(H)</TableHead>
+          <TableHead className="cursor-pointer" onClick={() => requestSort('totalDeductionHours')}><div className="flex items-center">미근로시간{getSortIcon('totalDeductionHours')}</div></TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -129,10 +131,11 @@ export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDe
             <TableCell>{item.type}</TableCell>
             <TableCell>{item.startDate}</TableCell>
             <TableCell>{item.endDate}</TableCell>
+            <TableCell>{item.businessDays}</TableCell>
             <TableCell>{item.startTime}</TableCell>
             <TableCell>{item.endTime}</TableCell>
-            <TableCell>{item.actualWorkHours.toFixed(2)}</TableCell>
-            <TableCell>{item.businessDays}</TableCell>
+            <TableCell>{Math.floor(item.actualWorkHours)}</TableCell>
+            <TableCell>{8 - Math.floor(item.actualWorkHours)}</TableCell>
             <TableCell>{item.totalDeductionHours.toFixed(2)}</TableCell>
           </TableRow>
         ))}
@@ -140,7 +143,7 @@ export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDe
       {searchTerm && (
         <TableFooter>
             <TableRow>
-                <TableCell colSpan={9} className="text-right font-bold">총 차감시간 소계</TableCell>
+                <TableCell colSpan={10} className="text-right font-bold">총 미근로시간 소계</TableCell>
                 <TableCell className="font-bold">{totalDeductionHours.toFixed(2)}</TableCell>
             </TableRow>
         </TableFooter>
@@ -152,14 +155,14 @@ export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDe
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="cursor-pointer" onClick={() => requestSort('uniqueId')}><div className="flex items-center">고유사번{getSortIcon('uniqueId')}</div></TableHead>
+          <TableHead className="cursor-pointer" onClick={() => requestSort('uniqueId')}><div className="flex items-center">ID{getSortIcon('uniqueId')}</div></TableHead>
           <TableHead className="cursor-pointer" onClick={() => requestSort('name')}><div className="flex items-center">이름{getSortIcon('name')}</div></TableHead>
           <TableHead className="cursor-pointer" onClick={() => requestSort('date')}><div className="flex items-center">일자{getSortIcon('date')}</div></TableHead>
           <TableHead className="cursor-pointer" onClick={() => requestSort('type')}><div className="flex items-center">근태 종류{getSortIcon('type')}</div></TableHead>
           <TableHead className="cursor-pointer" onClick={() => requestSort('isShortenedDay')}><div className="flex items-center">단축사용{getSortIcon('isShortenedDay')}</div></TableHead>
-          <TableHead className="cursor-pointer" onClick={() => requestSort('actualWorkHours')}><div className="flex items-center">실근로시간{getSortIcon('actualWorkHours')}</div></TableHead>
-          <TableHead className="cursor-pointer" onClick={() => requestSort('deductionDays')}><div className="flex items-center">차감일수{getSortIcon('deductionDays')}</div></TableHead>
-          <TableHead className="cursor-pointer" onClick={() => requestSort('totalDeductionHours')}><div className="flex items-center">총 차감시간{getSortIcon('totalDeductionHours')}</div></TableHead>
+          <TableHead className="cursor-pointer" onClick={() => requestSort('deductionDays')}><div className="flex items-center">일수(D){getSortIcon('deductionDays')}</div></TableHead>
+          <TableHead className="cursor-pointer" onClick={() => requestSort('actualWorkHours')}><div className="flex items-center">실근로(H){getSortIcon('actualWorkHours')}</div></TableHead>
+          <TableHead className="cursor-pointer" onClick={() => requestSort('totalDeductionHours')}><div className="flex items-center">미근로시간{getSortIcon('totalDeductionHours')}</div></TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -170,8 +173,8 @@ export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDe
             <TableCell>{item.date}</TableCell>
             <TableCell>{item.type}</TableCell>
             <TableCell>{item.isShortenedDay ? 'Y' : 'N'}</TableCell>
-            <TableCell>{item.actualWorkHours.toFixed(2)}</TableCell>
             <TableCell>{item.deductionDays.toFixed(2)}</TableCell>
+            <TableCell>{item.actualWorkHours.toFixed(2)}</TableCell>
             <TableCell>{item.totalDeductionHours.toFixed(2)}</TableCell>
           </TableRow>
         ))}
@@ -179,7 +182,7 @@ export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDe
        {searchTerm && (
           <TableFooter>
               <TableRow>
-                  <TableCell colSpan={7} className="text-right font-bold">총 차감시간 소계</TableCell>
+                  <TableCell colSpan={7} className="text-right font-bold">총 미근로시간 소계</TableCell>
                   <TableCell className="font-bold">{totalDeductionHours.toFixed(2)}</TableCell>
               </TableRow>
           </TableFooter>
