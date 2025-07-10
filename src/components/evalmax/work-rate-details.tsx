@@ -74,9 +74,9 @@ export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDe
   };
 
   const totalDeductionHours = React.useMemo(() => {
-    if (type !== 'dailyAttendance' || !searchTerm) return 0;
-    return filteredData.reduce((acc, curr) => acc + curr.totalDeductionHours, 0);
-  }, [filteredData, searchTerm, type]);
+    if (!searchTerm) return 0;
+    return filteredData.reduce((acc, curr) => acc + (curr.totalDeductionHours || 0), 0);
+  }, [filteredData, searchTerm]);
   
   const renderShortenedWorkTable = () => (
     <Table>
@@ -108,6 +108,14 @@ export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDe
           </TableRow>
         ))}
       </TableBody>
+      {searchTerm && (
+        <TableFooter>
+            <TableRow>
+                <TableCell colSpan={8} className="text-right font-bold">총 차감시간 소계</TableCell>
+                <TableCell className="font-bold">{totalDeductionHours.toFixed(2)}</TableCell>
+            </TableRow>
+        </TableFooter>
+      )}
     </Table>
   );
 
