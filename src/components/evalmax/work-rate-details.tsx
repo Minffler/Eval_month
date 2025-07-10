@@ -12,7 +12,7 @@ import {
   TableFooter
 } from '@/components/ui/table';
 import { Input } from '../ui/input';
-import { Search, ArrowUpDown, ArrowUp, ArrowDown, Download, PlusCircle, CalendarIcon, ClockIcon } from 'lucide-react';
+import { Search, ArrowUpDown, ArrowUp, ArrowDown, Download, PlusCircle, Calendar as CalendarIcon, ClockIcon } from 'lucide-react';
 import type { Employee, AttendanceType } from '@/lib/types';
 import type { ShortenedWorkDetail, DailyAttendanceDetail } from '@/lib/work-rate-calculator';
 import { Button } from '../ui/button';
@@ -39,6 +39,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Checkbox } from '../ui/checkbox';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { Calendar } from '../ui/calendar';
+import { format } from 'date-fns';
+
 
 type SortConfig<T> = {
   key: keyof T;
@@ -59,16 +63,16 @@ const ShortenedWorkTypeIcon = ({ type }: { type: '임신' | '육아/돌봄' }) =
     switch (type) {
         case '임신':
             style = { backgroundColor: 'hsl(30, 20%, 98%)' };
-            className = "mx-auto flex h-6 w-20 items-center justify-center rounded-md text-xs font-semibold text-stone-600";
+            className = "mx-auto flex h-6 w-20 items-center justify-center rounded-md text-xs font-semibold text-stone-700";
             break;
         case '육아/돌봄':
-            style = { backgroundColor: 'hsl(25, 20%, 92%)', color: 'hsl(25, 25%, 35%)' };
+            style = { backgroundColor: 'hsl(25, 20%, 92%)' };
             className = "mx-auto flex h-6 w-20 items-center justify-center rounded-md text-xs font-semibold";
             break;
         default:
             return <span>{type}</span>;
     }
-    return <div className={cn(className, "text-stone-700")} style={style}>{type}</div>;
+    return <div className={cn(className, "text-stone-600")} style={style}>{type}</div>;
 };
 
 const DailyAttendanceIcon = ({ isShortenedDay }: { isShortenedDay: boolean }) => {
@@ -95,12 +99,6 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
   const [formData, setFormData] = React.useState<any>({});
   const [selectedRowId, setSelectedRowId] = React.useState<string | null>(null);
 
-  const dateInputRef = React.useRef<HTMLInputElement>(null);
-  const startDateInputRef = React.useRef<HTMLInputElement>(null);
-  const endDateInputRef = React.useRef<HTMLInputElement>(null);
-  const startTimeInputRef = React.useRef<HTMLInputElement>(null);
-  const endTimeInputRef = React.useRef<HTMLInputElement>(null);
-  
   const filteredData = React.useMemo(() => {
     if (!searchTerm) return data;
     return data.filter(item => 
@@ -178,14 +176,12 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
   const handleOpenDialog = () => {
       let initialData: any = {};
   
-      // If a row is selected via checkbox, use its data
       if (selectedRowId) {
           const selectedRecord = data.find((item: any) => `${item.uniqueId}-${item.date || item.startDate}` === selectedRowId);
           if (selectedRecord) {
               initialData = { ...selectedRecord };
           }
       } else {
-          // If no row is selected, but search term filters to a single person
           const uniqueIdsInData = new Set(filteredData.map(item => item.uniqueId));
           if (filteredData.length > 0 && uniqueIdsInData.size === 1) {
               const firstItem = filteredData[0];
@@ -212,7 +208,6 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
       return;
     }
     
-    // 1. Find employee and evaluator
     const employee = allEmployees.find(e => e.uniqueId === formData.uniqueId);
     if (!employee) {
       toast({ variant: 'destructive', title: '오류', description: '해당 ID의 직원을 찾을 수 없습니다.' });
@@ -224,16 +219,13 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
     const message = `[결재요청] ${employee.name}님의 ${dataType} 데이터 변경 요청이 있습니다.`;
 
     if (user.roles?.includes('admin')) {
-        // Admin auto-approval
-        // TODO: Implement actual data saving logic here. For now, just show a toast.
         toast({ title: '자동 승인 완료', description: '관리자 권한으로 데이터가 즉시 저장 및 반영되었습니다.' });
     } else {
-        // Start approval workflow
-        addNotification({ recipientId: employee.uniqueId, message }); // Notify self
+        addNotification({ recipientId: employee.uniqueId, message }); 
         if (evaluator) {
-            addNotification({ recipientId: evaluator.uniqueId, message }); // Notify evaluator
+            addNotification({ recipientId: evaluator.uniqueId, message });
         }
-        addNotification({ recipientId: '1911042', message }); // Notify admin
+        addNotification({ recipientId: '1911042', message });
         toast({ title: '결재 상신 완료', description: '결재 라인에 따라 알림이 발송되었습니다.' });
     }
 
@@ -270,30 +262,44 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="startDate" className="text-right">시작일</Label>
-              <div className="col-span-3 relative">
-                <Input ref={startDateInputRef} id="startDate" type="date" value={formData.startDate || ''} onChange={(e) => handleFormChange('startDate', e.target.value)} className="pr-10" />
-                <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 text-muted-foreground hover:bg-muted/50" onClick={() => startDateInputRef.current?.showPicker()}><CalendarIcon className="h-4 w-4"/></Button>
-              </div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant={"outline"} className={cn("col-span-3 justify-start text-left font-normal", !formData.startDate && "text-muted-foreground")}>
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.startDate ? format(new Date(formData.startDate), "PPP") : <span>날짜 선택</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar mode="single" selected={formData.startDate ? new Date(formData.startDate) : undefined} onSelect={(date) => handleFormChange('startDate', date ? format(date, 'yyyy-MM-dd') : '')} initialFocus/>
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="endDate" className="text-right">종료일</Label>
-              <div className="col-span-3 relative">
-                <Input ref={endDateInputRef} id="endDate" type="date" value={formData.endDate || ''} onChange={(e) => handleFormChange('endDate', e.target.value)} className="pr-10" />
-                <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 text-muted-foreground hover:bg-muted/50" onClick={() => endDateInputRef.current?.showPicker()}><CalendarIcon className="h-4 w-4"/></Button>
-              </div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant={"outline"} className={cn("col-span-3 justify-start text-left font-normal", !formData.endDate && "text-muted-foreground")}>
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.endDate ? format(new Date(formData.endDate), "PPP") : <span>날짜 선택</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar mode="single" selected={formData.endDate ? new Date(formData.endDate) : undefined} onSelect={(date) => handleFormChange('endDate', date ? format(date, 'yyyy-MM-dd') : '')} initialFocus/>
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="startTime" className="text-right">출근시각</Label>
               <div className="col-span-3 relative">
-                <Input ref={startTimeInputRef} id="startTime" type="time" value={formData.startTime || ''} onChange={(e) => handleFormChange('startTime', e.target.value)} className="pr-10"/>
-                <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 text-muted-foreground hover:bg-muted/50" onClick={() => startTimeInputRef.current?.showPicker()}><ClockIcon className="h-4 w-4"/></Button>
+                <Input id="startTime" type="time" value={formData.startTime || ''} onChange={(e) => handleFormChange('startTime', e.target.value)} className="pr-10"/>
+                <div className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 flex items-center justify-center text-muted-foreground"><ClockIcon className="h-4 w-4"/></div>
               </div>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="endTime" className="text-right">퇴근시각</Label>
               <div className="col-span-3 relative">
-                <Input ref={endTimeInputRef} id="endTime" type="time" value={formData.endTime || ''} onChange={(e) => handleFormChange('endTime', e.target.value)} className="pr-10"/>
-                <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 text-muted-foreground hover:bg-muted/50" onClick={() => endTimeInputRef.current?.showPicker()}><ClockIcon className="h-4 w-4"/></Button>
+                <Input id="endTime" type="time" value={formData.endTime || ''} onChange={(e) => handleFormChange('endTime', e.target.value)} className="pr-10"/>
+                <div className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 flex items-center justify-center text-muted-foreground"><ClockIcon className="h-4 w-4"/></div>
               </div>
             </div>
         </div>
@@ -307,10 +313,17 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="date" className="text-right">일자</Label>
-              <div className="col-span-3 relative">
-                <Input ref={dateInputRef} id="date" type="date" value={formData.date || ''} onChange={(e) => handleFormChange('date', e.target.value)} className="pr-10" />
-                <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 text-muted-foreground hover:bg-muted/50" onClick={() => dateInputRef.current?.showPicker()}><CalendarIcon className="h-4 w-4"/></Button>
-              </div>
+                <Popover>
+                    <PopoverTrigger asChild>
+                    <Button variant={"outline"} className={cn("col-span-3 justify-start text-left font-normal", !formData.date && "text-muted-foreground")}>
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {formData.date ? format(new Date(formData.date), "PPP") : <span>날짜 선택</span>}
+                    </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                    <Calendar mode="single" selected={formData.date ? new Date(formData.date) : undefined} onSelect={(date) => handleFormChange('date', date ? format(date, 'yyyy-MM-dd') : '')} initialFocus/>
+                    </PopoverContent>
+                </Popover>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="type" className="text-right">근태 종류</Label>
