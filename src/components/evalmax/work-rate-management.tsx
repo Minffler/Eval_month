@@ -3,13 +3,21 @@
 import * as React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import type { EvaluationResult, Holiday } from '@/lib/types';
-import type { WorkRateDetailsResult } from '@/lib/work-rate-calculator';
+import type { EvaluationResult, Holiday, ShortenedWorkType } from '@/lib/types';
+import type { WorkRateDetailsResult, ShortenedWorkDetail, DailyAttendanceDetail } from '@/lib/work-rate-calculator';
 import { Button } from '../ui/button';
 import { ArrowUpDown, Download, ArrowUp, ArrowDown } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Progress } from '../ui/progress';
 import { cn } from '@/lib/utils';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 
 interface WorkRateManagementProps {
   results: EvaluationResult[];
@@ -34,6 +42,13 @@ type SortConfig = {
   direction: 'ascending' | 'descending';
 } | null;
 
+type DetailDialogInfo = {
+  isOpen: boolean;
+  title: string;
+  data: (ShortenedWorkDetail | DailyAttendanceDetail)[];
+  type: 'attendance' | 'shortened';
+}
+
 function countBusinessDaysForMonth(year: number, month: number, holidays: Set<string>): number {
     let count = 0;
     const date = new Date(year, month - 1, 1);
@@ -51,6 +66,12 @@ function countBusinessDaysForMonth(year: number, month: number, holidays: Set<st
 
 export default function WorkRateManagement({ results, workRateDetails, selectedDate, holidays }: WorkRateManagementProps) {
   const [sortConfig, setSortConfig] = React.useState<SortConfig>({ key: 'monthlyWorkRate', direction: 'ascending' });
+  const [detailDialog, setDetailDialog] = React.useState<DetailDialogInfo>({
+    isOpen: false,
+    title: '',
+    data: [],
+    type: 'attendance',
+  });
 
   const businessDays = React.useMemo(() => {
     const holidaySet = new Set(holidays.map(h => h.date));
@@ -162,7 +183,39 @@ export default function WorkRateManagement({ results, workRateDetails, selectedD
     }
   };
 
+  const openDetailsDialog = (employeeId: string, employeeName: string, type: 'attendance' | 'pregnancy' | 'care') => {
+    let dialogTitle = '';
+    let dialogData: (ShortenedWorkDetail | DailyAttendanceDetail)[] = [];
+    let dialogType: 'attendance' | 'shortened' = 'attendance';
+
+    if (type === 'attendance') {
+      dialogTitle = `${employeeName}님의 일근태 상세`;
+      dialogData = workRateDetails.dailyAttendanceDetails.filter(d => d.uniqueId === employeeId);
+      dialogType = 'attendance';
+    } else {
+      const shortenedType: ShortenedWorkType = type === 'pregnancy' ? '임신' : '육아/돌봄';
+      dialogTitle = `${employeeName}님의 ${shortenedType} 단축근로 상세`;
+      dialogData = workRateDetails.shortenedWorkDetails.filter(d => d.uniqueId === employeeId && d.type === shortenedType);
+      dialogType = 'shortened';
+    }
+
+    setDetailDialog({ isOpen: true, title: dialogTitle, data: dialogData, type: dialogType });
+  };
+  
+  const ClickableCell = ({ value, onClick }: { value: number; onClick: () => void }) => (
+    <TableCell className="text-center tabular-nums">
+      {value > 0 ? (
+        <Button variant="link" size="sm" onClick={onClick} className="h-auto p-0 text-foreground">
+          {value.toFixed(2)}
+        </Button>
+      ) : (
+        <span className="text-muted-foreground">-</span>
+      )}
+    </TableCell>
+  );
+
   return (
+    <>
     <Card>
         <CardHeader>
             <div className="flex flex-col sm:flex-row justify-between sm:items-start gap-2">
@@ -201,9 +254,9 @@ export default function WorkRateManagement({ results, workRateDetails, selectedD
                         <TableRow key={summary.uniqueId}>
                           <TableCell className="tabular-nums text-center">{summary.uniqueId}</TableCell>
                           <TableCell className="text-center">{summary.name}</TableCell>
-                          <TableCell className="text-center tabular-nums">{summary.deductionHoursAttendance.toFixed(2)}</TableCell>
-                          <TableCell className="text-center tabular-nums">{summary.deductionHoursPregnancy.toFixed(2)}</TableCell>
-                          <TableCell className="text-center tabular-nums">{summary.deductionHoursCare.toFixed(2)}</TableCell>
+                          <ClickableCell value={summary.deductionHoursAttendance} onClick={() => openDetailsDialog(summary.uniqueId, summary.name, 'attendance')} />
+                          <ClickableCell value={summary.deductionHoursPregnancy} onClick={() => openDetailsDialog(summary.uniqueId, summary.name, 'pregnancy')} />
+                          <ClickableCell value={summary.deductionHoursCare} onClick={() => openDetailsDialog(summary.uniqueId, summary.name, 'care')} />
                           <TableCell className="text-center tabular-nums">{summary.totalDeductionHours.toFixed(2)}</TableCell>
                           <TableCell className="text-center">
                              <Progress 
@@ -227,5 +280,77 @@ export default function WorkRateManagement({ results, workRateDetails, selectedD
             </div>
         </CardContent>
     </Card>
+
+    <Dialog open={detailDialog.isOpen} onOpenChange={(isOpen) => setDetailDialog(prev => ({ ...prev, isOpen }))}>
+        <DialogContent className="max-w-4xl">
+            <DialogHeader>
+                <DialogTitle>{detailDialog.title}</DialogTitle>
+                <DialogDescription>
+                    해당 직원의 상세 데이터 내역입니다.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="max-h-[60vh] overflow-y-auto border rounded-lg">
+                <Table>
+                    {detailDialog.type === 'attendance' ? (
+                        <>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>일자</TableHead>
+                                    <TableHead>근태 종류</TableHead>
+                                    <TableHead>단축사용</TableHead>
+                                    <TableHead className="text-right">차감일수</TableHead>
+                                    <TableHead className="text-right">실근로(H)</TableHead>
+                                    <TableHead className="text-right">미근로시간</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {(detailDialog.data as DailyAttendanceDetail[]).map((item, index) => (
+                                    <TableRow key={index}>
+                                        <TableCell>{item.date}</TableCell>
+                                        <TableCell>{item.type}</TableCell>
+                                        <TableCell>{item.isShortenedDay ? 'Y' : 'N'}</TableCell>
+                                        <TableCell className="text-right">{item.deductionDays.toFixed(2)}</TableCell>
+                                        <TableCell className="text-right">{item.actualWorkHours.toFixed(2)}</TableCell>
+                                        <TableCell className="text-right">{item.totalDeductionHours.toFixed(2)}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </>
+                    ) : (
+                        <>
+                             <TableHeader>
+                                <TableRow>
+                                    <TableHead>시작일</TableHead>
+                                    <TableHead>종료일</TableHead>
+                                    <TableHead className="text-center">일수</TableHead>
+                                    <TableHead className="text-center">출근시각</TableHead>
+                                    <TableHead className="text-center">퇴근시각</TableHead>
+                                    <TableHead className="text-center">실근로(H)</TableHead>
+                                    <TableHead className="text-center">미근로시간</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                             <TableBody>
+                                {(detailDialog.data as ShortenedWorkDetail[]).map((item, index) => (
+                                    <TableRow key={index}>
+                                        <TableCell>{item.startDate}</TableCell>
+                                        <TableCell>{item.endDate}</TableCell>
+                                        <TableCell className="text-center">{item.businessDays}</TableCell>
+                                        <TableCell className="text-center">{item.startTime}</TableCell>
+                                        <TableCell className="text-center">{item.endTime}</TableCell>
+                                        <TableCell className="text-center">{item.actualWorkHours.toFixed(2)}</TableCell>
+                                        <TableCell className="text-center">{item.totalDeductionHours.toFixed(2)}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </>
+                    )}
+                </Table>
+            </div>
+            <DialogFooter>
+                <Button onClick={() => setDetailDialog(prev => ({ ...prev, isOpen: false }))}>닫기</Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
+    </>
   );
 }
