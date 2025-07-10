@@ -6,7 +6,7 @@ import Header from '@/components/evalmax/header';
 import AdminDashboard from '@/components/evalmax/admin-dashboard';
 import EvaluatorDashboard from '@/components/evalmax/evaluator-dashboard';
 import EmployeeDashboard from '@/components/evalmax/employee-dashboard';
-import type { Employee, Evaluation, EvaluationResult, Grade, GradeInfo, User, EvaluatorView, EvaluationUploadData, WorkRateInputs, AttendanceType, Holiday } from '@/lib/types';
+import type { Employee, Evaluation, EvaluationResult, Grade, GradeInfo, User, EvaluatorView, EvaluationUploadData, WorkRateInputs, AttendanceType, Holiday, ShortenedWorkHourRecord, DailyAttendanceRecord } from '@/lib/types';
 import { mockEmployees, gradingScale as initialGradingScale, calculateFinalAmount, mockEvaluations as initialMockEvaluations, getDetailedGroup1, initialAttendanceTypes } from '@/lib/data';
 import { useRouter } from 'next/navigation';
 import { Loader2, Bell } from 'lucide-react';
@@ -275,7 +275,7 @@ export default function Home() {
     try {
       window.localStorage.setItem(GRADING_SCALE_STORAGE_KEY, JSON.stringify(gradingScale));
     } catch (error) {
-      console.error('Error saving grading scale to localStorage', error);
+      console.error('Error saving grading scale from localStorage', error);
     }
   }, [gradingScale]);
   
@@ -435,27 +435,38 @@ export default function Home() {
     });
   };
   
-  const handleWorkRateDataUpload = (year: number, month: number, type: keyof WorkRateInputs, data: any[]) => {
+  const handleWorkRateDataUpload = (year: number, month: number, type: keyof WorkRateInputs, newData: any[]) => {
       const key = `${year}-${month}`;
       setWorkRateInputs(prev => {
           const currentMonthInputs = prev[key] || {
               shortenedWorkHours: [],
               dailyAttendance: [],
           };
-          
+  
+          let combinedData;
+          if (type === 'shortenedWorkHours') {
+              const existingKeys = new Set(currentMonthInputs.shortenedWorkHours.map((r: ShortenedWorkHourRecord) => `${r.uniqueId}|${r.startDate}|${r.endDate}`));
+              const uniqueNewData = (newData as ShortenedWorkHourRecord[]).filter(r => !existingKeys.has(`${r.uniqueId}|${r.startDate}|${r.endDate}`));
+              combinedData = [...currentMonthInputs.shortenedWorkHours, ...uniqueNewData];
+          } else { // dailyAttendance
+              const existingKeys = new Set(currentMonthInputs.dailyAttendance.map((r: DailyAttendanceRecord) => `${r.uniqueId}|${r.date}`));
+              const uniqueNewData = (newData as DailyAttendanceRecord[]).filter(r => !existingKeys.has(`${r.uniqueId}|${r.date}`));
+              combinedData = [...currentMonthInputs.dailyAttendance, ...uniqueNewData];
+          }
+  
           return {
               ...prev,
               [key]: {
                   ...currentMonthInputs,
-                  [type]: data,
+                  [type]: combinedData,
               }
           };
       });
-
+  
       if (type === 'dailyAttendance') {
           setAttendanceTypes(prevTypes => {
               const existingTypeNames = new Set(prevTypes.map(t => t.name));
-              const newTypesFromData = new Set(data.map(d => d.type).filter(t => !existingTypeNames.has(t)));
+              const newTypesFromData = new Set((newData as DailyAttendanceRecord[]).map(d => d.type).filter(t => !existingTypeNames.has(t)));
               if (newTypesFromData.size === 0) return prevTypes;
               
               const newTypesToAdd: AttendanceType[] = Array.from(newTypesFromData).map(typeName => ({
@@ -463,7 +474,7 @@ export default function Home() {
                   name: typeName as string,
                   deductionDays: 0, // Default to 0, user needs to set it
               }));
-
+  
               return [...prevTypes, ...newTypesToAdd];
           });
       }
