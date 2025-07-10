@@ -38,6 +38,7 @@ export default function AttendanceTypeManagement({ attendanceTypes, setAttendanc
   const [isTypesOpen, setIsTypesOpen] = React.useState(false);
   const [localTypes, setLocalTypes] = React.useState<AttendanceType[]>([]);
   const [localHolidays, setLocalHolidays] = React.useState<Holiday[]>([]);
+  const [holidayErrors, setHolidayErrors] = React.useState<Record<string, string>>({});
   
   React.useEffect(() => {
     setLocalTypes([...attendanceTypes].sort((a,b) => {
@@ -85,6 +86,16 @@ export default function AttendanceTypeManagement({ attendanceTypes, setAttendanc
     setLocalHolidays(newHolidays);
   };
 
+  const validateHolidayDate = (dateStr: string, id: string) => {
+    const newErrors = { ...holidayErrors };
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      newErrors[id] = '날짜 형식이 올바르지 않습니다 (YYYY-MM-DD)';
+    } else {
+      delete newErrors[id];
+    }
+    setHolidayErrors(newErrors);
+  };
+
   const handleHolidayNameChange = (index: number, value: string) => {
     const newHolidays = [...localHolidays];
     newHolidays[index].name = value;
@@ -92,9 +103,10 @@ export default function AttendanceTypeManagement({ attendanceTypes, setAttendanc
   }
 
   const handleAddNewHoliday = () => {
+    const newId = `hol-${Date.now()}`;
     setLocalHolidays([
       ...localHolidays,
-      { id: `hol-${Date.now()}`, date: `${selectedYear}-`, name: '' },
+      { id: newId, date: `${selectedYear}-`, name: '' },
     ]);
   };
 
@@ -118,16 +130,22 @@ export default function AttendanceTypeManagement({ attendanceTypes, setAttendanc
   }
 
   const handleSaveHolidays = () => {
+    const errors: Record<string, string> = {};
     for(const holiday of localHolidays) {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(holiday.date)) {
-        toast({ variant: "destructive", title: "오류", description: `날짜 형식이 올바르지 않습니다 (YYYY-MM-DD): ${holiday.date}` });
-        return;
-      }
-       if (holiday.name.trim() === '') {
-        toast({ variant: "destructive", title: "오류", description: `공휴일명을 입력해주세요.` });
-        return;
+        errors[holiday.id] = `날짜 형식이 올바르지 않습니다 (YYYY-MM-DD): ${holiday.date}`;
+      } else if (holiday.name.trim() === '') {
+        errors[holiday.id] = `공휴일명을 입력해주세요.`;
       }
     }
+
+    setHolidayErrors(errors);
+    
+    if (Object.keys(errors).length > 0) {
+      toast({ variant: "destructive", title: "오류", description: "입력 값을 확인해주세요." });
+      return;
+    }
+
     setHolidays([...localHolidays].sort((a, b) => a.date.localeCompare(b.date)));
     toast({ title: '저장 완료', description: '공휴일 변경사항이 성공적으로 저장되었습니다.' });
   }
@@ -220,7 +238,7 @@ export default function AttendanceTypeManagement({ attendanceTypes, setAttendanc
               <div>
                 <CardTitle>공휴일 관리</CardTitle>
                 <CardDescription>
-                  영업일 계산 시 제외될 공휴일을 관리합니다.
+                  {selectedYear}년 영업일 계산 시 제외될 공휴일을 관리합니다.
                 </CardDescription>
               </div>
                <Select value={String(selectedYear)} onValueChange={(yearStr) => setSelectedYear(parseInt(yearStr, 10))}>
@@ -256,9 +274,11 @@ export default function AttendanceTypeManagement({ attendanceTypes, setAttendanc
                         <Input
                           value={holiday.date}
                           onChange={(e) => handleHolidayDateChange(index, e.target.value)}
-                          className="w-40 h-8"
+                          onBlur={(e) => validateHolidayDate(e.target.value, holiday.id)}
+                          className={holidayErrors[holiday.id] ? "border-destructive" : ""}
                           placeholder="YYYY-MM-DD"
                         />
+                         {holidayErrors[holiday.id] && <p className="text-xs text-destructive mt-1">{holidayErrors[holiday.id]}</p>}
                       </TableCell>
                       <TableCell className="py-1 px-2">
                         <Input

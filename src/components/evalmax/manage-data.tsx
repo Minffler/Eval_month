@@ -38,8 +38,8 @@ interface ManageDataProps {
   workRateInputs: WorkRateInputs;
 }
 
-const headerMapping: Record<string, keyof any> = {
-    '고유사번': 'uniqueId', '사번': 'uniqueId', 'ID': 'uniqueId',
+const headerMapping: Record<string, string> = {
+    '고유사번': 'uniqueId', '사번': 'uniqueId_alt', 'ID': 'uniqueId_alt',
     '성명': 'name', '이름': 'name', '피평가자': 'name',
     '부서': 'department', '소속부서': 'department',
     '시작일': 'startDate', '시작일자': 'startDate',
@@ -51,10 +51,24 @@ const headerMapping: Record<string, keyof any> = {
 
 const mapRowToSchema = <T extends {}>(row: any): T => {
     const newRow: any = {};
+    const tempRow: any = {};
+
     for (const key in row) {
         const mappedKey = headerMapping[key.trim()] || key.trim();
-        newRow[mappedKey] = row[key];
+        tempRow[mappedKey] = row[key];
     }
+    
+    // Apply priority for uniqueId
+    const uniqueId = tempRow['uniqueId'] ?? tempRow['uniqueId_alt'] ?? '';
+    
+    // Construct the final row, excluding temporary keys
+    for(const key in tempRow) {
+        if (key !== 'uniqueId' && key !== 'uniqueId_alt') {
+            newRow[key] = tempRow[key];
+        }
+    }
+    newRow['uniqueId'] = uniqueId;
+    
     return newRow as T;
 }
 
@@ -201,13 +215,29 @@ export default function ManageData({
   };
   
   const getTooltipContent = (type: 'employees' | 'shortenedWork' | 'dailyAttendance' | 'evaluations') => {
-    const base = "[필수] 사번: '고유사번', '사번', 'ID'";
-    const name = "이름: '이름', '성명', '피평가자'";
+    const rules = [
+      { field: "사번", aliases: "'고유사번'(1순위), '사번', 'ID'" },
+      { field: "이름", aliases: "'성명', '이름', '피평가자'" }
+    ];
+
     switch(type) {
-      case 'employees': return `${base}\n${name}\n회사, 소속부서, 직책, 성장레벨, 실근무율, 평가자 ID, 개인별 기준금액, 비고`;
-      case 'evaluations': return `${base}\n${name}\n... 외 모든 직원 데이터 및 등급, 비고`;
-      case 'shortenedWork': return `${base}\n[필수] 시작일: '시작일', '시작일자'\n[필수] 종료일: '종료일', '종료일자'\n[필수] 출근시각, 퇴근시각`;
-      case 'dailyAttendance': return `${base}\n[필수] 사용일: '일자', '근태사용일'\n[필수] 근태종류: '근태', '근태종류'`;
+      case 'employees':
+        return `필수 헤더:\n${rules.map(r => `- ${r.field}: ${r.aliases}`).join('\n')}\n- 기타: 회사, 소속부서, 직책 등`;
+      case 'evaluations':
+        return `필수 헤더:\n${rules.map(r => `- ${r.field}: ${r.aliases}`).join('\n')}\n- 기타: 등급, 비고 등 모든 직원 데이터`;
+      case 'shortenedWork':
+        rules.push(
+            { field: "시작일", aliases: "'시작일', '시작일자'" },
+            { field: "종료일", aliases: "'종료일', '종료일자'" },
+            { field: "출근/퇴근시각", aliases: "'출근시각', '퇴근시각'" }
+        );
+        return `필수 헤더:\n${rules.map(r => `- ${r.field}: ${r.aliases}`).join('\n')}`;
+      case 'dailyAttendance':
+        rules.push(
+            { field: "사용일", aliases: "'일자', '근태사용일'" },
+            { field: "근태종류", aliases: "'근태', '근태종류'" }
+        );
+        return `필수 헤더:\n${rules.map(r => `- ${r.field}: ${r.aliases}`).join('\n')}`;
       default: return '';
     }
   }
