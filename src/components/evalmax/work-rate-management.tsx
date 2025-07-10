@@ -154,11 +154,11 @@ export default function WorkRateManagement({ results, workRateDetails, selectedD
   
   const getWorkRateStyle = (rate: number): string => {
     if (rate >= 0.7) {
-        return "";
+      return "";
     } else if (rate >= 0.25) {
-        return "bg-yellow-100";
+      return "text-amber-600";
     } else {
-        return "bg-stone-200 text-stone-500/80";
+      return "text-stone-400";
     }
   };
 
@@ -191,8 +191,8 @@ export default function WorkRateManagement({ results, workRateDetails, selectedD
                             <TableHead className="cursor-pointer text-center" onClick={() => requestSort('deductionHoursAttendance')}><div className="flex items-center justify-center">근태(H){getSortIcon('deductionHoursAttendance')}</div></TableHead>
                             <TableHead className="cursor-pointer text-center" onClick={() => requestSort('deductionHoursPregnancy')}><div className="flex items-center justify-center">임신(H){getSortIcon('deductionHoursPregnancy')}</div></TableHead>
                             <TableHead className="cursor-pointer text-center" onClick={() => requestSort('deductionHoursCare')}><div className="flex items-center justify-center">육아/돌봄(H){getSortIcon('deductionHoursCare')}</div></TableHead>
-                            <TableHead className="cursor-pointer text-center" onClick={() => requestSort('totalDeductionHours')}><div className="flex items-center justify-center">미근로시간{getSortIcon('totalDeductionHours')}</div></TableHead>
-                            <TableHead className="cursor-pointer text-center min-w-[250px]" onClick={() => requestSort('totalWorkHours')}><div className="flex items-center justify-center">미근로/근로 시간{getSortIcon('totalWorkHours')}</div></TableHead>
+                            <TableHead className="cursor-pointer text-center" onClick={() => requestSort('totalDeductionHours')}><div className="flex items-center justify-center">총 미근로시간{getSortIcon('totalDeductionHours')}</div></TableHead>
+                            <TableHead className="cursor-pointer text-center min-w-[250px]" onClick={() => requestSort('totalWorkHours')}><div className="flex items-center justify-center">근로/미근로 시간{getSortIcon('totalWorkHours')}</div></TableHead>
                             <TableHead className="cursor-pointer text-center" onClick={() => requestSort('monthlyWorkRate')}><div className="flex items-center justify-center">근무율{getSortIcon('monthlyWorkRate')}</div></TableHead>
                         </TableRow>
                     </TableHeader>
@@ -209,8 +209,8 @@ export default function WorkRateManagement({ results, workRateDetails, selectedD
                              <Progress 
                                 value={summary.totalWorkHours}
                                 max={monthlyStandardHours}
-                                leftLabel={String(summary.totalDeductionHours)}
-                                rightLabel={String(summary.totalWorkHours)}
+                                leftLabel={String(summary.totalWorkHours)}
+                                rightLabel={String(summary.totalDeductionHours)}
                                 indicatorClassName="bg-stone-200"
                                 className="w-[220px] mx-auto"
                             />
