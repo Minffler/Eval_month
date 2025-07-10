@@ -452,30 +452,31 @@ export default function AdminDashboard({
                 <div className="space-y-4">
                   <Card>
                     <Collapsible open={isDistributionChartOpen} onOpenChange={setIsDistributionChartOpen}>
-                      <div className="flex items-center justify-between p-4">
+                      <CardHeader className="flex items-center justify-between">
                           <CardTitle>등급 분포</CardTitle>
-                          <div className="flex items-center gap-2">
-                            <Tabs value={dashboardFilter} onValueChange={(val) => { if (val !== 'C. 미평가') setDashboardFilter(val)}}>
-                                <TabsList className="h-8">
-                                    <TabsTrigger value="전체" className="text-xs px-2 py-1 h-auto">전체</TabsTrigger>
-                                    <TabsTrigger value="A. 정규평가" className="text-xs px-2 py-1 h-auto">A.정규</TabsTrigger>
-                                    <TabsTrigger value="B. 별도평가" className="text-xs px-2 py-1 h-auto">B.별도</TabsTrigger>
-                                    <TabsTrigger value="직책자" className="text-xs px-2 py-1 h-auto">직책자</TabsTrigger>
-                                    <TabsTrigger value="비직책자" className="text-xs px-2 py-1 h-auto">비직책자</TabsTrigger>
-                                </TabsList>
-                            </Tabs>
-                            <CollapsibleTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                    {isDistributionChartOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                                </Button>
-                            </CollapsibleTrigger>
-                          </div>
-                      </div>
+                          <Tabs value={dashboardFilter} onValueChange={(val) => { if (val !== 'C. 미평가') setDashboardFilter(val)}}>
+                              <TabsList className="h-8">
+                                  <TabsTrigger value="전체" className="text-xs px-2 py-1 h-auto">전체</TabsTrigger>
+                                  <TabsTrigger value="A. 정규평가" className="text-xs px-2 py-1 h-auto">A.정규</TabsTrigger>
+                                  <TabsTrigger value="B. 별도평가" className="text-xs px-2 py-1 h-auto">B.별도</TabsTrigger>
+                                  <TabsTrigger value="직책자" className="text-xs px-2 py-1 h-auto">직책자</TabsTrigger>
+                                  <TabsTrigger value="비직책자" className="text-xs px-2 py-1 h-auto">비직책자</TabsTrigger>
+                              </TabsList>
+                          </Tabs>
+                      </CardHeader>
                       <CollapsibleContent>
                         <CardContent className="pt-0">
                           <GradeHistogram data={overallGradeDistribution} gradingScale={gradingScale} />
                         </CardContent>
                       </CollapsibleContent>
+                      <CollapsibleTrigger asChild>
+                        <div className="border-t w-full text-center p-2 text-sm text-muted-foreground cursor-pointer hover:bg-muted/50 rounded-b-lg">
+                            <div className="flex items-center justify-center">
+                                {isDistributionChartOpen ? "숨기기" : "보기"}
+                                {isDistributionChartOpen ? <ChevronUp className="h-4 w-4 ml-1" /> : <ChevronDown className="h-4 w-4 ml-1" />}
+                            </div>
+                        </div>
+                      </CollapsibleTrigger>
                     </Collapsible>
                   </Card>
 
@@ -572,22 +573,23 @@ export default function AdminDashboard({
                  <div className="space-y-4">
                     <Card>
                       <Collapsible open={isPayoutChartOpen} onOpenChange={setIsPayoutChartOpen}>
-                        <div className="flex items-center justify-between p-4">
-                            <div>
-                              <CardTitle>성과급 분포</CardTitle>
-                              <CardDescription>평가그룹별 성과급 금액대 분포입니다.</CardDescription>
-                            </div>
-                            <CollapsibleTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                  {isPayoutChartOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                              </Button>
-                            </CollapsibleTrigger>
-                        </div>
+                        <CardHeader>
+                            <CardTitle>성과급 분포</CardTitle>
+                            <CardDescription>평가그룹별 성과급 금액대 분포입니다.</CardDescription>
+                        </CardHeader>
                         <CollapsibleContent>
                           <CardContent className="pt-0">
                               <AmountDistributionChart data={visibleResults} />
                           </CardContent>
                         </CollapsibleContent>
+                         <CollapsibleTrigger asChild>
+                            <div className="border-t w-full text-center p-2 text-sm text-muted-foreground cursor-pointer hover:bg-muted/50 rounded-b-lg">
+                                <div className="flex items-center justify-center">
+                                    {isPayoutChartOpen ? "숨기기" : "보기"}
+                                    {isPayoutChartOpen ? <ChevronUp className="h-4 w-4 ml-1" /> : <ChevronDown className="h-4 w-4 ml-1" />}
+                                </div>
+                            </div>
+                        </CollapsibleTrigger>
                       </Collapsible>
                     </Card>
                      <Tabs defaultValue="전체" onValueChange={(val) => setActiveResultsTab(val as EvaluationGroupCategory)}>
