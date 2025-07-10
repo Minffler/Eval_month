@@ -19,11 +19,13 @@ import { useToast } from '@/hooks/use-toast';
 const ATTENDANCE_TYPES_STORAGE_KEY = 'pl_eval_attendance_types';
 
 const initialAttendanceTypes: AttendanceType[] = [
-    { id: 'att-1', name: '연차', deductionHours: 8 },
-    { id: 'att-2', name: '오전반차', deductionHours: 4 },
-    { id: 'att-3', name: '오후반차', deductionHours: 4 },
-    { id: 'att-4', name: '병가', deductionHours: 8 },
-    { id: 'att-5', name: '공가', deductionHours: 8 },
+    { id: 'att-1', name: '연차', deductionDays: 1.00 },
+    { id: 'att-2', name: '오전반차', deductionDays: 0.50 },
+    { id: 'att-3', name: '오후반차', deductionDays: 0.50 },
+    { id: 'att-4', name: '오전반반차', deductionDays: 0.25 },
+    { id: 'att-5', name: '오후반반차', deductionDays: 0.25 },
+    { id: 'att-6', name: '병가', deductionDays: 1.00 },
+    { id: 'att-7', name: '공가', deductionDays: 1.00 },
 ];
 
 export default function AttendanceTypeManagement() {
@@ -44,8 +46,8 @@ export default function AttendanceTypeManagement() {
     const newTypes = [...attendanceTypes];
     if (field === 'name') {
       newTypes[index].name = value;
-    } else if (field === 'deductionHours') {
-      newTypes[index].deductionHours = Number(value);
+    } else if (field === 'deductionDays') {
+      newTypes[index].deductionDays = Number(value);
     }
     setAttendanceTypes(newTypes);
   };
@@ -53,7 +55,7 @@ export default function AttendanceTypeManagement() {
   const handleAddNewType = () => {
     setAttendanceTypes([
       ...attendanceTypes,
-      { id: `att-${Date.now()}`, name: '', deductionHours: 0 },
+      { id: `att-${Date.now()}`, name: '', deductionDays: 0 },
     ]);
   };
 
@@ -104,7 +106,7 @@ export default function AttendanceTypeManagement() {
       <CardHeader>
         <CardTitle>근태 수치 관리</CardTitle>
         <CardDescription>
-          근태 종류와 그에 따른 차감 시간을 직접 정의하고 관리합니다. 이 설정은 근무율 계산에 사용됩니다.
+          근태 종류와 그에 따른 차감 일수를 직접 정의하고 관리합니다. 이 설정은 근무율 계산에 사용됩니다.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -113,7 +115,7 @@ export default function AttendanceTypeManagement() {
             <TableHeader>
               <TableRow>
                 <TableHead className="whitespace-nowrap py-2 px-3">근태명</TableHead>
-                <TableHead className="whitespace-nowrap py-2 px-3">차감 시간 (단위: 시간)</TableHead>
+                <TableHead className="whitespace-nowrap py-2 px-3">차감 일수 (단위: 일)</TableHead>
                 <TableHead></TableHead>
               </TableRow>
             </TableHeader>
@@ -130,8 +132,9 @@ export default function AttendanceTypeManagement() {
                   <TableCell className="py-1 px-2">
                     <Input
                       type="number"
-                      value={type.deductionHours}
-                      onChange={(e) => handleInputChange(index, 'deductionHours', e.target.value)}
+                      step="0.01"
+                      value={type.deductionDays}
+                      onChange={(e) => handleInputChange(index, 'deductionDays', e.target.value)}
                       className="w-40 h-8"
                     />
                   </TableCell>

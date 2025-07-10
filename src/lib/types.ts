@@ -91,5 +91,27 @@ export type AppNotification = {
 export type AttendanceType = {
   id: string;
   name: string;
-  deductionHours: number;
+  deductionDays: number;
 };
+
+// 근무율 산출을 위한 데이터 타입
+export type ShortenedWorkHourRecord = {
+    uniqueId: string;
+    name: string;
+    startDate: string;
+    endDate: string;
+    startTime: string;
+    endTime: string;
+}
+
+export type DailyAttendanceRecord = {
+    uniqueId: string;
+    name: string;
+    date: string;
+    type: string;
+}
+
+export type WorkRateInputs = {
+    shortenedWorkHours: ShortenedWorkHourRecord[];
+    dailyAttendance: DailyAttendanceRecord[];
+}

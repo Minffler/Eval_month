@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/select';
 import { ConsistencyValidator } from './consistency-validator';
 import ManageData from './manage-data';
-import type { EvaluationResult, Grade, Employee, GradeInfo, Evaluation, EvaluationGroupCategory, User, EvaluationUploadData } from '@/lib/types';
+import type { EvaluationResult, Grade, Employee, GradeInfo, Evaluation, EvaluationGroupCategory, User, EvaluationUploadData, WorkRateInputs } from '@/lib/types';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -55,6 +55,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/colla
 import { AmountDistributionChart } from './amount-distribution-chart';
 import WorkRateManagement from './work-rate-management';
 import AttendanceTypeManagement from './attendance-type-management';
+import WorkRateDetails from './work-rate-details';
 
 interface AdminDashboardProps {
   results: EvaluationResult[];
@@ -69,6 +70,9 @@ interface AdminDashboardProps {
   activeView: string;
   onClearEmployeeData: (year: number, month: number) => void;
   onClearEvaluationData: (year: number, month: number) => void;
+  onWorkRateDataUpload: (year: number, month: number, type: keyof WorkRateInputs, data: any[]) => void;
+  onClearWorkRateData: (year: number, month: number, type: keyof WorkRateInputs) => void;
+  workRateInputs: Record<string, WorkRateInputs>;
 }
 
 type SortConfig = {
@@ -103,6 +107,9 @@ export default function AdminDashboard({
   activeView,
   onClearEmployeeData,
   onClearEvaluationData,
+  onWorkRateDataUpload,
+  onClearWorkRateData,
+  workRateInputs,
 }: AdminDashboardProps) {
   const [results, setResults] = React.useState<EvaluationResult[]>(initialResults);
   const [activeResultsTab, setActiveResultsTab] = React.useState<EvaluationGroupCategory>('전체');
@@ -422,6 +429,9 @@ export default function AdminDashboard({
   };
   
   const renderContent = () => {
+    const key = `${selectedDate.year}-${selectedDate.month}`;
+    const currentWorkRateInputs = workRateInputs[key] || { shortenedWorkHours: [], dailyAttendance: [] };
+    
     switch(activeView) {
         case 'dashboard':
             return (
@@ -564,7 +574,7 @@ export default function AdminDashboard({
                     </Card>
                      <Tabs defaultValue="전체" onValueChange={(val) => setActiveResultsTab(val as EvaluationGroupCategory)}>
                         <TabsList className="grid w-full grid-cols-4 mb-4">
-                            {Object.keys(categorizedResults).map(category => (
+                            {Object.keys(categorizedResults).filter(c => c !== 'C. 미평가').map(category => (
                                 <TabsTrigger key={category} value={category}>{category} ({categorizedResults[category as EvaluationGroupCategory].length})</TabsTrigger>
                             ))}
                         </TabsList>
@@ -714,7 +724,7 @@ export default function AdminDashboard({
                 </div>
             );
         case 'file-upload':
-            return <ManageData onEmployeeUpload={onEmployeeUpload} onEvaluationUpload={onEvaluationUpload} results={initialResults} selectedDate={selectedDate} setSelectedDate={setSelectedDate} onClearEmployeeData={onClearEmployeeData} onClearEvaluationData={onClearEvaluationData} />;
+            return <ManageData onEmployeeUpload={onEmployeeUpload} onEvaluationUpload={onEvaluationUpload} results={initialResults} selectedDate={selectedDate} setSelectedDate={setSelectedDate} onClearEmployeeData={onClearEmployeeData} onClearEvaluationData={onClearEvaluationData} onWorkRateDataUpload={onWorkRateDataUpload} onClearWorkRateData={onClearWorkRateData} workRateInputs={currentWorkRateInputs} />;
         case 'evaluator-management':
             return <EvaluatorManagement results={initialResults} allEmployees={allEmployees} handleResultsUpdate={handleResultsUpdate} />;
         case 'grade-management':
@@ -725,6 +735,10 @@ export default function AdminDashboard({
             return <WorkRateManagement />;
         case 'attendance-type-management':
             return <AttendanceTypeManagement />;
+        case 'shortened-work-details':
+            return <WorkRateDetails type="shortenedWork" data={currentWorkRateInputs.shortenedWorkHours} />;
+        case 'daily-attendance-details':
+            return <WorkRateDetails type="dailyAttendance" data={currentWorkRateInputs.dailyAttendance} />;
         case 'notifications': {
             const notifications = [
                 { date: '2025.07.07 14:00', message: '2025년 6월 평가대상자가 업로드 되었습니다. 평가를 진행해주세요.' },

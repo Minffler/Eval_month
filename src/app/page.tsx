@@ -6,7 +6,7 @@ import Header from '@/components/evalmax/header';
 import AdminDashboard from '@/components/evalmax/admin-dashboard';
 import EvaluatorDashboard from '@/components/evalmax/evaluator-dashboard';
 import EmployeeDashboard from '@/components/evalmax/employee-dashboard';
-import type { Employee, Evaluation, EvaluationResult, Grade, GradeInfo, User, EvaluatorView, EvaluationUploadData } from '@/lib/types';
+import type { Employee, Evaluation, EvaluationResult, Grade, GradeInfo, User, EvaluatorView, EvaluationUploadData, WorkRateInputs } from '@/lib/types';
 import { mockEmployees, gradingScale as initialGradingScale, calculateFinalAmount, mockEvaluations as initialMockEvaluations, getDetailedGroup1 } from '@/lib/data';
 import { useRouter } from 'next/navigation';
 import { Loader2, Bell } from 'lucide-react';
@@ -26,6 +26,8 @@ import {
   Hourglass,
   Gauge,
   ListTodo,
+  FileText,
+  CalendarDays,
 } from 'lucide-react';
 
 const adminNavItems: NavItem[] = [
@@ -56,6 +58,8 @@ const adminNavItems: NavItem[] = [
     icon: Hourglass,
     children: [
       { id: 'work-rate-view', label: '근무율 조회', icon: Gauge },
+      { id: 'shortened-work-details', label: '단축근로 상세', icon: FileText },
+      { id: 'daily-attendance-details', label: '일근태 상세', icon: CalendarDays },
       { id: 'attendance-type-management', label: '근태 수치 관리', icon: ListTodo },
     ]
   },
@@ -94,6 +98,7 @@ const evaluatorNavItems: NavItem[] = [
 const EMPLOYEES_STORAGE_KEY = 'pl_eval_employees';
 const EVALUATIONS_STORAGE_KEY = 'pl_eval_evaluations';
 const GRADING_SCALE_STORAGE_KEY = 'pl_eval_grading_scale';
+const WORK_RATE_INPUTS_STORAGE_KEY = 'pl_eval_work_rate_inputs';
 
 const getInitialDate = () => {
     const today = new Date();
@@ -187,6 +192,17 @@ export default function Home() {
   
   const [results, setResults] = React.useState<EvaluationResult[]>([]);
   const [selectedDate, setSelectedDate] = React.useState(getInitialDate);
+  const [workRateInputs, setWorkRateInputs] = React.useState<Record<string, WorkRateInputs>>(() => {
+    if (typeof window === 'undefined') return {};
+    try {
+      const stored = window.localStorage.getItem(WORK_RATE_INPUTS_STORAGE_KEY);
+      return stored ? JSON.parse(stored) : {};
+    } catch (error) {
+      console.error('Error reading work rate inputs from localStorage', error);
+      return {};
+    }
+  });
+
 
   // State for admin view
   const [isAdminSidebarOpen, setIsAdminSidebarOpen] = React.useState(true);
@@ -226,6 +242,15 @@ export default function Home() {
       console.error('Error saving grading scale to localStorage', error);
     }
   }, [gradingScale]);
+  
+  React.useEffect(() => {
+    try {
+        window.localStorage.setItem(WORK_RATE_INPUTS_STORAGE_KEY, JSON.stringify(workRateInputs));
+    } catch (error) {
+        console.error('Error saving work rate inputs to localStorage', error);
+    }
+  }, [workRateInputs]);
+
 
   const allEmployees = React.useMemo(() => {
     return Object.values(employees).flat();
@@ -355,6 +380,46 @@ export default function Home() {
         
         newState[key] = newEvalsForMonth;
         return newState;
+    });
+  };
+  
+  const handleWorkRateDataUpload = (year: number, month: number, type: keyof WorkRateInputs, data: any[]) => {
+      const key = `${year}-${month}`;
+      setWorkRateInputs(prev => {
+          const currentMonthInputs = prev[key] || {
+              shortenedWorkHours: [],
+              dailyAttendance: [],
+          };
+          
+          return {
+              ...prev,
+              [key]: {
+                  ...currentMonthInputs,
+                  [type]: data,
+              }
+          };
+      });
+  };
+
+  const handleClearWorkRateData = (year: number, month: number, type: keyof WorkRateInputs) => {
+    const key = `${year}-${month}`;
+    setWorkRateInputs(prev => {
+        const currentMonthInputs = prev[key];
+        if (!currentMonthInputs) return prev;
+
+        const updatedMonthInputs = {
+            ...currentMonthInputs,
+            [type]: [],
+        };
+        
+        // If all work rate data for the month is empty, remove the key
+        if (updatedMonthInputs.shortenedWorkHours.length === 0 && updatedMonthInputs.dailyAttendance.length === 0) {
+            const newState = { ...prev };
+            delete newState[key];
+            return newState;
+        }
+
+        return { ...prev, [key]: updatedMonthInputs };
     });
   };
 
@@ -572,6 +637,9 @@ export default function Home() {
                   activeView={adminActiveView}
                   onClearEmployeeData={handleClearEmployeeData}
                   onClearEvaluationData={handleClearEvaluationData}
+                  onWorkRateDataUpload={handleWorkRateDataUpload}
+                  onClearWorkRateData={handleClearWorkRateData}
+                  workRateInputs={workRateInputs}
                 />;
       case 'evaluator':
         return <EvaluatorDashboard 
