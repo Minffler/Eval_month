@@ -450,7 +450,7 @@ export default function AdminDashboard({
       case 'B':
         return <div className="mx-auto flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold text-stone-800" style={{ backgroundColor: 'hsl(25, 20%, 88%)' }}>{groupChar}</div>;
       case 'C':
-        return <div className="mx-auto flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold text-stone-400">{groupChar}</div>;
+        return <div className="mx-auto flex h-6 w-6 items-center justify-center rounded-full bg-muted/50 text-xs font-semibold text-stone-400">{groupChar}</div>;
       default:
         return <span>{group}</span>;
     }
@@ -623,61 +623,61 @@ export default function AdminDashboard({
                         <Table>
                         <TableHeader>
                             <TableRow>
-                            <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('uniqueId')}>
-                                <div className="flex items-center">ID{getSortIcon('uniqueId')}</div>
+                            <TableHead className="whitespace-nowrap cursor-pointer text-center" onClick={() => requestSort('uniqueId')}>
+                                <div className="flex items-center justify-center">ID{getSortIcon('uniqueId')}</div>
                             </TableHead>
-                            <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('company')}>
-                                <div className="flex items-center">회사{getSortIcon('company')}</div>
+                            <TableHead className="whitespace-nowrap cursor-pointer text-center" onClick={() => requestSort('company')}>
+                                <div className="flex items-center justify-center">회사{getSortIcon('company')}</div>
                             </TableHead>
-                            <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('department')}>
-                                <div className="flex items-center">소속부서{getSortIcon('department')}</div>
+                            <TableHead className="whitespace-nowrap cursor-pointer text-center" onClick={() => requestSort('department')}>
+                                <div className="flex items-center justify-center">소속부서{getSortIcon('department')}</div>
                             </TableHead>
-                            <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('name')}>
-                                <div className="flex items-center">이름{getSortIcon('name')}</div>
+                            <TableHead className="whitespace-nowrap cursor-pointer text-center" onClick={() => requestSort('name')}>
+                                <div className="flex items-center justify-center">이름{getSortIcon('name')}</div>
                             </TableHead>
-                            <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('title')}>
-                                <div className="flex items-center">직책{getSortIcon('title')}</div>
+                            <TableHead className="whitespace-nowrap cursor-pointer text-center" onClick={() => requestSort('title')}>
+                                <div className="flex items-center justify-center">직책{getSortIcon('title')}</div>
                             </TableHead>
-                            <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('evaluationGroup')}>
-                                <div className="flex items-center">평가그룹{getSortIcon('evaluationGroup')}</div>
+                            <TableHead className="whitespace-nowrap cursor-pointer text-center" onClick={() => requestSort('evaluationGroup')}>
+                                <div className="flex items-center justify-center">구분{getSortIcon('evaluationGroup')}</div>
                             </TableHead>
-                            <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('workRate')}>
-                                <div className="flex items-center">근무율{getSortIcon('workRate')}</div>
+                            <TableHead className="whitespace-nowrap cursor-pointer text-center" onClick={() => requestSort('workRate')}>
+                                <div className="flex items-center justify-center">근무율{getSortIcon('workRate')}</div>
                             </TableHead>
-                            <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('score')}>
-                                <div className="flex items-center">점수{getSortIcon('score')}</div>
+                            <TableHead className="whitespace-nowrap cursor-pointer text-center" onClick={() => requestSort('score')}>
+                                <div className="flex items-center justify-center">점수{getSortIcon('score')}</div>
                             </TableHead>
-                            <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('grade')}>
-                                <div className="flex items-center">등급{getSortIcon('grade')}</div>
+                            <TableHead className="whitespace-nowrap cursor-pointer text-center" onClick={() => requestSort('grade')}>
+                                <div className="flex items-center justify-center">등급{getSortIcon('grade')}</div>
                             </TableHead>
-                            <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('baseAmount')}>
-                                <div className="flex items-center">기준금액{getSortIcon('baseAmount')}</div>
+                            <TableHead className="whitespace-nowrap cursor-pointer text-center" onClick={() => requestSort('baseAmount')}>
+                                <div className="flex items-center justify-center">기준금액{getSortIcon('baseAmount')}</div>
                             </TableHead>
-                            <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('finalAmount')}>
-                                <div className="flex items-center">최종금액{getSortIcon('finalAmount')}</div>
+                            <TableHead className="whitespace-nowrap cursor-pointer text-center" onClick={() => requestSort('finalAmount')}>
+                                <div className="flex items-center justify-center">최종금액{getSortIcon('finalAmount')}</div>
                             </TableHead>
-                            <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('evaluatorName')}>
-                                <div className="flex items-center">평가자{getSortIcon('evaluatorName')}</div>
+                            <TableHead className="whitespace-nowrap cursor-pointer text-center" onClick={() => requestSort('evaluatorName')}>
+                                <div className="flex items-center justify-center">평가자{getSortIcon('evaluatorName')}</div>
                             </TableHead>
-                            <TableHead className="whitespace-nowrap min-w-[200px]">비고</TableHead>
+                            <TableHead className="whitespace-nowrap min-w-[200px] text-center">비고</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {sortedVisibleResults.map(r => (
                                 <TableRow key={r.id}>
-                                <TableCell className="py-1 px-2 whitespace-nowrap">{r.uniqueId}</TableCell>
-                                <TableCell className="py-1 px-2 whitespace-nowrap">{r.company}</TableCell>
-                                <TableCell className="py-1 px-2 whitespace-nowrap">{r.department}</TableCell>
-                                <TableCell className="py-1 px-2 font-medium whitespace-nowrap">{r.name}</TableCell>
-                                <TableCell className="py-1 px-2 whitespace-nowrap">{r.title}</TableCell>
-                                <TableCell className="py-1 px-2 whitespace-nowrap">
+                                <TableCell className="py-1 px-2 whitespace-nowrap text-center">{r.uniqueId}</TableCell>
+                                <TableCell className="py-1 px-2 whitespace-nowrap text-center">{r.company}</TableCell>
+                                <TableCell className="py-1 px-2 whitespace-nowrap text-center">{r.department}</TableCell>
+                                <TableCell className="py-1 px-2 font-medium whitespace-nowrap text-center">{r.name}</TableCell>
+                                <TableCell className="py-1 px-2 whitespace-nowrap text-center">{r.title}</TableCell>
+                                <TableCell className="py-1 px-2 whitespace-nowrap text-center">
                                   <EvaluationGroupIcon group={r.evaluationGroup} />
                                 </TableCell>
-                                <TableCell className="py-1 px-2 whitespace-nowrap">{(r.workRate * 100).toFixed(1)}%</TableCell>
-                                <TableCell className="py-1 px-2 whitespace-nowrap">{r.score}</TableCell>
-                                <TableCell className="py-1 px-2 whitespace-nowrap">
+                                <TableCell className="py-1 px-2 whitespace-nowrap text-center">{(r.workRate * 100).toFixed(1)}%</TableCell>
+                                <TableCell className="py-1 px-2 whitespace-nowrap text-center">{r.score}</TableCell>
+                                <TableCell className="py-1 px-2 whitespace-nowrap text-center">
                                     <Select value={r.grade || ''} onValueChange={(g) => handleGradeChange(r.id, g)}>
-                                        <SelectTrigger className="w-[80px] h-8">
+                                        <SelectTrigger className="w-[80px] h-8 mx-auto">
                                             <SelectValue placeholder="선택" />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -687,17 +687,17 @@ export default function AdminDashboard({
                                         </SelectContent>
                                     </Select>
                                 </TableCell>
-                                <TableCell className="py-1 px-2 whitespace-nowrap">
+                                <TableCell className="py-1 px-2 whitespace-nowrap text-center">
                                     <Input 
                                     type="text"
                                     defaultValue={formatCurrency(r.baseAmount)}
                                     onBlur={(e) => handleBaseAmountChange(r.id, e.target.value)}
-                                    className="w-28 text-right h-8"
+                                    className="w-28 text-right h-8 mx-auto"
                                     />
                                 </TableCell>
                                 <TableCell className="py-1 px-2 whitespace-nowrap text-right">{formatCurrency(r.finalAmount)}</TableCell>
-                                <TableCell className="py-1 px-2 whitespace-nowrap">{r.evaluatorName}</TableCell>
-                                <TableCell className="py-1 px-2 whitespace-nowrap">
+                                <TableCell className="py-1 px-2 whitespace-nowrap text-center">{r.evaluatorName}</TableCell>
+                                <TableCell className="py-1 px-2 whitespace-nowrap text-center">
                                     <Input
                                     defaultValue={r.memo || ''}
                                     onBlur={(e) => handleMemoChange(r.id, e.target.value)}
