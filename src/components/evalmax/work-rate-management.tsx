@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import type { EvaluationResult, Holiday, ShortenedWorkType } from '@/lib/types';
 import type { WorkRateDetailsResult, ShortenedWorkDetail, DailyAttendanceDetail } from '@/lib/work-rate-calculator';
 import { Button } from '../ui/button';
-import { ArrowUpDown, Download, ArrowUp, ArrowDown } from 'lucide-react';
+import { ArrowUpDown, Download, ArrowUp, ArrowDown, Settings2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Progress } from '../ui/progress';
 import { cn } from '@/lib/utils';
@@ -18,6 +18,14 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 
 interface WorkRateManagementProps {
@@ -27,6 +35,8 @@ interface WorkRateManagementProps {
   holidays: Holiday[];
   handleResultsUpdate: (updatedResults: EvaluationResult[]) => void;
 }
+
+type DeductionType = 'attendance' | 'pregnancy' | 'care';
 
 interface WorkRateSummary {
   uniqueId: string;
@@ -75,6 +85,9 @@ export default function WorkRateManagement({ results, workRateDetails, selectedD
     data: [],
     type: 'attendance',
   });
+  const [visibleColumns, setVisibleColumns] = React.useState<Set<DeductionType>>(
+    new Set(['attendance', 'pregnancy', 'care'])
+  );
 
   const businessDays = React.useMemo(() => {
     const holidaySet = new Set(holidays.map(h => h.date));
@@ -84,7 +97,7 @@ export default function WorkRateManagement({ results, workRateDetails, selectedD
   const monthlyStandardHours = businessDays * 8;
 
   const workRateSummaries = React.useMemo(() => {
-    const summaries: Record<string, WorkRateSummary> = {};
+    const summaries: Record<string, Omit<WorkRateSummary, 'totalDeductionHours' | 'totalWorkHours' | 'monthlyWorkRate'>> = {};
 
     results.forEach(emp => {
       summaries[emp.uniqueId] = {
@@ -93,9 +106,6 @@ export default function WorkRateManagement({ results, workRateDetails, selectedD
         deductionHoursAttendance: 0,
         deductionHoursPregnancy: 0,
         deductionHoursCare: 0,
-        totalDeductionHours: 0,
-        totalWorkHours: 0,
-        monthlyWorkRate: 0,
       };
     });
     
@@ -115,14 +125,23 @@ export default function WorkRateManagement({ results, workRateDetails, selectedD
        }
     });
 
-    Object.values(summaries).forEach(summary => {
-      summary.totalDeductionHours = summary.deductionHoursAttendance + summary.deductionHoursPregnancy + summary.deductionHoursCare;
-      summary.totalWorkHours = Math.max(0, monthlyStandardHours - summary.totalDeductionHours);
-      summary.monthlyWorkRate = monthlyStandardHours > 0 ? (summary.totalWorkHours / monthlyStandardHours) : 0;
-    });
+    return Object.values(summaries).map(summary => {
+      let totalDeductionHours = 0;
+      if (visibleColumns.has('attendance')) totalDeductionHours += summary.deductionHoursAttendance;
+      if (visibleColumns.has('pregnancy')) totalDeductionHours += summary.deductionHoursPregnancy;
+      if (visibleColumns.has('care')) totalDeductionHours += summary.deductionHoursCare;
 
-    return Object.values(summaries);
-  }, [results, workRateDetails, monthlyStandardHours]);
+      const totalWorkHours = Math.max(0, monthlyStandardHours - totalDeductionHours);
+      const monthlyWorkRate = monthlyStandardHours > 0 ? (totalWorkHours / monthlyStandardHours) : 0;
+
+      return {
+        ...summary,
+        totalDeductionHours,
+        totalWorkHours,
+        monthlyWorkRate,
+      };
+    });
+  }, [results, workRateDetails, monthlyStandardHours, visibleColumns]);
 
   const sortedData = React.useMemo(() => {
     let sortableItems = [...workRateSummaries];
@@ -159,17 +178,39 @@ export default function WorkRateManagement({ results, workRateDetails, selectedD
   };
 
   const handleDownloadExcel = () => {
-    const dataToExport = sortedData.map(item => ({
-      '고유사번': item.uniqueId,
-      '이름': item.name,
-      '근태(H)': item.deductionHoursAttendance,
-      '임신(H)': item.deductionHoursPregnancy,
-      '육아/돌봄(H)': item.deductionHoursCare,
-      '미근로시간': item.totalDeductionHours,
-      '근로시간': item.totalWorkHours,
-      '근무율': item.monthlyWorkRate,
-    }));
-    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const headers = ['고유사번', '이름'];
+    if (visibleColumns.has('attendance')) headers.push('근태(H)');
+    if (visibleColumns.has('pregnancy')) headers.push('임신(H)');
+    if (visibleColumns.has('care')) headers.push('육아/돌봄(H)');
+    headers.push('총 미근로시간', '근로시간', '근무율');
+
+    const dataToExport = sortedData.map(item => {
+        const row: Record<string, any> = {
+            '고유사번': item.uniqueId,
+            '이름': item.name,
+        };
+        if (visibleColumns.has('attendance')) row['근태(H)'] = item.deductionHoursAttendance;
+        if (visibleColumns.has('pregnancy')) row['임신(H)'] = item.deductionHoursPregnancy;
+        if (visibleColumns.has('care')) row['육아/돌봄(H)'] = item.deductionHoursCare;
+        row['총 미근로시간'] = item.totalDeductionHours;
+        row['근로시간'] = item.totalWorkHours;
+        row['근무율'] = item.monthlyWorkRate;
+        return row;
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport, { header: headers });
+
+    // Format 근무율 as percentage
+    const range = XLSX.utils.decode_range(worksheet['!ref']!);
+    for (let R = range.s.r + 1; R <= range.e.r; ++R) {
+        const cell_address = { c: headers.indexOf('근무율'), r: R };
+        const cell_ref = XLSX.utils.encode_cell(cell_address);
+        if (worksheet[cell_ref]) {
+            worksheet[cell_ref].t = 'n';
+            worksheet[cell_ref].z = '0.0%';
+        }
+    }
+
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, '근무율');
     const fileName = `${selectedDate.year}.${selectedDate.month}_근무율.xlsx`;
@@ -235,6 +276,11 @@ export default function WorkRateManagement({ results, workRateDetails, selectedD
 
   const subtotal = detailDialog.data.reduce((acc, curr) => acc + (curr.totalDeductionHours || 0), 0);
 
+  const columnConfig: { id: DeductionType; label: string; }[] = [
+    { id: 'attendance', label: '근태(H)' },
+    { id: 'pregnancy', label: '임신(H)' },
+    { id: 'care', label: '육아/돌봄(H)' },
+  ];
 
   return (
     <>
@@ -242,12 +288,40 @@ export default function WorkRateManagement({ results, workRateDetails, selectedD
         <CardHeader>
             <div className="flex flex-col sm:flex-row justify-between sm:items-start gap-2">
               <div>
-                <CardTitle>{selectedDate.year}년 {selectedDate.month}월 소정근로시간</CardTitle>
+                <CardTitle>{selectedDate.year}년 {selectedDate.month}월 근무율 조회/반영</CardTitle>
                 <CardDescription>
                     직원의 월별 근로시간, 근태 사용, 단축근로 등을 종합하여 최종 근무율을 조회합니다.
                 </CardDescription>
               </div>
               <div className="flex gap-2">
+                 <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm">
+                            <Settings2 className="mr-2 h-4 w-4" />
+                            표시 열 선택
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>표시할 열 선택</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {columnConfig.map(col => (
+                            <DropdownMenuCheckboxItem
+                                key={col.id}
+                                checked={visibleColumns.has(col.id)}
+                                onCheckedChange={(checked) => {
+                                    setVisibleColumns(prev => {
+                                        const next = new Set(prev);
+                                        if (checked) next.add(col.id);
+                                        else next.delete(col.id);
+                                        return next;
+                                    });
+                                }}
+                            >
+                                {col.label}
+                            </DropdownMenuCheckboxItem>
+                        ))}
+                    </DropdownMenuContent>
+                </DropdownMenu>
                 <Button onClick={handleDownloadExcel} variant="outline" size="sm">
                   <Download className="mr-2 h-4 w-4" />
                   엑셀 다운로드
@@ -266,9 +340,9 @@ export default function WorkRateManagement({ results, workRateDetails, selectedD
                         <TableRow>
                             <TableHead className="cursor-pointer text-center" onClick={() => requestSort('uniqueId')}><div className="flex items-center justify-center">고유사번{getSortIcon('uniqueId')}</div></TableHead>
                             <TableHead className="cursor-pointer text-center" onClick={() => requestSort('name')}><div className="flex items-center justify-center">이름{getSortIcon('name')}</div></TableHead>
-                            <TableHead className="cursor-pointer text-center" onClick={() => requestSort('deductionHoursAttendance')}><div className="flex items-center justify-center">근태(H){getSortIcon('deductionHoursAttendance')}</div></TableHead>
-                            <TableHead className="cursor-pointer text-center" onClick={() => requestSort('deductionHoursPregnancy')}><div className="flex items-center justify-center">임신(H){getSortIcon('deductionHoursPregnancy')}</div></TableHead>
-                            <TableHead className="cursor-pointer text-center" onClick={() => requestSort('deductionHoursCare')}><div className="flex items-center justify-center">육아/돌봄(H){getSortIcon('deductionHoursCare')}</div></TableHead>
+                            {visibleColumns.has('attendance') && <TableHead className="cursor-pointer text-center" onClick={() => requestSort('deductionHoursAttendance')}><div className="flex items-center justify-center">근태(H){getSortIcon('deductionHoursAttendance')}</div></TableHead>}
+                            {visibleColumns.has('pregnancy') && <TableHead className="cursor-pointer text-center" onClick={() => requestSort('deductionHoursPregnancy')}><div className="flex items-center justify-center">임신(H){getSortIcon('deductionHoursPregnancy')}</div></TableHead>}
+                            {visibleColumns.has('care') && <TableHead className="cursor-pointer text-center" onClick={() => requestSort('deductionHoursCare')}><div className="flex items-center justify-center">육아/돌봄(H){getSortIcon('deductionHoursCare')}</div></TableHead>}
                             <TableHead className="cursor-pointer text-center" onClick={() => requestSort('totalDeductionHours')}><div className="flex items-center justify-center">총 미근로시간{getSortIcon('totalDeductionHours')}</div></TableHead>
                             <TableHead className="cursor-pointer text-center min-w-[250px]" onClick={() => requestSort('totalWorkHours')}><div className="flex items-center justify-center">근로/미근로 시간{getSortIcon('totalWorkHours')}</div></TableHead>
                             <TableHead className="cursor-pointer text-center" onClick={() => requestSort('monthlyWorkRate')}><div className="flex items-center justify-center">근무율{getSortIcon('monthlyWorkRate')}</div></TableHead>
@@ -279,18 +353,18 @@ export default function WorkRateManagement({ results, workRateDetails, selectedD
                         <TableRow key={summary.uniqueId}>
                           <TableCell className="tabular-nums text-center">{summary.uniqueId}</TableCell>
                           <TableCell className="text-center">{summary.name}</TableCell>
-                          <ClickableCell value={summary.deductionHoursAttendance} onClick={() => openDetailsDialog(summary.uniqueId, summary.name, 'attendance')} />
-                          <ClickableCell value={summary.deductionHoursPregnancy} onClick={() => openDetailsDialog(summary.uniqueId, summary.name, 'pregnancy')} />
-                          <ClickableCell value={summary.deductionHoursCare} onClick={() => openDetailsDialog(summary.uniqueId, summary.name, 'care')} />
+                          {visibleColumns.has('attendance') && <ClickableCell value={summary.deductionHoursAttendance} onClick={() => openDetailsDialog(summary.uniqueId, summary.name, 'attendance')} />}
+                          {visibleColumns.has('pregnancy') && <ClickableCell value={summary.deductionHoursPregnancy} onClick={() => openDetailsDialog(summary.uniqueId, summary.name, 'pregnancy')} />}
+                          {visibleColumns.has('care') && <ClickableCell value={summary.deductionHoursCare} onClick={() => openDetailsDialog(summary.uniqueId, summary.name, 'care')} />}
                           <TableCell className="text-center tabular-nums">{summary.totalDeductionHours.toFixed(2)}</TableCell>
                           <TableCell className="text-center">
                              <Progress 
                                 value={summary.totalWorkHours}
                                 max={monthlyStandardHours}
-                                leftLabel={String(summary.totalWorkHours)}
-                                rightLabel={String(summary.totalDeductionHours)}
+                                leftLabel={String(summary.totalWorkHours.toFixed(2))}
+                                rightLabel={String(summary.totalDeductionHours.toFixed(2))}
                                 indicatorClassName="bg-stone-200"
-                                className="w-[120px] mx-auto"
+                                className="w-[200px] mx-auto"
                             />
                           </TableCell>
                           <TableCell className="text-center tabular-nums">

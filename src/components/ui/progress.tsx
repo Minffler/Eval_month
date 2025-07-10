@@ -17,10 +17,10 @@ interface ProgressProps extends React.ComponentPropsWithoutRef<typeof ProgressPr
   indicatorClassName?: string;
 }
 
-const formatNumber = (numStr: string | undefined): string => {
+const formatNumber = (numStr: string | number | undefined): string => {
   if (numStr === undefined) return '';
-  const num = parseFloat(numStr);
-  if (isNaN(num)) return numStr;
+  const num = typeof numStr === 'string' ? parseFloat(numStr) : numStr;
+  if (isNaN(num)) return String(numStr);
   // Show decimals only if they are not .00
   if (num % 1 !== 0) {
     return num.toFixed(2);
