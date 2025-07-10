@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -65,8 +66,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         };
 
         setAllNotifications(prev => {
-            const currentNotifications = getAllNotifications();
-            const updated = [newNotification, ...currentNotifications];
+            const updated = [newNotification, ...prev];
             saveAllNotifications(updated);
             return updated;
         });
