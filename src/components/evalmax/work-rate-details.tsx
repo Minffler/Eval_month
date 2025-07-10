@@ -107,95 +107,105 @@ export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDe
     XLSX.writeFile(workbook, fileName);
   };
   
-  const renderShortenedWorkTable = () => (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead className="cursor-pointer" onClick={() => requestSort('uniqueId')}><div className="flex items-center">ID{getSortIcon('uniqueId')}</div></TableHead>
-          <TableHead className="cursor-pointer" onClick={() => requestSort('name')}><div className="flex items-center">이름{getSortIcon('name')}</div></TableHead>
-          <TableHead className="cursor-pointer" onClick={() => requestSort('type')}><div className="flex items-center">구분{getSortIcon('type')}</div></TableHead>
-          <TableHead className="cursor-pointer" onClick={() => requestSort('startDate')}><div className="flex items-center">시작일{getSortIcon('startDate')}</div></TableHead>
-          <TableHead className="cursor-pointer" onClick={() => requestSort('endDate')}><div className="flex items-center">종료일{getSortIcon('endDate')}</div></TableHead>
-          <TableHead className="cursor-pointer" onClick={() => requestSort('businessDays')}><div className="flex items-center">일수(D){getSortIcon('businessDays')}</div></TableHead>
-          <TableHead>출근시각</TableHead>
-          <TableHead>퇴근시각</TableHead>
-          <TableHead className="cursor-pointer min-w-[200px] text-center" onClick={() => requestSort('actualWorkHours')}><div className="flex items-center justify-center">실근로/미근로(H){getSortIcon('actualWorkHours')}</div></TableHead>
-          <TableHead className="cursor-pointer" onClick={() => requestSort('totalDeductionHours')}><div className="flex items-center">미근로시간{getSortIcon('totalDeductionHours')}</div></TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {sortedData.map((item: ShortenedWorkDetail, index) => (
-          <TableRow key={`${item.uniqueId}-${index}`}>
-            <TableCell>{item.uniqueId}</TableCell>
-            <TableCell>{item.name}</TableCell>
-            <TableCell>{item.type}</TableCell>
-            <TableCell>{item.startDate}</TableCell>
-            <TableCell>{item.endDate}</TableCell>
-            <TableCell>{item.businessDays}</TableCell>
-            <TableCell>{item.startTime}</TableCell>
-            <TableCell>{item.endTime}</TableCell>
-            <TableCell>
-              <Progress 
-                  value={8 - Math.floor(item.actualWorkHours)}
-                  max={8} 
-                  leftLabel={String(Math.floor(item.actualWorkHours))} 
-                  rightLabel={String(8 - Math.floor(item.actualWorkHours))}
-                  indicatorClassName="bg-[hsl(var(--chart-1))]"
-              />
-            </TableCell>
-            <TableCell>{item.totalDeductionHours.toFixed(2)}</TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-      {searchTerm && (
-        <TableFooter>
+  const renderShortenedWorkTable = () => {
+    const tableData = sortedData as ShortenedWorkDetail[];
+    return (
+        <Table>
+          <TableHeader>
             <TableRow>
-                <TableCell colSpan={9} className="text-right font-bold">총 미근로시간 소계</TableCell>
-                <TableCell className="font-bold tabular-nums">{totalDeductionHours.toFixed(2)}</TableCell>
+              <TableHead className="cursor-pointer" onClick={() => requestSort('uniqueId')}><div className="flex items-center">ID{getSortIcon('uniqueId')}</div></TableHead>
+              <TableHead className="cursor-pointer" onClick={() => requestSort('name')}><div className="flex items-center">이름{getSortIcon('name')}</div></TableHead>
+              <TableHead className="cursor-pointer" onClick={() => requestSort('type')}><div className="flex items-center">구분{getSortIcon('type')}</div></TableHead>
+              <TableHead className="cursor-pointer" onClick={() => requestSort('startDate')}><div className="flex items-center">시작일{getSortIcon('startDate')}</div></TableHead>
+              <TableHead className="cursor-pointer" onClick={() => requestSort('endDate')}><div className="flex items-center">종료일{getSortIcon('endDate')}</div></TableHead>
+              <TableHead className="cursor-pointer" onClick={() => requestSort('businessDays')}><div className="flex items-center">일수(D){getSortIcon('businessDays')}</div></TableHead>
+              <TableHead>출근시각</TableHead>
+              <TableHead>퇴근시각</TableHead>
+              <TableHead className="cursor-pointer min-w-[200px] text-center" onClick={() => requestSort('actualWorkHours')}><div className="flex items-center justify-center">실근로/미근로(H){getSortIcon('actualWorkHours')}</div></TableHead>
+              <TableHead className="cursor-pointer" onClick={() => requestSort('totalDeductionHours')}><div className="flex items-center">미근로시간{getSortIcon('totalDeductionHours')}</div></TableHead>
             </TableRow>
-        </TableFooter>
-      )}
-    </Table>
-  );
+          </TableHeader>
+          <TableBody>
+            {tableData.map((item, index) => {
+                const actualWorkHours = Math.floor(item.actualWorkHours);
+                const nonWorkHours = 8 - actualWorkHours;
+                return (
+                    <TableRow key={`${item.uniqueId}-${index}`}>
+                        <TableCell>{item.uniqueId}</TableCell>
+                        <TableCell>{item.name}</TableCell>
+                        <TableCell>{item.type}</TableCell>
+                        <TableCell>{item.startDate}</TableCell>
+                        <TableCell>{item.endDate}</TableCell>
+                        <TableCell>{item.businessDays}</TableCell>
+                        <TableCell>{item.startTime}</TableCell>
+                        <TableCell>{item.endTime}</TableCell>
+                        <TableCell>
+                          <Progress 
+                              value={nonWorkHours}
+                              max={8} 
+                              leftLabel={String(nonWorkHours)} 
+                              rightLabel={String(actualWorkHours)}
+                              reverse={false}
+                          />
+                        </TableCell>
+                        <TableCell>{item.totalDeductionHours.toFixed(2)}</TableCell>
+                    </TableRow>
+                )
+            })}
+          </TableBody>
+          {searchTerm && (
+            <TableFooter>
+                <TableRow>
+                    <TableCell colSpan={9} className="text-right font-bold">총 미근로시간 소계</TableCell>
+                    <TableCell className="font-bold tabular-nums">{totalDeductionHours.toFixed(2)}</TableCell>
+                </TableRow>
+            </TableFooter>
+          )}
+        </Table>
+    );
+  };
 
-  const renderDailyAttendanceTable = () => (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead className="cursor-pointer" onClick={() => requestSort('uniqueId')}><div className="flex items-center">ID{getSortIcon('uniqueId')}</div></TableHead>
-          <TableHead className="cursor-pointer" onClick={() => requestSort('name')}><div className="flex items-center">이름{getSortIcon('name')}</div></TableHead>
-          <TableHead className="cursor-pointer" onClick={() => requestSort('date')}><div className="flex items-center">일자{getSortIcon('date')}</div></TableHead>
-          <TableHead className="cursor-pointer" onClick={() => requestSort('type')}><div className="flex items-center">근태 종류{getSortIcon('type')}</div></TableHead>
-          <TableHead className="cursor-pointer" onClick={() => requestSort('isShortenedDay')}><div className="flex items-center">단축사용{getSortIcon('isShortenedDay')}</div></TableHead>
-          <TableHead className="cursor-pointer" onClick={() => requestSort('deductionDays')}><div className="flex items-center">일수(D){getSortIcon('deductionDays')}</div></TableHead>
-          <TableHead className="cursor-pointer" onClick={() => requestSort('actualWorkHours')}><div className="flex items-center">실근로(H){getSortIcon('actualWorkHours')}</div></TableHead>
-          <TableHead className="cursor-pointer" onClick={() => requestSort('totalDeductionHours')}><div className="flex items-center">미근로시간{getSortIcon('totalDeductionHours')}</div></TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {sortedData.map((item: DailyAttendanceDetail, index) => (
-          <TableRow key={`${item.uniqueId}-${index}`}>
-            <TableCell>{item.uniqueId}</TableCell>
-            <TableCell>{item.name}</TableCell>
-            <TableCell>{item.date}</TableCell>
-            <TableCell>{item.type}</TableCell>
-            <TableCell>{item.isShortenedDay ? 'Y' : 'N'}</TableCell>
-            <TableCell>{item.deductionDays.toFixed(2)}</TableCell>
-            <TableCell>{item.actualWorkHours.toFixed(2)}</TableCell>
-            <TableCell>{item.totalDeductionHours.toFixed(2)}</TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-       {searchTerm && (
-          <TableFooter>
-              <TableRow>
-                  <TableCell colSpan={7} className="text-right font-bold">총 미근로시간 소계</TableCell>
-                  <TableCell className="font-bold tabular-nums">{totalDeductionHours.toFixed(2)}</TableCell>
+  const renderDailyAttendanceTable = () => {
+    const tableData = sortedData as DailyAttendanceDetail[];
+    return (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="cursor-pointer" onClick={() => requestSort('uniqueId')}><div className="flex items-center">ID{getSortIcon('uniqueId')}</div></TableHead>
+              <TableHead className="cursor-pointer" onClick={() => requestSort('name')}><div className="flex items-center">이름{getSortIcon('name')}</div></TableHead>
+              <TableHead className="cursor-pointer" onClick={() => requestSort('date')}><div className="flex items-center">일자{getSortIcon('date')}</div></TableHead>
+              <TableHead className="cursor-pointer" onClick={() => requestSort('type')}><div className="flex items-center">근태 종류{getSortIcon('type')}</div></TableHead>
+              <TableHead className="cursor-pointer" onClick={() => requestSort('isShortenedDay')}><div className="flex items-center">단축사용{getSortIcon('isShortenedDay')}</div></TableHead>
+              <TableHead className="cursor-pointer" onClick={() => requestSort('deductionDays')}><div className="flex items-center">일수(D){getSortIcon('deductionDays')}</div></TableHead>
+              <TableHead className="cursor-pointer" onClick={() => requestSort('actualWorkHours')}><div className="flex items-center">실근로(H){getSortIcon('actualWorkHours')}</div></TableHead>
+              <TableHead className="cursor-pointer" onClick={() => requestSort('totalDeductionHours')}><div className="flex items-center">미근로시간{getSortIcon('totalDeductionHours')}</div></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {tableData.map((item, index) => (
+              <TableRow key={`${item.uniqueId}-${index}`}>
+                <TableCell>{item.uniqueId}</TableCell>
+                <TableCell>{item.name}</TableCell>
+                <TableCell>{item.date}</TableCell>
+                <TableCell>{item.type}</TableCell>
+                <TableCell>{item.isShortenedDay ? 'Y' : 'N'}</TableCell>
+                <TableCell>{item.deductionDays.toFixed(2)}</TableCell>
+                <TableCell>{item.actualWorkHours.toFixed(2)}</TableCell>
+                <TableCell>{item.totalDeductionHours.toFixed(2)}</TableCell>
               </TableRow>
-          </TableFooter>
-       )}
-    </Table>
-  );
+            ))}
+          </TableBody>
+           {searchTerm && (
+              <TableFooter>
+                  <TableRow>
+                      <TableCell colSpan={7} className="text-right font-bold">총 미근로시간 소계</TableCell>
+                      <TableCell className="font-bold tabular-nums">{totalDeductionHours.toFixed(2)}</TableCell>
+                  </TableRow>
+              </TableFooter>
+           )}
+        </Table>
+    );
+  };
 
   const title = type === 'shortenedWork' ? '단축근로 상세' : '일근태 상세';
   const description = `${selectedDate.year}년 ${selectedDate.month}월 ${type === 'shortenedWork' ? '단축근로' : '일근태'} 상세 내역입니다.`;
