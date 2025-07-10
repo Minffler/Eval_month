@@ -16,6 +16,7 @@ import { Search, ArrowUpDown, ArrowUp, ArrowDown, Download } from 'lucide-react'
 import type { ShortenedWorkDetail, DailyAttendanceDetail } from '@/lib/work-rate-calculator';
 import { Button } from '../ui/button';
 import * as XLSX from 'xlsx';
+import { Progress } from '../ui/progress';
 
 type SortConfig<T> = {
   key: keyof T;
@@ -27,17 +28,6 @@ interface WorkRateDetailsProps {
   data: any[];
   selectedDate: { year: number, month: number };
 }
-
-const ProgressBar = ({ value, max }: { value: number; max: number }) => {
-    const percentage = max > 0 ? (value / max) * 100 : 0;
-    return (
-        <div className="flex items-center gap-2">
-            <div className="w-full bg-secondary rounded-full h-2.5">
-                <div className="bg-primary h-2.5 rounded-full" style={{ width: `${percentage}%` }}></div>
-            </div>
-        </div>
-    );
-};
 
 export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDetailsProps) {
   const [searchTerm, setSearchTerm] = React.useState('');
@@ -145,10 +135,12 @@ export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDe
             <TableCell>{item.startTime}</TableCell>
             <TableCell>{item.endTime}</TableCell>
             <TableCell>
-                <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground tabular-nums w-12 text-right">{Math.floor(item.actualWorkHours)} / {8 - Math.floor(item.actualWorkHours)}</span>
-                    <ProgressBar value={item.actualWorkHours} max={8} />
-                </div>
+              <Progress 
+                  value={Math.floor(item.actualWorkHours)} 
+                  max={8} 
+                  leftLabel={String(Math.floor(item.actualWorkHours))} 
+                  rightLabel={String(8-Math.floor(item.actualWorkHours))}
+              />
             </TableCell>
             <TableCell>{item.totalDeductionHours.toFixed(2)}</TableCell>
           </TableRow>
@@ -158,7 +150,7 @@ export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDe
         <TableFooter>
             <TableRow>
                 <TableCell colSpan={9} className="text-right font-bold">총 미근로시간 소계</TableCell>
-                <TableCell className="font-bold">{totalDeductionHours.toFixed(2)}</TableCell>
+                <TableCell className="font-bold tabular-nums">{totalDeductionHours.toFixed(2)}</TableCell>
             </TableRow>
         </TableFooter>
       )}
@@ -197,7 +189,7 @@ export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDe
           <TableFooter>
               <TableRow>
                   <TableCell colSpan={7} className="text-right font-bold">총 미근로시간 소계</TableCell>
-                  <TableCell className="font-bold">{totalDeductionHours.toFixed(2)}</TableCell>
+                  <TableCell className="font-bold tabular-nums">{totalDeductionHours.toFixed(2)}</TableCell>
               </TableRow>
           </TableFooter>
        )}
