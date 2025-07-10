@@ -56,8 +56,8 @@ const ShortenedWorkTypeIcon = ({ type }: { type: '임신' | '육아/돌봄' }) =
 
     switch (type) {
         case '임신':
-            style = { backgroundColor: 'hsl(30, 20%, 98%)', color: 'hsl(210, 5%, 40%)' };
-            className = "mx-auto flex h-6 w-20 items-center justify-center rounded-md text-xs font-semibold";
+            style = { backgroundColor: 'hsl(30, 20%, 98%)' };
+            className = "mx-auto flex h-6 w-20 items-center justify-center rounded-md text-xs font-semibold text-stone-700";
             break;
         case '육아/돌봄':
             style = { backgroundColor: 'hsl(25, 20%, 92%)', color: 'hsl(25, 25%, 35%)' };
@@ -66,7 +66,7 @@ const ShortenedWorkTypeIcon = ({ type }: { type: '임신' | '육아/돌봄' }) =
         default:
             return <span>{type}</span>;
     }
-    return <div className={className} style={style}>{type}</div>;
+    return <div className={cn(className, "text-stone-700")} style={style}>{type}</div>;
 };
 
 const DailyAttendanceIcon = ({ isShortenedDay }: { isShortenedDay: boolean }) => {
@@ -167,7 +167,12 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
   };
 
   const handleOpenDialog = () => {
-    setFormData({});
+    let initialData = {};
+    const uniqueIdsInData = new Set(filteredData.map(item => item.uniqueId));
+    if (filteredData.length > 0 && uniqueIdsInData.size === 1) {
+        initialData = { uniqueId: filteredData[0].uniqueId };
+    }
+    setFormData(initialData);
     setIsDialogOpen(true);
   };
   
