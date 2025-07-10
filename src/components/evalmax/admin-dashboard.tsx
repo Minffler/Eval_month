@@ -58,6 +58,7 @@ import AttendanceTypeManagement from './attendance-type-management';
 import WorkRateDetails from './work-rate-details';
 import type { WorkRateDetailsResult } from '@/lib/work-rate-calculator';
 import { cn } from '@/lib/utils';
+import { useNotifications } from '@/contexts/notification-context';
 
 interface AdminDashboardProps {
   results: EvaluationResult[];
@@ -135,6 +136,7 @@ export default function AdminDashboard({
   const [isPayoutChartOpen, setIsPayoutChartOpen] = React.useState(false);
   const [dashboardFilter, setDashboardFilter] = React.useState('전체');
   const { toast } = useToast();
+  const { addNotification } = useNotifications();
 
   React.useEffect(() => {
     setResults(initialResults);
@@ -335,15 +337,15 @@ export default function AdminDashboard({
   const handleSendNotifications = () => {
     const monthYearString = `${selectedDate.year}년 ${selectedDate.month}월`;
     selectedEvaluators.forEach(evaluatorId => {
-        const stat = evaluatorStats.find(s => s.evaluatorUniqueId === evaluatorId);
-        if (stat) {
-            const message = notificationMessage
-                .replace(/<평가자이름>/g, stat.evaluatorName)
-                .replace(/<%>%/g, `${stat.rate.toFixed(1)}%`)
-                .replace(/<평가년월>/g, monthYearString);
-            // In a real app, you would send this message via email, Slack, etc.
-            console.log(`Sending to ${stat.evaluatorName}: ${message}`);
-        }
+      const stat = evaluatorStats.find(s => s.evaluatorUniqueId === evaluatorId);
+      if (stat) {
+        const message = notificationMessage
+          .replace(/<평가자이름>/g, stat.evaluatorName)
+          .replace(/<%>%/g, `${stat.rate.toFixed(1)}%`)
+          .replace(/<평가년월>/g, monthYearString);
+        
+        addNotification({ recipientId: stat.evaluatorUniqueId, message });
+      }
     });
 
     toast({
