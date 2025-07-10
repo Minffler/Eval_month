@@ -1,8 +1,9 @@
 'use client';
 
-import type { WorkRateInputs, AttendanceType, Holiday, ShortenedWorkHourRecord, DailyAttendanceRecord } from './types';
+import type { WorkRateInputs, AttendanceType, Holiday, ShortenedWorkHourRecord, DailyAttendanceRecord, ShortenedWorkType } from './types';
 
 export interface ShortenedWorkDetail extends ShortenedWorkHourRecord {
+  type: ShortenedWorkType;
   workHours: number;
   actualWorkHours: number;
   dailyDeductionHours: number;
@@ -96,6 +97,7 @@ export const calculateWorkRateDetails = (
 
       return {
         ...record,
+        type: record.type,
         workHours,
         actualWorkHours,
         dailyDeductionHours,

@@ -95,6 +95,8 @@ export type AttendanceType = {
 };
 
 // 근무율 산출을 위한 데이터 타입
+export type ShortenedWorkType = '임신' | '육아/돌봄';
+
 export type ShortenedWorkHourRecord = {
     uniqueId: string;
     name: string;
@@ -102,6 +104,7 @@ export type ShortenedWorkHourRecord = {
     endDate: string;
     startTime: string;
     endTime: string;
+    type: ShortenedWorkType;
 }
 
 export type DailyAttendanceRecord = {
