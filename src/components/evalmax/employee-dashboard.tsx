@@ -175,30 +175,30 @@ export default function EmployeeDashboard({ allResults, gradingScale }: Employee
                 <TableHeader>
                   <TableRow>
                     <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('month')}>
-                      <div className="flex items-center">평가월 {getSortIcon('month')}</div>
+                      <div className="flex items-center">평가월{getSortIcon('month')}</div>
                     </TableHead>
                     <TableHead className="whitespace-nowrap">ID</TableHead>
                     <TableHead className="whitespace-nowrap">회사</TableHead>
                     <TableHead className="whitespace-nowrap">이름</TableHead>
                     <TableHead className="whitespace-nowrap">소속부서</TableHead>
                     <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('workRate')}>
-                      <div className="flex items-center">근무율 {getSortIcon('workRate')}</div>
+                      <div className="flex items-center">근무율{getSortIcon('workRate')}</div>
                     </TableHead>
                     <TableHead className="whitespace-nowrap">평가자</TableHead>
                     <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('grade')}>
-                      <div className="flex items-center">등급 {getSortIcon('grade')}</div>
+                      <div className="flex items-center">등급{getSortIcon('grade')}</div>
                     </TableHead>
                     <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('score')}>
-                      <div className="flex items-center">점수 {getSortIcon('score')}</div>
+                      <div className="flex items-center">점수{getSortIcon('score')}</div>
                     </TableHead>
                     <TableHead className="whitespace-nowrap text-right cursor-pointer" onClick={() => requestSort('baseAmount')}>
-                      <div className="flex items-center justify-end">기준금액 {getSortIcon('baseAmount')}</div>
+                      <div className="flex items-center justify-end">기준금액{getSortIcon('baseAmount')}</div>
                     </TableHead>
                     <TableHead className="whitespace-nowrap text-right cursor-pointer" onClick={() => requestSort('gradeAmount')}>
-                      <div className="flex items-center justify-end">등급금액 {getSortIcon('gradeAmount')}</div>
+                      <div className="flex items-center justify-end">등급금액{getSortIcon('gradeAmount')}</div>
                     </TableHead>
                     <TableHead className="whitespace-nowrap text-right cursor-pointer" onClick={() => requestSort('finalAmount')}>
-                      <div className="flex items-center justify-end">최종금액 {getSortIcon('finalAmount')}</div>
+                      <div className="flex items-center justify-end">최종금액{getSortIcon('finalAmount')}</div>
                     </TableHead>
                     <TableHead className="whitespace-nowrap">비고</TableHead>
                   </TableRow>

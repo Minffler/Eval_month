@@ -248,8 +248,13 @@ export default function EvaluatorManagement({
   };
   
   const getSortIcon = (key: keyof EvaluationResult) => {
-    if (!sortConfig || sortConfig.key !== key) return <ArrowUpDown className="ml-2 h-4 w-4 opacity-30" />;
-    return sortConfig.direction === 'ascending' ? <ArrowUp className="ml-2 h-4 w-4 text-primary" /> : <ArrowDown className="ml-2 h-4 w-4 text-primary" />;
+    if (!sortConfig || sortConfig.key !== key) {
+        return <ArrowUpDown className="ml-2 h-4 w-4 opacity-30" />;
+    }
+    if (sortConfig.direction === 'ascending') {
+        return <ArrowUp className="ml-2 h-4 w-4 text-primary" />;
+    }
+    return <ArrowDown className="ml-2 h-4 w-4 text-primary" />;
   };
 
   const handleSelectAll = (checked: boolean) => {

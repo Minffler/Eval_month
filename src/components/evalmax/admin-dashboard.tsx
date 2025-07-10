@@ -601,40 +601,40 @@ export default function AdminDashboard({
                         <TableHeader>
                             <TableRow>
                             <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('uniqueId')}>
-                                <div className="flex items-center">ID {getSortIcon('uniqueId')}</div>
+                                <div className="flex items-center">ID{getSortIcon('uniqueId')}</div>
                             </TableHead>
                             <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('company')}>
-                                <div className="flex items-center">회사 {getSortIcon('company')}</div>
+                                <div className="flex items-center">회사{getSortIcon('company')}</div>
                             </TableHead>
                             <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('department')}>
-                                <div className="flex items-center">소속부서 {getSortIcon('department')}</div>
+                                <div className="flex items-center">소속부서{getSortIcon('department')}</div>
                             </TableHead>
                             <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('name')}>
-                                <div className="flex items-center">이름 {getSortIcon('name')}</div>
+                                <div className="flex items-center">이름{getSortIcon('name')}</div>
                             </TableHead>
                             <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('title')}>
-                                <div className="flex items-center">직책 {getSortIcon('title')}</div>
+                                <div className="flex items-center">직책{getSortIcon('title')}</div>
                             </TableHead>
                             <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('evaluationGroup')}>
-                                <div className="flex items-center">평가그룹 {getSortIcon('evaluationGroup')}</div>
+                                <div className="flex items-center">평가그룹{getSortIcon('evaluationGroup')}</div>
                             </TableHead>
                             <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('workRate')}>
-                                <div className="flex items-center">근무율 {getSortIcon('workRate')}</div>
+                                <div className="flex items-center">근무율{getSortIcon('workRate')}</div>
                             </TableHead>
                             <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('score')}>
-                                <div className="flex items-center">점수 {getSortIcon('score')}</div>
+                                <div className="flex items-center">점수{getSortIcon('score')}</div>
                             </TableHead>
                             <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('grade')}>
-                                <div className="flex items-center">등급 {getSortIcon('grade')}</div>
+                                <div className="flex items-center">등급{getSortIcon('grade')}</div>
                             </TableHead>
                             <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('baseAmount')}>
-                                <div className="flex items-center">기준금액 {getSortIcon('baseAmount')}</div>
+                                <div className="flex items-center">기준금액{getSortIcon('baseAmount')}</div>
                             </TableHead>
                             <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('finalAmount')}>
-                                <div className="flex items-center">최종금액 {getSortIcon('finalAmount')}</div>
+                                <div className="flex items-center">최종금액{getSortIcon('finalAmount')}</div>
                             </TableHead>
                             <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('evaluatorName')}>
-                                <div className="flex items-center">평가자 {getSortIcon('evaluatorName')}</div>
+                                <div className="flex items-center">평가자{getSortIcon('evaluatorName')}</div>
                             </TableHead>
                             <TableHead className="whitespace-nowrap min-w-[200px]">비고</TableHead>
                             </TableRow>

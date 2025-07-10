@@ -697,8 +697,13 @@ const AllResultsView = ({ allResults, gradingScale }: {
   };
   
   const getSortIcon = (key: keyof EvaluationResult) => {
-    if (!sortConfig || sortConfig.key !== key) return <ArrowUpDown className="ml-2 h-4 w-4 opacity-30" />;
-    return sortConfig.direction === 'ascending' ? <ArrowUp className="h-4 w-4 text-primary" /> : <ArrowDown className="h-4 w-4 text-primary" />;
+    if (!sortConfig || sortConfig.key !== key) {
+        return <ArrowUpDown className="ml-2 h-4 w-4 opacity-30" />;
+    }
+    if (sortConfig.direction === 'ascending') {
+        return <ArrowUp className="ml-2 h-4 w-4 text-primary" />;
+    }
+    return <ArrowDown className="ml-2 h-4 w-4 text-primary" />;
   };
 
   const formatCurrency = (value: number) => {
@@ -910,8 +915,8 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, allEmploye
             <Table>
               <TableHeader>
                 <TableRow>
-                    <TableHead>회사</TableHead>
-                    <TableHead>부서</TableHead>
+                    <TableHead className="text-center">회사</TableHead>
+                    <TableHead className="text-center">부서</TableHead>
                     <TableHead className="text-center">직책</TableHead>
                     <TableHead className="text-center">담당 인원</TableHead>
                     <TableHead className="text-center">담당 해제</TableHead>
@@ -921,8 +926,8 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, allEmploye
                 {managedGroups.length > 0 ? (
                   managedGroups.map((group) => (
                     <TableRow key={group.id}>
-                      <TableCell>{group.company}</TableCell>
-                      <TableCell>{group.department}</TableCell>
+                      <TableCell className="text-center">{group.company}</TableCell>
+                      <TableCell className="text-center">{group.department}</TableCell>
                       <TableCell className="text-center">{group.position}</TableCell>
                       <TableCell className="text-center">
                         <div className="flex items-center justify-center gap-2">

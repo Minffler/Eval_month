@@ -12,7 +12,7 @@ import {
   TableFooter
 } from '@/components/ui/table';
 import { Input } from '../ui/input';
-import { Search, ArrowUpDown } from 'lucide-react';
+import { Search, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import type { ShortenedWorkDetail, DailyAttendanceDetail } from '@/lib/work-rate-calculator';
 
 type SortConfig<T> = {
@@ -66,11 +66,11 @@ export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDe
 
   const getSortIcon = (key: keyof any) => {
     if (!sortConfig || sortConfig.key !== key) {
-        return <ArrowUpDown className="ml-2 h-4 w-4 opacity-30" />;
+      return <ArrowUpDown className="ml-2 h-4 w-4 opacity-30" />;
     }
     return sortConfig.direction === 'ascending' 
-        ? <ArrowUpDown className="ml-2 h-4 w-4 text-primary" /> 
-        : <ArrowUpDown className="ml-2 h-4 w-4 text-primary" />;
+        ? <ArrowUp className="ml-2 h-4 w-4 text-primary" /> 
+        : <ArrowDown className="ml-2 h-4 w-4 text-primary" />;
   };
 
   const totalDeductionHours = React.useMemo(() => {
@@ -82,15 +82,15 @@ export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDe
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="cursor-pointer" onClick={() => requestSort('uniqueId')}>사번<ArrowUpDown className="ml-2 h-4 w-4 inline-block" /></TableHead>
-          <TableHead className="cursor-pointer" onClick={() => requestSort('name')}>이름<ArrowUpDown className="ml-2 h-4 w-4 inline-block" /></TableHead>
-          <TableHead className="cursor-pointer" onClick={() => requestSort('startDate')}>시작일<ArrowUpDown className="ml-2 h-4 w-4 inline-block" /></TableHead>
-          <TableHead className="cursor-pointer" onClick={() => requestSort('endDate')}>종료일<ArrowUpDown className="ml-2 h-4 w-4 inline-block" /></TableHead>
+          <TableHead className="cursor-pointer" onClick={() => requestSort('uniqueId')}><div className="flex items-center">사번{getSortIcon('uniqueId')}</div></TableHead>
+          <TableHead className="cursor-pointer" onClick={() => requestSort('name')}><div className="flex items-center">이름{getSortIcon('name')}</div></TableHead>
+          <TableHead className="cursor-pointer" onClick={() => requestSort('startDate')}><div className="flex items-center">시작일{getSortIcon('startDate')}</div></TableHead>
+          <TableHead className="cursor-pointer" onClick={() => requestSort('endDate')}><div className="flex items-center">종료일{getSortIcon('endDate')}</div></TableHead>
           <TableHead>출근시각</TableHead>
           <TableHead>퇴근시각</TableHead>
-          <TableHead className="cursor-pointer" onClick={() => requestSort('actualWorkHours')}>실근로시간<ArrowUpDown className="ml-2 h-4 w-4 inline-block" /></TableHead>
-          <TableHead className="cursor-pointer" onClick={() => requestSort('businessDays')}>사용일수<ArrowUpDown className="ml-2 h-4 w-4 inline-block" /></TableHead>
-          <TableHead className="cursor-pointer" onClick={() => requestSort('totalDeductionHours')}>총 차감시간<ArrowUpDown className="ml-2 h-4 w-4 inline-block" /></TableHead>
+          <TableHead className="cursor-pointer" onClick={() => requestSort('actualWorkHours')}><div className="flex items-center">실근로시간{getSortIcon('actualWorkHours')}</div></TableHead>
+          <TableHead className="cursor-pointer" onClick={() => requestSort('businessDays')}><div className="flex items-center">사용일수{getSortIcon('businessDays')}</div></TableHead>
+          <TableHead className="cursor-pointer" onClick={() => requestSort('totalDeductionHours')}><div className="flex items-center">총 차감시간{getSortIcon('totalDeductionHours')}</div></TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -115,14 +115,14 @@ export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDe
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="cursor-pointer" onClick={() => requestSort('uniqueId')}>사번<ArrowUpDown className="ml-2 h-4 w-4 inline-block" /></TableHead>
-          <TableHead className="cursor-pointer" onClick={() => requestSort('name')}>이름<ArrowUpDown className="ml-2 h-4 w-4 inline-block" /></TableHead>
-          <TableHead className="cursor-pointer" onClick={() => requestSort('date')}>일자<ArrowUpDown className="ml-2 h-4 w-4 inline-block" /></TableHead>
-          <TableHead className="cursor-pointer" onClick={() => requestSort('type')}>근태 종류<ArrowUpDown className="ml-2 h-4 w-4 inline-block" /></TableHead>
-          <TableHead className="cursor-pointer" onClick={() => requestSort('isShortenedDay')}>단축사용<ArrowUpDown className="ml-2 h-4 w-4 inline-block" /></TableHead>
-          <TableHead className="cursor-pointer" onClick={() => requestSort('actualWorkHours')}>실근로시간<ArrowUpDown className="ml-2 h-4 w-4 inline-block" /></TableHead>
-          <TableHead className="cursor-pointer" onClick={() => requestSort('deductionDays')}>차감일수<ArrowUpDown className="ml-2 h-4 w-4 inline-block" /></TableHead>
-          <TableHead className="cursor-pointer" onClick={() => requestSort('totalDeductionHours')}>총 차감시간<ArrowUpDown className="ml-2 h-4 w-4 inline-block" /></TableHead>
+          <TableHead className="cursor-pointer" onClick={() => requestSort('uniqueId')}><div className="flex items-center">사번{getSortIcon('uniqueId')}</div></TableHead>
+          <TableHead className="cursor-pointer" onClick={() => requestSort('name')}><div className="flex items-center">이름{getSortIcon('name')}</div></TableHead>
+          <TableHead className="cursor-pointer" onClick={() => requestSort('date')}><div className="flex items-center">일자{getSortIcon('date')}</div></TableHead>
+          <TableHead className="cursor-pointer" onClick={() => requestSort('type')}><div className="flex items-center">근태 종류{getSortIcon('type')}</div></TableHead>
+          <TableHead className="cursor-pointer" onClick={() => requestSort('isShortenedDay')}><div className="flex items-center">단축사용{getSortIcon('isShortenedDay')}</div></TableHead>
+          <TableHead className="cursor-pointer" onClick={() => requestSort('actualWorkHours')}><div className="flex items-center">실근로시간{getSortIcon('actualWorkHours')}</div></TableHead>
+          <TableHead className="cursor-pointer" onClick={() => requestSort('deductionDays')}><div className="flex items-center">차감일수{getSortIcon('deductionDays')}</div></TableHead>
+          <TableHead className="cursor-pointer" onClick={() => requestSort('totalDeductionHours')}><div className="flex items-center">총 차감시간{getSortIcon('totalDeductionHours')}</div></TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
