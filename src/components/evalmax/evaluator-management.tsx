@@ -374,7 +374,7 @@ export default function EvaluatorManagement({
             </Select>
             <Button onClick={handleBulkAssign}>일괄 반영</Button>
           </div>
-          <div className="border rounded-lg overflow-x-auto">
+          <div className="border rounded-lg">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -383,7 +383,7 @@ export default function EvaluatorManagement({
                   <TableHead className="cursor-pointer" onClick={() => requestSort('name')}><div className="flex items-center">이름{getSortIcon('name')}</div></TableHead>
                   <TableHead className="cursor-pointer" onClick={() => requestSort('company')}><div className="flex items-center">회사{getSortIcon('company')}</div></TableHead>
                   <TableHead className="cursor-pointer" onClick={() => requestSort('department')}><div className="flex items-center">소속부서{getSortIcon('department')}</div></TableHead>
-                  <TableHead className="cursor-pointer" onClick={() => requestSort('title')}><div className="flex items-center">직책{getSortIcon('title')}</div></TableHead>
+                  <TableHead className="cursor-pointer" onClick={() => requestSort('title')}><div className="flex items-center">직책/성장레벨{getSortIcon('title')}</div></TableHead>
                   <TableHead className="cursor-pointer" onClick={() => requestSort('evaluatorName')}><div className="flex items-center">평가자{getSortIcon('evaluatorName')}</div></TableHead>
                 </TableRow>
               </TableHeader>
@@ -395,7 +395,7 @@ export default function EvaluatorManagement({
                     <TableCell>{result.name}</TableCell>
                     <TableCell>{result.company}</TableCell>
                     <TableCell>{result.department}</TableCell>
-                    <TableCell>{result.title}</TableCell>
+                    <TableCell>{result.title} / {result.growthLevel}</TableCell>
                     <TableCell>
                       <Select value={result.evaluatorId || 'unassigned'} onValueChange={(newEvaluatorId) => handleEvaluatorChange(result.id, newEvaluatorId)}>
                         <SelectTrigger className="w-[220px]">

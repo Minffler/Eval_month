@@ -558,7 +558,7 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, handleRe
                           <div className="text-sm"><span className="font-semibold">그룹 점수 현황: </span><span className={usedScore > availableScore ? 'text-destructive font-bold' : ''}>{usedScore}</span> / {availableScore} 점</div>
                         </div>
                       </CardHeader>
-                      <CardContent className="overflow-x-auto p-0">
+                      <CardContent className="p-0">
                         <SortableContext items={group.members.map(m => m.id)} strategy={verticalListSortingStrategy}>
                           <Table>
                               <TableHeader><TableRow>
@@ -723,7 +723,7 @@ const AllResultsView = ({ allResults, gradingScale }: {
       <Card>
         <CardHeader><CardTitle>{selectedYear}년 평가 결과</CardTitle><CardDescription>선택한 연도의 성과 평가 요약입니다.</CardDescription></CardHeader>
         <CardContent>
-          <div className="border rounded-lg overflow-x-auto">
+          <div className="border rounded-lg">
             <Table>
               <TableHeader><TableRow>
                 <TableHead className="cursor-pointer whitespace-nowrap" onClick={() => requestSort('month')}><div className="flex items-center">평가월{getSortIcon('month')}</div></TableHead>

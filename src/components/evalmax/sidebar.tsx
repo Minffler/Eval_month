@@ -63,7 +63,8 @@ export function Sidebar({ navItems, activeView, setActiveView, isOpen, setIsOpen
         <div className="relative">
             <item.icon className="h-5 w-5 flex-shrink-0" />
             {hasUnread && (
-                <span className={cn("absolute top-0 right-0 flex h-2.5 w-2.5", isOpen ? "-mr-1" : "-mt-0.5 -mr-0.5")}>
+                <span className={cn("absolute flex h-2.5 w-2.5", isOpen ? "-top-0.5 -right-0.5" : "top-0 right-0")}>
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
                 </span>
             )}
@@ -123,7 +124,7 @@ export function Sidebar({ navItems, activeView, setActiveView, isOpen, setIsOpen
                         </AccordionTrigger>
                         <AccordionContent className="pl-6 pb-0 space-y-1">
                             {item.children.map((child) => (
-                                <NavLink key={child.id} item={child} hasUnread={false} />
+                                <NavLink key={child.id} item={child} hasUnread={child.id === 'notifications' && unreadCount > 0} />
                             ))}
                         </AccordionContent>
                       </AccordionItem>

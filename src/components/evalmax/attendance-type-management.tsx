@@ -148,7 +148,7 @@ export default function AttendanceTypeManagement({ attendanceTypes, setAttendanc
     }
 
     // Preserve holidays from other years and update only the current year's
-    const otherYearsHolidays = localHolidays.filter(h => !h.date.startsWith(String(selectedYear)));
+    const otherYearsHolidays = holidays.filter(h => !h.date.startsWith(String(selectedYear)));
     const updatedHolidays = [...otherYearsHolidays, ...holidaysForYear].sort((a, b) => a.date.localeCompare(b.date));
     
     setHolidays(updatedHolidays);
@@ -164,22 +164,15 @@ export default function AttendanceTypeManagement({ attendanceTypes, setAttendanc
     <div className="space-y-6">
       <Card>
         <Collapsible open={isTypesOpen} onOpenChange={setIsTypesOpen}>
-          <div className="flex items-center justify-between p-4">
-              <div>
-                <CardTitle>근태 수치 관리</CardTitle>
-                <CardDescription>
-                    근태 종류와 그에 따른 차감 일수를 직접 정의하고 관리합니다. 이 설정은 근무율 계산에 사용됩니다.
-                </CardDescription>
-              </div>
-              <CollapsibleTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                      {isTypesOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                  </Button>
-              </CollapsibleTrigger>
-          </div>
+          <CardHeader>
+            <CardTitle>근태 수치 관리</CardTitle>
+            <CardDescription>
+                근태 종류와 그에 따른 차감 일수를 직접 정의하고 관리합니다. 이 설정은 근무율 계산에 사용됩니다.
+            </CardDescription>
+          </CardHeader>
           <CollapsibleContent>
             <CardContent>
-              <div className="border rounded-lg overflow-x-auto">
+              <div className="border rounded-lg">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -234,6 +227,14 @@ export default function AttendanceTypeManagement({ attendanceTypes, setAttendanc
               </div>
             </CardContent>
           </CollapsibleContent>
+          <CollapsibleTrigger asChild>
+            <div className="border-t w-full text-center p-2 text-sm text-muted-foreground cursor-pointer hover:bg-muted/50 rounded-b-lg">
+                <div className="flex items-center justify-center">
+                    {isTypesOpen ? "숨기기" : "보기"}
+                    {isTypesOpen ? <ChevronUp className="h-4 w-4 ml-1" /> : <ChevronDown className="h-4 w-4 ml-1" />}
+                </div>
+            </div>
+          </CollapsibleTrigger>
         </Collapsible>
       </Card>
       
@@ -261,7 +262,7 @@ export default function AttendanceTypeManagement({ attendanceTypes, setAttendanc
            </div>
         </CardHeader>
         <CardContent>
-          <div className="border rounded-lg overflow-x-auto">
+          <div className="border rounded-lg">
             <Table>
               <TableHeader>
                 <TableRow>
