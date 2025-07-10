@@ -118,37 +118,37 @@ export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDe
               <TableHead className="cursor-pointer" onClick={() => requestSort('type')}><div className="flex items-center">구분{getSortIcon('type')}</div></TableHead>
               <TableHead className="cursor-pointer" onClick={() => requestSort('startDate')}><div className="flex items-center">시작일{getSortIcon('startDate')}</div></TableHead>
               <TableHead className="cursor-pointer" onClick={() => requestSort('endDate')}><div className="flex items-center">종료일{getSortIcon('endDate')}</div></TableHead>
-              <TableHead className="cursor-pointer" onClick={() => requestSort('businessDays')}><div className="flex items-center">일수(D){getSortIcon('businessDays')}</div></TableHead>
-              <TableHead>출근시각</TableHead>
-              <TableHead>퇴근시각</TableHead>
+              <TableHead className="cursor-pointer text-center" onClick={() => requestSort('businessDays')}><div className="flex items-center justify-center">일수(D){getSortIcon('businessDays')}</div></TableHead>
+              <TableHead className="text-center">출근시각</TableHead>
+              <TableHead className="text-center">퇴근시각</TableHead>
               <TableHead className="cursor-pointer min-w-[200px] text-center" onClick={() => requestSort('actualWorkHours')}><div className="flex items-center justify-center">실근로/미근로(H){getSortIcon('actualWorkHours')}</div></TableHead>
-              <TableHead className="cursor-pointer" onClick={() => requestSort('totalDeductionHours')}><div className="flex items-center">미근로시간{getSortIcon('totalDeductionHours')}</div></TableHead>
+              <TableHead className="cursor-pointer text-center" onClick={() => requestSort('totalDeductionHours')}><div className="flex items-center justify-center">미근로시간{getSortIcon('totalDeductionHours')}</div></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {tableData.map((item, index) => {
-                const actualWorkHours = Math.floor(item.actualWorkHours);
+                const actualWorkHours = item.actualWorkHours;
                 const nonWorkHours = 8 - actualWorkHours;
                 return (
                     <TableRow key={`${item.uniqueId}-${index}`}>
-                        <TableCell>{item.uniqueId}</TableCell>
-                        <TableCell>{item.name}</TableCell>
-                        <TableCell>{item.type}</TableCell>
-                        <TableCell>{item.startDate}</TableCell>
-                        <TableCell>{item.endDate}</TableCell>
-                        <TableCell>{item.businessDays}</TableCell>
-                        <TableCell>{item.startTime}</TableCell>
-                        <TableCell>{item.endTime}</TableCell>
+                        <TableCell className="text-center">{item.uniqueId}</TableCell>
+                        <TableCell className="text-center">{item.name}</TableCell>
+                        <TableCell className="text-center">{item.type}</TableCell>
+                        <TableCell className="text-center">{item.startDate}</TableCell>
+                        <TableCell className="text-center">{item.endDate}</TableCell>
+                        <TableCell className="text-center">{item.businessDays}</TableCell>
+                        <TableCell className="text-center">{item.startTime}</TableCell>
+                        <TableCell className="text-center">{item.endTime}</TableCell>
                         <TableCell>
                           <Progress 
                               value={nonWorkHours}
                               max={8} 
-                              leftLabel={String(nonWorkHours)} 
-                              rightLabel={String(actualWorkHours)}
-                              indicatorClassName="bg-[hsl(var(--chart-1))]"
+                              leftLabel={String(actualWorkHours)} 
+                              rightLabel={String(nonWorkHours)}
+                              indicatorClassName="bg-stone-200"
                           />
                         </TableCell>
-                        <TableCell>{item.totalDeductionHours.toFixed(2)}</TableCell>
+                        <TableCell className="text-center">{item.totalDeductionHours.toFixed(2)}</TableCell>
                     </TableRow>
                 )
             })}
@@ -157,7 +157,7 @@ export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDe
             <TableFooter>
                 <TableRow>
                     <TableCell colSpan={9} className="text-right font-bold">총 미근로시간 소계</TableCell>
-                    <TableCell className="font-bold tabular-nums">{totalDeductionHours.toFixed(2)}</TableCell>
+                    <TableCell className="font-bold tabular-nums text-center">{totalDeductionHours.toFixed(2)}</TableCell>
                 </TableRow>
             </TableFooter>
           )}
@@ -176,22 +176,22 @@ export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDe
               <TableHead className="cursor-pointer" onClick={() => requestSort('date')}><div className="flex items-center">일자{getSortIcon('date')}</div></TableHead>
               <TableHead className="cursor-pointer" onClick={() => requestSort('type')}><div className="flex items-center">근태 종류{getSortIcon('type')}</div></TableHead>
               <TableHead className="cursor-pointer" onClick={() => requestSort('isShortenedDay')}><div className="flex items-center">단축사용{getSortIcon('isShortenedDay')}</div></TableHead>
-              <TableHead className="cursor-pointer" onClick={() => requestSort('deductionDays')}><div className="flex items-center">일수(D){getSortIcon('deductionDays')}</div></TableHead>
-              <TableHead className="cursor-pointer" onClick={() => requestSort('actualWorkHours')}><div className="flex items-center">실근로(H){getSortIcon('actualWorkHours')}</div></TableHead>
-              <TableHead className="cursor-pointer" onClick={() => requestSort('totalDeductionHours')}><div className="flex items-center">미근로시간{getSortIcon('totalDeductionHours')}</div></TableHead>
+              <TableHead className="cursor-pointer text-center" onClick={() => requestSort('deductionDays')}><div className="flex items-center justify-center">일수(D){getSortIcon('deductionDays')}</div></TableHead>
+              <TableHead className="cursor-pointer text-center" onClick={() => requestSort('actualWorkHours')}><div className="flex items-center justify-center">실근로(H){getSortIcon('actualWorkHours')}</div></TableHead>
+              <TableHead className="cursor-pointer text-center" onClick={() => requestSort('totalDeductionHours')}><div className="flex items-center justify-center">미근로시간{getSortIcon('totalDeductionHours')}</div></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {tableData.map((item, index) => (
               <TableRow key={`${item.uniqueId}-${index}`}>
-                <TableCell>{item.uniqueId}</TableCell>
-                <TableCell>{item.name}</TableCell>
-                <TableCell>{item.date}</TableCell>
-                <TableCell>{item.type}</TableCell>
-                <TableCell>{item.isShortenedDay ? 'Y' : 'N'}</TableCell>
-                <TableCell>{item.deductionDays.toFixed(2)}</TableCell>
-                <TableCell>{item.actualWorkHours.toFixed(2)}</TableCell>
-                <TableCell>{item.totalDeductionHours.toFixed(2)}</TableCell>
+                <TableCell className="text-center">{item.uniqueId}</TableCell>
+                <TableCell className="text-center">{item.name}</TableCell>
+                <TableCell className="text-center">{item.date}</TableCell>
+                <TableCell className="text-center">{item.type}</TableCell>
+                <TableCell className="text-center">{item.isShortenedDay ? 'Y' : 'N'}</TableCell>
+                <TableCell className="text-center">{item.deductionDays.toFixed(2)}</TableCell>
+                <TableCell className="text-center">{item.actualWorkHours.toFixed(2)}</TableCell>
+                <TableCell className="text-center">{item.totalDeductionHours.toFixed(2)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -199,7 +199,7 @@ export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDe
               <TableFooter>
                   <TableRow>
                       <TableCell colSpan={7} className="text-right font-bold">총 미근로시간 소계</TableCell>
-                      <TableCell className="font-bold tabular-nums">{totalDeductionHours.toFixed(2)}</TableCell>
+                      <TableCell className="font-bold tabular-nums text-center">{totalDeductionHours.toFixed(2)}</TableCell>
                   </TableRow>
               </TableFooter>
            )}

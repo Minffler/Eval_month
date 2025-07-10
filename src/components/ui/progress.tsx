@@ -34,25 +34,45 @@ const Progress = React.forwardRef<
 >(({ className, value, max = 100, leftLabel, rightLabel, reverse = false, indicatorClassName, ...props }, ref) => {
   const percentage = (value && max) ? (value / max) * 100 : 0;
   
+  const indicatorStyle = reverse
+    ? { transform: `translateX(-${100 - percentage}%)` }
+    : { transform: `translateX(${percentage - 100}%)` };
+  
+  if (leftLabel || rightLabel) {
+    return (
+        <ProgressPrimitive.Root
+          ref={ref}
+          className={cn(
+            'relative h-5 w-full overflow-hidden rounded-full bg-secondary',
+            className
+          )}
+          {...props}
+        >
+          <ProgressPrimitive.Indicator
+            className={cn("h-full w-full flex-1", indicatorClassName)}
+            style={{ transform: `translateX(${percentage - 100}%)` }}
+          />
+          <div className="absolute inset-0 flex items-center justify-between px-2 text-xs font-medium text-foreground">
+              <span>{formatNumber(leftLabel)}</span>
+              <span>{formatNumber(rightLabel)}</span>
+          </div>
+        </ProgressPrimitive.Root>
+    )
+  }
+
   return (
     <ProgressPrimitive.Root
       ref={ref}
       className={cn(
-        'relative h-5 w-full overflow-hidden rounded-full bg-secondary',
+        'relative h-4 w-full overflow-hidden rounded-full bg-secondary',
         className
       )}
       {...props}
     >
       <ProgressPrimitive.Indicator
         className={cn("h-full w-full flex-1 transition-all", indicatorClassName)}
-        style={{ transform: `translateX(${percentage}%)` }}
+        style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
       />
-      {(leftLabel || rightLabel) && (
-          <div className="absolute inset-0 flex items-center justify-between px-2 text-xs font-medium text-foreground">
-            <span>{formatNumber(leftLabel)}</span>
-            <span>{formatNumber(rightLabel)}</span>
-          </div>
-      )}
     </ProgressPrimitive.Root>
   )
 });
