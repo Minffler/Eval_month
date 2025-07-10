@@ -214,6 +214,9 @@ export default function WorkRateManagement({ results, workRateDetails, selectedD
     </TableCell>
   );
 
+  const subtotal = detailDialog.data.reduce((acc, curr) => acc + (curr.totalDeductionHours || 0), 0);
+
+
   return (
     <>
     <Card>
@@ -289,6 +292,11 @@ export default function WorkRateManagement({ results, workRateDetails, selectedD
                     해당 직원의 상세 데이터 내역입니다.
                 </DialogDescription>
             </DialogHeader>
+            <div className="py-2 px-1">
+              <p className="text-sm font-semibold">
+                총 미근로시간 소계: <span className="text-primary font-bold">{subtotal.toFixed(2)}</span> 시간
+              </p>
+            </div>
             <div className="max-h-[60vh] overflow-y-auto border rounded-lg">
                 <Table>
                     {detailDialog.type === 'attendance' ? (
