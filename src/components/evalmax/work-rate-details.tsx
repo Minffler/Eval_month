@@ -35,7 +35,7 @@ const ShortenedWorkTypeIcon = ({ type }: { type: '임신' | '육아/돌봄' }) =
 
     switch (type) {
         case '임신':
-            style = { backgroundColor: 'hsl(30, 20%, 98%)', color: 'hsl(210, 5%, 50%)' };
+            style = { backgroundColor: 'hsl(30, 20%, 98%)', color: 'hsl(210, 5%, 40%)' };
             className = "mx-auto flex h-6 w-20 items-center justify-center rounded-md text-xs font-semibold";
             break;
         case '육아/돌봄':
