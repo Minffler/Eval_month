@@ -28,6 +28,17 @@ interface WorkRateDetailsProps {
   selectedDate: { year: number, month: number };
 }
 
+const ProgressBar = ({ value, max }: { value: number; max: number }) => {
+    const percentage = max > 0 ? (value / max) * 100 : 0;
+    return (
+        <div className="flex items-center gap-2">
+            <div className="w-full bg-secondary rounded-full h-2.5">
+                <div className="bg-primary h-2.5 rounded-full" style={{ width: `${percentage}%` }}></div>
+            </div>
+        </div>
+    );
+};
+
 export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDetailsProps) {
   const [searchTerm, setSearchTerm] = React.useState('');
   const [sortConfig, setSortConfig] = React.useState<SortConfig<any>>(null);
@@ -118,8 +129,7 @@ export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDe
           <TableHead className="cursor-pointer" onClick={() => requestSort('businessDays')}><div className="flex items-center">일수(D){getSortIcon('businessDays')}</div></TableHead>
           <TableHead>출근시각</TableHead>
           <TableHead>퇴근시각</TableHead>
-          <TableHead className="cursor-pointer" onClick={() => requestSort('actualWorkHours')}><div className="flex items-center">실근로(H){getSortIcon('actualWorkHours')}</div></TableHead>
-          <TableHead>미근로(H)</TableHead>
+          <TableHead className="cursor-pointer min-w-[180px]" onClick={() => requestSort('actualWorkHours')}><div className="flex items-center">실근로/미근로{getSortIcon('actualWorkHours')}</div></TableHead>
           <TableHead className="cursor-pointer" onClick={() => requestSort('totalDeductionHours')}><div className="flex items-center">미근로시간{getSortIcon('totalDeductionHours')}</div></TableHead>
         </TableRow>
       </TableHeader>
@@ -134,8 +144,12 @@ export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDe
             <TableCell>{item.businessDays}</TableCell>
             <TableCell>{item.startTime}</TableCell>
             <TableCell>{item.endTime}</TableCell>
-            <TableCell>{Math.floor(item.actualWorkHours)}</TableCell>
-            <TableCell>{8 - Math.floor(item.actualWorkHours)}</TableCell>
+            <TableCell>
+                <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground tabular-nums w-12 text-right">{Math.floor(item.actualWorkHours)} / {8 - Math.floor(item.actualWorkHours)}</span>
+                    <ProgressBar value={item.actualWorkHours} max={8} />
+                </div>
+            </TableCell>
             <TableCell>{item.totalDeductionHours.toFixed(2)}</TableCell>
           </TableRow>
         ))}
@@ -143,7 +157,7 @@ export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDe
       {searchTerm && (
         <TableFooter>
             <TableRow>
-                <TableCell colSpan={10} className="text-right font-bold">총 미근로시간 소계</TableCell>
+                <TableCell colSpan={9} className="text-right font-bold">총 미근로시간 소계</TableCell>
                 <TableCell className="font-bold">{totalDeductionHours.toFixed(2)}</TableCell>
             </TableRow>
         </TableFooter>
@@ -210,7 +224,7 @@ export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDe
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                     type="search"
-                    placeholder="이름 또는 사번으로 검색..."
+                    placeholder="이름 또는 ID로 검색..."
                     className="w-full pl-8"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}

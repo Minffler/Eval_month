@@ -46,6 +46,17 @@ function countBusinessDaysForMonth(year: number, month: number, holidays: Set<st
     return count;
 }
 
+const ProgressBar = ({ value, max }: { value: number; max: number }) => {
+    const percentage = max > 0 ? (value / max) * 100 : 0;
+    return (
+        <div className="flex items-center gap-2">
+            <div className="w-full bg-secondary rounded-full h-2.5">
+                <div className="bg-primary h-2.5 rounded-full" style={{ width: `${percentage}%` }}></div>
+            </div>
+        </div>
+    );
+};
+
 
 export default function WorkRateManagement({ results, workRateDetails, selectedDate, holidays }: WorkRateManagementProps) {
   const [sortConfig, setSortConfig] = React.useState<SortConfig>(null);
@@ -155,7 +166,7 @@ export default function WorkRateManagement({ results, workRateDetails, selectedD
         <CardHeader>
             <div className="flex flex-col sm:flex-row justify-between sm:items-start gap-2">
               <div>
-                <CardTitle>근무율 조회</CardTitle>
+                <CardTitle>{selectedDate.year}년 {selectedDate.month}월 소정근로시간</CardTitle>
                 <CardDescription>
                     직원의 월별 근로시간, 근태 사용, 단축근로 등을 종합하여 최종 근무율을 조회합니다.
                 </CardDescription>
@@ -166,7 +177,7 @@ export default function WorkRateManagement({ results, workRateDetails, selectedD
               </Button>
             </div>
             <div className="pt-2 text-sm text-muted-foreground">
-                <span className="font-semibold text-foreground">{selectedDate.year}년 {selectedDate.month}월 소정근로시간:</span> 8시간 * {businessDays}일 = <span className="font-bold text-primary">{monthlyStandardHours}</span>시간
+                <span className="font-semibold text-foreground">월 소정근로시간:</span> 8시간 * {businessDays}일 = <span className="font-bold text-primary">{monthlyStandardHours}</span>시간
             </div>
         </CardHeader>
         <CardContent>
@@ -180,7 +191,7 @@ export default function WorkRateManagement({ results, workRateDetails, selectedD
                             <TableHead className="cursor-pointer text-right" onClick={() => requestSort('deductionHoursPregnancy')}><div className="flex items-center justify-end">임신(H){getSortIcon('deductionHoursPregnancy')}</div></TableHead>
                             <TableHead className="cursor-pointer text-right" onClick={() => requestSort('deductionHoursCare')}><div className="flex items-center justify-end">육아/돌봄(H){getSortIcon('deductionHoursCare')}</div></TableHead>
                             <TableHead className="cursor-pointer text-right" onClick={() => requestSort('totalDeductionHours')}><div className="flex items-center justify-end">미근로시간{getSortIcon('totalDeductionHours')}</div></TableHead>
-                            <TableHead className="cursor-pointer text-right" onClick={() => requestSort('totalWorkHours')}><div className="flex items-center justify-end">근로시간{getSortIcon('totalWorkHours')}</div></TableHead>
+                            <TableHead className="cursor-pointer text-right" onClick={() => requestSort('totalWorkHours')}><div className="flex items-center justify-end min-w-[200px]">근로/미근로 시간{getSortIcon('totalWorkHours')}</div></TableHead>
                             <TableHead className="cursor-pointer text-right" onClick={() => requestSort('monthlyWorkRate')}><div className="flex items-center justify-end">근무율{getSortIcon('monthlyWorkRate')}</div></TableHead>
                         </TableRow>
                     </TableHeader>
@@ -193,7 +204,12 @@ export default function WorkRateManagement({ results, workRateDetails, selectedD
                           <TableCell className="text-right">{summary.deductionHoursPregnancy.toFixed(2)}</TableCell>
                           <TableCell className="text-right">{summary.deductionHoursCare.toFixed(2)}</TableCell>
                           <TableCell className="text-right">{summary.totalDeductionHours.toFixed(2)}</TableCell>
-                          <TableCell className="text-right">{summary.totalWorkHours.toFixed(2)}</TableCell>
+                          <TableCell className="text-right">
+                             <div className="flex items-center gap-2">
+                                <span className="text-muted-foreground tabular-nums w-20 text-right">{summary.totalWorkHours.toFixed(2)} / {monthlyStandardHours.toFixed(2)}</span>
+                                <ProgressBar value={summary.totalWorkHours} max={monthlyStandardHours} />
+                            </div>
+                          </TableCell>
                           <TableCell className="font-bold text-primary text-right">{(summary.monthlyWorkRate * 100).toFixed(1)}%</TableCell>
                         </TableRow>
                       ))}
