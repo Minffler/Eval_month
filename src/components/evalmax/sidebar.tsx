@@ -10,13 +10,13 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import {
+  Bell,
   ChevronLeft,
   LogOut,
 } from 'lucide-react';
 import { ScrollArea } from '../ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import type { User } from '@/lib/types';
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Separator } from '../ui/separator';
 import { useNotifications } from '@/contexts/notification-context';
 
@@ -73,7 +73,7 @@ export function Sidebar({ navItems, activeView, setActiveView, isOpen, setIsOpen
   );
   
   const userProfile = user ? (
-    <div className="flex items-center justify-between gap-3 p-2">
+    <div className={cn("flex items-center justify-between gap-3 p-2", isOpen && "pl-4")}>
       {isOpen && (
         <div className="flex flex-col text-left overflow-hidden">
             <span className="font-semibold text-sm truncate">{user?.name}</span>
@@ -85,6 +85,8 @@ export function Sidebar({ navItems, activeView, setActiveView, isOpen, setIsOpen
       </Button>
     </div>
   ) : null;
+
+  const notificationItem = { id: 'notifications', label: '알림함', icon: Bell };
 
   return (
     <div
@@ -99,11 +101,8 @@ export function Sidebar({ navItems, activeView, setActiveView, isOpen, setIsOpen
         <ScrollArea className="flex-1">
           <nav className="flex-1 space-y-1 p-2">
               {navItems.map((item) => {
-                const isNotificationItem = item.id === 'notifications';
-                const hasUnread = unreadCount > 0 && isNotificationItem;
-
                 if (!item.children) {
-                  return <NavLink key={item.id} item={item} hasUnread={hasUnread} />;
+                  return <NavLink key={item.id} item={item} hasUnread={false} />;
                 }
 
                 if (isOpen) {
@@ -166,7 +165,11 @@ export function Sidebar({ navItems, activeView, setActiveView, isOpen, setIsOpen
           </nav>
         </ScrollArea>
         <div className="mt-auto border-t">
-          {userProfile}
+            <div className="p-2">
+              <NavLink item={notificationItem} hasUnread={unreadCount > 0} />
+            </div>
+            <Separator />
+            {userProfile}
         </div>
 
         <Button

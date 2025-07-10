@@ -64,11 +64,6 @@ const adminNavItems: NavItem[] = [
       { id: 'grade-management', label: '등급/점수 관리', icon: Settings },
     ],
   },
-  {
-    id: 'notifications',
-    label: '알림함',
-    icon: Bell,
-  },
 ];
 
 const evaluatorNavItems: NavItem[] = [
@@ -88,11 +83,6 @@ const evaluatorNavItems: NavItem[] = [
     children: [
       { id: 'assignment-management', label: '담당 소속 관리', icon: Users },
     ],
-  },
-  {
-    id: 'notifications',
-    label: '알림함',
-    icon: Bell,
   },
 ];
 
@@ -632,6 +622,8 @@ export default function Home() {
 
         return {
           ...employee,
+          year: employee.year,
+          month: employee.month,
           grade,
           score,
           payoutRate,
@@ -760,10 +752,10 @@ export default function Home() {
     return null;
   }
   
-  const commonLayout = (sidebarNavItems: NavItem[], activeView: string, setActiveView: (v: any) => void, isOpen: boolean, setIsOpen: (v: boolean) => void) => (
+  const commonLayout = (navItems: NavItem[], activeView: string, setActiveView: (v: any) => void, isOpen: boolean, setIsOpen: (v: boolean) => void) => (
     <div className="flex h-screen bg-background overflow-hidden">
         <Sidebar
-            navItems={sidebarNavItems}
+            navItems={navItems}
             activeView={activeView}
             setActiveView={setActiveView}
             isOpen={isOpen}
@@ -783,11 +775,25 @@ export default function Home() {
   )
 
   if (role === 'admin') {
-      return commonLayout(adminNavItems, adminActiveView, setAdminActiveView, isAdminSidebarOpen, setIsAdminSidebarOpen)
+      const notificationItem: NavItem = { id: 'notifications', label: '알림함', icon: Bell };
+      return commonLayout(
+        adminNavItems,
+        adminActiveView,
+        setAdminActiveView,
+        isAdminSidebarOpen,
+        setIsAdminSidebarOpen
+      );
   }
 
   if (role === 'evaluator') {
-      return commonLayout(evaluatorNavItems, evaluatorActiveView, setEvaluatorActiveView, isEvaluatorSidebarOpen, setIsEvaluatorSidebarOpen)
+      const notificationItem: NavItem = { id: 'notifications', label: '알림함', icon: Bell };
+      return commonLayout(
+        evaluatorNavItems,
+        evaluatorActiveView,
+        setEvaluatorActiveView,
+        isEvaluatorSidebarOpen,
+        setIsEvaluatorSidebarOpen
+      );
   }
 
   return (

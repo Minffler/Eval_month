@@ -139,10 +139,10 @@ export default function WorkRateManagement({ results, workRateDetails, selectedD
     const dataToExport = sortedData.map(item => ({
       '고유사번': item.uniqueId,
       '이름': item.name,
-      '근태(일수)': item.attendanceDays,
-      '근태(시간)': item.deductionHoursAttendance,
-      '단축(임신)': item.deductionHoursPregnancy,
-      '단축(육아/돌봄)': item.deductionHoursCare,
+      '근태(D)': item.attendanceDays,
+      '근태(H)': item.deductionHoursAttendance,
+      '임신(H)': item.deductionHoursPregnancy,
+      '육아/돌봄(H)': item.deductionHoursCare,
       '총 근무시간': item.totalWorkHours,
       '근무율': item.monthlyWorkRate,
     }));
@@ -179,12 +179,12 @@ export default function WorkRateManagement({ results, workRateDetails, selectedD
                         <TableRow>
                             <TableHead className="cursor-pointer" onClick={() => requestSort('uniqueId')}><div className="flex items-center">고유사번{getSortIcon('uniqueId')}</div></TableHead>
                             <TableHead className="cursor-pointer" onClick={() => requestSort('name')}><div className="flex items-center">이름{getSortIcon('name')}</div></TableHead>
-                            <TableHead className="cursor-pointer" onClick={() => requestSort('attendanceDays')}><div className="flex items-center">근태(일수){getSortIcon('attendanceDays')}</div></TableHead>
-                            <TableHead className="cursor-pointer" onClick={() => requestSort('deductionHoursAttendance')}><div className="flex items-center">근태(시간){getSortIcon('deductionHoursAttendance')}</div></TableHead>
-                            <TableHead className="cursor-pointer" onClick={() => requestSort('deductionHoursPregnancy')}><div className="flex items-center">단축(임신){getSortIcon('deductionHoursPregnancy')}</div></TableHead>
-                            <TableHead className="cursor-pointer" onClick={() => requestSort('deductionHoursCare')}><div className="flex items-center">단축(육아/돌봄){getSortIcon('deductionHoursCare')}</div></TableHead>
-                            <TableHead className="cursor-pointer" onClick={() => requestSort('totalWorkHours')}><div className="flex items-center">총 근무시간{getSortIcon('totalWorkHours')}</div></TableHead>
-                            <TableHead className="cursor-pointer" onClick={() => requestSort('monthlyWorkRate')}><div className="flex items-center">근무율{getSortIcon('monthlyWorkRate')}</div></TableHead>
+                            <TableHead className="cursor-pointer text-right" onClick={() => requestSort('attendanceDays')}><div className="flex items-center justify-end">근태(D){getSortIcon('attendanceDays')}</div></TableHead>
+                            <TableHead className="cursor-pointer text-right" onClick={() => requestSort('deductionHoursAttendance')}><div className="flex items-center justify-end">근태(H){getSortIcon('deductionHoursAttendance')}</div></TableHead>
+                            <TableHead className="cursor-pointer text-right" onClick={() => requestSort('deductionHoursPregnancy')}><div className="flex items-center justify-end">임신(H){getSortIcon('deductionHoursPregnancy')}</div></TableHead>
+                            <TableHead className="cursor-pointer text-right" onClick={() => requestSort('deductionHoursCare')}><div className="flex items-center justify-end">육아/돌봄(H){getSortIcon('deductionHoursCare')}</div></TableHead>
+                            <TableHead className="cursor-pointer text-right" onClick={() => requestSort('totalWorkHours')}><div className="flex items-center justify-end">총 근무시간{getSortIcon('totalWorkHours')}</div></TableHead>
+                            <TableHead className="cursor-pointer text-right" onClick={() => requestSort('monthlyWorkRate')}><div className="flex items-center justify-end">근무율{getSortIcon('monthlyWorkRate')}</div></TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -192,12 +192,12 @@ export default function WorkRateManagement({ results, workRateDetails, selectedD
                         <TableRow key={summary.uniqueId}>
                           <TableCell>{summary.uniqueId}</TableCell>
                           <TableCell>{summary.name}</TableCell>
-                          <TableCell>{summary.attendanceDays}일</TableCell>
-                          <TableCell>{summary.deductionHoursAttendance.toFixed(2)}</TableCell>
-                          <TableCell>{summary.deductionHoursPregnancy.toFixed(2)}</TableCell>
-                          <TableCell>{summary.deductionHoursCare.toFixed(2)}</TableCell>
-                          <TableCell>{summary.totalWorkHours.toFixed(2)}</TableCell>
-                          <TableCell className="font-bold text-primary">{(summary.monthlyWorkRate * 100).toFixed(1)}%</TableCell>
+                          <TableCell className="text-right">{summary.attendanceDays}일</TableCell>
+                          <TableCell className="text-right">{summary.deductionHoursAttendance.toFixed(2)}</TableCell>
+                          <TableCell className="text-right">{summary.deductionHoursPregnancy.toFixed(2)}</TableCell>
+                          <TableCell className="text-right">{summary.deductionHoursCare.toFixed(2)}</TableCell>
+                          <TableCell className="text-right">{summary.totalWorkHours.toFixed(2)}</TableCell>
+                          <TableCell className="font-bold text-primary text-right">{(summary.monthlyWorkRate * 100).toFixed(1)}%</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
