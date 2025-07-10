@@ -505,7 +505,7 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, handleRe
               <div className="flex-1"><CardTitle>평가 진행 현황</CardTitle><CardDescription>{selectedDate.year}년 {selectedDate.month}월 성과평가 ({selectedDate.month === 12 ? 1 : selectedDate.month + 1}월 급여반영)</CardDescription></div>
               <div className="w-full sm:w-64 space-y-1">
                 <div className='flex justify-between items-baseline'><h4 className="font-semibold text-sm">종합 진행률</h4><span className="font-bold text-base text-primary">{totalCompletionRate.toFixed(1)}%</span></div>
-                <Progress value={totalCompletionRate} className="h-2" />
+                <Progress value={totalCompletionRate} className="h-2" indicatorClassName="bg-primary" />
                 <p className="text-xs text-muted-foreground text-right">{totalMyCompleted} / {totalMyEmployees} 명 완료</p>
               </div>
             </CardHeader>
