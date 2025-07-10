@@ -18,12 +18,14 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
 
 interface WorkRateManagementProps {
   results: EvaluationResult[];
   workRateDetails: WorkRateDetailsResult;
   selectedDate: { year: number, month: number };
   holidays: Holiday[];
+  handleResultsUpdate: (updatedResults: EvaluationResult[]) => void;
 }
 
 interface WorkRateSummary {
@@ -64,7 +66,8 @@ function countBusinessDaysForMonth(year: number, month: number, holidays: Set<st
 }
 
 
-export default function WorkRateManagement({ results, workRateDetails, selectedDate, holidays }: WorkRateManagementProps) {
+export default function WorkRateManagement({ results, workRateDetails, selectedDate, holidays, handleResultsUpdate }: WorkRateManagementProps) {
+  const { toast } = useToast();
   const [sortConfig, setSortConfig] = React.useState<SortConfig>({ key: 'monthlyWorkRate', direction: 'ascending' });
   const [detailDialog, setDetailDialog] = React.useState<DetailDialogInfo>({
     isOpen: false,
@@ -173,6 +176,22 @@ export default function WorkRateManagement({ results, workRateDetails, selectedD
     XLSX.writeFile(workbook, fileName);
   };
   
+  const handleApplyWorkRate = () => {
+      const summariesMap = new Map(workRateSummaries.map(s => [s.uniqueId, s.monthlyWorkRate]));
+      const updatedResults = results.map(result => {
+          const newWorkRate = summariesMap.get(result.uniqueId);
+          if (newWorkRate !== undefined && newWorkRate !== result.workRate) {
+              return { ...result, workRate: newWorkRate };
+          }
+          return result;
+      });
+      handleResultsUpdate(updatedResults);
+      toast({
+          title: "반영 완료",
+          description: "계산된 근무율이 모든 대상자에게 반영되었습니다."
+      });
+  }
+
   const getWorkRateStyle = (rate: number): string => {
     if (rate >= 0.7) {
       return "";
@@ -228,10 +247,13 @@ export default function WorkRateManagement({ results, workRateDetails, selectedD
                     직원의 월별 근로시간, 근태 사용, 단축근로 등을 종합하여 최종 근무율을 조회합니다.
                 </CardDescription>
               </div>
-              <Button onClick={handleDownloadExcel} variant="outline" size="sm">
-                <Download className="mr-2 h-4 w-4" />
-                엑셀 다운로드
-              </Button>
+              <div className="flex gap-2">
+                <Button onClick={handleDownloadExcel} variant="outline" size="sm">
+                  <Download className="mr-2 h-4 w-4" />
+                  엑셀 다운로드
+                </Button>
+                <Button onClick={handleApplyWorkRate} size="sm">근무율 반영</Button>
+              </div>
             </div>
             <div className="pt-2 text-sm text-muted-foreground">
                 <span className="font-semibold text-foreground">월 소정근로시간:</span> 8시간 * {businessDays}일 = <span className="font-bold text-primary">{monthlyStandardHours}</span>시간

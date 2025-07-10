@@ -17,6 +17,7 @@ import type { ShortenedWorkDetail, DailyAttendanceDetail } from '@/lib/work-rate
 import { Button } from '../ui/button';
 import * as XLSX from 'xlsx';
 import { Progress } from '../ui/progress';
+import { cn } from '@/lib/utils';
 
 type SortConfig<T> = {
   key: keyof T;
@@ -28,6 +29,30 @@ interface WorkRateDetailsProps {
   data: any[];
   selectedDate: { year: number, month: number };
 }
+
+const ShortenedWorkTypeIcon = ({ type }: { type: '임신' | '육아/돌봄' }) => {
+    switch (type) {
+      case '임신':
+        return <div className="mx-auto flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold text-stone-700" style={{ backgroundColor: 'hsl(25, 25%, 75%)' }}>임신</div>;
+      case '육아/돌봄':
+        return <div className="mx-auto flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold text-stone-800" style={{ backgroundColor: 'hsl(25, 20%, 92%)' }}>돌봄</div>;
+      default:
+        return <span>{type}</span>;
+    }
+};
+
+const DailyAttendanceIcon = ({ isShortenedDay }: { isShortenedDay: boolean }) => {
+    const text = isShortenedDay ? 'Y' : 'N';
+    const style = isShortenedDay
+        ? { backgroundColor: 'hsl(25, 20%, 92%)', color: 'hsl(25, 25%, 35%)' }
+        : { backgroundColor: 'hsl(30, 20%, 98%)', color: 'hsl(210, 5%, 60%)' };
+    
+    return (
+        <div className="mx-auto flex h-6 w-6 items-center justify-center rounded-md text-xs font-semibold" style={style}>
+            {text}
+        </div>
+    );
+};
 
 export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDetailsProps) {
   const [searchTerm, setSearchTerm] = React.useState('');
@@ -113,15 +138,15 @@ export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDe
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="cursor-pointer" onClick={() => requestSort('uniqueId')}><div className="flex items-center">ID{getSortIcon('uniqueId')}</div></TableHead>
-              <TableHead className="cursor-pointer" onClick={() => requestSort('name')}><div className="flex items-center">이름{getSortIcon('name')}</div></TableHead>
-              <TableHead className="cursor-pointer" onClick={() => requestSort('type')}><div className="flex items-center">구분{getSortIcon('type')}</div></TableHead>
-              <TableHead className="cursor-pointer" onClick={() => requestSort('startDate')}><div className="flex items-center">시작일{getSortIcon('startDate')}</div></TableHead>
-              <TableHead className="cursor-pointer" onClick={() => requestSort('endDate')}><div className="flex items-center">종료일{getSortIcon('endDate')}</div></TableHead>
+              <TableHead className="cursor-pointer text-center" onClick={() => requestSort('uniqueId')}><div className="flex items-center justify-center">ID{getSortIcon('uniqueId')}</div></TableHead>
+              <TableHead className="cursor-pointer text-center" onClick={() => requestSort('name')}><div className="flex items-center justify-center">이름{getSortIcon('name')}</div></TableHead>
+              <TableHead className="cursor-pointer text-center" onClick={() => requestSort('type')}><div className="flex items-center justify-center">구분{getSortIcon('type')}</div></TableHead>
+              <TableHead className="cursor-pointer text-center" onClick={() => requestSort('startDate')}><div className="flex items-center justify-center">시작일{getSortIcon('startDate')}</div></TableHead>
+              <TableHead className="cursor-pointer text-center" onClick={() => requestSort('endDate')}><div className="flex items-center justify-center">종료일{getSortIcon('endDate')}</div></TableHead>
               <TableHead className="cursor-pointer text-center" onClick={() => requestSort('businessDays')}><div className="flex items-center justify-center">일수(D){getSortIcon('businessDays')}</div></TableHead>
               <TableHead className="text-center">출근시각</TableHead>
               <TableHead className="text-center">퇴근시각</TableHead>
-              <TableHead className="cursor-pointer min-w-[200px] text-center" onClick={() => requestSort('actualWorkHours')}><div className="flex items-center justify-center">실근로/미근로(H){getSortIcon('actualWorkHours')}</div></TableHead>
+              <TableHead className="cursor-pointer text-center" onClick={() => requestSort('actualWorkHours')}><div className="flex items-center justify-center">실근로/미근로(H){getSortIcon('actualWorkHours')}</div></TableHead>
               <TableHead className="cursor-pointer text-center" onClick={() => requestSort('totalDeductionHours')}><div className="flex items-center justify-center">미근로시간{getSortIcon('totalDeductionHours')}</div></TableHead>
             </TableRow>
           </TableHeader>
@@ -133,7 +158,7 @@ export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDe
                     <TableRow key={`${item.uniqueId}-${index}`}>
                         <TableCell className="text-center">{item.uniqueId}</TableCell>
                         <TableCell className="text-center">{item.name}</TableCell>
-                        <TableCell className="text-center">{item.type}</TableCell>
+                        <TableCell className="text-center"><ShortenedWorkTypeIcon type={item.type} /></TableCell>
                         <TableCell className="text-center">{item.startDate}</TableCell>
                         <TableCell className="text-center">{item.endDate}</TableCell>
                         <TableCell className="text-center">{item.businessDays}</TableCell>
@@ -146,9 +171,10 @@ export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDe
                               leftLabel={String(actualWorkHours)} 
                               rightLabel={String(nonWorkHours)}
                               indicatorClassName="bg-stone-200"
+                              className="w-[220px] mx-auto"
                           />
                         </TableCell>
-                        <TableCell className="text-center">{item.totalDeductionHours.toFixed(2)}</TableCell>
+                        <TableCell className="text-center font-bold">{item.totalDeductionHours.toFixed(2)}</TableCell>
                     </TableRow>
                 )
             })}
@@ -171,11 +197,11 @@ export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDe
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="cursor-pointer" onClick={() => requestSort('uniqueId')}><div className="flex items-center">ID{getSortIcon('uniqueId')}</div></TableHead>
-              <TableHead className="cursor-pointer" onClick={() => requestSort('name')}><div className="flex items-center">이름{getSortIcon('name')}</div></TableHead>
-              <TableHead className="cursor-pointer" onClick={() => requestSort('date')}><div className="flex items-center">일자{getSortIcon('date')}</div></TableHead>
-              <TableHead className="cursor-pointer" onClick={() => requestSort('type')}><div className="flex items-center">근태 종류{getSortIcon('type')}</div></TableHead>
-              <TableHead className="cursor-pointer" onClick={() => requestSort('isShortenedDay')}><div className="flex items-center">단축사용{getSortIcon('isShortenedDay')}</div></TableHead>
+              <TableHead className="cursor-pointer text-center" onClick={() => requestSort('uniqueId')}><div className="flex items-center justify-center">ID{getSortIcon('uniqueId')}</div></TableHead>
+              <TableHead className="cursor-pointer text-center" onClick={() => requestSort('name')}><div className="flex items-center justify-center">이름{getSortIcon('name')}</div></TableHead>
+              <TableHead className="cursor-pointer text-center" onClick={() => requestSort('date')}><div className="flex items-center justify-center">일자{getSortIcon('date')}</div></TableHead>
+              <TableHead className="cursor-pointer text-center" onClick={() => requestSort('type')}><div className="flex items-center justify-center">근태 종류{getSortIcon('type')}</div></TableHead>
+              <TableHead className="cursor-pointer text-center" onClick={() => requestSort('isShortenedDay')}><div className="flex items-center justify-center">단축사용{getSortIcon('isShortenedDay')}</div></TableHead>
               <TableHead className="cursor-pointer text-center" onClick={() => requestSort('deductionDays')}><div className="flex items-center justify-center">일수(D){getSortIcon('deductionDays')}</div></TableHead>
               <TableHead className="cursor-pointer text-center" onClick={() => requestSort('actualWorkHours')}><div className="flex items-center justify-center">실근로(H){getSortIcon('actualWorkHours')}</div></TableHead>
               <TableHead className="cursor-pointer text-center" onClick={() => requestSort('totalDeductionHours')}><div className="flex items-center justify-center">미근로시간{getSortIcon('totalDeductionHours')}</div></TableHead>
@@ -188,10 +214,10 @@ export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDe
                 <TableCell className="text-center">{item.name}</TableCell>
                 <TableCell className="text-center">{item.date}</TableCell>
                 <TableCell className="text-center">{item.type}</TableCell>
-                <TableCell className="text-center">{item.isShortenedDay ? 'Y' : 'N'}</TableCell>
+                <TableCell className="text-center"><DailyAttendanceIcon isShortenedDay={item.isShortenedDay} /></TableCell>
                 <TableCell className="text-center">{item.deductionDays.toFixed(2)}</TableCell>
                 <TableCell className="text-center">{item.actualWorkHours.toFixed(2)}</TableCell>
-                <TableCell className="text-center">{item.totalDeductionHours.toFixed(2)}</TableCell>
+                <TableCell className="text-center font-bold">{item.totalDeductionHours.toFixed(2)}</TableCell>
               </TableRow>
             ))}
           </TableBody>

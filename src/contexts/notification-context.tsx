@@ -65,7 +65,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         };
 
         setAllNotifications(prev => {
-            const updated = [newNotification, ...prev];
+            const currentNotifications = getAllNotifications();
+            const updated = [newNotification, ...currentNotifications];
             saveAllNotifications(updated);
             return updated;
         });
