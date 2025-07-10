@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/table';
 import { Input } from '../ui/input';
 import { Search, ArrowUpDown, ArrowUp, ArrowDown, Download, PlusCircle } from 'lucide-react';
-import type { Employee } from '@/lib/types';
+import type { Employee, AttendanceType } from '@/lib/types';
 import type { ShortenedWorkDetail, DailyAttendanceDetail } from '@/lib/work-rate-calculator';
 import { Button } from '../ui/button';
 import * as XLSX from 'xlsx';
@@ -49,6 +49,7 @@ interface WorkRateDetailsProps {
   data: any[];
   selectedDate: { year: number, month: number };
   allEmployees: Employee[];
+  attendanceTypes: AttendanceType[];
 }
 
 const ShortenedWorkTypeIcon = ({ type }: { type: '임신' | '육아/돌봄' }) => {
@@ -57,7 +58,7 @@ const ShortenedWorkTypeIcon = ({ type }: { type: '임신' | '육아/돌봄' }) =
     switch (type) {
         case '임신':
             style = { backgroundColor: 'hsl(30, 20%, 98%)' };
-            className = "mx-auto flex h-6 w-20 items-center justify-center rounded-md text-xs font-semibold text-stone-700";
+            className = "mx-auto flex h-6 w-20 items-center justify-center rounded-md text-xs font-semibold";
             break;
         case '육아/돌봄':
             style = { backgroundColor: 'hsl(25, 20%, 92%)', color: 'hsl(25, 25%, 35%)' };
@@ -84,7 +85,7 @@ const DailyAttendanceIcon = ({ isShortenedDay }: { isShortenedDay: boolean }) =>
 };
 
 
-export default function WorkRateDetails({ type, data, selectedDate, allEmployees }: WorkRateDetailsProps) {
+export default function WorkRateDetails({ type, data, selectedDate, allEmployees, attendanceTypes }: WorkRateDetailsProps) {
   const { user } = useAuth();
   const { addNotification } = useNotifications();
   const [searchTerm, setSearchTerm] = React.useState('');
@@ -170,7 +171,8 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
     let initialData = {};
     const uniqueIdsInData = new Set(filteredData.map(item => item.uniqueId));
     if (filteredData.length > 0 && uniqueIdsInData.size === 1) {
-        initialData = { uniqueId: filteredData[0].uniqueId };
+        const firstItem = filteredData[0];
+        initialData = { uniqueId: firstItem.uniqueId, name: firstItem.name };
     }
     setFormData(initialData);
     setIsDialogOpen(true);
@@ -220,7 +222,7 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
         <div className="space-y-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="uniqueId" className="text-right">ID</Label>
-              <Input id="uniqueId" value={formData.uniqueId || ''} onChange={(e) => handleFormChange('uniqueId', e.target.value)} className="col-span-3" />
+              <Input id="uniqueId" value={formData.uniqueId || ''} onChange={(e) => handleFormChange('uniqueId', e.target.value)} className="col-span-3" placeholder="검색된 ID 자동입력"/>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="type" className="text-right">구분</Label>
@@ -257,7 +259,7 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
         <div className="space-y-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="uniqueId" className="text-right">ID</Label>
-              <Input id="uniqueId" value={formData.uniqueId || ''} onChange={(e) => handleFormChange('uniqueId', e.target.value)} className="col-span-3" />
+              <Input id="uniqueId" value={formData.uniqueId || ''} onChange={(e) => handleFormChange('uniqueId', e.target.value)} className="col-span-3" placeholder="검색된 ID 자동입력" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="date" className="text-right">일자</Label>
@@ -265,7 +267,16 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="type" className="text-right">근태 종류</Label>
-              <Input id="type" value={formData.type || ''} onChange={(e) => handleFormChange('type', e.target.value)} className="col-span-3" />
+              <Select value={formData.type || ''} onValueChange={(value) => handleFormChange('type', value)}>
+                <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="근태종류는 드롭다운으로 선택 (직접입력 X)" />
+                </SelectTrigger>
+                <SelectContent>
+                    {attendanceTypes.map(type => (
+                        <SelectItem key={type.id} value={type.name}>{type.name}</SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
             </div>
         </div>
     );

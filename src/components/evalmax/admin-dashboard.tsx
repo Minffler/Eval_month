@@ -38,16 +38,17 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+} from '@/components/ui/dialog';
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
-  AlertDialogHeader as AlertDialogHeader2,
   AlertDialogContent as AlertDialogContent2,
-  AlertDialogTitle as AlertDialogTitle2,
   AlertDialogDescription as AlertDialogDescription2,
   AlertDialogFooter as AlertDialogFooter2,
-
-} from '@/components/ui/dialog';
+  AlertDialogHeader as AlertDialogHeader2,
+  AlertDialogTitle as AlertDialogTitle2,
+} from '@/components/ui/alert-dialog';
 import { Textarea } from '../ui/textarea';
 import EvaluatorDashboard from './evaluator-dashboard';
 import EvaluatorManagement from './evaluator-management';
@@ -332,7 +333,7 @@ export default function AdminDashboard({
   };
 
   const handleOpenNotificationDialog = () => {
-    setNotificationMessage(`<평가년월> 평가 마감 3일 전입니다. (현재 진행률 <%>%`);
+    setNotificationMessage(`<평가년월> 평가 마감 3일 전입니다. (현재 진행률 <%>`);
     setIsNotificationDialogOpen(true);
   };
   
@@ -774,9 +775,9 @@ export default function AdminDashboard({
         case 'attendance-type-management':
             return <AttendanceTypeManagement attendanceTypes={attendanceTypes} setAttendanceTypes={setAttendanceTypes} holidays={holidays} setHolidays={setHolidays} />;
         case 'shortened-work-details':
-            return <WorkRateDetails type="shortenedWork" data={workRateDetails.shortenedWorkDetails} selectedDate={selectedDate} allEmployees={allEmployees} />;
+            return <WorkRateDetails type="shortenedWork" data={workRateDetails.shortenedWorkDetails} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} />;
         case 'daily-attendance-details':
-            return <WorkRateDetails type="dailyAttendance" data={workRateDetails.dailyAttendanceDetails} selectedDate={selectedDate} allEmployees={allEmployees} />;
+            return <WorkRateDetails type="dailyAttendance" data={workRateDetails.dailyAttendanceDetails} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} />;
         case 'notifications': {
             return (
                 <Card>
