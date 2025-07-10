@@ -9,12 +9,17 @@ interface ProgressProps extends React.ComponentPropsWithoutRef<typeof ProgressPr
   max?: number;
   leftLabel?: string;
   rightLabel?: string;
+  /**
+   * Whether to reverse the fill direction of the progress bar.
+   * Default is false (fills from left). True fills from right.
+   */
+  reverse?: boolean;
 }
 
 const Progress = React.forwardRef<
   React.ElementRef<typeof ProgressPrimitive.Root>,
   ProgressProps
->(({ className, value, max = 100, leftLabel, rightLabel, ...props }, ref) => {
+>(({ className, value, max = 100, leftLabel, rightLabel, reverse = false, ...props }, ref) => {
   const percentage = (value && max) ? (value / max) * 100 : 0;
   
   return (
@@ -27,11 +32,11 @@ const Progress = React.forwardRef<
       {...props}
     >
       <ProgressPrimitive.Indicator
-        className="h-full w-full flex-1 bg-primary transition-all"
-        style={{ transform: `translateX(-${100 - (percentage || 0)}%)` }}
+        className={cn("h-full w-full flex-1 bg-primary/70 transition-all", reverse ? "origin-right" : "origin-left")}
+        style={{ transform: `scaleX(${percentage / 100})` }}
       />
       {(leftLabel || rightLabel) && (
-          <div className="absolute inset-0 flex items-center justify-between px-2 text-xs font-medium text-white mix-blend-difference">
+          <div className="absolute inset-0 flex items-center justify-between px-2 text-xs font-medium text-foreground">
             <span>{leftLabel}</span>
             <span>{rightLabel}</span>
           </div>

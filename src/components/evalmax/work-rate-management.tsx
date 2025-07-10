@@ -181,7 +181,7 @@ export default function WorkRateManagement({ results, workRateDetails, selectedD
                             <TableHead className="cursor-pointer text-right" onClick={() => requestSort('deductionHoursPregnancy')}><div className="flex items-center justify-end">임신(H){getSortIcon('deductionHoursPregnancy')}</div></TableHead>
                             <TableHead className="cursor-pointer text-right" onClick={() => requestSort('deductionHoursCare')}><div className="flex items-center justify-end">육아/돌봄(H){getSortIcon('deductionHoursCare')}</div></TableHead>
                             <TableHead className="cursor-pointer text-right" onClick={() => requestSort('totalDeductionHours')}><div className="flex items-center justify-end">미근로시간{getSortIcon('totalDeductionHours')}</div></TableHead>
-                            <TableHead className="cursor-pointer text-right" onClick={() => requestSort('totalWorkHours')}><div className="flex items-center justify-end min-w-[250px]">근로/미근로 시간{getSortIcon('totalWorkHours')}</div></TableHead>
+                            <TableHead className="cursor-pointer text-right" onClick={() => requestSort('totalWorkHours')}><div className="flex items-center justify-end min-w-[250px]">미근로/근로 시간{getSortIcon('totalWorkHours')}</div></TableHead>
                             <TableHead className="cursor-pointer text-right" onClick={() => requestSort('monthlyWorkRate')}><div className="flex items-center justify-end">근무율{getSortIcon('monthlyWorkRate')}</div></TableHead>
                         </TableRow>
                     </TableHeader>
@@ -196,10 +196,11 @@ export default function WorkRateManagement({ results, workRateDetails, selectedD
                           <TableCell className="text-right tabular-nums">{summary.totalDeductionHours.toFixed(2)}</TableCell>
                           <TableCell className="text-right">
                             <Progress 
-                                value={summary.totalWorkHours} 
+                                value={summary.totalDeductionHours} 
                                 max={monthlyStandardHours}
-                                leftLabel={summary.totalWorkHours.toFixed(2)}
-                                rightLabel={(monthlyStandardHours - summary.totalWorkHours).toFixed(2)}
+                                leftLabel={summary.totalDeductionHours.toFixed(2)}
+                                rightLabel={summary.totalWorkHours.toFixed(2)}
+                                reverse={true}
                             />
                           </TableCell>
                           <TableCell className="font-bold text-primary text-right tabular-nums">{(summary.monthlyWorkRate * 100).toFixed(1)}%</TableCell>

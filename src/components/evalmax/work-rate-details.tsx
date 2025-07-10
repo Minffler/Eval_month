@@ -136,7 +136,7 @@ export default function WorkRateDetails({ type, data, selectedDate }: WorkRateDe
             <TableCell>{item.endTime}</TableCell>
             <TableCell>
               <Progress 
-                  value={Math.floor(item.actualWorkHours)} 
+                  value={item.actualWorkHours} 
                   max={8} 
                   leftLabel={String(Math.floor(item.actualWorkHours))} 
                   rightLabel={String(8-Math.floor(item.actualWorkHours))}
