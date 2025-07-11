@@ -53,10 +53,8 @@ const mapRowToSchema = <T extends {}>(row: any): T => {
         tempRow[mappedKey] = row[key];
     }
     
-    // Apply priority for uniqueId
     const uniqueId = String(tempRow['uniqueId_primary'] ?? tempRow['uniqueId_secondary'] ?? tempRow['uniqueId_tertiary'] ?? '');
     
-    // Construct the final row, excluding temporary keys
     for(const key in tempRow) {
         if (!key.startsWith('uniqueId_')) {
             newRow[key] = tempRow[key];
@@ -72,7 +70,7 @@ interface UploadSectionProps {
     title: string;
     description: string;
     onUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
-    onDownload?: () => void;
+    onDownload: () => void;
     onReset: () => void;
     isResetDisabled: boolean;
 }
@@ -94,17 +92,14 @@ const UploadSection: React.FC<UploadSectionProps> = ({ title, description, id, o
                     className="flex-grow text-sm file:text-sm"
                 />
                 <div className="flex items-center gap-2">
-                    {onDownload && (
-                        <Button onClick={onDownload} variant="outline" className="w-full sm:w-auto">
-                            <Download className="mr-2 h-4 w-4" /> 양식
-                        </Button>
-                    )}
+                    <Button onClick={onDownload} variant="ghost" className="text-muted-foreground">
+                        <Download className="mr-2 h-4 w-4" /> 양식
+                    </Button>
                     <Button
-                        variant="destructive"
-                        outline
+                        variant="ghost"
                         onClick={onReset}
                         disabled={isResetDisabled}
-                        className="w-full sm:w-auto"
+                        className="text-destructive hover:text-destructive"
                     >
                         <Trash2 className="mr-2 h-4 w-4" /> 초기화
                     </Button>
@@ -256,18 +251,31 @@ export default function ManageData({
     }
   };
 
-  const handleDownloadTemplate = (type: 'employees' | 'evaluations') => {
+  const handleDownloadTemplate = (type: 'employees' | 'evaluations' | 'shortenedWork' | 'dailyAttendance') => {
     let dataForSheet, headers, fileName;
-    if (type === 'employees') {
-        dataForSheet = results.map(r => ({'ID': r.uniqueId, '이름': r.name, '회사': r.company, '소속부서': r.department, '직책': r.title, '성장레벨': r.growthLevel, '실근무율': r.workRate, '평가자 ID': r.evaluatorId, '개인별 기준금액': r.baseAmount, '비고': r.memo,}));
-        headers = ['ID', '이름', '회사', '소속부서', '직책', '성장레벨', '실근무율', '평가자 ID', '개인별 기준금액', '비고'];
-        fileName = `${selectedDate.year}.${String(selectedDate.month).padStart(2,'0')}_월성과대상자.xlsx`;
-    } else {
-        dataForSheet = results.map(r => ({'ID': r.uniqueId, '이름': r.name, '회사': r.company, '소속부서': r.department, '직책': r.title, '성장레벨': r.growthLevel, '근무율': r.workRate, '평가그룹': r.evaluationGroup, '세부구분1': r.detailedGroup1, '세부구분2': r.detailedGroup2, '평가자 ID': r.evaluatorId, '평가자': r.evaluatorName, '점수': r.score, '등급': r.grade, '기준금액': r.baseAmount, '최종금액': r.finalAmount, '비고': r.memo}));
-        headers = ['ID', '이름', '회사', '소속부서', '직책', '성장레벨', '근무율', '평가그룹', '세부구분1', '세부구분2', '평가자 ID', '평가자', '점수', '등급', '기준금액', '최종금액', '비고'];
-        fileName = `${selectedDate.year}.${String(selectedDate.month).padStart(2, '0')}_월성과데이터.xlsx`;
+    switch(type) {
+        case 'employees':
+            dataForSheet = results.map(r => ({'ID': r.uniqueId, '이름': r.name, '회사': r.company, '소속부서': r.department, '직책': r.title, '성장레벨': r.growthLevel, '실근무율': r.workRate, '평가자 ID': r.evaluatorId, '개인별 기준금액': r.baseAmount, '비고': r.memo,}));
+            headers = ['ID', '이름', '회사', '소속부서', '직책', '성장레벨', '실근무율', '평가자 ID', '개인별 기준금액', '비고'];
+            fileName = `${selectedDate.year}.${String(selectedDate.month).padStart(2,'0')}_월성과대상자_양식.xlsx`;
+            break;
+        case 'evaluations':
+            dataForSheet = results.map(r => ({'ID': r.uniqueId, '이름': r.name, '회사': r.company, '소속부서': r.department, '직책': r.title, '성장레벨': r.growthLevel, '근무율': r.workRate, '평가그룹': r.evaluationGroup, '세부구분1': r.detailedGroup1, '세부구분2': r.detailedGroup2, '평가자 ID': r.evaluatorId, '평가자': r.evaluatorName, '점수': r.score, '등급': r.grade, '기준금액': r.baseAmount, '최종금액': r.finalAmount, '비고': r.memo}));
+            headers = ['ID', '이름', '회사', '소속부서', '직책', '성장레벨', '근무율', '평가그룹', '세부구분1', '세부구분2', '평가자 ID', '평가자', '점수', '등급', '기준금액', '최종금액', '비고'];
+            fileName = `${selectedDate.year}.${String(selectedDate.month).padStart(2, '0')}_월성과데이터_양식.xlsx`;
+            break;
+        case 'shortenedWork':
+            headers = ['고유사번', '성명', '시작일', '종료일', '출근시각', '퇴근시각'];
+            dataForSheet = [{}];
+            fileName = '단축근로_양식.xlsx';
+            break;
+        case 'dailyAttendance':
+            headers = ['고유사번', '성명', '근태사용일', '근태종류'];
+            dataForSheet = [{}];
+            fileName = '일근태_양식.xlsx';
+            break;
     }
-    const worksheet = XLSX.utils.json_to_sheet(dataForSheet.length > 0 ? dataForSheet : [{}], { header: headers });
+    const worksheet = XLSX.utils.json_to_sheet(dataForSheet, { header: headers });
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Data');
     XLSX.writeFile(workbook, fileName);
@@ -307,7 +315,7 @@ export default function ManageData({
       
       <Card>
         <CardHeader>
-            <CardTitle>근무율 데이터 관리</CardTitle>
+            <CardTitle>근무 데이터 관리</CardTitle>
             <CardDescription>
                 근무율 계산에 사용되는 데이터를 업로드합니다.
             </CardDescription>
@@ -318,6 +326,7 @@ export default function ManageData({
                 title="임신기 단축근로"
                 description="임신기 단축근로 내역이 담긴 파일을 업로드합니다."
                 onUpload={(e) => handleFileUpload(e, 'shortenedWork', '임신')}
+                onDownload={() => handleDownloadTemplate('shortenedWork')}
                 onReset={() => setDialogOpen({type: 'resetWorkData', workDataType: '임신'})}
                 isResetDisabled={!workRateInputs.shortenedWorkHours?.some(r => r.type === '임신')}
             />
@@ -327,6 +336,7 @@ export default function ManageData({
                 title="육아/돌봄 단축근로"
                 description="육아기, 가족돌봄 등 단축근로 내역이 담긴 파일을 업로드합니다."
                 onUpload={(e) => handleFileUpload(e, 'shortenedWork', '육아/돌봄')}
+                onDownload={() => handleDownloadTemplate('shortenedWork')}
                 onReset={() => setDialogOpen({type: 'resetWorkData', workDataType: '육아/돌봄'})}
                 isResetDisabled={!workRateInputs.shortenedWorkHours?.some(r => r.type === '육아/돌봄')}
             />
@@ -336,6 +346,7 @@ export default function ManageData({
                 title="일근태"
                 description="연차, 반차, 병가 등 일별 근태 사용 내역 파일을 업로드합니다."
                 onUpload={(e) => handleFileUpload(e, 'dailyAttendance')}
+                onDownload={() => handleDownloadTemplate('dailyAttendance')}
                 onReset={() => setDialogOpen({type: 'resetWorkData', workDataType: 'dailyAttendance'})}
                 isResetDisabled={!workRateInputs.dailyAttendance?.length}
             />
