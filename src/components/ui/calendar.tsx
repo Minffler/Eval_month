@@ -83,12 +83,20 @@ function Calendar({
             options.push(...years.map(year => ({ label: `${year}년`, value: year.toString() })));
           }
 
-          const selectValue = props.value?.toString();
+          let selectValue = props.value?.toString();
+          if (selectValue === undefined) {
+            if (props.name === 'months' && props.currentMonth) {
+              selectValue = props.currentMonth.getMonth().toString();
+            } else if (props.name === 'years' && props.currentMonth) {
+              selectValue = props.currentMonth.getFullYear().toString();
+            }
+          }
           
           return (
             <Select
               value={selectValue}
               onValueChange={(newValue) => {
+                if (!newValue) return;
                 const newDate = new Date(props.currentMonth || new Date());
                 if (props.name === 'months') {
                     newDate.setMonth(parseInt(newValue, 10));
