@@ -138,10 +138,12 @@ const EvaluatorSelector = ({
     evaluators,
     value,
     onSelect,
+    className,
 }: {
     evaluators: Employee[];
     value: string;
     onSelect: (evaluatorId: string) => void;
+    className?: string;
 }) => {
     const [open, setOpen] = React.useState(false);
 
@@ -151,7 +153,7 @@ const EvaluatorSelector = ({
     return (
         <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
-                <Button variant="outline" role="combobox" aria-expanded={open} className="w-full justify-between h-8">
+                <Button variant="outline" role="combobox" aria-expanded={open} className={cn("w-full justify-between h-8", className)}>
                     <span className="truncate">{triggerText}</span>
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
@@ -398,27 +400,30 @@ export default function EvaluatorManagement({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap gap-x-2 gap-y-4 items-end">
-            <MultiSelectFilter title="회사" options={allCompanies} selected={companyFilter} onSelectionChange={setCompanyFilter} />
-            <MultiSelectFilter title="부서" options={allDepartments} selected={departmentFilter} onSelectionChange={setDepartmentFilter} searchable />
-            <MultiSelectFilter title="직책" options={allTitles} selected={titleFilter} onSelectionChange={setTitleFilter} />
-            
-            <div className={cn("p-2 rounded-md", 
-              currentGroupEvaluator === '필터를 선택하여 그룹을 지정해주세요.' ? 'text-muted-foreground' : 'bg-muted')}>
-                <p className="text-sm font-medium">현재 담당자: <span className="font-bold text-primary">{currentGroupEvaluator}</span></p>
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row gap-2 items-start">
+                <MultiSelectFilter title="회사" options={allCompanies} selected={companyFilter} onSelectionChange={setCompanyFilter} />
+                <MultiSelectFilter title="부서" options={allDepartments} selected={departmentFilter} onSelectionChange={setDepartmentFilter} searchable />
+                <MultiSelectFilter title="직책" options={allTitles} selected={titleFilter} onSelectionChange={setTitleFilter} />
+                <div className={cn("p-2 rounded-md h-10 flex items-center", 
+                    currentGroupEvaluator === '필터를 선택하여 그룹을 지정해주세요.' ? 'text-muted-foreground' : 'bg-muted')}>
+                    <p className="text-sm font-medium whitespace-nowrap">현재 담당자: <span className="font-bold text-primary">{currentGroupEvaluator}</span></p>
+                </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-2 p-4 border rounded-lg items-center">
+                <p className="font-semibold text-sm whitespace-nowrap">선택한 {selectedIds.size}명</p>
+                <EvaluatorSelector
+                  evaluators={evaluators}
+                  value={bulkEvaluatorId}
+                  onSelect={setBulkEvaluatorId}
+                  className="h-9 sm:w-64"
+                />
+                <Button onClick={handleBulkAssign} size="sm">일괄 반영</Button>
             </div>
           </div>
-
-          <div className="flex flex-wrap gap-2 my-4 p-4 border rounded-lg items-center">
-            <p className="font-semibold text-sm">선택한 {selectedIds.size}명</p>
-            <EvaluatorSelector
-              evaluators={evaluators}
-              value={bulkEvaluatorId}
-              onSelect={setBulkEvaluatorId}
-            />
-            <Button onClick={handleBulkAssign} size="sm">일괄 반영</Button>
-          </div>
-          <div className="border rounded-lg">
+          
+          <div className="border rounded-lg mt-4">
             <Table>
               <TableHeader>
                 <TableRow>

@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import type { Employee, EvaluationResult, Holiday, ShortenedWorkType } from '@/lib/types';
 import type { WorkRateDetailsResult, ShortenedWorkDetail, DailyAttendanceDetail } from '@/lib/work-rate-calculator';
 import { Button } from '../ui/button';
-import { ArrowUpDown, Download, ArrowUp, ArrowDown, Settings2 } from 'lucide-react';
+import { ArrowUpDown, Download, ArrowUp, ArrowDown, Settings2, Search } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Progress } from '../ui/progress';
 import { cn } from '@/lib/utils';
@@ -23,6 +23,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNotifications } from '@/contexts/notification-context';
 import { format } from 'date-fns';
+import { Input } from '../ui/input';
 
 interface WorkRateManagementProps {
   results: EvaluationResult[];
@@ -87,6 +88,7 @@ export default function WorkRateManagement({ results, allEmployees, workRateDeta
   const [visibleColumns, setVisibleColumns] = React.useState<Set<DeductionType>>(
     new Set(['attendance', 'pregnancy', 'care'])
   );
+  const [searchTerm, setSearchTerm] = React.useState('');
 
   const businessDays = React.useMemo(() => {
     const holidaySet = new Set(holidays.map(h => h.date));
@@ -152,8 +154,16 @@ export default function WorkRateManagement({ results, allEmployees, workRateDeta
     });
   }, [results, workRateDetails, monthlyStandardHours, visibleColumns]);
 
+  const filteredData = React.useMemo(() => {
+    if (!searchTerm) return workRateSummaries;
+    return workRateSummaries.filter(item => 
+      item.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      item.uniqueId.includes(searchTerm)
+    );
+  }, [workRateSummaries, searchTerm]);
+
   const sortedData = React.useMemo(() => {
-    let sortableItems = [...workRateSummaries];
+    let sortableItems = [...filteredData];
     if (sortConfig !== null) {
       sortableItems.sort((a, b) => {
         if (sortConfig.key === 'lastModified') {
@@ -173,7 +183,7 @@ export default function WorkRateManagement({ results, allEmployees, workRateDeta
       });
     }
     return sortableItems;
-  }, [workRateSummaries, sortConfig]);
+  }, [filteredData, sortConfig]);
 
   const requestSort = (key: keyof WorkRateSummary) => {
     let direction: 'ascending' | 'descending' = 'ascending';
@@ -349,28 +359,40 @@ export default function WorkRateManagement({ results, allEmployees, workRateDeta
                 <Button onClick={handleApplyWorkRate} size="sm">근무율 반영</Button>
               </div>
             </div>
-            <div className="flex justify-between items-center pt-4">
-              <div className="text-sm text-muted-foreground">
-                  <span className="font-semibold text-foreground">월 소정근로시간:</span> 8시간 * {businessDays}일 = <span className="font-bold text-primary">{monthlyStandardHours}</span>시간
+            <div className="flex flex-col sm:flex-row justify-between items-center pt-4 gap-4">
+              <div className="relative w-full sm:max-w-xs">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                    type="search"
+                    placeholder="이름 또는 ID로 검색..."
+                    className="w-full pl-8"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
               </div>
-              <Tabs defaultValue="all" onValueChange={() => {}}>
-                <TabsList className="h-8">
-                  {columnConfig.map(col => (
-                    <TabsTrigger
-                      key={col.id}
-                      value={col.id}
-                      className={cn(
-                        "text-xs px-2 py-1 h-auto",
-                        !visibleColumns.has(col.id) && "text-muted-foreground/70"
-                      )}
-                      data-state={visibleColumns.has(col.id) ? 'active' : 'inactive'}
-                      onClick={() => handleToggleColumn(col.id)}
-                    >
-                      {col.label}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </Tabs>
+              <div className="flex flex-col sm:flex-row items-center gap-2">
+                <div className="text-sm text-muted-foreground whitespace-nowrap">
+                    <span className="font-semibold text-foreground">월 소정근로시간:</span> 8시간 * {businessDays}일 = <span className="font-bold text-primary">{monthlyStandardHours}</span>시간
+                </div>
+                <Tabs defaultValue="all" onValueChange={() => {}}>
+                  <TabsList className="h-8">
+                    {columnConfig.map(col => (
+                      <TabsTrigger
+                        key={col.id}
+                        value={col.id}
+                        className={cn(
+                          "text-xs px-2 py-1 h-auto",
+                          !visibleColumns.has(col.id) && "text-muted-foreground/70"
+                        )}
+                        data-state={visibleColumns.has(col.id) ? 'active' : 'inactive'}
+                        onClick={() => handleToggleColumn(col.id)}
+                      >
+                        {col.label}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+                </Tabs>
+              </div>
             </div>
         </CardHeader>
         <CardContent>
