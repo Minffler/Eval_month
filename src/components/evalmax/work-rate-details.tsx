@@ -251,10 +251,10 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
     
     setDialogMode('edit');
     const selectedId = Array.from(selectedRowIds)[0];
-    const selectedRecord = data.find((item: any) => {
+    const selectedRecord = data.find((item: any, index) => {
         const rowId = type === 'shortenedWork'
             ? `${item.uniqueId}-${item.startDate}-${item.endDate}-${item.type}`
-            : `${item.uniqueId}-${item.date}-${item.type}-${data.indexOf(item)}`;
+            : `${item.uniqueId}-${item.date}-${item.type}-${index}`;
         return rowId === selectedId;
     });
 
@@ -320,9 +320,9 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
   const approverInfo = React.useMemo(() => {
     if (!formData.uniqueId) return '미지정';
     const employee = allEmployees.find(e => e.uniqueId === formData.uniqueId);
-    if (!employee || !employee.evaluatorId) return '미지정';
+    if (!employee || !employee.evaluatorId) return '관리자';
     const evaluator = allEmployees.find(e => e.uniqueId === employee.evaluatorId);
-    return evaluator ? `${evaluator.name}(${evaluator.uniqueId})` : '미지정';
+    return evaluator ? `${evaluator.name}(${evaluator.uniqueId})` : '관리자';
   }, [formData.uniqueId, allEmployees]);
 
   const renderDialogContent = () => {
@@ -604,11 +604,11 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
                 )}
                  <Button onClick={openAddDialog} variant="outline" size="sm">
                     <PlusCircle className="mr-2 h-4 w-4" />
-                    신규 데이터 추가
+                    신규 추가
                 </Button>
                 <Button onClick={openEditDialog} variant="outline" size="sm" disabled={selectedRowIds.size !== 1}>
                     <Edit className="mr-2 h-4 w-4" />
-                    선택 데이터 변경
+                    선택 변경
                 </Button>
             </div>
         </CardHeader>
