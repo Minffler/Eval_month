@@ -60,8 +60,30 @@ export function Sidebar({ navItems, activeView, setActiveView, isOpen, setIsOpen
     return (
       <Button
         variant={activeView === item.id ? 'secondary' : 'ghost'}
-        className={cn("w-full justify-start gap-3", !isOpen && "justify-center")}
+        className={cn("w-full justify-center gap-3", isOpen ? "justify-start" : "justify-center")}
         onClick={() => handleNavClick(item.id, !!item.children)}
+        title={item.label}
+      >
+          <div className="relative">
+              <item.icon className="h-5 w-5 flex-shrink-0" />
+              {unreadCount > 0 && (
+                  <span className={cn("absolute flex h-2.5 w-2.5", isOpen ? "-top-0.5 -right-0.5" : "top-0 right-0")}>
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                  </span>
+              )}
+          </div>
+        {isOpen && <span className="truncate flex-grow text-left">{item.label}</span>}
+      </Button>
+    );
+  };
+  
+  const BottomNavLink = ({ item, unreadCount = 0 }: { item: NavItem, unreadCount?: number }) => {
+    return (
+      <Button
+        variant={activeView === item.id ? 'secondary' : 'ghost'}
+        className={cn("w-full justify-center gap-3")}
+        onClick={() => setActiveView(item.id)}
         title={item.label}
       >
           <div className="relative">
@@ -173,8 +195,8 @@ export function Sidebar({ navItems, activeView, setActiveView, isOpen, setIsOpen
         </ScrollArea>
         <div className="mt-auto border-t">
              <div className={cn("p-2 flex", isOpen ? "flex-row space-x-1" : "flex-col space-y-1")}>
-              <NavLink item={approvalItem} unreadCount={unreadApprovalCount} />
-              <NavLink item={notificationItem} unreadCount={unreadNotificationCount} />
+              <BottomNavLink item={approvalItem} unreadCount={unreadApprovalCount} />
+              <BottomNavLink item={notificationItem} unreadCount={unreadNotificationCount} />
             </div>
             <Separator />
             {userProfile}
