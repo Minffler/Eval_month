@@ -57,19 +57,25 @@ const prompt = ai.definePrompt({
   name: 'validateGradeConsistencyPrompt',
   input: {schema: ValidateGradeConsistencyInputSchema},
   output: {schema: ValidateGradeConsistencyOutputSchema},
-  prompt: `당신은 HR 분석가로서, 평가자들 간의 등급 부여 경향에 편향이 있는지 검토하는 임무를 맡았습니다. 제공되는 등급 데이터는 평가자별로 그룹화되어 있습니다.
+  prompt: `당신은 HR 분석 전문가입니다. 평가자별 등급 부여 데이터와 이상적인 분포 가이드를 바탕으로, 평가자 간의 등급 부여 경향에 편향이 있는지 분석해 주십시오.
 
-  주어진 평가자별 등급 데이터와 이상적인 분포 가이드를 바탕으로, 등급 부여의 일관성을 분석하고, 특히 평가자 간의 편향에 초점을 맞춰 결과를 구조화된 JSON 형식으로 제공해 주십시오.
+  분석 목표:
+  - 평가자 간의 등급 부여 일관성을 검토합니다.
+  - 다른 평가자들과 비교하여 특정 평가자가 유난히 후하거나 박한 점수를 주는 경향(편향)이 있는지 식별합니다.
 
-  분석 결과에는 다음이 포함되어야 합니다:
+  결과 형식 (반드시 지정된 JSON 스키마를 준수해야 합니다):
   1.  **summary**: 전체 분석 결과에 대한 한두 문장의 명확하고 간결한 요약.
   2.  **overallDistribution**: 각 등급별 직원 수와 전체에서 차지하는 비율(%)을 포함한 전체 등급 분포 통계.
-  3.  **findings**: 다른 평가자들과 비교했을 때 발견된 주요 편향 및 특이사항. 각 발견 사항은 '편향', '불일치', '긍정적 발견' 중 하나의 유형으로 분류하고, 어떤 평가자에게서 나타난 경향인지 구체적인 설명과 데이터 근거를 포함해야 합니다. (예: "박평가 평가자는 다른 평가자들에 비해 S, A+ 등급을 부여하는 비율이 월등히 높음.")
+  3.  **findings**: 각 발견 사항은 '편향', '불일치', '긍정적 발견' 중 하나의 유형으로 분류하고, 어떤 평가자에게서 나타난 경향인지 구체적인 설명과 데이터 근거를 포함해야 합니다. (예: "박평가 평가자는 다른 평가자들에 비해 S, A+ 등급을 부여하는 비율이 월등히 높음.")
   
-  모든 설명과 텍스트는 반드시 한국어로 작성해주십시오.
+  모든 텍스트 응답은 반드시 한국어로 작성해야 합니다.
 
-  평가자별 등급 데이터: {{{gradeData}}}
-  예상 분포 가이드: {{{expectedDistribution}}}
+  ## 입력 데이터
+  ### 평가자별 등급 데이터
+  {{{gradeData}}}
+
+  ### 예상 분포 가이드
+  {{{expectedDistribution}}}
   `,
 });
 
@@ -81,6 +87,9 @@ const validateGradeConsistencyFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await prompt(input);
-    return output!;
+    if (!output) {
+      throw new Error("AI 모델이 유효한 분석 결과를 생성하지 못했습니다. 잠시 후 다시 시도해주세요.");
+    }
+    return output;
   }
 );
