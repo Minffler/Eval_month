@@ -317,6 +317,11 @@ export default function AdminDashboard({
     return sortableItems;
   }, [visibleResults, sortConfig]);
 
+  const evaluatorsForView = React.useMemo(() => {
+      const evaluatorIds = new Set(allEmployees.map(e => e.evaluatorId).filter(Boolean));
+      return allEmployees.filter(e => evaluatorIds.has(e.uniqueId));
+  }, [allEmployees]);
+
   const requestSort = (key: keyof EvaluationResult) => {
     let direction: 'ascending' | 'descending' = 'ascending';
     if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
@@ -531,22 +536,11 @@ export default function AdminDashboard({
             return;
         }
         
-        const updatedApproval = { ...selectedApproval };
-        if (decision === 'approved') {
-            updatedApproval.status = '최종승인';
-            updatedApproval.statusHR = '최종승인';
-            updatedApproval.approvedAtHR = new Date().toISOString();
-             if (!updatedApproval.approvedAtTeam) { // 현업 결재가 없었다면 같이 승인
-                updatedApproval.status = '현업승인';
-                updatedApproval.approvedAtTeam = new Date().toISOString();
-            }
-        } else {
-            updatedApproval.status = '반려';
-            updatedApproval.statusHR = '반려';
-            updatedApproval.rejectionReason = rejectionReason;
-        }
-        
-        onApprovalAction(updatedApproval);
+        onApprovalAction({ 
+            ...selectedApproval,
+            statusHR: decision === 'approved' ? '최종승인' : '반려',
+            rejectionReason: rejectionReason,
+        });
         
         toast({ title: '처리 완료', description: `결재 요청이 ${decision === 'approved' ? '승인' : '반려'}되었습니다.` });
         setApprovalDetailModalOpen(false);
@@ -839,11 +833,7 @@ export default function AdminDashboard({
                 </div>
              );
         case 'evaluator-view': {
-            const evaluators = React.useMemo(() => {
-                const evaluatorIds = new Set(allEmployees.map(e => e.evaluatorId).filter(Boolean));
-                return allEmployees.filter(e => evaluatorIds.has(e.uniqueId));
-            }, [allEmployees]);
-            const selectedEvaluatorName = selectedEvaluatorId ? evaluators.find(s => s.uniqueId === selectedEvaluatorId)?.name : '';
+            const selectedEvaluatorName = selectedEvaluatorId ? evaluatorsForView.find(s => s.uniqueId === selectedEvaluatorId)?.name : '';
             const triggerText = selectedEvaluatorId ? `${selectedEvaluatorName} (${selectedEvaluatorId})` : "평가자를 선택하세요";
             
             return (
@@ -872,7 +862,7 @@ export default function AdminDashboard({
                                     <CommandList>
                                     <CommandEmpty>검색 결과가 없습니다.</CommandEmpty>
                                     <CommandGroup>
-                                        {evaluators.map(stat => (
+                                        {evaluatorsForView.map(stat => (
                                         <CommandItem
                                             key={stat.uniqueId}
                                             value={`${stat.name} ${stat.uniqueId}`}
