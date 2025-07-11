@@ -101,7 +101,7 @@ const DailyAttendanceIcon = ({ isShortenedDay }: { isShortenedDay: boolean }) =>
 const DatePicker = ({ value, onChange }: { value: string, onChange: (date: string) => void }) => {
     const { year, month, day } = React.useMemo(() => {
         if (value && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
-            const date = new Date(value);
+            const date = new Date(value + "T00:00:00Z"); // Use UTC to avoid timezone issues
             return {
                 year: date.getUTCFullYear(),
                 month: date.getUTCMonth() + 1,
@@ -115,10 +115,15 @@ const DatePicker = ({ value, onChange }: { value: string, onChange: (date: strin
     const months = Array.from({ length: 12 }, (_, i) => i + 1);
 
     const handleDatePartChange = (part: 'year' | 'month' | 'day', newValue: number) => {
-        const newDate = value ? new Date(value) : new Date();
-        if (part === 'year') newDate.setUTCFullYear(newValue);
-        if (part === 'month') newDate.setUTCMonth(newValue - 1);
-        if (part === 'day') newDate.setUTCDate(newValue);
+        const currentYear = year || new Date().getFullYear();
+        const currentMonth = month || new Date().getMonth() + 1;
+        const currentDay = day || new Date().getDate();
+
+        let newDate;
+        if (part === 'year') newDate = new Date(Date.UTC(newValue, currentMonth - 1, currentDay));
+        else if (part === 'month') newDate = new Date(Date.UTC(currentYear, newValue - 1, currentDay));
+        else newDate = new Date(Date.UTC(currentYear, currentMonth - 1, newValue));
+        
         onChange(newDate.toISOString().split('T')[0]);
     };
 
@@ -140,7 +145,9 @@ const DatePicker = ({ value, onChange }: { value: string, onChange: (date: strin
                     if (!isNaN(newDay) && newDay >= 1 && newDay <= 31) {
                         handleDatePartChange('day', newDay);
                     } else if (e.target.value === '') {
-                        // Allow clearing the input, maybe handle this case
+                        // Allow clearing the input
+                        const today = new Date();
+                        onChange(new Date(Date.UTC(year || today.getFullYear(), (month || today.getMonth() + 1) -1, 1)).toISOString().split('T')[0])
                     }
                 }}
                 placeholder="일"
@@ -195,6 +202,7 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
   const [selectedRowIds, setSelectedRowIds] = React.useState<Set<string>>(new Set());
 
   const [employeeSearchOpen, setEmployeeSearchOpen] = React.useState(false);
+  const [attendanceTypeSearchOpen, setAttendanceTypeSearchOpen] = React.useState(false);
 
   const filteredData = React.useMemo(() => {
     if (!searchTerm) return data;
@@ -362,7 +370,7 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
         } else {
           updatedData = data.map(item => item.rowId === formData.rowId ? updatedRecord : item);
         }
-        onDataChange(updatedData, type);
+        onDataChange(updatedData, type === 'shortenedWork' ? 'shortenedWorkHours' : 'dailyAttendance');
 
     } else {
         const requestMessage = `[결재요청] ${dataType} ${actionType}: ${employee.name}(${employee.uniqueId})`;
@@ -461,26 +469,26 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
                     </SelectContent>
                 </Select>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="startDate" className="text-right">시작일</Label>
+            <div className="grid grid-cols-4 items-start gap-4">
+              <Label htmlFor="startDate" className="text-right pt-2">시작일</Label>
               <div className="col-span-3">
                 <DatePicker value={formData.startDate || ''} onChange={(date) => handleFormChange('startDate', date)} />
               </div>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="endDate" className="text-right">종료일</Label>
+            <div className="grid grid-cols-4 items-start gap-4">
+              <Label htmlFor="endDate" className="text-right pt-2">종료일</Label>
               <div className="col-span-3">
                 <DatePicker value={formData.endDate || ''} onChange={(date) => handleFormChange('endDate', date)} />
               </div>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="startTime" className="text-right">출근시각</Label>
+            <div className="grid grid-cols-4 items-start gap-4">
+              <Label htmlFor="startTime" className="text-right pt-2">출근시각</Label>
               <div className="col-span-3 relative">
                 <TimePicker value={formData.startTime || ''} onChange={(time) => handleFormChange('startTime', time)} />
               </div>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="endTime" className="text-right">퇴근시각</Label>
+            <div className="grid grid-cols-4 items-start gap-4">
+              <Label htmlFor="endTime" className="text-right pt-2">퇴근시각</Label>
               <div className="col-span-3 relative">
                 <TimePicker value={formData.endTime || ''} onChange={(time) => handleFormChange('endTime', time)} />
               </div>
@@ -491,8 +499,8 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
     return (
         <div className="space-y-4">
             <EmployeeSelector />
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="date" className="text-right">일자</Label>
+            <div className="grid grid-cols-4 items-start gap-4">
+              <Label htmlFor="date" className="text-right pt-2">일자</Label>
               <div className="col-span-3">
                 <DatePicker value={formData.date || ''} onChange={(date) => handleFormChange('date', date)} />
               </div>
@@ -500,7 +508,7 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
             <div className="grid grid-cols-4 items-start gap-4">
               <Label htmlFor="type" className="text-right pt-2">근태 종류</Label>
               <div className="col-span-3">
-                <Popover>
+                <Popover open={attendanceTypeSearchOpen} onOpenChange={setAttendanceTypeSearchOpen}>
                     <PopoverTrigger asChild>
                         <Button variant="outline" role="combobox" className="w-full justify-between">
                             {formData.type || "근태 종류를 선택해주세요."}
@@ -520,6 +528,7 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
                                             onSelect={(currentValue) => {
                                                 const selected = attendanceTypes.find(t => t.name.toLowerCase() === currentValue.toLowerCase());
                                                 handleFormChange('type', selected?.name || '');
+                                                setAttendanceTypeSearchOpen(false);
                                             }}
                                         >
                                             {type.name}
@@ -574,7 +583,7 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
               <TableHead className="text-center">퇴근시각</TableHead>
               <TableHead className="cursor-pointer text-center" onClick={() => requestSort('actualWorkHours')}><div className="flex items-center justify-center">실근로/미근로(H){getSortIcon('actualWorkHours')}</div></TableHead>
               <TableHead className="cursor-pointer text-center" onClick={() => requestSort('totalDeductionHours')}><div className="flex items-center justify-center">미근로시간{getSortIcon('totalDeductionHours')}</div></TableHead>
-              <TableHead className="cursor-pointer text-center" onClick={() => requestSort('lastModified')}><div className="flex items-center justify-center">최종수정{getSortIcon('lastModified')}</div></TableHead>
+              <TableHead className="cursor-pointer text-center" onClick={() => requestSort('lastModified')}><div className="flex items-center justify-center">수정일시{getSortIcon('lastModified')}</div></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -639,7 +648,7 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
               <TableHead className="cursor-pointer text-center" onClick={() => requestSort('deductionDays')}><div className="flex items-center justify-center">일수(D){getSortIcon('deductionDays')}</div></TableHead>
               <TableHead className="cursor-pointer text-center" onClick={() => requestSort('actualWorkHours')}><div className="flex items-center justify-center">실근로(H){getSortIcon('actualWorkHours')}</div></TableHead>
               <TableHead className="cursor-pointer text-center" onClick={() => requestSort('totalDeductionHours')}><div className="flex items-center justify-center">미근로시간{getSortIcon('totalDeductionHours')}</div></TableHead>
-              <TableHead className="cursor-pointer text-center" onClick={() => requestSort('lastModified')}><div className="flex items-center justify-center">최종수정{getSortIcon('lastModified')}</div></TableHead>
+              <TableHead className="cursor-pointer text-center" onClick={() => requestSort('lastModified')}><div className="flex items-center justify-center">수정일시{getSortIcon('lastModified')}</div></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
