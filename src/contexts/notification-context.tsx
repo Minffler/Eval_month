@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import type { AppNotification, Approval } from '@/lib/types';
+import type { AppNotification, Approval, ApprovalStatus } from '@/lib/types';
 import { useAuth } from './auth-context';
 import { subMonths } from 'date-fns';
 
@@ -16,8 +16,8 @@ interface NotificationContextType {
   
   approvals: Approval[];
   unreadApprovalCount: number;
-  addApproval: (approval: Omit<Approval, 'id' | 'date' | 'isRead' | 'status'>) => void;
-  updateApprovalStatus: (approvalId: string, status: 'approved' | 'rejected') => void;
+  addApproval: (approval: Omit<Approval, 'id' | 'date' | 'isRead' | 'status' | 'statusHR' | 'approvedAtTeam' | 'approvedAtHR' | 'rejectionReason'>) => void;
+  updateApprovalStatus: (approvalId: string, step: 'team' | 'hr', status: 'approved' | 'rejected', reason?: string) => void;
   markApprovalsAsRead: () => void;
 }
 
@@ -49,42 +49,70 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     const [allApprovals, setAllApprovals] = React.useState<Approval[]>(() => getAllItems(APPROVALS_STORAGE_KEY));
 
     const addNotification = React.useCallback((notificationData: Omit<AppNotification, 'id' | 'date' | 'isRead'>) => {
-        const newNotification: AppNotification = {
-            ...notificationData,
-            id: `notif-${Date.now()}-${Math.random()}`,
-            date: new Date().toISOString(),
-            isRead: false,
-        };
-        const threeMonthsAgo = subMonths(new Date(), 3);
         setAllNotifications(prev => {
+            const newNotification: AppNotification = {
+                ...notificationData,
+                id: `notif-${Date.now()}-${Math.random()}`,
+                date: new Date().toISOString(),
+                isRead: false,
+            };
+            const threeMonthsAgo = subMonths(new Date(), 3);
             const updated = [newNotification, ...prev].filter(n => new Date(n.date) >= threeMonthsAgo);
             saveAllItems(NOTIFICATIONS_STORAGE_KEY, updated);
             return updated;
         });
     }, []);
     
-    const addApproval = React.useCallback((approvalData: Omit<Approval, 'id' | 'date' | 'isRead' | 'status'>) => {
-        const newApproval: Approval = {
-            ...approvalData,
-            id: `appr-${Date.now()}-${Math.random()}`,
-            date: new Date().toISOString(),
-            isRead: false,
-            status: 'pending',
-        };
+    const addApproval = React.useCallback((approvalData: Omit<Approval, 'id' | 'date' | 'isRead' | 'status' | 'statusHR' | 'approvedAtTeam' | 'approvedAtHR' | 'rejectionReason'>) => {
         setAllApprovals(prev => {
+             const newApproval: Approval = {
+                ...approvalData,
+                id: `appr-${Date.now()}-${Math.random()}`,
+                date: new Date().toISOString(),
+                isRead: false,
+                status: '결재중',
+                statusHR: '결재중',
+                approvedAtTeam: null,
+                approvedAtHR: null,
+                rejectionReason: '',
+            };
             const updated = [newApproval, ...prev];
             saveAllItems(APPROVALS_STORAGE_KEY, updated);
             return updated;
         });
     }, []);
     
-    const updateApprovalStatus = React.useCallback((approvalId: string, status: 'approved' | 'rejected') => {
+    const updateApprovalStatus = React.useCallback((approvalId: string, step: 'team' | 'hr', status: 'approved' | 'rejected', reason: string = '') => {
         setAllApprovals(prev => {
-            const updated = prev.map(a => a.id === approvalId ? { ...a, status, isRead: true } : a);
+            const updated = prev.map(a => {
+                if (a.id === approvalId) {
+                    const now = new Date().toISOString();
+                    if (step === 'team') {
+                        return { 
+                            ...a, 
+                            status: status === 'approved' ? '현업승인' : '반려',
+                            approvedAtTeam: status === 'approved' ? now : null,
+                            isRead: true, // Mark as read for current user
+                            rejectionReason: status === 'rejected' ? reason : '',
+                         };
+                    }
+                    if (step === 'hr') {
+                         return { 
+                            ...a, 
+                            statusHR: status === 'approved' ? '최종승인' : '반려',
+                            approvedAtHR: status === 'approved' ? now : null,
+                            isRead: true, // Mark as read for current user
+                            rejectionReason: status === 'rejected' ? reason : '',
+                         };
+                    }
+                }
+                return a;
+            });
             saveAllItems(APPROVALS_STORAGE_KEY, updated);
             return updated;
         });
     }, []);
+
 
     const markNotificationsAsRead = React.useCallback(() => {
         if (!user) return;
@@ -105,11 +133,19 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         if (!user) return;
         setTimeout(() => {
             setAllApprovals(prev => {
-                const updated = prev.map(a =>
-                    a.approverId === user.uniqueId && !a.isRead
-                        ? { ...a, isRead: true }
-                        : a
-                );
+                const isTeamApprover = prev.some(a => a.approverTeamId === user.uniqueId);
+                const isHrApprover = prev.some(a => a.approverHRId === user.uniqueId);
+
+                const updated = prev.map(a => {
+                    let shouldMarkAsRead = false;
+                    if (isTeamApprover && a.approverTeamId === user.uniqueId) shouldMarkAsRead = true;
+                    if (isHrApprover && a.approverHRId === user.uniqueId) shouldMarkAsRead = true;
+
+                    if (shouldMarkAsRead && !a.isRead) {
+                        return { ...a, isRead: true };
+                    }
+                    return a;
+                });
                 saveAllItems(APPROVALS_STORAGE_KEY, updated);
                 return updated;
             });
@@ -125,8 +161,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     
     const approvalsForUser = React.useMemo(() => {
         if (!user) return [];
+        // Admin sees all, Evaluator sees ones where they are the team approver, Employee sees their own.
         return allApprovals
-            .filter(a => a.approverId === user.uniqueId)
+            .filter(a => user.roles.includes('admin') || a.approverTeamId === user.uniqueId || a.requesterId === user.uniqueId)
             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     }, [user, allApprovals]);
 
@@ -135,8 +172,14 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }, [notificationsForUser]);
     
     const unreadApprovalCount = React.useMemo(() => {
-        return approvalsForUser.filter(a => !a.isRead).length;
-    }, [approvalsForUser]);
+        if (!user) return 0;
+        return approvalsForUser.filter(a => {
+            if (a.approverTeamId === user.uniqueId && a.status === '결재중' && !a.isRead) return true;
+            if (a.approverHRId === user.uniqueId && a.statusHR === '결재중' && !a.isRead) return true;
+            return false;
+        }).length;
+    }, [user, approvalsForUser]);
+
 
     const value = {
         notifications: notificationsForUser,

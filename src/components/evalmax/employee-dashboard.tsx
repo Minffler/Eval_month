@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useAuth } from '@/contexts/auth-context';
-import type { EvaluationResult, Grade, GradeInfo, Employee, EmployeeView, AttendanceType, Approval, AppNotification } from '@/lib/types';
+import type { EvaluationResult, Grade, GradeInfo, Employee, EmployeeView, AttendanceType, Approval, ApprovalStatus, AppNotification } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -31,7 +31,7 @@ interface EmployeeDashboardProps {
   selectedDate: { year: number, month: number };
   allEmployees: Employee[];
   attendanceTypes: AttendanceType[];
-  onApprovalAction: (approval: Approval) => void;
+  onApprovalAction: (approvalId: string, step: 'team' | 'hr', status: 'approved' | 'rejected') => void;
   notifications: AppNotification[];
   approvals: Approval[];
 }
@@ -240,6 +240,20 @@ const MyReviewView = ({ employeeResults, allResults, gradingScale }: {
   );
 }
 
+const StatusBadge = ({ status }: { status: ApprovalStatus }) => {
+    const styles: Record<ApprovalStatus, string> = {
+        '결재중': 'bg-gray-200 text-gray-800',
+        '현업승인': 'bg-orange-200 text-orange-800',
+        '최종승인': 'bg-green-200 text-green-800',
+        '반려': 'bg-red-200 text-red-800',
+    };
+    return (
+        <span className={cn("px-2 py-1 rounded-full text-xs font-semibold", styles[status])}>
+            {status}
+        </span>
+    );
+};
+
 
 export default function EmployeeDashboard({ 
     employeeResults, 
@@ -285,35 +299,35 @@ export default function EmployeeDashboard({
                 </CardHeader>
                 <CardContent>
                   {mySentApprovals.length > 0 ? (
+                    <div className="border rounded-lg overflow-x-auto">
                     <Table>
                       <TableHeader><TableRow>
-                        <TableHead>요청일시</TableHead>
-                        <TableHead>결재자</TableHead>
-                        <TableHead>요청내용</TableHead>
-                        <TableHead>상태</TableHead>
+                        <TableHead className="text-center">요청일시</TableHead>
+                        <TableHead className="text-center">현업 결재자</TableHead>
+                        <TableHead className="text-center">요청내용</TableHead>
+                        <TableHead className="text-center">현업 결재</TableHead>
+                        <TableHead className="text-center">인사부 결재</TableHead>
+                        <TableHead className="text-center">반려 사유</TableHead>
                       </TableRow></TableHeader>
                       <TableBody>
                         {mySentApprovals.map(approval => {
-                          const approver = allEmployees.find(e => e.uniqueId === approval.approverId);
+                          const approver = allEmployees.find(e => e.uniqueId === approval.approverTeamId);
                           return (
                             <TableRow key={approval.id}>
-                              <TableCell>{format(new Date(approval.date), "yyyy.MM.dd HH:mm", { locale: ko })}</TableCell>
-                              <TableCell>{approver?.name || '관리자'}</TableCell>
-                              <TableCell>
+                              <TableCell className="text-center">{format(new Date(approval.date), "yyyy.MM.dd HH:mm", { locale: ko })}</TableCell>
+                              <TableCell className="text-center">{approver?.name || '관리자'}</TableCell>
+                              <TableCell className="text-center">
                                   {approval.payload.dataType === 'shortenedWorkHours' ? '단축근로' : '일근태'} 데이터 {approval.payload.action === 'add' ? '추가' : '변경'}
                               </TableCell>
-                              <TableCell>
-                                  <span className={cn("px-2 py-1 rounded-full text-xs", 
-                                      approval.status === 'pending' && "bg-yellow-100 text-yellow-800",
-                                      approval.status === 'approved' && "bg-green-100 text-green-800",
-                                      approval.status === 'rejected' && "bg-red-100 text-red-800"
-                                  )}>{approval.status}</span>
-                              </TableCell>
+                              <TableCell className="text-center"><StatusBadge status={approval.status} /></TableCell>
+                              <TableCell className="text-center"><StatusBadge status={approval.statusHR} /></TableCell>
+                              <TableCell className="text-center text-red-500">{approval.rejectionReason}</TableCell>
                             </TableRow>
                           )
                         })}
                       </TableBody>
                     </Table>
+                    </div>
                   ) : (
                      <div className="flex flex-col items-center justify-center h-40 text-center">
                         <Inbox className="h-10 w-10 text-muted-foreground mb-4" />

@@ -89,15 +89,20 @@ export type AppNotification = {
   recipientId: string; // uniqueId of the user who should see this
 };
 
-export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
+export type ApprovalStatus = '결재중' | '현업승인' | '최종승인' | '반려';
 
 export type Approval<T = any> = {
   id: string;
   date: string; // ISO date string
   requesterId: string; // 요청자
   requesterName: string;
-  approverId: string; // 결재자
+  approverTeamId: string; // 현업 결재자
+  approverHRId: string; // 인사부 결재자 (admin)
   status: ApprovalStatus;
+  statusHR: ApprovalStatus;
+  approvedAtTeam: string | null;
+  approvedAtHR: string | null;
+  rejectionReason: string;
   isRead: boolean;
   type: 'workDataChange'; // 결재 종류 (향후 확장 가능)
   payload: {

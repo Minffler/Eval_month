@@ -297,7 +297,7 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
       }));
       fileName = `${selectedDate.year}.${selectedDate.month}_일근태상세.xlsx`;
     }
-    const worksheet = XLSX.utils.sheet_to_json(dataToExport);
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, '상세내역');
     XLSX.writeFile(workbook, fileName);
@@ -366,16 +366,17 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
       toast({ variant: 'destructive', title: '오류', description: '해당 ID의 직원을 찾을 수 없습니다.' });
       return;
     }
-    const evaluator = allEmployees.find(e => e.uniqueId === employee.evaluatorId);
     
     const dataType: 'shortenedWorkHours' | 'dailyAttendance' = type === 'shortenedWork' ? 'shortenedWorkHours' : 'dailyAttendance';
     const action = dialogMode;
-    const approverId = user.roles.includes('admin') ? user.uniqueId : (evaluator?.uniqueId || '1911042');
+    const teamApproverId = employee.evaluatorId || '1911042'; // Default to admin if no evaluator
+    const hrApproverId = '1911042'; // Admin ID
 
-    const approvalData: Omit<Approval, 'id' | 'date' | 'isRead' | 'status'> = {
+    const approvalData: Omit<Approval, 'id' | 'date' | 'isRead' | 'status' | 'statusHR' | 'approvedAtTeam' | 'approvedAtHR' | 'rejectionReason'> = {
       requesterId: user.uniqueId,
       requesterName: user.name,
-      approverId: approverId,
+      approverTeamId: teamApproverId,
+      approverHRId: hrApproverId,
       type: 'workDataChange',
       payload: {
         dataType,

@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, FileCheck, Bot, Upload, LayoutDashboard, Settings, Download, Bell, ArrowUpDown, ArrowUp, ArrowDown, Eye, ClipboardX, ChevronUp, ChevronDown, CheckCircle2, ChevronsUpDown, Save, X, ThumbsUp, ThumbsDown, Inbox } from 'lucide-react';
+import { Users, FileCheck, Bot, Upload, LayoutDashboard, Settings, Download, Bell, ArrowUpDown, ArrowUp, ArrowDown, Eye, ClipboardX, ChevronUp, ChevronDown, CheckCircle2, ChevronsUpDown, Save, X, ThumbsUp, ThumbsDown, Inbox, FileText } from 'lucide-react';
 import { GradeHistogram } from './grade-histogram';
 import {
   Table,
@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/select';
 import { ConsistencyValidator } from './consistency-validator';
 import ManageData from './manage-data';
-import type { EvaluationResult, Grade, Employee, GradeInfo, EvaluationGroupCategory, User, EvaluationUploadData, WorkRateInputs, AttendanceType, Holiday, Approval, AppNotification } from '@/lib/types';
+import type { EvaluationResult, Grade, Employee, GradeInfo, EvaluationGroupCategory, User, EvaluationUploadData, WorkRateInputs, AttendanceType, Holiday, Approval, AppNotification, ApprovalStatus } from '@/lib/types';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -64,6 +64,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../ui/command';
 import { Separator } from '../ui/separator';
 import AdminNotifications from './admin-dashboard-notifications';
+import { Label } from '../ui/label';
 
 interface AdminDashboardProps {
   results: EvaluationResult[];
@@ -86,7 +87,7 @@ interface AdminDashboardProps {
   holidays: Holiday[];
   setHolidays: React.Dispatch<React.SetStateAction<Holiday[]>>;
   workRateDetails: WorkRateDetailsResult;
-  onApprovalAction: (approval: Approval) => void;
+  onApprovalAction: (approvalId: string, step: 'team' | 'hr', status: 'approved' | 'rejected', reason?: string) => void;
   notifications: AppNotification[];
   addNotification: (notification: Omit<AppNotification, 'id' | 'date' | 'isRead'>) => void;
   approvals: Approval[];
@@ -152,6 +153,10 @@ export default function AdminDashboard({
   const [isPayoutChartOpen, setIsPayoutChartOpen] = React.useState(false);
   const [dashboardFilter, setDashboardFilter] = React.useState('전체');
   const [evaluatorViewPopoverOpen, setEvaluatorViewPopoverOpen] = React.useState(false);
+  const [approvalDetailModalOpen, setApprovalDetailModalOpen] = React.useState(false);
+  const [selectedApproval, setSelectedApproval] = React.useState<Approval | null>(null);
+  const [rejectionReason, setRejectionReason] = React.useState('');
+
 
   const { toast } = useToast();
 
@@ -511,6 +516,46 @@ export default function AdminDashboard({
         return <span>{group}</span>;
     }
   };
+
+    const handleApprovalModal = (approval: Approval) => {
+        setSelectedApproval(approval);
+        setRejectionReason('');
+        setApprovalDetailModalOpen(true);
+    };
+
+    const handleApprovalDecision = (decision: 'approved' | 'rejected') => {
+        if (!selectedApproval) return;
+
+        if (decision === 'rejected' && !rejectionReason.trim()) {
+            toast({ variant: 'destructive', title: '오류', description: '반려 사유를 입력해주세요.' });
+            return;
+        }
+
+        onApprovalAction(selectedApproval.id, 'hr', decision, rejectionReason);
+        
+        if (decision === 'approved' && selectedApproval.statusHR !== '최종승인') {
+            const { dataType, data } = selectedApproval.payload;
+            onWorkRateDataUpload(selectedDate.year, selectedDate.month, dataType, [data], true);
+        }
+
+        toast({ title: '처리 완료', description: `결재 요청이 ${decision === 'approved' ? '승인' : '반려'}되었습니다.` });
+        setApprovalDetailModalOpen(false);
+        setSelectedApproval(null);
+    };
+    
+    const StatusBadge = ({ status }: { status: ApprovalStatus }) => {
+        const styles: Record<ApprovalStatus, string> = {
+            '결재중': 'bg-gray-200 text-gray-800',
+            '현업승인': 'bg-orange-200 text-orange-800',
+            '최종승인': 'bg-green-200 text-green-800',
+            '반려': 'bg-red-200 text-red-800',
+        };
+        return (
+            <span className={cn("px-2 py-1 rounded-full text-xs font-semibold", styles[status])}>
+                {status}
+            </span>
+        );
+    };
   
   const renderContent = () => {
     const key = `${selectedDate.year}-${selectedDate.month}`;
@@ -869,6 +914,7 @@ export default function AdminDashboard({
         case 'daily-attendance-details':
             return <WorkRateDetails type="dailyAttendance" data={workRateDetails.dailyAttendanceDetails} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} onDataChange={() => {}}/>;
         case 'approvals': {
+            const sortedApprovals = [...approvals].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
             return (
               <Card>
                 <CardHeader>
@@ -876,46 +922,43 @@ export default function AdminDashboard({
                   <CardDescription>결재를 기다리는 요청 목록입니다.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {approvals.length > 0 ? (
+                  {sortedApprovals.length > 0 ? (
+                    <div className="border rounded-lg overflow-x-auto">
                     <Table>
                       <TableHeader><TableRow>
-                        <TableHead>요청일시</TableHead>
-                        <TableHead>요청자</TableHead>
-                        <TableHead>요청내용</TableHead>
-                        <TableHead>상태</TableHead>
-                        <TableHead className="text-right">작업</TableHead>
+                        <TableHead className="text-center">요청일시</TableHead>
+                        <TableHead className="text-center">요청자</TableHead>
+                        <TableHead className="text-center">요청자ID</TableHead>
+                        <TableHead className="text-center">현업 결재자</TableHead>
+                        <TableHead className="text-center">요청내용</TableHead>
+                        <TableHead className="text-center">현업 결재</TableHead>
+                        <TableHead className="text-center">인사부 결재</TableHead>
+                        <TableHead className="text-center">현업 승인일시</TableHead>
+                        <TableHead className="text-center">최종 승인일시</TableHead>
                       </TableRow></TableHeader>
                       <TableBody>
-                        {approvals.map(approval => (
+                        {sortedApprovals.map(approval => {
+                          const teamApprover = allEmployees.find(e => e.uniqueId === approval.approverTeamId);
+                          return (
                           <TableRow key={approval.id}>
-                            <TableCell>{format(new Date(approval.date), "yyyy.MM.dd HH:mm", { locale: ko })}</TableCell>
-                            <TableCell>{approval.requesterName}</TableCell>
-                            <TableCell>
+                            <TableCell className="text-center">{format(new Date(approval.date), "yyyy.MM.dd HH:mm", { locale: ko })}</TableCell>
+                            <TableCell className="text-center">{approval.requesterName}</TableCell>
+                            <TableCell className="text-center">{approval.requesterId}</TableCell>
+                            <TableCell className="text-center">{teamApprover ? `${teamApprover.name} (${teamApprover.uniqueId})` : '미지정'}</TableCell>
+                            <TableCell className="text-center">
+                               <Button variant="link" onClick={() => handleApprovalModal(approval)}>
                                 {approval.payload.dataType === 'shortenedWorkHours' ? '단축근로' : '일근태'} 데이터 {approval.payload.action === 'add' ? '추가' : '변경'}
+                               </Button>
                             </TableCell>
-                            <TableCell>
-                                <span className={cn("px-2 py-1 rounded-full text-xs", 
-                                    approval.status === 'pending' && "bg-yellow-100 text-yellow-800",
-                                    approval.status === 'approved' && "bg-green-100 text-green-800",
-                                    approval.status === 'rejected' && "bg-red-100 text-red-800"
-                                )}>{approval.status}</span>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {approval.status === 'pending' ? (
-                                <div className="flex gap-2 justify-end">
-                                  <Button size="sm" variant="outline" onClick={() => onApprovalAction({...approval, status: 'approved'})}>
-                                    <ThumbsUp className="mr-2 h-4 w-4" /> 승인
-                                  </Button>
-                                  <Button size="sm" variant="destructive" onClick={() => onApprovalAction({...approval, status: 'rejected'})}>
-                                     <ThumbsDown className="mr-2 h-4 w-4" /> 반려
-                                  </Button>
-                                </div>
-                              ) : '처리됨'}
-                            </TableCell>
+                            <TableCell className="text-center"><StatusBadge status={approval.status} /></TableCell>
+                            <TableCell className="text-center"><StatusBadge status={approval.statusHR} /></TableCell>
+                            <TableCell className="text-center">{approval.approvedAtTeam ? format(new Date(approval.approvedAtTeam), "yy.MM.dd HH:mm") : '-'}</TableCell>
+                            <TableCell className="text-center">{approval.approvedAtHR ? format(new Date(approval.approvedAtHR), "yy.MM.dd HH:mm") : '-'}</TableCell>
                           </TableRow>
-                        ))}
+                        )})}
                       </TableBody>
                     </Table>
+                    </div>
                   ) : (
                      <div className="flex flex-col items-center justify-center h-40 text-center">
                         <Inbox className="h-10 w-10 text-muted-foreground mb-4" />
@@ -995,6 +1038,45 @@ export default function AdminDashboard({
             <Button variant="outline" onClick={() => setIsNotificationDialogOpen(false)}>취소</Button>
             <Button onClick={handleSendNotifications}>발송</Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={approvalDetailModalOpen} onOpenChange={setApprovalDetailModalOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>결재 상세 정보</DialogTitle>
+            </DialogHeader>
+            {selectedApproval && (
+                <div className="space-y-4">
+                    <p><strong>요청자:</strong> {selectedApproval.requesterName} ({selectedApproval.requesterId})</p>
+                    <p><strong>요청일시:</strong> {format(new Date(selectedApproval.date), 'yyyy-MM-dd HH:mm:ss')}</p>
+                    <p><strong>요청내용:</strong> {selectedApproval.payload.dataType === 'shortenedWorkHours' ? '단축근로' : '일근태'} 데이터 {selectedApproval.payload.action === 'add' ? '추가' : '변경'}</p>
+                    <Separator/>
+                    <div className="bg-muted p-2 rounded-md text-sm">
+                      <pre>{JSON.stringify(selectedApproval.payload.data, null, 2)}</pre>
+                    </div>
+                    {selectedApproval.statusHR === '반려' && (
+                        <div>
+                            <Label htmlFor="rejectionReason">반려 사유</Label>
+                            <p className="text-sm text-destructive p-2 border border-destructive rounded-md">{selectedApproval.rejectionReason}</p>
+                        </div>
+                    )}
+                    {(selectedApproval.status === '결재중' || (selectedApproval.status === '현업승인' && selectedApproval.statusHR === '결재중')) && (
+                         <div>
+                            <Label htmlFor="rejectionReason">반려 사유 (반려 시 필수)</Label>
+                            <Textarea id="rejectionReason" value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} />
+                        </div>
+                    )}
+                </div>
+            )}
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setApprovalDetailModalOpen(false)}>닫기</Button>
+                {selectedApproval && selectedApproval.statusHR === '결재중' && (
+                  <>
+                    <Button variant="destructive" onClick={() => handleApprovalDecision('rejected')}>반려</Button>
+                    <Button onClick={() => handleApprovalDecision('approved')}>승인</Button>
+                  </>
+                )}
+            </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
