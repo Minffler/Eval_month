@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/table';
 import { Input } from '../ui/input';
 import { Search, ArrowUpDown, ArrowUp, ArrowDown, Download, PlusCircle, Calendar as CalendarIcon, Clock } from 'lucide-react';
-import type { Employee, AttendanceType } from '@/lib/types';
+import type { Employee, AttendanceType, Role } from '@/lib/types';
 import type { ShortenedWorkDetail, DailyAttendanceDetail } from '@/lib/work-rate-calculator';
 import { Button } from '../ui/button';
 import * as XLSX from 'xlsx';
@@ -56,6 +56,7 @@ interface WorkRateDetailsProps {
   selectedDate: { year: number, month: number };
   allEmployees: Employee[];
   attendanceTypes: AttendanceType[];
+  viewAs?: Role;
 }
 
 const ShortenedWorkTypeIcon = ({ type }: { type: '임신' | '육아/돌봄' }) => {
@@ -91,7 +92,7 @@ const DailyAttendanceIcon = ({ isShortenedDay }: { isShortenedDay: boolean }) =>
 };
 
 
-export default function WorkRateDetails({ type, data, selectedDate, allEmployees, attendanceTypes }: WorkRateDetailsProps) {
+export default function WorkRateDetails({ type, data, selectedDate, allEmployees, attendanceTypes, viewAs = 'admin' }: WorkRateDetailsProps) {
   const { user } = useAuth();
   const { addNotification } = useNotifications();
   const [searchTerm, setSearchTerm] = React.useState('');
@@ -179,19 +180,24 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
   
       if (selectedRowId) {
           const selectedRecord = data.find((item: any) => {
-              const itemId = type === 'shortenedWork'
-                  ? `${item.uniqueId}-${item.startDate}-${item.endDate}-${item.type}`
-                  : `${item.uniqueId}-${item.date}-${item.type}-${data.indexOf(item)}`;
-              return itemId === selectedRowId;
+              if (type === 'shortenedWork') {
+                  return `${item.uniqueId}-${item.startDate}-${item.endDate}-${item.type}` === selectedRowId;
+              }
+              return `${item.uniqueId}-${item.date}-${item.type}-${data.indexOf(item)}` === selectedRowId;
           });
           if (selectedRecord) {
               initialData = { ...selectedRecord };
           }
       } else {
-          const uniqueIdsInData = new Set(filteredData.map(item => item.uniqueId));
-          if (filteredData.length > 0 && uniqueIdsInData.size === 1) {
-              const firstItem = filteredData[0];
-              initialData = { uniqueId: firstItem.uniqueId, name: firstItem.name };
+          // If a search term is present and yields a single unique employee, pre-fill their ID
+          if (searchTerm && filteredData.length > 0) {
+              const uniqueIdsInData = new Set(filteredData.map(item => item.uniqueId));
+              if (uniqueIdsInData.size === 1) {
+                  const firstItem = filteredData[0];
+                  initialData = { uniqueId: firstItem.uniqueId, name: firstItem.name };
+              }
+          } else if (viewAs === 'employee' && user) {
+            initialData = { uniqueId: user.uniqueId, name: user.name };
           }
       }
       
@@ -489,16 +495,18 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
             </Button>
           </div>
             <div className="flex items-center gap-2 mt-4">
-                <div className="relative flex-grow max-w-md">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                        type="search"
-                        placeholder="이름 또는 ID로 검색..."
-                        className="w-full pl-8"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
+                {viewAs !== 'employee' && (
+                  <div className="relative flex-grow max-w-md">
+                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input
+                          type="search"
+                          placeholder="이름 또는 ID로 검색..."
+                          className="w-full pl-8"
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                      />
+                  </div>
+                )}
                  <Button onClick={handleOpenDialog} variant="outline" size="sm">
                     <PlusCircle className="mr-2 h-4 w-4" />
                     데이터 추가/변경

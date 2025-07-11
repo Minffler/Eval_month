@@ -244,7 +244,7 @@ export default function EmployeeDashboard({
     allEmployees, 
     attendanceTypes 
 }: EmployeeDashboardProps) {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
 
   if (!user) {
     return <div>결과를 불러오는 중입니다...</div>;
@@ -262,9 +262,9 @@ export default function EmployeeDashboard({
       case 'my-work-rate':
         return <WorkRateManagement results={employeeResults} workRateDetails={myWorkRateDetails} selectedDate={selectedDate} allEmployees={allEmployees} holidays={[]} handleResultsUpdate={() => {}} />;
       case 'my-shortened-work':
-        return <WorkRateDetails type="shortenedWork" data={myWorkRateDetails.shortenedWorkDetails} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} />;
+        return <WorkRateDetails type="shortenedWork" data={myWorkRateDetails.shortenedWorkDetails} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} viewAs={role} />;
       case 'my-daily-attendance':
-        return <WorkRateDetails type="dailyAttendance" data={myWorkRateDetails.dailyAttendanceDetails} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} />;
+        return <WorkRateDetails type="dailyAttendance" data={myWorkRateDetails.dailyAttendanceDetails} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} viewAs={role} />;
       default:
         return <div>선택된 뷰가 없습니다.</div>;
     }
