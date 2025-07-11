@@ -97,7 +97,7 @@ const DailyAttendanceIcon = ({ isShortenedDay }: { isShortenedDay: boolean }) =>
 };
 
 const DatePicker = ({ value, onChange }: { value: string, onChange: (date: string) => void }) => {
-    const date = value ? new Date(value) : null;
+    const date = value && !isNaN(new Date(value).getTime()) ? new Date(value) : null;
     const year = date ? date.getFullYear() : undefined;
     const month = date ? date.getMonth() + 1 : undefined;
     const day = date ? date.getDate() : undefined;
@@ -112,7 +112,9 @@ const DatePicker = ({ value, onChange }: { value: string, onChange: (date: strin
 
         if (newYear && newMonth && newDay) {
             const newDate = new Date(newYear, newMonth - 1, newDay);
-            onChange(newDate.toISOString().split('T')[0]);
+            if (!isNaN(newDate.getTime())) {
+              onChange(newDate.toISOString().split('T')[0]);
+            }
         } else {
             onChange('');
         }
@@ -231,9 +233,15 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
 
   const openAddDialog = () => {
     setDialogMode('add');
-    let initialData: any = {};
+    const defaultDate = new Date(selectedDate.year, selectedDate.month - 1, 1).toISOString().split('T')[0];
+    let initialData: any = {
+      startDate: defaultDate,
+      endDate: defaultDate,
+      date: defaultDate
+    };
+
     if (viewAs === 'employee' && user) {
-        initialData = { uniqueId: user.uniqueId, name: user.name };
+        initialData = { ...initialData, uniqueId: user.uniqueId, name: user.name };
     }
     setFormData(initialData);
     setIsDialogOpen(true);
@@ -293,24 +301,27 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
     
     const actionType = dialogMode === 'add' ? '추가' : '변경';
     const dataType = type === 'shortenedWork' ? '단축근로' : '일근태';
-    const notificationMessage = `[결재요청] ${dataType} ${actionType}: ${employee.name}(${employee.uniqueId})`;
     
     if (user.roles?.includes('admin')) {
         toast({ title: '자동 승인 완료', description: '관리자 권한으로 데이터가 즉시 저장 및 반영되었습니다.' });
+        const approvalMessage = `[결재승인] ${dataType} ${actionType}: ${employee.name}(${employee.uniqueId})`;
         if (evaluator) {
-          addNotification({ recipientId: evaluator.uniqueId, message: `[결재승인] ${dataType} ${actionType}: ${employee.name}(${employee.uniqueId})` });
+          addNotification({ recipientId: evaluator.uniqueId, message: approvalMessage });
         }
-        addNotification({ recipientId: employee.uniqueId, message: `[결재승인] ${dataType} ${actionType}: ${employee.name}(${employee.uniqueId})` });
-    } else if (user.roles?.includes('evaluator')) {
-        addNotification({ recipientId: '1911042', message: notificationMessage });
-        toast({ title: '결재 상신 완료', description: '관리자에게 결재가 요청되었습니다.' });
-    } else { // employee
-        if (evaluator) {
-            addNotification({ recipientId: evaluator.uniqueId, message: notificationMessage });
-            toast({ title: '결재 상신 완료', description: '평가자에게 결재가 요청되었습니다.' });
-        } else {
-            addNotification({ recipientId: '1911042', message: notificationMessage });
-            toast({ title: '결재 상신 완료', description: '담당 평가자가 없어 관리자에게 바로 결재가 요청되었습니다.' });
+        addNotification({ recipientId: employee.uniqueId, message: approvalMessage });
+    } else {
+        const requestMessage = `[결재요청] ${dataType} ${actionType}: ${employee.name}(${employee.uniqueId})`;
+        if (user.roles?.includes('evaluator')) {
+            addNotification({ recipientId: '1911042', message: requestMessage });
+            toast({ title: '결재 상신 완료', description: '관리자에게 결재가 요청되었습니다.' });
+        } else { // employee
+            if (evaluator) {
+                addNotification({ recipientId: evaluator.uniqueId, message: requestMessage });
+                toast({ title: '결재 상신 완료', description: '평가자에게 결재가 요청되었습니다.' });
+            } else {
+                addNotification({ recipientId: '1911042', message: requestMessage });
+                toast({ title: '결재 상신 완료', description: '담당 평가자가 없어 관리자에게 바로 결재가 요청되었습니다.' });
+            }
         }
     }
 
