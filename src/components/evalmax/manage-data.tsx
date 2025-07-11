@@ -252,28 +252,36 @@ export default function ManageData({
   };
 
   const handleDownloadTemplate = (type: 'employees' | 'evaluations' | 'shortenedWork' | 'dailyAttendance') => {
-    let dataForSheet, headers, fileName;
-    switch(type) {
-        case 'employees':
-            dataForSheet = results.map(r => ({'ID': r.uniqueId, '이름': r.name, '회사': r.company, '소속부서': r.department, '직책': r.title, '성장레벨': r.growthLevel, '실근무율': r.workRate, '평가자 ID': r.evaluatorId, '개인별 기준금액': r.baseAmount, '비고': r.memo,}));
-            headers = ['ID', '이름', '회사', '소속부서', '직책', '성장레벨', '실근무율', '평가자 ID', '개인별 기준금액', '비고'];
-            fileName = `${selectedDate.year}.${String(selectedDate.month).padStart(2,'0')}_월성과대상자_양식.xlsx`;
-            break;
-        case 'evaluations':
-            dataForSheet = results.map(r => ({'ID': r.uniqueId, '이름': r.name, '회사': r.company, '소속부서': r.department, '직책': r.title, '성장레벨': r.growthLevel, '근무율': r.workRate, '평가그룹': r.evaluationGroup, '세부구분1': r.detailedGroup1, '세부구분2': r.detailedGroup2, '평가자 ID': r.evaluatorId, '평가자': r.evaluatorName, '점수': r.score, '등급': r.grade, '기준금액': r.baseAmount, '최종금액': r.finalAmount, '비고': r.memo}));
-            headers = ['ID', '이름', '회사', '소속부서', '직책', '성장레벨', '근무율', '평가그룹', '세부구분1', '세부구분2', '평가자 ID', '평가자', '점수', '등급', '기준금액', '최종금액', '비고'];
-            fileName = `${selectedDate.year}.${String(selectedDate.month).padStart(2, '0')}_월성과데이터_양식.xlsx`;
-            break;
-        case 'shortenedWork':
-            headers = ['고유사번', '성명', '시작일', '종료일', '출근시각', '퇴근시각'];
-            dataForSheet = [{}];
-            fileName = '단축근로_양식.xlsx';
-            break;
-        case 'dailyAttendance':
-            headers = ['고유사번', '성명', '근태사용일', '근태종류'];
-            dataForSheet = [{}];
-            fileName = '일근태_양식.xlsx';
-            break;
+    let dataForSheet: any[], headers: string[], fileName: string;
+    const { shortenedWorkHours = [], dailyAttendance = [] } = workRateInputs;
+
+    switch (type) {
+      case 'employees':
+        dataForSheet = results.map(r => ({'ID': r.uniqueId, '이름': r.name, '회사': r.company, '소속부서': r.department, '직책': r.title, '성장레벨': r.growthLevel, '실근무율': r.workRate, '평가자 ID': r.evaluatorId, '개인별 기준금액': r.baseAmount, '비고': r.memo}));
+        headers = ['ID', '이름', '회사', '소속부서', '직책', '성장레벨', '실근무율', '평가자 ID', '개인별 기준금액', '비고'];
+        fileName = `${selectedDate.year}.${String(selectedDate.month).padStart(2,'0')}_월성과대상자_양식.xlsx`;
+        break;
+      case 'evaluations':
+        dataForSheet = results.map(r => ({'ID': r.uniqueId, '이름': r.name, '회사': r.company, '소속부서': r.department, '직책': r.title, '성장레벨': r.growthLevel, '근무율': r.workRate, '평가그룹': r.evaluationGroup, '세부구분1': r.detailedGroup1, '세부구분2': r.detailedGroup2, '평가자 ID': r.evaluatorId, '평가자': r.evaluatorName, '점수': r.score, '등급': r.grade, '기준금액': r.baseAmount, '최종금액': r.finalAmount, '비고': r.memo}));
+        headers = ['ID', '이름', '회사', '소속부서', '직책', '성장레벨', '근무율', '평가그룹', '세부구분1', '세부구분2', '평가자 ID', '평가자', '점수', '등급', '기준금액', '최종금액', '비고'];
+        fileName = `${selectedDate.year}.${String(selectedDate.month).padStart(2, '0')}_월성과데이터_양식.xlsx`;
+        break;
+      case 'shortenedWork':
+        headers = ['고유사번', '성명', '시작일', '종료일', '출근시각', '퇴근시각'];
+        dataForSheet = shortenedWorkHours.length > 0
+            ? shortenedWorkHours.map(d => ({ '고유사번': d.uniqueId, '성명': d.name, '시작일': d.startDate, '종료일': d.endDate, '출근시각': d.startTime, '퇴근시각': d.endTime }))
+            : [{}];
+        fileName = '단축근로_양식.xlsx';
+        break;
+      case 'dailyAttendance':
+        headers = ['고유사번', '성명', '근태사용일', '근태종류'];
+        dataForSheet = dailyAttendance.length > 0
+            ? dailyAttendance.map(d => ({ '고유사번': d.uniqueId, '성명': d.name, '근태사용일': d.date, '근태종류': d.type }))
+            : [{}];
+        fileName = '일근태_양식.xlsx';
+        break;
+      default:
+        return;
     }
     const worksheet = XLSX.utils.json_to_sheet(dataForSheet, { header: headers });
     const workbook = XLSX.utils.book_new();
