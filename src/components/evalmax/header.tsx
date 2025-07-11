@@ -33,6 +33,11 @@ interface HeaderProps {
     markApprovalsAsRead: () => void;
 }
 
+const formatTimestamp = (isoString: string | null) => {
+    if (!isoString) return '-';
+    return format(new Date(isoString), 'yyyy.MM.dd HH:mm');
+};
+
 export default function Header({ 
   selectedDate, 
   onDateChange,
@@ -150,7 +155,7 @@ export default function Header({
                         <li key={approval.id} className={cn("p-2 rounded-md", !approval.isRead && "bg-muted")}>
                             <p className="text-sm">{approval.requesterName}님의 결재 요청</p>
                             <p className="text-xs text-muted-foreground mt-1">
-                              {format(new Date(approval.date), "yyyy.MM.dd HH:mm", { locale: ko })}
+                              {formatTimestamp(approval.date)}
                             </p>
                         </li>
                       ))}
@@ -187,7 +192,7 @@ export default function Header({
                         <li key={notification.id} className={cn("p-2 rounded-md", !notification.isRead && "bg-muted")}>
                             <p className="text-sm">{notification.message}</p>
                             <p className="text-xs text-muted-foreground mt-1">
-                              {format(new Date(notification.date), "yyyy.MM.dd HH:mm", { locale: ko })}
+                              {formatTimestamp(notification.date)}
                             </p>
                         </li>
                       ))}

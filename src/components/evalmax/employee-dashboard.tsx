@@ -254,6 +254,11 @@ const StatusBadge = ({ status }: { status: ApprovalStatus }) => {
     );
 };
 
+const formatTimestamp = (isoString: string | null) => {
+    if (!isoString) return '-';
+    return format(new Date(isoString), 'yyyy.MM.dd HH:mm');
+};
+
 
 export default function EmployeeDashboard({ 
     employeeResults, 
@@ -314,7 +319,7 @@ export default function EmployeeDashboard({
                           const approver = allEmployees.find(e => e.uniqueId === approval.approverTeamId);
                           return (
                             <TableRow key={approval.id}>
-                              <TableCell className="text-center">{format(new Date(approval.date), "yyyy.MM.dd HH:mm", { locale: ko })}</TableCell>
+                              <TableCell className="text-center text-muted-foreground">{formatTimestamp(approval.date)}</TableCell>
                               <TableCell className="text-center">{approver ? `${approver.name} (${approver.uniqueId})` : '관리자'}</TableCell>
                               <TableCell className="text-center">
                                   {approval.payload.dataType === 'shortenedWorkHours' ? '단축근로' : '일근태'} 데이터 {approval.payload.action === 'add' ? '추가' : '변경'}

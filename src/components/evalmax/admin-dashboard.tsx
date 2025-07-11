@@ -554,26 +554,30 @@ export default function AdminDashboard({
     };
     
     const StatusBadge = ({ status }: { status: ApprovalStatus }) => {
-        const styles: Record<ApprovalStatus, string> = {
-            '결재중': 'bg-gray-200 text-gray-800',
-            '현업승인': 'bg-orange-200 text-orange-800',
-            '최종승인': 'bg-green-200 text-green-800',
-            '반려': 'bg-red-200 text-red-800',
-        };
-        const imageStyles: Record<ApprovalStatus, {bgColor: string, textColor: string}> = {
+        const styles: Record<ApprovalStatus, {bgColor: string, textColor: string}> = {
           '결재중': { bgColor: 'hsl(30, 20%, 98%)', textColor: 'hsl(var(--muted-foreground))' }, 
           '현업승인': { bgColor: 'hsl(25, 20%, 92%)', textColor: 'hsl(var(--secondary-foreground))' },
           '최종승인': { bgColor: 'hsl(25, 15%, 75%)', textColor: 'hsl(var(--secondary-foreground))' }, 
-          '반려': { bgColor: 'hsl(0, 72%, 90%)', textColor: 'hsl(var(--destructive))'},
+          '반려': { bgColor: 'hsl(39, 94%, 94%)', textColor: 'hsl(24, 95%, 53%)'},
         }
 
         return (
           <div className="flex items-center justify-center">
-            <div className={cn("flex items-center justify-center rounded-full text-xs font-semibold w-20 h-6")} style={{ backgroundColor: imageStyles[status].bgColor, color: imageStyles[status].textColor }}>
+            <div className={cn("flex items-center justify-center rounded-full text-xs font-semibold w-20 h-6")} style={{ backgroundColor: styles[status].bgColor, color: styles[status].textColor }}>
                 {status}
             </div>
           </div>
         );
+    };
+    
+    const formatTimestamp = (isoString: string | null) => {
+        if (!isoString) return '-';
+        return format(new Date(isoString), 'yyyy.MM.dd HH:mm');
+    };
+    
+    const formatTimestampShort = (isoString: string | null) => {
+        if (!isoString) return '-';
+        return format(new Date(isoString), 'MM.dd HH:mm');
     };
   
   const renderContent = () => {
@@ -946,7 +950,6 @@ export default function AdminDashboard({
                     <Table>
                       <TableHeader><TableRow>
                         <TableHead className="text-center">요청일시</TableHead>
-                        <TableHead className="text-center">요청자</TableHead>
                         <TableHead className="text-center">대상자ID</TableHead>
                         <TableHead className="text-center">대상자</TableHead>
                         <TableHead className="text-center">현업 결재자</TableHead>
@@ -954,27 +957,26 @@ export default function AdminDashboard({
                         <TableHead className="text-center">현업 결재</TableHead>
                         <TableHead className="text-center">인사부 결재</TableHead>
                         <TableHead className="text-center">현업 승인일시</TableHead>
-                        <TableHead className="text-center">최종 승인일시</TableHead>
+                        <TableHead className="text-center">최종 승인일</TableHead>
                       </TableRow></TableHeader>
                       <TableBody>
                         {sortedApprovals.map(approval => {
                           const teamApprover = allEmployees.find(e => e.uniqueId === approval.approverTeamId);
                           return (
                           <TableRow key={approval.id}>
-                            <TableCell className="text-center">{format(new Date(approval.date), "yyyy.MM.dd HH:mm", { locale: ko })}</TableCell>
-                            <TableCell className="text-center">{approval.requesterName}</TableCell>
+                            <TableCell className="text-center text-muted-foreground">{formatTimestamp(approval.date)}</TableCell>
                             <TableCell className="text-center">{approval.payload.data.uniqueId}</TableCell>
                             <TableCell className="text-center">{approval.payload.data.name}</TableCell>
                             <TableCell className="text-center">{teamApprover ? `${teamApprover.name} (${teamApprover.uniqueId})` : '미지정'}</TableCell>
                             <TableCell className="text-center">
-                               <Button variant="link" onClick={() => handleApprovalModal(approval)}>
+                               <Button variant="link" className="underline" onClick={() => handleApprovalModal(approval)}>
                                 {approval.payload.dataType === 'shortenedWorkHours' ? '단축근로' : '일근태'} 데이터 {approval.payload.action === 'add' ? '추가' : '변경'}
                                </Button>
                             </TableCell>
                             <TableCell className="text-center"><StatusBadge status={approval.status} /></TableCell>
                             <TableCell className="text-center"><StatusBadge status={approval.statusHR} /></TableCell>
-                            <TableCell className="text-center">{approval.approvedAtTeam ? format(new Date(approval.approvedAtTeam), "MM.dd HH:mm") : '-'}</TableCell>
-                            <TableCell className="text-center">{approval.approvedAtHR ? format(new Date(approval.approvedAtHR), "MM.dd HH:mm") : '-'}</TableCell>
+                            <TableCell className="text-center text-muted-foreground">{formatTimestampShort(approval.approvedAtTeam)}</TableCell>
+                            <TableCell className="text-center text-muted-foreground">{formatTimestampShort(approval.approvedAtHR)}</TableCell>
                           </TableRow>
                         )})}
                       </TableBody>
@@ -1069,11 +1071,11 @@ export default function AdminDashboard({
             {selectedApproval && (
                 <div className="space-y-4">
                     <p><strong>요청자:</strong> {selectedApproval.requesterName} ({selectedApproval.requesterId})</p>
-                    <p><strong>요청일시:</strong> {format(new Date(selectedApproval.date), 'yyyy-MM-dd HH:mm:ss')}</p>
+                    <p className="text-sm text-muted-foreground"><strong>요청일시:</strong> {formatTimestamp(selectedApproval.date)}</p>
                     <p><strong>요청내용:</strong> {selectedApproval.payload.dataType === 'shortenedWorkHours' ? '단축근로' : '일근태'} 데이터 {selectedApproval.payload.action === 'add' ? '추가' : '변경'}</p>
                     <Separator/>
                     <div className="bg-muted p-2 rounded-md text-sm">
-                      <pre>{JSON.stringify(selectedApproval.payload.data, null, 2)}</pre>
+                      <pre className="whitespace-pre-wrap break-all">{JSON.stringify(selectedApproval.payload.data, null, 2)}</pre>
                     </div>
                     {selectedApproval.statusHR === '반려' && selectedApproval.rejectionReason && (
                         <div>
@@ -1090,12 +1092,14 @@ export default function AdminDashboard({
                 </div>
             )}
             <DialogFooter>
-                <Button variant="outline" onClick={() => setApprovalDetailModalOpen(false)}>닫기</Button>
-                {selectedApproval && selectedApproval.statusHR === '결재중' && (
+                {selectedApproval && selectedApproval.statusHR === '결재중' ? (
                   <>
                     <Button variant="destructive" onClick={() => handleApprovalDecision('rejected')}>반려</Button>
+                    <Button variant="outline" onClick={() => setApprovalDetailModalOpen(false)}>닫기</Button>
                     <Button onClick={() => handleApprovalDecision('approved')}>승인</Button>
                   </>
+                ) : (
+                    <Button variant="outline" onClick={() => setApprovalDetailModalOpen(false)}>닫기</Button>
                 )}
             </DialogFooter>
         </DialogContent>

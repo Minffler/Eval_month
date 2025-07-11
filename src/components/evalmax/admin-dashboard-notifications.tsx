@@ -12,6 +12,11 @@ interface AdminNotificationsProps {
     notifications: AppNotification[];
 }
 
+const formatTimestamp = (isoString: string | null) => {
+    if (!isoString) return '-';
+    return format(new Date(isoString), 'yyyy.MM.dd HH:mm');
+};
+
 export default function AdminNotifications({ notifications }: AdminNotificationsProps) {
     return (
         <Card>
@@ -26,7 +31,7 @@ export default function AdminNotifications({ notifications }: AdminNotifications
                         <li key={notification.id} className={cn("p-3 rounded-md border", !notification.isRead && "bg-muted/50")}>
                             <p className="text-sm font-medium">{notification.message}</p>
                             <p className="text-xs text-muted-foreground mt-1">
-                                {format(new Date(notification.date), "yyyy.MM.dd HH:mm", { locale: ko })}
+                                {formatTimestamp(notification.date)}
                             </p>
                         </li>
                     ))}

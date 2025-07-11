@@ -560,7 +560,7 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
   const formatTimestamp = (isoString?: string) => {
     if (!isoString) return '';
     try {
-      return format(new Date(isoString), 'MM.dd HH:mm');
+      return format(new Date(isoString), 'yyyy.MM.dd HH:mm');
     } catch {
       return '';
     }
