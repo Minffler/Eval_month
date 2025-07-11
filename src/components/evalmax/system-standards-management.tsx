@@ -184,7 +184,7 @@ export default function SystemStandardsManagement({
     const now = new Date();
     localStorage.setItem(ATTENDANCE_LAST_UPDATED_KEY, now.toISOString());
     setAttendanceLastUpdated(now);
-    toast({ title: '저장 완료', description: '근태 수치 변경사항이 성공적으로 저장되었습니다.' });
+    toast({ title: '저장 완료', description: '근무기준 변경사항이 성공적으로 저장되었습니다.' });
   };
   const handleSaveHolidays = () => {
     const errors: Record<string, string> = {};
@@ -233,7 +233,7 @@ export default function SystemStandardsManagement({
                     <CardContent className="pt-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <h4 className="font-semibold mb-2">근무기준 설정</h4>
+                            <h4 className="font-semibold mb-2">근태 종류별 차감 설정</h4>
                             <div className="border rounded-lg">
                                 <Table>
                                 <TableHeader><TableRow>
@@ -253,7 +253,7 @@ export default function SystemStandardsManagement({
                             </div>
                             <div className="flex justify-between mt-4">
                                 <Button variant="outline" onClick={handleAddNewType}><PlusCircle className="mr-2 h-4 w-4" />추가</Button>
-                                <Button onClick={handleSaveTypes}><Save className="mr-2 h-4 w-4" />근태 수치 저장</Button>
+                                <Button onClick={handleSaveTypes}><Save className="mr-2 h-4 w-4" />근무기준 저장</Button>
                             </div>
                         </div>
                         <div>

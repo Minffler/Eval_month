@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, FileCheck, Bot, Upload, LayoutDashboard, Settings, Download, Bell, ArrowUpDown, ArrowUp, ArrowDown, Eye, ClipboardX, ChevronUp, ChevronDown, CheckCircle2, ChevronsUpDown } from 'lucide-react';
+import { Users, FileCheck, Bot, Upload, LayoutDashboard, Settings, Download, Bell, ArrowUpDown, ArrowUp, ArrowDown, Eye, ClipboardX, ChevronUp, ChevronDown, CheckCircle2, ChevronsUpDown, Save, X } from 'lucide-react';
 import { GradeHistogram } from './grade-histogram';
 import {
   Table,
@@ -63,6 +63,7 @@ import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../ui/command';
+import { Separator } from '../ui/separator';
 
 interface AdminDashboardProps {
   results: EvaluationResult[];
@@ -105,6 +106,8 @@ type EvaluatorStatsSortConfig = {
   direction: 'ascending' | 'descending';
 } | null;
 
+const NOTIFICATION_TEMPLATES_STORAGE_KEY = 'pl_eval_notification_templates';
+
 
 export default function AdminDashboard({ 
   results: initialResults, 
@@ -133,6 +136,7 @@ export default function AdminDashboard({
   const [selectedEvaluators, setSelectedEvaluators] = React.useState<Set<string>>(new Set());
   const [isNotificationDialogOpen, setIsNotificationDialogOpen] = React.useState(false);
   const [notificationMessage, setNotificationMessage] = React.useState('');
+  const [notificationTemplates, setNotificationTemplates] = React.useState<string[]>([]);
   const [sortConfig, setSortConfig] = React.useState<SortConfig>(null);
   const [evaluatorStatsSortConfig, setEvaluatorStatsSortConfig] = React.useState<EvaluatorStatsSortConfig>({ key: 'rate', direction: 'ascending' });
   const [selectedEvaluatorId, setSelectedEvaluatorId] = React.useState<string>('');
@@ -143,6 +147,45 @@ export default function AdminDashboard({
 
   const { toast } = useToast();
   const { addNotification } = useNotifications();
+
+  React.useEffect(() => {
+    try {
+      const storedTemplates = localStorage.getItem(NOTIFICATION_TEMPLATES_STORAGE_KEY);
+      if (storedTemplates) {
+        setNotificationTemplates(JSON.parse(storedTemplates));
+      }
+    } catch (error) {
+      console.error('Error reading notification templates from localStorage', error);
+    }
+  }, []);
+
+  const saveNotificationTemplates = (templates: string[]) => {
+    try {
+      localStorage.setItem(NOTIFICATION_TEMPLATES_STORAGE_KEY, JSON.stringify(templates));
+      setNotificationTemplates(templates);
+    } catch (error) {
+      console.error('Error saving notification templates to localStorage', error);
+    }
+  };
+
+  const handleSaveTemplate = () => {
+    if (!notificationMessage.trim() || notificationTemplates.includes(notificationMessage)) {
+        toast({
+            variant: 'destructive',
+            title: '오류',
+            description: '템플릿이 비어있거나 이미 존재합니다.'
+        });
+        return;
+    }
+    const newTemplates = [notificationMessage, ...notificationTemplates].slice(0, 5);
+    saveNotificationTemplates(newTemplates);
+    toast({ title: '템플릿 저장 완료', description: '알림 메시지 템플릿이 저장되었습니다.' });
+  };
+
+  const handleDeleteTemplate = (templateToDelete: string) => {
+    const newTemplates = notificationTemplates.filter(t => t !== templateToDelete);
+    saveNotificationTemplates(newTemplates);
+  };
 
   React.useEffect(() => {
     setResults(initialResults);
@@ -181,18 +224,18 @@ export default function AdminDashboard({
 
   const evaluatorStats = React.useMemo(() => {
     const statsByUniqueId: Record<string, { total: number; completed: number; evaluatorName: string; }> = {};
+    const evaluatorIds = new Set(allEmployees.map(e => e.evaluatorId).filter(Boolean));
+    const evaluators = allEmployees.filter(e => evaluatorIds.has(e.uniqueId));
+
+    evaluators.forEach(evaluator => {
+        statsByUniqueId[evaluator.uniqueId] = { total: 0, completed: 0, evaluatorName: evaluator.name };
+    });
 
     initialResults.forEach(r => {
-      if (!r.evaluatorId) return;
-
-      const id = r.evaluatorId;
-      
-      if (!statsByUniqueId[id]) {
-        statsByUniqueId[id] = { total: 0, completed: 0, evaluatorName: r.evaluatorName };
-      }
-      statsByUniqueId[id].total++;
+      if (!r.evaluatorId || !statsByUniqueId[r.evaluatorId]) return;
+      statsByUniqueId[r.evaluatorId].total++;
       if (r.grade) {
-        statsByUniqueId[id].completed++;
+        statsByUniqueId[r.evaluatorId].completed++;
       }
     });
 
@@ -204,7 +247,7 @@ export default function AdminDashboard({
       pending: data.total - data.completed,
       rate: data.total > 0 ? (data.completed / data.total) * 100 : 0,
     }));
-  }, [initialResults]);
+  }, [initialResults, allEmployees]);
 
   const sortedEvaluatorStats = React.useMemo(() => {
     let sortableItems: EvaluatorStat[] = [...evaluatorStats];
@@ -823,7 +866,7 @@ export default function AdminDashboard({
     <div className="space-y-4 p-4 md:p-6 lg:p-8">
       {renderContent()}
        <Dialog open={isNotificationDialogOpen} onOpenChange={setIsNotificationDialogOpen}>
-        <DialogContent className="sm:max-w-[525px]">
+        <DialogContent className="sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>알림 메시지 설정</DialogTitle>
             <DialogDescription>
@@ -838,7 +881,43 @@ export default function AdminDashboard({
                 className="col-span-4 h-32"
                 placeholder="알림 메시지를 입력하세요..."
             />
+             <div className="flex items-center gap-2">
+                <Button onClick={handleSaveTemplate} size="sm" variant="outline" disabled={notificationTemplates.length >= 5 || !notificationMessage.trim()}>
+                    <Save className="mr-2 h-4 w-4" />
+                    템플릿으로 저장
+                </Button>
+                <p className="text-xs text-muted-foreground">({notificationTemplates.length}/5개)</p>
+            </div>
           </div>
+          {notificationTemplates.length > 0 && (
+            <div>
+              <Separator />
+              <div className="py-4 space-y-2">
+                  <h4 className="text-sm font-medium">저장된 템플릿</h4>
+                  <div className="flex flex-wrap gap-2">
+                      {notificationTemplates.map((template, index) => (
+                          <div key={index} className="flex items-center gap-1 rounded-full border bg-muted/50 pl-3 pr-1 py-0.5">
+                              <button
+                                  className="text-left text-sm hover:underline"
+                                  onClick={() => setNotificationMessage(template)}
+                                  title={template}
+                              >
+                                  <span className="truncate max-w-[200px] inline-block">
+                                    {template}
+                                  </span>
+                              </button>
+                              <button
+                                  onClick={() => handleDeleteTemplate(template)}
+                                  className="h-5 w-5 rounded-full flex items-center justify-center hover:bg-muted-foreground/20 shrink-0"
+                              >
+                                  <X className="h-3 w-3" />
+                              </button>
+                          </div>
+                      ))}
+                  </div>
+              </div>
+            </div>
+          )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsNotificationDialogOpen(false)}>취소</Button>
             <Button onClick={handleSendNotifications}>발송</Button>
