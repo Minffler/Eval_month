@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useAuth } from '@/contexts/auth-context';
-import type { EvaluationResult, Grade, GradeInfo, EvaluationGroupCategory, User, EvaluatorView, Employee, Holiday, AttendanceType, Approval, AppNotification } from '@/lib/types';
+import type { EvaluationResult, Grade, GradeInfo, EvaluationGroupCategory, User, EvaluatorView, Employee, Holiday, AttendanceType, Approval, AppNotification, ApprovalStatus } from '@/lib/types';
 import {
   DndContext,
   closestCenter,
@@ -80,6 +80,8 @@ import WorkRateManagement from './work-rate-management';
 import type { WorkRateDetailsResult } from '@/lib/work-rate-calculator';
 import WorkRateDetails from './work-rate-details';
 import EvaluatorNotifications from './evaluator-dashboard-notifications';
+import { Textarea } from '../ui/textarea';
+import { Separator } from '../ui/separator';
 
 
 interface EvaluatorDashboardProps {
@@ -1031,7 +1033,11 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, allEmploye
 
 export default function EvaluatorDashboard({ allResults, currentMonthResults, gradingScale, selectedDate, setSelectedDate, handleResultsUpdate, evaluatorUser, activeView, onClearMyEvaluations, workRateDetails, holidays, allEmployees, attendanceTypes, onApprovalAction, notifications, addNotification, approvals }: EvaluatorDashboardProps) {
   const { user: authUser } = useAuth();
+  const { toast } = useToast();
   const [effectiveUser, setEffectiveUser] = React.useState<User | null>(null);
+  const [approvalDetailModalOpen, setApprovalDetailModalOpen] = React.useState(false);
+  const [selectedApproval, setSelectedApproval] = React.useState<Approval | null>(null);
+  const [rejectionReason, setRejectionReason] = React.useState('');
   
   React.useEffect(() => {
     if (evaluatorUser) { // This is an Employee object from Admin view
@@ -1070,6 +1076,58 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
       dailyAttendanceDetails: workRateDetails.dailyAttendanceDetails.filter(d => myManagedEmployeeIds.has(d.uniqueId)),
     }
   }, [effectiveUser, myEmployees, workRateDetails]);
+  
+    const formatTimestamp = (isoString: string | null) => {
+        if (!isoString) return '-';
+        return format(new Date(isoString), 'yyyy.MM.dd HH:mm');
+    };
+    
+    const StatusBadge = ({ status }: { status: ApprovalStatus }) => {
+        const styles: Record<ApprovalStatus, {bgColor: string, textColor: string}> = {
+          '결재중': { bgColor: 'hsl(30, 20%, 98%)', textColor: 'hsl(var(--muted-foreground))' }, 
+          '현업승인': { bgColor: 'hsl(25, 20%, 92%)', textColor: 'hsl(var(--secondary-foreground))' },
+          '최종승인': { bgColor: 'hsl(140, 60%, 92%)', textColor: 'hsl(140, 80%, 30%)' }, 
+          '반려': { bgColor: 'hsl(39, 94%, 94%)', textColor: 'hsl(24, 95%, 53%)'},
+        }
+
+        return (
+          <div className="flex items-center justify-center">
+            <div className={cn("flex items-center justify-center rounded-full text-xs font-semibold w-20 h-6")} style={{ backgroundColor: styles[status].bgColor, color: styles[status].textColor }}>
+                {status}
+            </div>
+          </div>
+        );
+    };
+    
+    const handleApprovalModal = (approval: Approval) => {
+        setSelectedApproval(approval);
+        setRejectionReason('');
+        setApprovalDetailModalOpen(true);
+    };
+
+    const handleApprovalDecision = (decision: 'approved' | 'rejected') => {
+        if (!selectedApproval) return;
+
+        if (decision === 'rejected' && !rejectionReason.trim()) {
+            toast({ variant: 'destructive', title: '오류', description: '반려 사유를 입력해주세요.' });
+            return;
+        }
+        
+        const updatedApproval = { ...selectedApproval };
+        if (decision === 'approved') {
+            updatedApproval.status = '현업승인';
+            updatedApproval.approvedAtTeam = new Date().toISOString();
+        } else {
+            updatedApproval.status = '반려';
+            updatedApproval.rejectionReason = rejectionReason;
+        }
+        
+        onApprovalAction(updatedApproval);
+        
+        toast({ title: '처리 완료', description: `결재 요청이 ${decision === 'approved' ? '승인' : '반려'}되었습니다.` });
+        setApprovalDetailModalOpen(false);
+        setSelectedApproval(null);
+    };
 
 
   if (!effectiveUser) return <div className="p-4 md:p-6 lg:p-8">로딩중...</div>;
@@ -1103,53 +1161,43 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
       case 'daily-attendance-details':
           return <WorkRateDetails type="dailyAttendance" data={myManagedWorkRateDetails.dailyAttendanceDetails} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} onDataChange={()=>{}} />;
       case 'approvals': {
+            const myApprovals = approvals.filter(a => a.approverTeamId === effectiveUser.uniqueId);
             return (
               <Card>
                 <CardHeader>
                   <CardTitle>결재함</CardTitle>
-                  <CardDescription>결재를 기다리는 요청 목록입니다.</CardDescription>
+                  <CardDescription>현업 리더로서 결재를 기다리는 요청 목록입니다.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {approvals.length > 0 ? (
-                    <Table>
-                      <TableHeader><TableRow>
-                        <TableHead>요청일시</TableHead>
-                        <TableHead>요청자</TableHead>
-                        <TableHead>요청내용</TableHead>
-                        <TableHead>상태</TableHead>
-                        <TableHead className="text-right">작업</TableHead>
-                      </TableRow></TableHeader>
-                      <TableBody>
-                        {approvals.map(approval => (
-                          <TableRow key={approval.id}>
-                            <TableCell>{format(new Date(approval.date), "yyyy.MM.dd HH:mm", { locale: ko })}</TableCell>
-                            <TableCell>{approval.requesterName}</TableCell>
-                            <TableCell>
-                                {approval.payload.dataType === 'shortenedWorkHours' ? '단축근로' : '일근태'} 데이터 {approval.payload.action === 'add' ? '추가' : '변경'}
-                            </TableCell>
-                            <TableCell>
-                                <span className={cn("px-2 py-1 rounded-full text-xs", 
-                                    approval.status === 'pending' && "bg-yellow-100 text-yellow-800",
-                                    approval.status === 'approved' && "bg-green-100 text-green-800",
-                                    approval.status === 'rejected' && "bg-red-100 text-red-800"
-                                )}>{approval.status}</span>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {approval.status === 'pending' ? (
-                                <div className="flex gap-2 justify-end">
-                                  <Button size="sm" variant="outline" onClick={() => onApprovalAction({...approval, status: 'approved'})}>
-                                    <ThumbsUp className="mr-2 h-4 w-4" /> 승인
-                                  </Button>
-                                  <Button size="sm" variant="destructive" onClick={() => onApprovalAction({...approval, status: 'rejected'})}>
-                                     <ThumbsDown className="mr-2 h-4 w-4" /> 반려
-                                  </Button>
-                                </div>
-                              ) : '처리됨'}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                  {myApprovals.length > 0 ? (
+                    <div className="border rounded-lg overflow-x-auto">
+                      <Table>
+                        <TableHeader><TableRow>
+                          <TableHead className="text-center">요청일</TableHead>
+                          <TableHead className="text-center">요청자ID</TableHead>
+                          <TableHead className="text-center">요청자</TableHead>
+                          <TableHead className="text-center">요청내용</TableHead>
+                          <TableHead className="text-center">현업 결재</TableHead>
+                          <TableHead className="text-center">인사부 결재</TableHead>
+                        </TableRow></TableHeader>
+                        <TableBody>
+                          {myApprovals.map(approval => (
+                            <TableRow key={approval.id}>
+                              <TableCell className="text-center text-muted-foreground">{formatTimestamp(approval.date)}</TableCell>
+                              <TableCell className="text-center">{approval.requesterId}</TableCell>
+                              <TableCell className="text-center">{approval.requesterName}</TableCell>
+                              <TableCell className="text-center">
+                                 <Button variant="link" className="underline text-foreground" onClick={() => handleApprovalModal(approval)}>
+                                  {approval.payload.dataType === 'shortenedWorkHours' ? '단축근로' : '일근태'} 데이터 {approval.payload.action === 'add' ? '추가' : '변경'}
+                                 </Button>
+                              </TableCell>
+                              <TableCell className="text-center"><StatusBadge status={approval.status} /></TableCell>
+                              <TableCell className="text-center"><StatusBadge status={approval.statusHR} /></TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   ) : (
                      <div className="flex flex-col items-center justify-center h-40 text-center">
                         <Inbox className="h-10 w-10 text-muted-foreground mb-4" />
@@ -1163,13 +1211,57 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
       case 'notifications':
           return <EvaluatorNotifications notifications={notifications} />;
       default:
-        return <div>선택된 뷰가 없습니다.</div>;
+        return <div className="flex flex-col items-center justify-center h-40 text-center">
+                  <Inbox className="h-10 w-10 text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">새로운 알림이 없습니다.</p>
+               </div>;
     }
   }
 
   return (
      <div className="p-4 md:p-6 lg:p-8">
       {renderContent()}
+      <Dialog open={approvalDetailModalOpen} onOpenChange={setApprovalDetailModalOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>결재 상세 정보</DialogTitle>
+            </DialogHeader>
+            {selectedApproval && (
+                <div className="space-y-4">
+                    <p><strong>요청자:</strong> {selectedApproval.requesterName} ({selectedApproval.requesterId})</p>
+                    <p className="text-sm text-muted-foreground"><strong>요청일시:</strong> {formatTimestamp(selectedApproval.date)}</p>
+                    <p><strong>요청내용:</strong> {selectedApproval.payload.dataType === 'shortenedWorkHours' ? '단축근로' : '일근태'} 데이터 {selectedApproval.payload.action === 'add' ? '추가' : '변경'}</p>
+                    <Separator/>
+                    <div className="bg-muted p-2 rounded-md text-sm">
+                      <pre className="whitespace-pre-wrap break-all">{JSON.stringify(selectedApproval.payload.data, null, 2)}</pre>
+                    </div>
+                    {selectedApproval.status === '반려' && selectedApproval.rejectionReason && (
+                        <div>
+                            <Label htmlFor="rejectionReason">반려 사유</Label>
+                            <p className="text-sm text-destructive p-2 border border-destructive rounded-md">{selectedApproval.rejectionReason}</p>
+                        </div>
+                    )}
+                    {(selectedApproval.status === '결재중') && (
+                         <div>
+                            <Label htmlFor="rejectionReason">반려 사유 (반려 시 필수)</Label>
+                            <Textarea id="rejectionReason" value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} />
+                        </div>
+                    )}
+                </div>
+            )}
+            <DialogFooter className="sm:justify-between">
+                {selectedApproval && selectedApproval.status === '결재중' ? (
+                  <>
+                    <Button variant="destructive" onClick={() => handleApprovalDecision('rejected')}>반려</Button>
+                    <Button variant="outline" onClick={() => setApprovalDetailModalOpen(false)}>닫기</Button>
+                    <Button onClick={() => handleApprovalDecision('approved')}>승인</Button>
+                  </>
+                ) : (
+                    <Button variant="outline" onClick={() => setApprovalDetailModalOpen(false)}>닫기</Button>
+                )}
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -241,16 +241,19 @@ const MyReviewView = ({ employeeResults, allResults, gradingScale }: {
 }
 
 const StatusBadge = ({ status }: { status: ApprovalStatus }) => {
-    const styles: Record<ApprovalStatus, string> = {
-        '결재중': 'bg-gray-200 text-gray-800',
-        '현업승인': 'bg-orange-200 text-orange-800',
-        '최종승인': 'bg-green-200 text-green-800',
-        '반려': 'bg-red-200 text-red-800',
-    };
+    const styles: Record<ApprovalStatus, {bgColor: string, textColor: string}> = {
+      '결재중': { bgColor: 'hsl(30, 20%, 98%)', textColor: 'hsl(var(--muted-foreground))' }, 
+      '현업승인': { bgColor: 'hsl(25, 20%, 92%)', textColor: 'hsl(var(--secondary-foreground))' },
+      '최종승인': { bgColor: 'hsl(140, 60%, 92%)', textColor: 'hsl(140, 80%, 30%)' }, 
+      '반려': { bgColor: 'hsl(39, 94%, 94%)', textColor: 'hsl(24, 95%, 53%)'},
+    }
+
     return (
-        <span className={cn("px-2 py-1 rounded-full text-xs font-semibold", styles[status])}>
+      <div className="flex items-center justify-center">
+        <div className={cn("flex items-center justify-center rounded-full text-xs font-semibold w-20 h-6")} style={{ backgroundColor: styles[status].bgColor, color: styles[status].textColor }}>
             {status}
-        </span>
+        </div>
+      </div>
     );
 };
 
@@ -307,7 +310,7 @@ export default function EmployeeDashboard({
                     <div className="border rounded-lg overflow-x-auto">
                     <Table>
                       <TableHeader><TableRow>
-                        <TableHead className="text-center">요청일시</TableHead>
+                        <TableHead className="text-center">요청일</TableHead>
                         <TableHead className="text-center">현업 결재자</TableHead>
                         <TableHead className="text-center">요청내용</TableHead>
                         <TableHead className="text-center">현업 결재</TableHead>
@@ -326,7 +329,7 @@ export default function EmployeeDashboard({
                               </TableCell>
                               <TableCell className="text-center"><StatusBadge status={approval.status} /></TableCell>
                               <TableCell className="text-center"><StatusBadge status={approval.statusHR} /></TableCell>
-                              <TableCell className="text-center text-red-500">{approval.rejectionReason}</TableCell>
+                              <TableCell className="text-center text-destructive">{approval.rejectionReason}</TableCell>
                             </TableRow>
                           )
                         })}
@@ -346,7 +349,10 @@ export default function EmployeeDashboard({
       case 'notifications':
           return <EmployeeNotifications notifications={notifications} />;
       default:
-        return <div>선택된 뷰가 없습니다.</div>;
+        return <div className="flex flex-col items-center justify-center h-40 text-center">
+                  <Inbox className="h-10 w-10 text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">새로운 알림이 없습니다.</p>
+               </div>;
     }
   }
 
