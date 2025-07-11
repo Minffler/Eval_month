@@ -99,7 +99,7 @@ function Calendar({
                 if (newValue === undefined) {
                   return;
                 }
-                const newDate = new Date(props.currentMonth || new Date());
+                const newDate = new Date(props.currentMonth ?? new Date());
                 if (props.name === 'months') {
                     newDate.setMonth(parseInt(newValue, 10));
                 } else if (props.name === 'years') {
