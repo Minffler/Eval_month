@@ -61,7 +61,7 @@ const adminNavItems: NavItem[] = [
     children: [
       { id: 'file-upload', label: '파일 업로드', icon: Upload },
       { id: 'evaluator-management', label: '평가자 관리', icon: Users },
-      { id: 'system-standards', label: '시스템 기준 관리', icon: Settings2 },
+      { id: 'system-standards', label: '시스템 기준 관리', icon: Settings },
     ],
   },
 ];
