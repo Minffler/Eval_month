@@ -3,7 +3,7 @@
 import { useAuth } from '@/contexts/auth-context';
 import { RoleSwitcher } from './role-switcher';
 import { Button } from '@/components/ui/button';
-import { Bell, FolderKanban } from 'lucide-react';
+import { Bell, Inbox } from 'lucide-react';
 import {
   Popover,
   PopoverContent,
@@ -118,7 +118,7 @@ export default function Header({ selectedDate, onDateChange }: HeaderProps) {
             <Popover onOpenChange={(open) => { if (open) markApprovalsAsRead()}}>
               <PopoverTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full relative">
-                    <FolderKanban className="h-5 w-5" />
+                    <Inbox className="h-5 w-5" />
                     {unreadApprovalCount > 0 && (
                       <span className="absolute top-1 right-1 flex h-3 w-3">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>

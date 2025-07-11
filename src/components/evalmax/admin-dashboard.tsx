@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, FileCheck, Bot, Upload, LayoutDashboard, Settings, Download, Bell, ArrowUpDown, ArrowUp, ArrowDown, Eye, ClipboardX, ChevronUp, ChevronDown, CheckCircle2, ChevronsUpDown, Save, X, ThumbsUp, ThumbsDown, FolderKanban } from 'lucide-react';
+import { Users, FileCheck, Bot, Upload, LayoutDashboard, Settings, Download, Bell, ArrowUpDown, ArrowUp, ArrowDown, Eye, ClipboardX, ChevronUp, ChevronDown, CheckCircle2, ChevronsUpDown, Save, X, ThumbsUp, ThumbsDown, Inbox } from 'lucide-react';
 import { GradeHistogram } from './grade-histogram';
 import {
   Table,
@@ -910,7 +910,7 @@ export default function AdminDashboard({
                     </Table>
                   ) : (
                      <div className="flex flex-col items-center justify-center h-40 text-center">
-                        <FolderKanban className="h-10 w-10 text-muted-foreground mb-4" />
+                        <Inbox className="h-10 w-10 text-muted-foreground mb-4" />
                         <p className="text-muted-foreground">새로운 결재가 없습니다.</p>
                    </div>
                   )}
