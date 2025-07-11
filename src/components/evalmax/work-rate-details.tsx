@@ -99,55 +99,53 @@ const DailyAttendanceIcon = ({ isShortenedDay }: { isShortenedDay: boolean }) =>
 };
 
 const DatePicker = ({ value, onChange }: { value: string, onChange: (date: string) => void }) => {
-    const { year, month, day } = React.useMemo(() => {
+    const [year, setYear] = React.useState<string>('');
+    const [month, setMonth] = React.useState<string>('');
+    const [day, setDay] = React.useState<string>('');
+
+    React.useEffect(() => {
         if (value && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
-            const date = new Date(value + "T00:00:00Z"); // Use UTC to avoid timezone issues
-            return {
-                year: date.getUTCFullYear(),
-                month: date.getUTCMonth() + 1,
-                day: date.getUTCDate()
-            };
+            const [y, m, d] = value.split('-');
+            setYear(y);
+            setMonth(m);
+            setDay(d);
+        } else {
+             setYear(''); setMonth(''); setDay('');
         }
-        return { year: undefined, month: undefined, day: undefined };
     }, [value]);
+    
+    const handleDateChange = (part: 'year' | 'month' | 'day', val: string) => {
+        let newYear = part === 'year' ? val : year;
+        let newMonth = part === 'month' ? val : month;
+        let newDay = part === 'day' ? val : day;
 
-    const years = Array.from({ length: 11 }, (_, i) => new Date().getFullYear() - 5 + i);
-    const months = Array.from({ length: 12 }, (_, i) => i + 1);
-
-    const handleDatePartChange = (part: 'year' | 'month' | 'day', newValue: number) => {
-        const currentYear = year || new Date().getFullYear();
-        const currentMonth = month || new Date().getMonth() + 1;
-        const currentDay = day || new Date().getDate();
-
-        let newDate;
-        if (part === 'year') newDate = new Date(Date.UTC(newValue, currentMonth - 1, currentDay));
-        else if (part === 'month') newDate = new Date(Date.UTC(currentYear, newValue - 1, currentDay));
-        else newDate = new Date(Date.UTC(currentYear, currentMonth - 1, newValue));
-        
-        onChange(newDate.toISOString().split('T')[0]);
+        if (newYear && newMonth && newDay) {
+            onChange(`${newYear}-${newMonth.padStart(2,'0')}-${newDay.padStart(2,'0')}`);
+        }
     };
+    
+    const years = Array.from({ length: 11 }, (_, i) => (new Date().getFullYear() - 5 + i).toString());
+    const months = Array.from({ length: 12 }, (_, i) => (i + 1).toString());
 
     return (
         <div className="flex gap-2 items-center">
-            <Select value={year?.toString() ?? ''} onValueChange={(val) => handleDatePartChange('year', parseInt(val, 10))}>
+            <Select value={year} onValueChange={(val) => handleDateChange('year', val)}>
                 <SelectTrigger className="w-[100px]"><SelectValue placeholder="년도" /></SelectTrigger>
-                <SelectContent>{years.map(y => <SelectItem key={y} value={y.toString()}>{y}년</SelectItem>)}</SelectContent>
+                <SelectContent>{years.map(y => <SelectItem key={y} value={y}>{y}년</SelectItem>)}</SelectContent>
             </Select>
-            <Select value={month?.toString() ?? ''} onValueChange={(val) => handleDatePartChange('month', parseInt(val, 10))}>
+            <Select value={month} onValueChange={(val) => handleDateChange('month', val)}>
                 <SelectTrigger className="w-[80px]"><SelectValue placeholder="월" /></SelectTrigger>
-                <SelectContent>{months.map(m => <SelectItem key={m} value={m.toString()}>{m}월</SelectItem>)}</SelectContent>
+                <SelectContent>{months.map(m => <SelectItem key={m} value={m}>{m}월</SelectItem>)}</SelectContent>
             </Select>
             <Input
                 type="number"
-                value={day ?? ''}
+                value={day}
                 onChange={(e) => {
-                    const newDay = parseInt(e.target.value, 10);
-                    if (!isNaN(newDay) && newDay >= 1 && newDay <= 31) {
-                        handleDatePartChange('day', newDay);
-                    } else if (e.target.value === '') {
-                        // Allow clearing the input
-                        const today = new Date();
-                        onChange(new Date(Date.UTC(year || today.getFullYear(), (month || today.getMonth() + 1) -1, 1)).toISOString().split('T')[0])
+                    const newDay = e.target.value;
+                    if (Number(newDay) >= 1 && Number(newDay) <= 31) {
+                        handleDateChange('day', newDay);
+                    } else if (newDay === '') {
+                        setDay('');
                     }
                 }}
                 placeholder="일"
@@ -277,7 +275,7 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
       }));
       fileName = `${selectedDate.year}.${selectedDate.month}_일근태상세.xlsx`;
     }
-    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const worksheet = XLSX.utils.sheet_to_json(dataToExport);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, '상세내역');
     XLSX.writeFile(workbook, fileName);

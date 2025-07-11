@@ -140,8 +140,9 @@ export default function AdminDashboard({
   const [isPayoutChartOpen, setIsPayoutChartOpen] = React.useState(false);
   const [dashboardFilter, setDashboardFilter] = React.useState('전체');
   const [popoverOpen, setPopoverOpen] = React.useState(false);
+
   const { toast } = useToast();
-  const { addNotification, notifications, markAllAsRead, unreadCount } = useNotifications();
+  const { addNotification } = useNotifications();
 
   React.useEffect(() => {
     setResults(initialResults);
@@ -720,7 +721,11 @@ export default function AdminDashboard({
                 </div>
              );
         case 'evaluator-view': {
-            const selectedEvaluatorName = selectedEvaluatorId ? sortedEvaluatorStats.find(s => s.evaluatorUniqueId === selectedEvaluatorId)?.evaluatorName : '';
+            const evaluators = React.useMemo(() => {
+                const evaluatorIds = new Set(allEmployees.map(e => e.evaluatorId).filter(Boolean));
+                return allEmployees.filter(e => evaluatorIds.has(e.uniqueId));
+            }, [allEmployees]);
+            const selectedEvaluatorName = selectedEvaluatorId ? evaluators.find(s => s.uniqueId === selectedEvaluatorId)?.name : '';
             const triggerText = selectedEvaluatorId ? `${selectedEvaluatorName} (${selectedEvaluatorId})` : "평가자를 선택하세요";
             
             return (
@@ -749,16 +754,16 @@ export default function AdminDashboard({
                                     <CommandList>
                                     <CommandEmpty>검색 결과가 없습니다.</CommandEmpty>
                                     <CommandGroup>
-                                        {sortedEvaluatorStats.map(stat => (
+                                        {evaluators.map(stat => (
                                         <CommandItem
-                                            key={stat.evaluatorUniqueId}
-                                            value={`${stat.evaluatorName} ${stat.evaluatorUniqueId}`}
+                                            key={stat.uniqueId}
+                                            value={`${stat.name} ${stat.uniqueId}`}
                                             onSelect={() => {
-                                                setSelectedEvaluatorId(stat.evaluatorUniqueId);
+                                                setSelectedEvaluatorId(stat.uniqueId);
                                                 setPopoverOpen(false);
                                             }}
                                         >
-                                            {stat.evaluatorName} ({stat.evaluatorUniqueId})
+                                            {stat.name} ({stat.uniqueId})
                                         </CommandItem>
                                         ))}
                                     </CommandGroup>
@@ -809,43 +814,6 @@ export default function AdminDashboard({
             return <WorkRateDetails type="shortenedWork" data={workRateDetails.shortenedWorkDetails} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} onDataChange={() => {}}/>;
         case 'daily-attendance-details':
             return <WorkRateDetails type="dailyAttendance" data={workRateDetails.dailyAttendanceDetails} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} onDataChange={() => {}}/>;
-        case 'notifications': {
-            return (
-                <Card>
-                    <CardHeader className="flex flex-row justify-between items-center">
-                        <div>
-                            <CardTitle>알림함</CardTitle>
-                            <CardDescription>최근 알림 내역입니다.</CardDescription>
-                        </div>
-                        {unreadCount > 0 && (
-                             <Button variant="outline" size="sm" onClick={markAllAsRead}>
-                                <CheckCircle2 className="mr-2 h-4 w-4" />
-                                모두 읽음으로 표시
-                            </Button>
-                        )}
-                    </CardHeader>
-                    <CardContent>
-                        {notifications.length > 0 ? (
-                            <ul className="space-y-4">
-                            {notifications.map((notification) => (
-                                <li key={notification.id} className={cn("p-3 rounded-md border", !notification.isRead && "bg-muted/50")}>
-                                    <p className="text-sm font-medium">{notification.message}</p>
-                                    <p className="text-xs text-muted-foreground mt-1">
-                                        {format(new Date(notification.date), "yyyy.MM.dd HH:mm", { locale: ko })}
-                                    </p>
-                                </li>
-                            ))}
-                            </ul>
-                        ) : (
-                           <div className="flex flex-col items-center justify-center h-40 text-center">
-                                <Bell className="h-10 w-10 text-muted-foreground mb-4" />
-                                <p className="text-muted-foreground">새로운 알림이 없습니다.</p>
-                           </div>
-                        )}
-                    </CardContent>
-                </Card>
-            )
-        }
         default:
             return <div>선택된 뷰가 없습니다.</div>
     }

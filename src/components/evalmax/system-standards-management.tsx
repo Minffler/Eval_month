@@ -39,7 +39,6 @@ interface SystemStandardsManagementProps {
   setHolidays: React.Dispatch<React.SetStateAction<Holiday[]>>;
 }
 
-
 const GradeManagement = ({ gradingScale, setGradingScale, onSave }: Pick<SystemStandardsManagementProps, 'gradingScale' | 'setGradingScale'> & { onSave: () => void }) => {
   const { toast } = useToast();
   const [localGrades, setLocalGrades] = React.useState(
@@ -224,7 +223,7 @@ const AttendanceManagement = ({
     <CardContent className="pt-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-            <h4 className="font-semibold mb-2">근무기준 설정</h4>
+            <h4 className="font-semibold mb-2">근태 종류별 차감 설정</h4>
             <div className="border rounded-lg">
                 <Table>
                 <TableHeader><TableRow>
@@ -330,7 +329,7 @@ export default function SystemStandardsManagement(props: SystemStandardsManageme
                         </div>
                         {attendanceLastUpdated && (
                             <p className="text-xs text-muted-foreground pt-1 whitespace-nowrap">
-                                {format(attendanceLastUpdated, "yyyy.MM.dd HH:mm", { locale: ko })} 업데이트
+                                {format(attendanceLastUpdated, "yyyy.MM.dd HH:mm", { locale: ko })}
                             </p>
                         )}
                     </div>
@@ -359,7 +358,7 @@ export default function SystemStandardsManagement(props: SystemStandardsManageme
                         </div>
                         {gradeLastUpdated && (
                             <p className="text-xs text-muted-foreground pt-1 whitespace-nowrap">
-                                {format(gradeLastUpdated, "yyyy.MM.dd HH:mm", { locale: ko })} 업데이트
+                                {format(gradeLastUpdated, "yyyy.MM.dd HH:mm", { locale: ko })}
                             </p>
                         )}
                     </div>

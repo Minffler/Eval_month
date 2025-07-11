@@ -55,25 +55,30 @@ export function Sidebar({ navItems, activeView, setActiveView, isOpen, setIsOpen
     }
   };
 
-  const NavLink = ({ item, hasUnread }: { item: NavItem, hasUnread: boolean }) => (
-    <Button
-      variant={activeView === item.id ? 'secondary' : 'ghost'}
-      className={cn("w-full justify-start gap-3", !isOpen && "justify-center")}
-      onClick={() => handleNavClick(item.id, !!item.children)}
-      title={item.label}
-    >
-        <div className="relative">
-            <item.icon className="h-5 w-5 flex-shrink-0" />
-            {hasUnread && (
-                <span className={cn("absolute flex h-2.5 w-2.5", isOpen ? "-top-0.5 -right-0.5" : "top-0 right-0")}>
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-                </span>
-            )}
-        </div>
-      {isOpen && <span className="truncate">{item.label}</span>}
-    </Button>
-  );
+  const NavLink = ({ item, hasUnread }: { item: NavItem, hasUnread: boolean }) => {
+    const isNotificationBell = item.id === 'notifications';
+    const effectiveUnreadCount = isNotificationBell ? unreadCount : 0;
+  
+    return (
+      <Button
+        variant={activeView === item.id ? 'secondary' : 'ghost'}
+        className={cn("w-full justify-start gap-3", !isOpen && "justify-center")}
+        onClick={() => handleNavClick(item.id, !!item.children)}
+        title={item.label}
+      >
+          <div className="relative">
+              <item.icon className="h-5 w-5 flex-shrink-0" />
+              {effectiveUnreadCount > 0 && (
+                  <span className={cn("absolute flex h-2.5 w-2.5", isOpen ? "-top-0.5 -right-0.5" : "top-0 right-0")}>
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                  </span>
+              )}
+          </div>
+        {isOpen && <span className="truncate">{item.label}</span>}
+      </Button>
+    );
+  };
   
   const userProfile = user ? (
     <div className={cn("flex items-center justify-between gap-3 p-2", isOpen && "pl-4")}>
@@ -126,7 +131,7 @@ export function Sidebar({ navItems, activeView, setActiveView, isOpen, setIsOpen
                         </AccordionTrigger>
                         <AccordionContent className="pl-6 pb-0 space-y-1">
                             {item.children.map((child) => (
-                                <NavLink key={child.id} item={child} hasUnread={child.id === 'notifications' && unreadCount > 0} />
+                                <NavLink key={child.id} item={child} hasUnread={false} />
                             ))}
                         </AccordionContent>
                       </AccordionItem>
@@ -169,7 +174,7 @@ export function Sidebar({ navItems, activeView, setActiveView, isOpen, setIsOpen
         </ScrollArea>
         <div className="mt-auto border-t">
             <div className="p-2">
-              <NavLink item={notificationItem} hasUnread={unreadCount > 0} />
+              <NavLink item={notificationItem} hasUnread={true} />
             </div>
             <Separator />
             {userProfile}

@@ -245,17 +245,20 @@ export default function WorkRateManagement({ results, allEmployees, workRateDeta
   const handleApplyWorkRate = () => {
       const summariesMap = new Map(workRateSummaries.map(s => [s.uniqueId, s.monthlyWorkRate]));
       let updatedCount = 0;
+      let evaluatorNotifications: Record<string, number> = {};
 
       const updatedResults = results.map(result => {
           const newWorkRate = summariesMap.get(result.uniqueId);
           if (newWorkRate !== undefined && newWorkRate !== result.workRate) {
               updatedCount++;
               const message = `${selectedDate.year}년 ${selectedDate.month}월 근무율이 ${(newWorkRate * 100).toFixed(1)}%로 반영되었습니다.`;
-              // Notify employee
               addNotification({ recipientId: result.uniqueId, message });
-              // Notify evaluator if exists
+              
               if(result.evaluatorId) {
-                addNotification({ recipientId: result.evaluatorId, message: `${result.name}님의 ${message}`});
+                if (!evaluatorNotifications[result.evaluatorId]) {
+                    evaluatorNotifications[result.evaluatorId] = 0;
+                }
+                evaluatorNotifications[result.evaluatorId]++;
               }
               return { ...result, workRate: newWorkRate };
           }
@@ -263,10 +266,17 @@ export default function WorkRateManagement({ results, allEmployees, workRateDeta
       });
       
       handleResultsUpdate(updatedResults);
+
+      if (updatedCount > 0) {
+        Object.entries(evaluatorNotifications).forEach(([evaluatorId, count]) => {
+            addNotification({ recipientId: evaluatorId, message: `담당 직원 ${count}명의 근무율이 업데이트되었습니다.`});
+        });
+        addNotification({ recipientId: '1911042', message: `총 ${updatedCount}명의 근무율이 업데이트되었습니다.`});
+      }
       
       toast({
           title: "반영 완료",
-          description: `총 ${updatedCount}명의 근무율이 업데이트되고 관련자에게 알림이 발송되었습니다.`
+          description: `총 ${updatedCount}명의 근무율이 업데이트되었습니다.`
       });
   }
 
