@@ -188,148 +188,150 @@ export default function SystemStandardsManagement({
   const filteredHolidays = localHolidays.filter(h => h.date.startsWith(String(selectedYear))).sort((a,b) => a.date.localeCompare(b.date));
 
   return (
-    <div className="space-y-6">
-      <Collapsible open={isAttendanceOpen} onOpenChange={setIsAttendanceOpen}>
-        <Card>
-          <CollapsibleTrigger asChild>
-            <div className="flex w-full cursor-pointer items-center justify-between p-4 rounded-lg hover:bg-muted/50 data-[state=open]:rounded-b-none">
-              <div>
-                <CardTitle>근무기준 설정</CardTitle>
-                <CardDescription>근태 종류와 그에 따른 차감 일수를 정의합니다. 이 설정은 근무율 계산에 사용됩니다.</CardDescription>
-              </div>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <span className="sr-only">보기/숨기기</span>
-                {isAttendanceOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-              </Button>
-            </div>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <CardContent>
-              <div className="border rounded-lg">
-                <Table>
-                  <TableHeader><TableRow>
-                      <TableHead className="py-2 px-3 text-center">근태명</TableHead>
-                      <TableHead className="py-2 px-3 text-center">차감 일수 (단위: 일)</TableHead><TableHead></TableHead>
-                  </TableRow></TableHeader>
-                  <TableBody>
-                    {localTypes.map((type, index) => (
-                      <TableRow key={type.id}>
-                        <TableCell className="py-1 px-2 text-center"><Input value={type.name} onChange={(e) => handleTypeInputChange(index, 'name', e.target.value)} className="w-40 h-8 mx-auto"/></TableCell>
-                        <TableCell className="py-1 px-2 text-center"><Input type="number" step="0.01" value={type.deductionDays} onChange={(e) => handleTypeInputChange(index, 'deductionDays', e.target.value)} className="w-40 h-8 mx-auto"/></TableCell>
-                        <TableCell className="py-1 px-2 text-center"><Button variant="ghost" size="icon" onClick={() => handleRemoveType(index)} className="h-8 w-8"><Trash2 className="h-4 w-4 text-destructive" /></Button></TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-              <div className="flex justify-between mt-4">
-                <Button variant="outline" onClick={handleAddNewType}><PlusCircle className="mr-2 h-4 w-4" />새 근태 종류 추가</Button>
-                <Button onClick={handleSaveTypes}><Save className="mr-2 h-4 w-4" />근무기준 저장</Button>
-              </div>
-            </CardContent>
-          </CollapsibleContent>
-        </Card>
-      </Collapsible>
-      
-      <Collapsible open={isHolidayOpen} onOpenChange={setIsHolidayOpen}>
-        <Card>
-          <CollapsibleTrigger asChild>
-            <div className="flex w-full cursor-pointer items-center justify-between p-4 rounded-lg hover:bg-muted/50 data-[state=open]:rounded-b-none">
-              <div>
-                <CardTitle>공휴일 관리</CardTitle>
-                <CardDescription>{selectedYear}년 영업일 계산 시 제외될 공휴일을 관리합니다.</CardDescription>
-              </div>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <span className="sr-only">보기/숨기기</span>
-                {isHolidayOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-              </Button>
-            </div>
-          </CollapsibleTrigger>
-           <CollapsibleContent>
-            <CardHeader className="pt-0">
-              <div className="flex justify-end">
-                <Select value={String(selectedYear)} onValueChange={(yearStr) => setSelectedYear(parseInt(yearStr, 10))}>
-                    <SelectTrigger className="w-[120px]"><SelectValue placeholder="연도 선택" /></SelectTrigger>
-                    <SelectContent>{availableYears.map(year => <SelectItem key={year} value={String(year)}>{year}년</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="border rounded-lg">
-                <Table>
-                  <TableHeader><TableRow>
-                      <TableHead className="py-2 px-3 text-center">날짜 (YYYY-MM-DD)</TableHead>
-                      <TableHead className="py-2 px-3 text-center">공휴일명</TableHead><TableHead></TableHead>
-                  </TableRow></TableHeader>
-                  <TableBody>
-                    {filteredHolidays.map((holiday) => {
-                      const index = localHolidays.findIndex(h => h.id === holiday.id);
-                      return (
-                        <TableRow key={holiday.id}>
-                          <TableCell className="py-1 px-2 text-center">
-                            <Input value={holiday.date} onChange={(e) => handleHolidayDateChange(index, e.target.value)} onBlur={(e) => validateHolidayDate(e.target.value, holiday.id)} className={cn("w-40 h-8 mx-auto", holidayErrors[holiday.id] && "border-destructive")} placeholder="YYYY-MM-DD"/>
-                            {holidayErrors[holiday.id] && <p className="text-xs text-destructive mt-1">{holidayErrors[holiday.id]}</p>}
-                          </TableCell>
-                          <TableCell className="py-1 px-2 text-center"><Input value={holiday.name} onChange={(e) => handleHolidayNameChange(index, e.target.value)} className="w-40 h-8 mx-auto"/></TableCell>
-                          <TableCell className="py-1 px-2 text-right"><Button variant="ghost" size="icon" onClick={() => handleRemoveHoliday(holiday.id)} className="h-8 w-8"><Trash2 className="h-4 w-4 text-destructive" /></Button></TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-              <div className="flex justify-between mt-4">
-                <Button variant="outline" onClick={handleAddNewHoliday}><PlusCircle className="mr-2 h-4 w-4" />새 공휴일 추가</Button>
-                <Button onClick={handleSaveHolidays}><Save className="mr-2 h-4 w-4" />공휴일 저장</Button>
-              </div>
-            </CardContent>
-          </CollapsibleContent>
-        </Card>
-      </Collapsible>
-
-      <Collapsible open={isGradeOpen} onOpenChange={setIsGradeOpen}>
-        <Card>
+    <div className="max-w-5xl mx-auto">
+      <div className="space-y-6">
+        <Collapsible open={isAttendanceOpen} onOpenChange={setIsAttendanceOpen}>
+          <Card>
             <CollapsibleTrigger asChild>
-                <div className="flex w-full cursor-pointer items-center justify-between p-4 rounded-lg hover:bg-muted/50 data-[state=open]:rounded-b-none">
-                    <div>
-                        <CardTitle>등급/점수 관리</CardTitle>
-                        <CardDescription>평가 등급, 점수, 지급률을 관리합니다.</CardDescription>
-                    </div>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <span className="sr-only">보기/숨기기</span>
-                        {isGradeOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                    </Button>
+              <div className="flex w-full cursor-pointer items-center justify-between p-4 rounded-lg hover:bg-muted/50 data-[state=open]:rounded-b-none">
+                <div>
+                  <CardTitle>근무기준 설정</CardTitle>
+                  <CardDescription>근태 종류와 그에 따른 차감 일수를 정의합니다. 이 설정은 근무율 계산에 사용됩니다.</CardDescription>
                 </div>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <span className="sr-only">보기/숨기기</span>
+                  {isAttendanceOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </Button>
+              </div>
             </CollapsibleTrigger>
             <CollapsibleContent>
-                <CardContent>
-                <div className="border rounded-lg overflow-x-auto">
-                    <Table>
+              <CardContent>
+                <div className="border rounded-lg">
+                  <Table>
                     <TableHeader><TableRow>
-                        <TableHead className="py-2 px-3 text-center">등급</TableHead><TableHead className="py-2 px-3 text-center">점수</TableHead>
-                        <TableHead className="py-2 px-3 text-center">지급률 (%)</TableHead><TableHead className="py-2 px-3 text-center">설명</TableHead><TableHead></TableHead>
+                        <TableHead className="py-2 px-3 text-center">근태명</TableHead>
+                        <TableHead className="py-2 px-3 text-center">차감 일수 (단위: 일)</TableHead><TableHead></TableHead>
                     </TableRow></TableHeader>
                     <TableBody>
-                        {localGrades.map((gradeItem, index) => (
-                        <TableRow key={index}>
-                            <TableCell className="py-1 px-2 text-center"><Input value={gradeItem.grade || ''} onChange={(e) => handleGradeNameChange(index, e.target.value)} className="w-20 h-8 mx-auto"/></TableCell>
-                            <TableCell className="py-1 px-2 text-center"><Input type="number" value={gradeItem.score} onChange={(e) => handleGradeInputChange(index, 'score', e.target.value)} className="w-20 h-8 mx-auto"/></TableCell>
-                            <TableCell className="py-1 px-2 text-center"><Input type="number" value={gradeItem.payoutRate} onChange={(e) => handleGradeInputChange(index, 'payoutRate', e.target.value)} className="w-24 h-8 mx-auto"/></TableCell>
-                            <TableCell className="py-1 px-2 text-center"><Input value={gradeItem.description} onChange={(e) => { const newGrades = [...localGrades]; newGrades[index].description = e.target.value; setLocalGrades(newGrades); }} className="w-full h-8 mx-auto"/></TableCell>
-                            <TableCell className="py-1 px-2 text-center"><Button variant="ghost" size="icon" onClick={() => handleRemoveGrade(index)} className="h-8 w-8"><Trash2 className="h-4 w-4 text-destructive" /></Button></TableCell>
+                      {localTypes.map((type, index) => (
+                        <TableRow key={type.id}>
+                          <TableCell className="py-1 px-2 text-center"><Input value={type.name} onChange={(e) => handleTypeInputChange(index, 'name', e.target.value)} className="w-40 h-8 mx-auto"/></TableCell>
+                          <TableCell className="py-1 px-2 text-center"><Input type="number" step="0.01" value={type.deductionDays} onChange={(e) => handleTypeInputChange(index, 'deductionDays', e.target.value)} className="w-40 h-8 mx-auto"/></TableCell>
+                          <TableCell className="py-1 px-2 text-center"><Button variant="ghost" size="icon" onClick={() => handleRemoveType(index)} className="h-8 w-8"><Trash2 className="h-4 w-4 text-destructive" /></Button></TableCell>
                         </TableRow>
-                        ))}
+                      ))}
                     </TableBody>
-                    </Table>
+                  </Table>
                 </div>
                 <div className="flex justify-between mt-4">
-                    <Button variant="outline" onClick={handleAddNewGrade}><PlusCircle className="mr-2 h-4 w-4" />새 등급 추가</Button>
-                    <Button onClick={handleSaveChanges}>변경사항 저장</Button>
+                  <Button variant="outline" onClick={handleAddNewType}><PlusCircle className="mr-2 h-4 w-4" />새 근태 종류 추가</Button>
+                  <Button onClick={handleSaveTypes}><Save className="mr-2 h-4 w-4" />근무기준 저장</Button>
                 </div>
-                </CardContent>
+              </CardContent>
             </CollapsibleContent>
-        </Card>
-      </Collapsible>
+          </Card>
+        </Collapsible>
+        
+        <Collapsible open={isHolidayOpen} onOpenChange={setIsHolidayOpen}>
+          <Card>
+            <CollapsibleTrigger asChild>
+              <div className="flex w-full cursor-pointer items-center justify-between p-4 rounded-lg hover:bg-muted/50 data-[state=open]:rounded-b-none">
+                <div>
+                  <CardTitle>공휴일 관리</CardTitle>
+                  <CardDescription>{selectedYear}년 영업일 계산 시 제외될 공휴일을 관리합니다.</CardDescription>
+                </div>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <span className="sr-only">보기/숨기기</span>
+                  {isHolidayOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </Button>
+              </div>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardHeader className="pt-0">
+                <div className="flex justify-end">
+                  <Select value={String(selectedYear)} onValueChange={(yearStr) => setSelectedYear(parseInt(yearStr, 10))}>
+                      <SelectTrigger className="w-[120px]"><SelectValue placeholder="연도 선택" /></SelectTrigger>
+                      <SelectContent>{availableYears.map(year => <SelectItem key={year} value={String(year)}>{year}년</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="border rounded-lg">
+                  <Table>
+                    <TableHeader><TableRow>
+                        <TableHead className="py-2 px-3 text-center">날짜 (YYYY-MM-DD)</TableHead>
+                        <TableHead className="py-2 px-3 text-center">공휴일명</TableHead><TableHead></TableHead>
+                    </TableRow></TableHeader>
+                    <TableBody>
+                      {filteredHolidays.map((holiday) => {
+                        const index = localHolidays.findIndex(h => h.id === holiday.id);
+                        return (
+                          <TableRow key={holiday.id}>
+                            <TableCell className="py-1 px-2 text-center">
+                              <Input value={holiday.date} onChange={(e) => handleHolidayDateChange(index, e.target.value)} onBlur={(e) => validateHolidayDate(e.target.value, holiday.id)} className={cn("w-40 h-8 mx-auto", holidayErrors[holiday.id] && "border-destructive")} placeholder="YYYY-MM-DD"/>
+                              {holidayErrors[holiday.id] && <p className="text-xs text-destructive mt-1">{holidayErrors[holiday.id]}</p>}
+                            </TableCell>
+                            <TableCell className="py-1 px-2 text-center"><Input value={holiday.name} onChange={(e) => handleHolidayNameChange(index, e.target.value)} className="w-40 h-8 mx-auto"/></TableCell>
+                            <TableCell className="py-1 px-2 text-right"><Button variant="ghost" size="icon" onClick={() => handleRemoveHoliday(holiday.id)} className="h-8 w-8"><Trash2 className="h-4 w-4 text-destructive" /></Button></TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+                <div className="flex justify-between mt-4">
+                  <Button variant="outline" onClick={handleAddNewHoliday}><PlusCircle className="mr-2 h-4 w-4" />새 공휴일 추가</Button>
+                  <Button onClick={handleSaveHolidays}><Save className="mr-2 h-4 w-4" />공휴일 저장</Button>
+                </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
+
+        <Collapsible open={isGradeOpen} onOpenChange={setIsGradeOpen}>
+          <Card>
+              <CollapsibleTrigger asChild>
+                  <div className="flex w-full cursor-pointer items-center justify-between p-4 rounded-lg hover:bg-muted/50 data-[state=open]:rounded-b-none">
+                      <div>
+                          <CardTitle>등급/점수 관리</CardTitle>
+                          <CardDescription>평가 등급, 점수, 지급률을 관리합니다.</CardDescription>
+                      </div>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <span className="sr-only">보기/숨기기</span>
+                          {isGradeOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      </Button>
+                  </div>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                  <CardContent>
+                  <div className="border rounded-lg overflow-x-auto">
+                      <Table>
+                      <TableHeader><TableRow>
+                          <TableHead className="py-2 px-3 text-center">등급</TableHead><TableHead className="py-2 px-3 text-center">점수</TableHead>
+                          <TableHead className="py-2 px-3 text-center">지급률 (%)</TableHead><TableHead className="py-2 px-3 text-center">설명</TableHead><TableHead></TableHead>
+                      </TableRow></TableHeader>
+                      <TableBody>
+                          {localGrades.map((gradeItem, index) => (
+                          <TableRow key={index}>
+                              <TableCell className="py-1 px-2 text-center"><Input value={gradeItem.grade || ''} onChange={(e) => handleGradeNameChange(index, e.target.value)} className="w-20 h-8 mx-auto"/></TableCell>
+                              <TableCell className="py-1 px-2 text-center"><Input type="number" value={gradeItem.score} onChange={(e) => handleGradeInputChange(index, 'score', e.target.value)} className="w-20 h-8 mx-auto"/></TableCell>
+                              <TableCell className="py-1 px-2 text-center"><Input type="number" value={gradeItem.payoutRate} onChange={(e) => handleGradeInputChange(index, 'payoutRate', e.target.value)} className="w-24 h-8 mx-auto"/></TableCell>
+                              <TableCell className="py-1 px-2 text-center"><Input value={gradeItem.description} onChange={(e) => { const newGrades = [...localGrades]; newGrades[index].description = e.target.value; setLocalGrades(newGrades); }} className="w-full h-8 mx-auto"/></TableCell>
+                              <TableCell className="py-1 px-2 text-center"><Button variant="ghost" size="icon" onClick={() => handleRemoveGrade(index)} className="h-8 w-8"><Trash2 className="h-4 w-4 text-destructive" /></Button></TableCell>
+                          </TableRow>
+                          ))}
+                      </TableBody>
+                      </Table>
+                  </div>
+                  <div className="flex justify-between mt-4">
+                      <Button variant="outline" onClick={handleAddNewGrade}><PlusCircle className="mr-2 h-4 w-4" />새 등급 추가</Button>
+                      <Button onClick={handleSaveChanges}><Save className="mr-2 h-4 w-4" />등급/점수 저장</Button>
+                  </div>
+                  </CardContent>
+              </CollapsibleContent>
+          </Card>
+        </Collapsible>
+      </div>
     </div>
   );
 }
