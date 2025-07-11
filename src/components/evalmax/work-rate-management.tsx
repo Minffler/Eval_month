@@ -20,6 +20,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface WorkRateManagementProps {
   results: EvaluationResult[];
@@ -306,24 +307,25 @@ export default function WorkRateManagement({ results, workRateDetails, selectedD
                 <Button onClick={handleApplyWorkRate} size="sm">근무율 반영</Button>
               </div>
             </div>
-             <div className="flex items-center gap-4 pt-4">
-                <span className="text-sm font-semibold text-muted-foreground">미근로시간 포함 항목:</span>
-                <div className="flex gap-2">
-                    {columnConfig.map(col => (
-                        <Button
-                            key={col.id}
-                            variant={visibleColumns.has(col.id) ? 'secondary' : 'outline'}
-                            size="sm"
-                            onClick={() => handleToggleColumn(col.id)}
-                            className={cn("text-xs h-7 px-2", !visibleColumns.has(col.id) && "bg-muted text-muted-foreground hover:bg-muted/80 border-muted-foreground/20")}
-                        >
-                            {col.label}
-                        </Button>
-                    ))}
-                </div>
-            </div>
-            <div className="pt-2 text-sm text-muted-foreground">
-                <span className="font-semibold text-foreground">월 소정근로시간:</span> 8시간 * {businessDays}일 = <span className="font-bold text-primary">{monthlyStandardHours}</span>시간
+            <div className="flex justify-between items-center pt-4">
+              <div className="text-sm text-muted-foreground">
+                  <span className="font-semibold text-foreground">월 소정근로시간:</span> 8시간 * {businessDays}일 = <span className="font-bold text-primary">{monthlyStandardHours}</span>시간
+              </div>
+              <Tabs defaultValue="all">
+                <TabsList className="h-8">
+                  {columnConfig.map(col => (
+                    <TabsTrigger
+                      key={col.id}
+                      value={col.id}
+                      className="text-xs px-2 py-1 h-auto"
+                      data-state={visibleColumns.has(col.id) ? 'active' : 'inactive'}
+                      onClick={() => handleToggleColumn(col.id)}
+                    >
+                      {col.label}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
             </div>
         </CardHeader>
         <CardContent>
