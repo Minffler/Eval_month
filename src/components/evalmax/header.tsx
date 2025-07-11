@@ -127,6 +127,7 @@ export default function Header({ selectedDate, onDateChange }: HeaderProps) {
               <PopoverContent className="w-96" align="end">
                 <div className="p-4">
                   <h3 className="font-semibold text-lg">알림</h3>
+                   <p className="text-xs text-muted-foreground">최근 3개월 동안의 알림만 표시됩니다.</p>
                 </div>
                 <Separator />
                 <div className="p-2 max-h-96 overflow-y-auto">

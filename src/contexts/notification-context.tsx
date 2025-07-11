@@ -4,6 +4,7 @@
 import * as React from 'react';
 import type { AppNotification } from '@/lib/types';
 import { useAuth } from './auth-context';
+import { subMonths } from 'date-fns';
 
 const NOTIFICATIONS_STORAGE_KEY = 'pl_eval_notifications';
 
@@ -43,13 +44,23 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     const [allNotifications, setAllNotifications] = React.useState<AppNotification[]>([]);
 
     React.useEffect(() => {
-        setAllNotifications(getAllNotifications());
+        // Load notifications and clean up old ones on mount
+        const threeMonthsAgo = subMonths(new Date(), 3);
+        const currentNotifications = getAllNotifications();
+        const recentNotifications = currentNotifications.filter(n => new Date(n.date) >= threeMonthsAgo);
+        
+        setAllNotifications(recentNotifications);
+        
+        // If there were old notifications, update storage
+        if (currentNotifications.length !== recentNotifications.length) {
+            saveAllNotifications(recentNotifications);
+        }
     }, []);
 
     const notificationsForUser = React.useMemo(() => {
         if (!user) return [];
         return allNotifications
-            .filter(n => n.recipientId === user.uniqueId || n.recipientId === 'all') // 'all' for system-wide notifications
+            .filter(n => n.recipientId === user.uniqueId || n.recipientId === 'all')
             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     }, [user, allNotifications]);
 
@@ -65,10 +76,13 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             isRead: false,
         };
 
+        const threeMonthsAgo = subMonths(new Date(), 3);
         setAllNotifications(prev => {
-            const updated = [newNotification, ...prev];
-            saveAllNotifications(updated);
-            return updated;
+            const updatedUnfiltered = [newNotification, ...prev];
+            // Clean up notifications older than 3 months
+            const updatedFiltered = updatedUnfiltered.filter(n => new Date(n.date) >= threeMonthsAgo);
+            saveAllNotifications(updatedFiltered);
+            return updatedFiltered;
         });
     }, []);
 
