@@ -163,14 +163,14 @@ const DraggableTableRow = ({ employee, gradingScale, selected, onSelect, onGrade
         <TableRow ref={setNodeRef} style={style} data-state={selected ? "selected" : "unselected"}>
             <TableCell className="p-2 w-[80px]">
                 <div className='flex items-center gap-1'>
+                  <Button variant="ghost" size="icon" className="cursor-grab h-8 w-8" {...attributes} {...listeners}>
+                      <GripVertical className="h-4 w-4" />
+                  </Button>
                   <Checkbox
                       checked={selected}
                       onCheckedChange={(checked) => onSelect(employee.id, Boolean(checked))}
                       aria-label={`Select ${employee.name}`}
                   />
-                  <Button variant="ghost" size="icon" className="cursor-grab h-8 w-8" {...attributes} {...listeners}>
-                      <GripVertical className="h-4 w-4" />
-                  </Button>
                 </div>
             </TableCell>
             {isBGroupView ? (
@@ -632,7 +632,7 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, handleRe
         </Button>
         <Button onClick={handleSave} size="lg"><Check className="mr-2"/> 모든 평가 저장</Button>
       </div>
-      <DragOverlay>{activeId && activeEmployee ? (<Table className="bg-background shadow-lg relative"><TableBody><TableRow><TableCell className="p-1 w-[80px]"><div className='flex items-center gap-1'><Checkbox checked={selectedIds.has(activeId)} readOnly /><Button variant="ghost" size="icon" className="cursor-grabbing h-8 w-8"><GripVertical className="h-4 w-4" /></Button></div>{isBulkDrag && <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">{selectedIds.size}</div>}</TableCell>
+      <DragOverlay>{activeId && activeEmployee ? (<Table className="bg-background shadow-lg relative"><TableBody><TableRow><TableCell className="p-1 w-[80px]"><div className='flex items-center gap-1'><Button variant="ghost" size="icon" className="cursor-grabbing h-8 w-8"><GripVertical className="h-4 w-4" /></Button><Checkbox checked={selectedIds.has(activeId)} readOnly /></div>{isBulkDrag && <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">{selectedIds.size}</div>}</TableCell>
       {isBGroupView ? (
           <TableCell className="py-1 px-2">
               <div className="flex items-center justify-center">
@@ -1149,7 +1149,7 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
         return <AssignmentManagementView 
                  myEmployees={myEmployees} 
                  currentMonthResults={currentMonthResults}
-                 allEmployees={allEmployees.filter(e => e.uniqueId !== effectiveUser.uniqueId)} // Exclude self
+                 allEmployees={allEmployees}
                  handleResultsUpdate={handleResultsUpdate}
                  evaluatorId={effectiveUser.uniqueId}
                  evaluatorName={effectiveUser.name}
