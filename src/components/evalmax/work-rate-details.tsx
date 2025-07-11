@@ -21,7 +21,7 @@ import { Progress } from '../ui/progress';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/auth-context';
 import { useNotifications } from '@/contexts/notification-context';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import {
   Dialog,
   DialogContent,
@@ -95,6 +95,7 @@ const DailyAttendanceIcon = ({ isShortenedDay }: { isShortenedDay: boolean }) =>
 export default function WorkRateDetails({ type, data, selectedDate, allEmployees, attendanceTypes, viewAs = 'admin' }: WorkRateDetailsProps) {
   const { user } = useAuth();
   const { addNotification } = useNotifications();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = React.useState('');
   const [sortConfig, setSortConfig] = React.useState<SortConfig<any>>(null);
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
@@ -180,18 +181,21 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
   
       if (selectedRowId) {
           const selectedRecord = data.find((item: any) => {
-              if (type === 'shortenedWork') {
-                  return `${item.uniqueId}-${item.startDate}-${item.endDate}-${item.type}` === selectedRowId;
-              }
-              return `${item.uniqueId}-${item.date}-${item.type}-${data.indexOf(item)}` === selectedRowId;
+              const rowId = type === 'shortenedWork'
+                  ? `${item.uniqueId}-${item.startDate}-${item.endDate}-${item.type}`
+                  : `${item.uniqueId}-${item.date}-${item.type}-${data.indexOf(item)}`;
+              return rowId === selectedRowId;
           });
           if (selectedRecord) {
               initialData = { ...selectedRecord };
           }
       } else {
-          if (viewAs === 'employee' && user) {
-            initialData = { uniqueId: user.uniqueId, name: user.name };
-          }
+           toast({
+              variant: 'destructive',
+              title: '오류',
+              description: '수정할 데이터를 선택해주세요.',
+           });
+           return;
       }
       
       if (type === 'shortenedWork' && !initialData.startTime && !initialData.endTime) {
@@ -254,14 +258,17 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
   }, [formData.uniqueId, allEmployees]);
 
   const renderDialogContent = () => {
-    const isEmployeeView = viewAs === 'employee';
 
     if (type === 'shortenedWork') {
       return (
         <div className="space-y-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="uniqueId" className="text-right">ID</Label>
-              <Input id="uniqueId" value={formData.uniqueId || ''} onChange={(e) => handleFormChange('uniqueId', e.target.value)} className="col-span-3" placeholder="대상자 ID" disabled={isEmployeeView} />
+              <Input id="uniqueId" value={formData.uniqueId || ''} className="col-span-3" disabled />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">이름</Label>
+              <Input id="name" value={formData.name || ''} className="col-span-3" disabled />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="type" className="text-right">구분</Label>
@@ -306,15 +313,13 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="startTime" className="text-right">출근시각</Label>
               <div className="col-span-3 relative">
-                <Input id="startTime" type="time" value={formData.startTime || ''} onChange={(e) => handleFormChange('startTime', e.target.value)} className="pr-10"/>
-                <div className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 flex items-center justify-center text-muted-foreground"><ClockIcon className="h-4 w-4"/></div>
+                <Input id="startTime" type="time" value={formData.startTime || ''} onChange={(e) => handleFormChange('startTime', e.target.value)} />
               </div>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="endTime" className="text-right">퇴근시각</Label>
               <div className="col-span-3 relative">
-                <Input id="endTime" type="time" value={formData.endTime || ''} onChange={(e) => handleFormChange('endTime', e.target.value)} className="pr-10"/>
-                <div className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 flex items-center justify-center text-muted-foreground"><ClockIcon className="h-4 w-4"/></div>
+                <Input id="endTime" type="time" value={formData.endTime || ''} onChange={(e) => handleFormChange('endTime', e.target.value)} />
               </div>
             </div>
         </div>
@@ -324,7 +329,11 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
         <div className="space-y-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="uniqueId" className="text-right">ID</Label>
-              <Input id="uniqueId" value={formData.uniqueId || ''} onChange={(e) => handleFormChange('uniqueId', e.target.value)} className="col-span-3" placeholder="대상자 ID" disabled={isEmployeeView} />
+              <Input id="uniqueId" value={formData.uniqueId || ''} className="col-span-3" disabled />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">이름</Label>
+              <Input id="name" value={formData.name || ''} className="col-span-3" disabled />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="date" className="text-right">일자</Label>
@@ -503,7 +512,7 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
                       />
                   </div>
                 )}
-                 <Button onClick={handleOpenDialog} variant="outline" size="sm">
+                 <Button onClick={handleOpenDialog} variant="outline" size="sm" disabled={!selectedRowId}>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     데이터 추가/변경
                 </Button>
