@@ -324,7 +324,13 @@ export default function Home() {
 
 
   const allEmployees = React.useMemo(() => {
-    return Object.values(employees).flat();
+    const employeeMap = new Map<string, Employee>();
+    Object.values(employees).flat().forEach(employee => {
+        if (!employeeMap.has(employee.uniqueId)) {
+            employeeMap.set(employee.uniqueId, employee);
+        }
+    });
+    return Array.from(employeeMap.values());
   }, [employees]);
 
   const handleEmployeeUpload = (year: number, month: number, newEmployees: Employee[]) => {
