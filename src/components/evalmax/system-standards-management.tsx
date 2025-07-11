@@ -30,7 +30,17 @@ import { ko } from 'date-fns/locale';
 const GRADING_SCALE_LAST_UPDATED_KEY = 'pl_eval_grading_scale_last_updated';
 const ATTENDANCE_LAST_UPDATED_KEY = 'pl_eval_attendance_last_updated';
 
-const GradeManagement = ({ gradingScale, setGradingScale }: Pick<SystemStandardsManagementProps, 'gradingScale' | 'setGradingScale'>) => {
+interface SystemStandardsManagementProps {
+  gradingScale: Record<NonNullable<Grade>, GradeInfo>;
+  setGradingScale: React.Dispatch<React.SetStateAction<Record<NonNullable<Grade>, GradeInfo>>>;
+  attendanceTypes: AttendanceType[];
+  setAttendanceTypes: React.Dispatch<React.SetStateAction<AttendanceType[]>>;
+  holidays: Holiday[];
+  setHolidays: React.Dispatch<React.SetStateAction<Holiday[]>>;
+}
+
+
+const GradeManagement = ({ gradingScale, setGradingScale, onSave }: Pick<SystemStandardsManagementProps, 'gradingScale' | 'setGradingScale'> & { onSave: () => void }) => {
   const { toast } = useToast();
   const [localGrades, setLocalGrades] = React.useState(
     Object.entries(gradingScale).map(([grade, info]) => ({ ...info, grade: grade as Grade, isNew: false }))
@@ -75,48 +85,47 @@ const GradeManagement = ({ gradingScale, setGradingScale }: Pick<SystemStandards
       return acc;
     }, {} as Record<NonNullable<Grade>, GradeInfo>);
     setGradingScale(newGradingScale);
-
-    const now = new Date();
-    localStorage.setItem(GRADING_SCALE_LAST_UPDATED_KEY, now.toISOString());
-    
+    onSave();
     toast({ title: '저장 완료', description: '등급 및 점수 변경사항이 성공적으로 저장되었습니다.' });
   };
   
   return (
     <CardContent className="pt-4">
-    <div className="border rounded-lg overflow-x-auto">
+      <div className="border rounded-lg overflow-x-auto">
         <Table>
-        <TableHeader><TableRow>
-            <TableHead className="py-2 px-3 text-center">등급</TableHead>
-            <TableHead className="py-2 px-3 text-center">점수</TableHead>
-            <TableHead className="py-2 px-3 text-center">지급률 (%)</TableHead>
-            <TableHead className="py-2 px-3 text-center">설명</TableHead>
-            <TableHead></TableHead>
-        </TableRow></TableHeader>
-        <TableBody>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="py-2 px-3 text-center">등급</TableHead>
+              <TableHead className="py-2 px-3 text-center">점수</TableHead>
+              <TableHead className="py-2 px-3 text-center">지급률 (%)</TableHead>
+              <TableHead className="py-2 px-3 text-center">설명</TableHead>
+              <TableHead></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {localGrades.map((gradeItem, index) => (
-            <TableRow key={index}>
+              <TableRow key={index}>
                 <TableCell className="py-1 px-2 text-center"><Input value={gradeItem.grade || ''} onChange={(e) => handleGradeNameChange(index, e.target.value)} className="w-20 h-8 mx-auto"/></TableCell>
                 <TableCell className="py-1 px-2 text-center"><Input type="number" value={gradeItem.score} onChange={(e) => handleGradeInputChange(index, 'score', e.target.value)} className="w-20 h-8 mx-auto"/></TableCell>
                 <TableCell className="py-1 px-2 text-center"><Input type="number" value={gradeItem.payoutRate} onChange={(e) => handleGradeInputChange(index, 'payoutRate', e.target.value)} className="w-24 h-8 mx-auto"/></TableCell>
                 <TableCell className="py-1 px-2"><Input value={gradeItem.description} onChange={(e) => { const newGrades = [...localGrades]; newGrades[index].description = e.target.value; setLocalGrades(newGrades); }} className="w-full h-8"/></TableCell>
                 <TableCell className="py-1 px-2 text-center"><Button variant="ghost" size="icon" onClick={() => handleRemoveGrade(index)} className="h-8 w-8"><Trash2 className="h-4 w-4 text-destructive" /></Button></TableCell>
-            </TableRow>
+              </TableRow>
             ))}
-        </TableBody>
+          </TableBody>
         </Table>
-    </div>
-    <div className="flex justify-between mt-4">
+      </div>
+      <div className="flex justify-between mt-4">
         <Button variant="outline" onClick={handleAddNewGrade}><PlusCircle className="mr-2 h-4 w-4" />새 등급 추가</Button>
         <Button onClick={handleSaveChanges}><Save className="mr-2 h-4 w-4" />등급/점수 저장</Button>
-    </div>
+      </div>
     </CardContent>
   )
 }
 
 const AttendanceManagement = ({
-  attendanceTypes, setAttendanceTypes, holidays, setHolidays
-}: Pick<SystemStandardsManagementProps, 'attendanceTypes' | 'setAttendanceTypes' | 'holidays' | 'setHolidays'>) => {
+  attendanceTypes, setAttendanceTypes, holidays, setHolidays, onSave
+}: Pick<SystemStandardsManagementProps, 'attendanceTypes' | 'setAttendanceTypes' | 'holidays' | 'setHolidays'> & { onSave: () => void }) => {
   const { toast } = useToast();
   const [selectedYear, setSelectedYear] = React.useState(new Date().getFullYear());
   const [localTypes, setLocalTypes] = React.useState<AttendanceType[]>([]);
@@ -174,7 +183,7 @@ const AttendanceManagement = ({
   const handleRemoveHoliday = (idToRemove: string) => {
     setLocalHolidays(localHolidays.filter((h) => h.id !== idToRemove));
   };
-  const handleSaveTypesAndHolidays = () => {
+  const handleSaveChanges = () => {
     // Validate types
     const typeNames = localTypes.map(t => t.name.trim());
     if (new Set(typeNames).size !== typeNames.length) {
@@ -203,10 +212,7 @@ const AttendanceManagement = ({
     const updatedHolidays = [...otherYearsHolidays, ...holidaysForYear].sort((a, b) => a.date.localeCompare(b.date));
     setHolidays(updatedHolidays);
     
-    // Save timestamp and show toast
-    const now = new Date();
-    localStorage.setItem(ATTENDANCE_LAST_UPDATED_KEY, now.toISOString());
-    
+    onSave();
     toast({ title: '저장 완료', description: '근무기준 및 공휴일 변경사항이 성공적으로 저장되었습니다.' });
   };
   
@@ -215,64 +221,69 @@ const AttendanceManagement = ({
   const filteredHolidays = localHolidays.filter(h => h.date.startsWith(String(selectedYear))).sort((a,b) => a.date.localeCompare(b.date));
 
   return (
-    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-      <div>
-          <h4 className="font-semibold mb-2">근무기준 설정</h4>
-          <div className="border rounded-lg">
-              <Table>
-              <TableHeader><TableRow>
-                  <TableHead className="py-2 px-3 text-center">근태명</TableHead>
-                  <TableHead className="py-2 px-3 text-center w-1/3">차감 일수</TableHead><TableHead></TableHead>
-              </TableRow></TableHeader>
-              <TableBody>
-                  {localTypes.map((type, index) => (
-                  <TableRow key={type.id}>
-                      <TableCell className="py-1 px-2 text-center"><Input value={type.name} onChange={(e) => handleTypeInputChange(index, 'name', e.target.value)} className="w-full h-8 mx-auto"/></TableCell>
-                      <TableCell className="py-1 px-2 text-center"><Input type="number" step="0.01" value={type.deductionDays} onChange={(e) => handleTypeInputChange(index, 'deductionDays', e.target.value)} className="w-full h-8 mx-auto"/></TableCell>
-                      <TableCell className="py-1 px-2 text-center"><Button variant="ghost" size="icon" onClick={() => handleRemoveType(index)} className="h-8 w-8"><Trash2 className="h-4 w-4 text-destructive" /></Button></TableCell>
-                  </TableRow>
-                  ))}
-              </TableBody>
-              </Table>
-          </div>
-          <div className="flex justify-between mt-4">
-              <Button variant="outline" onClick={handleAddNewType}><PlusCircle className="mr-2 h-4 w-4" />추가</Button>
-          </div>
+    <CardContent className="pt-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+            <h4 className="font-semibold mb-2">근무기준 설정</h4>
+            <div className="border rounded-lg">
+                <Table>
+                <TableHeader><TableRow>
+                    <TableHead className="py-2 px-3 text-center">근태명</TableHead>
+                    <TableHead className="py-2 px-3 text-center w-1/3">차감 일수</TableHead><TableHead></TableHead>
+                </TableRow></TableHeader>
+                <TableBody>
+                    {localTypes.map((type, index) => (
+                    <TableRow key={type.id}>
+                        <TableCell className="py-1 px-2 text-center"><Input value={type.name} onChange={(e) => handleTypeInputChange(index, 'name', e.target.value)} className="w-full h-8 mx-auto"/></TableCell>
+                        <TableCell className="py-1 px-2 text-center"><Input type="number" step="0.01" value={type.deductionDays} onChange={(e) => handleTypeInputChange(index, 'deductionDays', e.target.value)} className="w-full h-8 mx-auto"/></TableCell>
+                        <TableCell className="py-1 px-2 text-center"><Button variant="ghost" size="icon" onClick={() => handleRemoveType(index)} className="h-8 w-8"><Trash2 className="h-4 w-4 text-destructive" /></Button></TableCell>
+                    </TableRow>
+                    ))}
+                </TableBody>
+                </Table>
+            </div>
+            <div className="flex justify-between mt-4">
+                <Button variant="outline" onClick={handleAddNewType}><PlusCircle className="mr-2 h-4 w-4" />추가</Button>
+            </div>
+        </div>
+        <div>
+            <div className="flex justify-between items-center mb-2">
+                <h4 className="font-semibold">공휴일 관리</h4>
+                <Select value={String(selectedYear)} onValueChange={(yearStr) => setSelectedYear(parseInt(yearStr, 10))}>
+                    <SelectTrigger className="w-[120px]"><SelectValue placeholder="연도 선택" /></SelectTrigger>
+                    <SelectContent>{availableYears.map(year => <SelectItem key={year} value={String(year)}>{year}년</SelectItem>)}</SelectContent>
+                </Select>
+            </div>
+            <div className="border rounded-lg">
+                <Table>
+                <TableHeader><TableRow>
+                    <TableHead className="py-2 px-3 text-center">날짜</TableHead>
+                    <TableHead className="py-2 px-3 text-center">공휴일명</TableHead><TableHead></TableHead>
+                </TableRow></TableHeader>
+                <TableBody>
+                    {filteredHolidays.map((holiday) => {
+                    const index = localHolidays.findIndex(h => h.id === holiday.id);
+                    return (
+                        <TableRow key={holiday.id}>
+                        <TableCell className="py-1 px-2 text-center">
+                            <Input value={holiday.date} onChange={(e) => handleHolidayDateChange(index, e.target.value)} onBlur={(e) => validateHolidayDate(e.target.value, holiday.id)} className={cn("w-full h-8 mx-auto", holidayErrors[holiday.id] && "border-destructive")} placeholder="YYYY-MM-DD"/>
+                            {holidayErrors[holiday.id] && <p className="text-xs text-destructive mt-1">{holidayErrors[holiday.id]}</p>}
+                        </TableCell>
+                        <TableCell className="py-1 px-2 text-center"><Input value={holiday.name} onChange={(e) => handleHolidayNameChange(index, e.target.value)} className="w-full h-8 mx-auto"/></TableCell>
+                        <TableCell className="py-1 px-2 text-right"><Button variant="ghost" size="icon" onClick={() => handleRemoveHoliday(holiday.id)} className="h-8 w-8"><Trash2 className="h-4 w-4 text-destructive" /></Button></TableCell>
+                        </TableRow>
+                    );
+                    })}
+                </TableBody>
+                </Table>
+            </div>
+            <div className="flex justify-between mt-4">
+                <Button variant="outline" onClick={handleAddNewHoliday}><PlusCircle className="mr-2 h-4 w-4" />추가</Button>
+            </div>
+        </div>
       </div>
-      <div>
-          <div className="flex justify-between items-center mb-2">
-              <h4 className="font-semibold">공휴일 관리</h4>
-              <Select value={String(selectedYear)} onValueChange={(yearStr) => setSelectedYear(parseInt(yearStr, 10))}>
-                  <SelectTrigger className="w-[120px]"><SelectValue placeholder="연도 선택" /></SelectTrigger>
-                  <SelectContent>{availableYears.map(year => <SelectItem key={year} value={String(year)}>{year}년</SelectItem>)}</SelectContent>
-              </Select>
-          </div>
-          <div className="border rounded-lg">
-              <Table>
-              <TableHeader><TableRow>
-                  <TableHead className="py-2 px-3 text-center">날짜 (YYYY-MM-DD)</TableHead>
-                  <TableHead className="py-2 px-3 text-center">공휴일명</TableHead><TableHead></TableHead>
-              </TableRow></TableHeader>
-              <TableBody>
-                  {filteredHolidays.map((holiday) => {
-                  const index = localHolidays.findIndex(h => h.id === holiday.id);
-                  return (
-                      <TableRow key={holiday.id}>
-                      <TableCell className="py-1 px-2 text-center">
-                          <Input value={holiday.date} onChange={(e) => handleHolidayDateChange(index, e.target.value)} onBlur={(e) => validateHolidayDate(e.target.value, holiday.id)} className={cn("w-full h-8 mx-auto", holidayErrors[holiday.id] && "border-destructive")} placeholder="YYYY-MM-DD"/>
-                          {holidayErrors[holiday.id] && <p className="text-xs text-destructive mt-1">{holidayErrors[holiday.id]}</p>}
-                      </TableCell>
-                      <TableCell className="py-1 px-2 text-center"><Input value={holiday.name} onChange={(e) => handleHolidayNameChange(index, e.target.value)} className="w-full h-8 mx-auto"/></TableCell>
-                      <TableCell className="py-1 px-2 text-right"><Button variant="ghost" size="icon" onClick={() => handleRemoveHoliday(holiday.id)} className="h-8 w-8"><Trash2 className="h-4 w-4 text-destructive" /></Button></TableCell>
-                      </TableRow>
-                  );
-                  })}
-              </TableBody>
-              </Table>
-          </div>
-          <div className="flex justify-between mt-4">
-              <Button variant="outline" onClick={handleAddNewHoliday}><PlusCircle className="mr-2 h-4 w-4" />추가</Button>
-          </div>
+       <div className="flex justify-end mt-6">
+        <Button onClick={handleSaveChanges}><Save className="mr-2 h-4 w-4" />근무기준/공휴일 저장</Button>
       </div>
     </CardContent>
   )
@@ -285,6 +296,18 @@ export default function SystemStandardsManagement(props: SystemStandardsManageme
   
   const [gradeLastUpdated, setGradeLastUpdated] = React.useState<Date | null>(null);
   const [attendanceLastUpdated, setAttendanceLastUpdated] = React.useState<Date | null>(null);
+
+  const updateGradeTimestamp = () => {
+      const now = new Date();
+      localStorage.setItem(GRADING_SCALE_LAST_UPDATED_KEY, now.toISOString());
+      setGradeLastUpdated(now);
+  };
+  
+  const updateAttendanceTimestamp = () => {
+      const now = new Date();
+      localStorage.setItem(ATTENDANCE_LAST_UPDATED_KEY, now.toISOString());
+      setAttendanceLastUpdated(now);
+  };
 
   React.useEffect(() => {
     const gradeDate = localStorage.getItem(GRADING_SCALE_LAST_UPDATED_KEY);
@@ -313,7 +336,7 @@ export default function SystemStandardsManagement(props: SystemStandardsManageme
                     </div>
                 </CardHeader>
                 <CollapsibleContent>
-                    <AttendanceManagement {...props} />
+                    <AttendanceManagement {...props} onSave={updateAttendanceTimestamp} />
                 </CollapsibleContent>
                 <CollapsibleTrigger asChild>
                     <div className="border-t w-full text-center p-2 text-sm text-muted-foreground cursor-pointer hover:bg-muted/50 rounded-b-lg">
@@ -342,7 +365,7 @@ export default function SystemStandardsManagement(props: SystemStandardsManageme
                     </div>
                 </CardHeader>
                 <CollapsibleContent>
-                    <GradeManagement {...props} />
+                    <GradeManagement {...props} onSave={updateGradeTimestamp}/>
                 </CollapsibleContent>
                 <CollapsibleTrigger asChild>
                     <div className="border-t w-full text-center p-2 text-sm text-muted-foreground cursor-pointer hover:bg-muted/50 rounded-b-lg">
