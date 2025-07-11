@@ -39,16 +39,53 @@ interface SystemStandardsManagementProps {
   setHolidays: React.Dispatch<React.SetStateAction<Holiday[]>>;
 }
 
-const GradeManagement = ({ gradingScale, setGradingScale, onSave }: Pick<SystemStandardsManagementProps, 'gradingScale' | 'setGradingScale'> & { onSave: () => void }) => {
+export default function SystemStandardsManagement({
+    gradingScale, setGradingScale, 
+    attendanceTypes, setAttendanceTypes, 
+    holidays, setHolidays 
+}: SystemStandardsManagementProps) {
   const { toast } = useToast();
+  
+  // Grade Management State
   const [localGrades, setLocalGrades] = React.useState(
     Object.entries(gradingScale).map(([grade, info]) => ({ ...info, grade: grade as Grade, isNew: false }))
   );
   
+  // Attendance Type Management State
+  const [selectedYear, setSelectedYear] = React.useState(new Date().getFullYear());
+  const [isAttendanceOpen, setIsAttendanceOpen] = React.useState(false);
+  const [isGradeOpen, setIsGradeOpen] = React.useState(false);
+  const [localTypes, setLocalTypes] = React.useState<AttendanceType[]>([]);
+  const [localHolidays, setLocalHolidays] = React.useState<Holiday[]>([]);
+  const [holidayErrors, setHolidayErrors] = React.useState<Record<string, string>>({});
+
+  const [gradeLastUpdated, setGradeLastUpdated] = React.useState<Date | null>(null);
+  const [attendanceLastUpdated, setAttendanceLastUpdated] = React.useState<Date | null>(null);
+
   React.useEffect(() => {
     setLocalGrades(Object.entries(gradingScale).map(([grade, info]) => ({ ...info, grade: grade as Grade, isNew: false })));
   }, [gradingScale]);
 
+  React.useEffect(() => {
+    setLocalTypes([...attendanceTypes].sort((a,b) => {
+        if (a.deductionDays !== b.deductionDays) return b.deductionDays - a.deductionDays;
+        return a.name.localeCompare(b.name);
+    }));
+  }, [attendanceTypes]);
+  
+  React.useEffect(() => {
+    setLocalHolidays([...holidays]);
+  }, [holidays]);
+  
+  React.useEffect(() => {
+    const gradeDate = localStorage.getItem(GRADING_SCALE_LAST_UPDATED_KEY);
+    if (gradeDate) setGradeLastUpdated(new Date(gradeDate));
+    
+    const attendanceDate = localStorage.getItem(ATTENDANCE_LAST_UPDATED_KEY);
+    if (attendanceDate) setAttendanceLastUpdated(new Date(attendanceDate));
+  }, []);
+
+  // Grade Management Handlers
   const handleGradeInputChange = (index: number, field: keyof GradeInfo, value: string) => {
     const newGrades = [...localGrades];
     (newGrades[index] as any)[field] = Number(value);
@@ -69,7 +106,7 @@ const GradeManagement = ({ gradingScale, setGradingScale, onSave }: Pick<SystemS
     const newGrades = localGrades.filter((_, i) => i !== index);
     setLocalGrades(newGrades);
   };
-  const handleSaveChanges = () => {
+  const handleSaveGrades = () => {
     const gradeNames = localGrades.map(g => g.grade);
     if (new Set(gradeNames).size !== gradeNames.length) {
         toast({ variant: "destructive", title: "오류", description: "등급명은 고유해야 합니다." });
@@ -84,64 +121,14 @@ const GradeManagement = ({ gradingScale, setGradingScale, onSave }: Pick<SystemS
       return acc;
     }, {} as Record<NonNullable<Grade>, GradeInfo>);
     setGradingScale(newGradingScale);
-    onSave();
+
+    const now = new Date();
+    localStorage.setItem(GRADING_SCALE_LAST_UPDATED_KEY, now.toISOString());
+    setGradeLastUpdated(now);
     toast({ title: '저장 완료', description: '등급 및 점수 변경사항이 성공적으로 저장되었습니다.' });
   };
   
-  return (
-    <CardContent className="pt-4">
-      <div className="border rounded-lg overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="py-2 px-3 text-center">등급</TableHead>
-              <TableHead className="py-2 px-3 text-center">점수</TableHead>
-              <TableHead className="py-2 px-3 text-center">지급률 (%)</TableHead>
-              <TableHead className="py-2 px-3 text-center">설명</TableHead>
-              <TableHead></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {localGrades.map((gradeItem, index) => (
-              <TableRow key={index}>
-                <TableCell className="py-1 px-2 text-center"><Input value={gradeItem.grade || ''} onChange={(e) => handleGradeNameChange(index, e.target.value)} className="w-20 h-8 mx-auto"/></TableCell>
-                <TableCell className="py-1 px-2 text-center"><Input type="number" value={gradeItem.score} onChange={(e) => handleGradeInputChange(index, 'score', e.target.value)} className="w-20 h-8 mx-auto"/></TableCell>
-                <TableCell className="py-1 px-2 text-center"><Input type="number" value={gradeItem.payoutRate} onChange={(e) => handleGradeInputChange(index, 'payoutRate', e.target.value)} className="w-24 h-8 mx-auto"/></TableCell>
-                <TableCell className="py-1 px-2"><Input value={gradeItem.description} onChange={(e) => { const newGrades = [...localGrades]; newGrades[index].description = e.target.value; setLocalGrades(newGrades); }} className="w-full h-8"/></TableCell>
-                <TableCell className="py-1 px-2 text-center"><Button variant="ghost" size="icon" onClick={() => handleRemoveGrade(index)} className="h-8 w-8"><Trash2 className="h-4 w-4 text-destructive" /></Button></TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-      <div className="flex justify-between mt-4">
-        <Button variant="outline" onClick={handleAddNewGrade}><PlusCircle className="mr-2 h-4 w-4" />새 등급 추가</Button>
-        <Button onClick={handleSaveChanges}><Save className="mr-2 h-4 w-4" />등급/점수 저장</Button>
-      </div>
-    </CardContent>
-  )
-}
-
-const AttendanceManagement = ({
-  attendanceTypes, setAttendanceTypes, holidays, setHolidays, onSave
-}: Pick<SystemStandardsManagementProps, 'attendanceTypes' | 'setAttendanceTypes' | 'holidays' | 'setHolidays'> & { onSave: () => void }) => {
-  const { toast } = useToast();
-  const [selectedYear, setSelectedYear] = React.useState(new Date().getFullYear());
-  const [localTypes, setLocalTypes] = React.useState<AttendanceType[]>([]);
-  const [localHolidays, setLocalHolidays] = React.useState<Holiday[]>([]);
-  const [holidayErrors, setHolidayErrors] = React.useState<Record<string, string>>({});
-  
-  React.useEffect(() => {
-    setLocalTypes([...attendanceTypes].sort((a,b) => {
-        if (a.deductionDays !== b.deductionDays) return b.deductionDays - a.deductionDays;
-        return a.name.localeCompare(b.name);
-    }));
-  }, [attendanceTypes]);
-  
-  React.useEffect(() => {
-    setLocalHolidays([...holidays]);
-  }, [holidays]);
-  
+  // Attendance Type Management Handlers
   const handleTypeInputChange = (index: number, field: keyof AttendanceType, value: string) => {
     const newTypes = [...localTypes];
     if (field === 'name') newTypes[index].name = value;
@@ -182,8 +169,7 @@ const AttendanceManagement = ({
   const handleRemoveHoliday = (idToRemove: string) => {
     setLocalHolidays(localHolidays.filter((h) => h.id !== idToRemove));
   };
-  const handleSaveChanges = () => {
-    // Validate types
+  const handleSaveTypes = () => {
     const typeNames = localTypes.map(t => t.name.trim());
     if (new Set(typeNames).size !== typeNames.length) {
         toast({ variant: "destructive", title: "오류", description: "근태명은 고유해야 합니다." });
@@ -194,8 +180,13 @@ const AttendanceManagement = ({
         return;
     }
     setAttendanceTypes(localTypes);
-    
-    // Validate holidays
+
+    const now = new Date();
+    localStorage.setItem(ATTENDANCE_LAST_UPDATED_KEY, now.toISOString());
+    setAttendanceLastUpdated(now);
+    toast({ title: '저장 완료', description: '근태 수치 변경사항이 성공적으로 저장되었습니다.' });
+  };
+  const handleSaveHolidays = () => {
     const errors: Record<string, string> = {};
     const holidaysForYear = localHolidays.filter(h => h.date.startsWith(String(selectedYear)));
     for(const holiday of holidaysForYear) {
@@ -204,15 +195,17 @@ const AttendanceManagement = ({
     }
     setHolidayErrors(errors);
     if (Object.keys(errors).length > 0) {
-      toast({ variant: "destructive", title: "오류", description: "공휴일 입력 값을 확인해주세요." });
+      toast({ variant: "destructive", title: "오류", description: "입력 값을 확인해주세요." });
       return;
     }
     const otherYearsHolidays = holidays.filter(h => !h.date.startsWith(String(selectedYear)));
     const updatedHolidays = [...otherYearsHolidays, ...holidaysForYear].sort((a, b) => a.date.localeCompare(b.date));
     setHolidays(updatedHolidays);
     
-    onSave();
-    toast({ title: '저장 완료', description: '근무기준 및 공휴일 변경사항이 성공적으로 저장되었습니다.' });
+    const now = new Date();
+    localStorage.setItem(ATTENDANCE_LAST_UPDATED_KEY, now.toISOString());
+    setAttendanceLastUpdated(now);
+    toast({ title: '저장 완료', description: `${selectedYear}년 공휴일 변경사항이 성공적으로 저장되었습니다.` });
   };
   
   const currentClientYear = new Date().getFullYear();
@@ -220,122 +213,87 @@ const AttendanceManagement = ({
   const filteredHolidays = localHolidays.filter(h => h.date.startsWith(String(selectedYear))).sort((a,b) => a.date.localeCompare(b.date));
 
   return (
-    <CardContent className="pt-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-            <h4 className="font-semibold mb-2">근태 종류별 차감 설정</h4>
-            <div className="border rounded-lg">
-                <Table>
-                <TableHeader><TableRow>
-                    <TableHead className="py-2 px-3 text-center">근태명</TableHead>
-                    <TableHead className="py-2 px-3 text-center w-1/3">차감 일수</TableHead><TableHead></TableHead>
-                </TableRow></TableHeader>
-                <TableBody>
-                    {localTypes.map((type, index) => (
-                    <TableRow key={type.id}>
-                        <TableCell className="py-1 px-2 text-center"><Input value={type.name} onChange={(e) => handleTypeInputChange(index, 'name', e.target.value)} className="w-full h-8 mx-auto"/></TableCell>
-                        <TableCell className="py-1 px-2 text-center"><Input type="number" step="0.01" value={type.deductionDays} onChange={(e) => handleTypeInputChange(index, 'deductionDays', e.target.value)} className="w-full h-8 mx-auto"/></TableCell>
-                        <TableCell className="py-1 px-2 text-center"><Button variant="ghost" size="icon" onClick={() => handleRemoveType(index)} className="h-8 w-8"><Trash2 className="h-4 w-4 text-destructive" /></Button></TableCell>
-                    </TableRow>
-                    ))}
-                </TableBody>
-                </Table>
-            </div>
-            <div className="flex justify-between mt-4">
-                <Button variant="outline" onClick={handleAddNewType}><PlusCircle className="mr-2 h-4 w-4" />추가</Button>
-            </div>
-        </div>
-        <div>
-            <div className="flex justify-between items-center mb-2">
-                <h4 className="font-semibold">공휴일 관리</h4>
-                <Select value={String(selectedYear)} onValueChange={(yearStr) => setSelectedYear(parseInt(yearStr, 10))}>
-                    <SelectTrigger className="w-[120px]"><SelectValue placeholder="연도 선택" /></SelectTrigger>
-                    <SelectContent>{availableYears.map(year => <SelectItem key={year} value={String(year)}>{year}년</SelectItem>)}</SelectContent>
-                </Select>
-            </div>
-            <div className="border rounded-lg">
-                <Table>
-                <TableHeader><TableRow>
-                    <TableHead className="py-2 px-3 text-center">날짜</TableHead>
-                    <TableHead className="py-2 px-3 text-center">공휴일명</TableHead><TableHead></TableHead>
-                </TableRow></TableHeader>
-                <TableBody>
-                    {filteredHolidays.map((holiday) => {
-                    const index = localHolidays.findIndex(h => h.id === holiday.id);
-                    return (
-                        <TableRow key={holiday.id}>
-                        <TableCell className="py-1 px-2 text-center">
-                            <Input value={holiday.date} onChange={(e) => handleHolidayDateChange(index, e.target.value)} onBlur={(e) => validateHolidayDate(e.target.value, holiday.id)} className={cn("w-full h-8 mx-auto", holidayErrors[holiday.id] && "border-destructive")} placeholder="YYYY-MM-DD"/>
-                            {holidayErrors[holiday.id] && <p className="text-xs text-destructive mt-1">{holidayErrors[holiday.id]}</p>}
-                        </TableCell>
-                        <TableCell className="py-1 px-2 text-center"><Input value={holiday.name} onChange={(e) => handleHolidayNameChange(index, e.target.value)} className="w-full h-8 mx-auto"/></TableCell>
-                        <TableCell className="py-1 px-2 text-right"><Button variant="ghost" size="icon" onClick={() => handleRemoveHoliday(holiday.id)} className="h-8 w-8"><Trash2 className="h-4 w-4 text-destructive" /></Button></TableCell>
-                        </TableRow>
-                    );
-                    })}
-                </TableBody>
-                </Table>
-            </div>
-            <div className="flex justify-between mt-4">
-                <Button variant="outline" onClick={handleAddNewHoliday}><PlusCircle className="mr-2 h-4 w-4" />추가</Button>
-            </div>
-        </div>
-      </div>
-       <div className="flex justify-end mt-6">
-        <Button onClick={handleSaveChanges}><Save className="mr-2 h-4 w-4" />근무기준/공휴일 저장</Button>
-      </div>
-    </CardContent>
-  )
-}
-
-
-export default function SystemStandardsManagement(props: SystemStandardsManagementProps) {
-  const [isAttendanceOpen, setIsAttendanceOpen] = React.useState(false);
-  const [isGradeOpen, setIsGradeOpen] = React.useState(false);
-  
-  const [gradeLastUpdated, setGradeLastUpdated] = React.useState<Date | null>(null);
-  const [attendanceLastUpdated, setAttendanceLastUpdated] = React.useState<Date | null>(null);
-
-  const updateGradeTimestamp = () => {
-      const now = new Date();
-      localStorage.setItem(GRADING_SCALE_LAST_UPDATED_KEY, now.toISOString());
-      setGradeLastUpdated(now);
-  };
-  
-  const updateAttendanceTimestamp = () => {
-      const now = new Date();
-      localStorage.setItem(ATTENDANCE_LAST_UPDATED_KEY, now.toISOString());
-      setAttendanceLastUpdated(now);
-  };
-
-  React.useEffect(() => {
-    const gradeDate = localStorage.getItem(GRADING_SCALE_LAST_UPDATED_KEY);
-    if (gradeDate) setGradeLastUpdated(new Date(gradeDate));
-    
-    const attendanceDate = localStorage.getItem(ATTENDANCE_LAST_UPDATED_KEY);
-    if (attendanceDate) setAttendanceLastUpdated(new Date(attendanceDate));
-  }, []);
-
-  return (
-    <div className="max-w-5xl mx-auto">
-      <div className="space-y-6">
-        <Card>
+    <div className="max-w-5xl mx-auto space-y-6">
+       <Card>
             <Collapsible open={isAttendanceOpen} onOpenChange={setIsAttendanceOpen}>
                 <CardHeader>
-                    <div className="flex w-full items-start justify-between">
-                        <div>
-                            <CardTitle>근무기준 및 공휴일 관리</CardTitle>
-                            <CardDescription>근무율 계산에 사용되는 근무기준과 공휴일을 관리합니다.</CardDescription>
-                        </div>
-                        {attendanceLastUpdated && (
-                            <p className="text-xs text-muted-foreground pt-1 whitespace-nowrap">
-                                {format(attendanceLastUpdated, "yyyy.MM.dd HH:mm", { locale: ko })}
-                            </p>
-                        )}
+                  <div className="flex w-full items-start justify-between">
+                    <div>
+                      <CardTitle>근무기준 및 공휴일 관리</CardTitle>
+                      <CardDescription>근무율 계산에 사용되는 근무기준과 공휴일을 관리합니다.</CardDescription>
                     </div>
+                    {attendanceLastUpdated && (
+                      <p className="text-xs text-muted-foreground pt-1 whitespace-nowrap">
+                          {format(attendanceLastUpdated, "yyyy.MM.dd HH:mm", { locale: ko })}
+                      </p>
+                    )}
+                  </div>
                 </CardHeader>
                 <CollapsibleContent>
-                    <AttendanceManagement {...props} onSave={updateAttendanceTimestamp} />
+                    <CardContent className="pt-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 className="font-semibold mb-2">근무기준 설정</h4>
+                            <div className="border rounded-lg">
+                                <Table>
+                                <TableHeader><TableRow>
+                                    <TableHead className="py-2 px-3 text-center">근태명</TableHead>
+                                    <TableHead className="py-2 px-3 text-center w-1/3">차감 일수</TableHead><TableHead></TableHead>
+                                </TableRow></TableHeader>
+                                <TableBody>
+                                    {localTypes.map((type, index) => (
+                                    <TableRow key={type.id}>
+                                        <TableCell className="py-1 px-2 text-center"><Input value={type.name} onChange={(e) => handleTypeInputChange(index, 'name', e.target.value)} className="w-full h-8 mx-auto"/></TableCell>
+                                        <TableCell className="py-1 px-2 text-center"><Input type="number" step="0.01" value={type.deductionDays} onChange={(e) => handleTypeInputChange(index, 'deductionDays', e.target.value)} className="w-full h-8 mx-auto"/></TableCell>
+                                        <TableCell className="py-1 px-2 text-center"><Button variant="ghost" size="icon" onClick={() => handleRemoveType(index)} className="h-8 w-8"><Trash2 className="h-4 w-4 text-destructive" /></Button></TableCell>
+                                    </TableRow>
+                                    ))}
+                                </TableBody>
+                                </Table>
+                            </div>
+                            <div className="flex justify-between mt-4">
+                                <Button variant="outline" onClick={handleAddNewType}><PlusCircle className="mr-2 h-4 w-4" />추가</Button>
+                                <Button onClick={handleSaveTypes}><Save className="mr-2 h-4 w-4" />근태 수치 저장</Button>
+                            </div>
+                        </div>
+                        <div>
+                            <div className="flex justify-between items-center mb-2">
+                                <h4 className="font-semibold">공휴일 관리</h4>
+                                <Select value={String(selectedYear)} onValueChange={(yearStr) => setSelectedYear(parseInt(yearStr, 10))}>
+                                    <SelectTrigger className="w-[120px]"><SelectValue placeholder="연도 선택" /></SelectTrigger>
+                                    <SelectContent>{availableYears.map(year => <SelectItem key={year} value={String(year)}>{year}년</SelectItem>)}</SelectContent>
+                                </Select>
+                            </div>
+                            <div className="border rounded-lg">
+                                <Table>
+                                <TableHeader><TableRow>
+                                    <TableHead className="py-2 px-3 text-center">날짜</TableHead>
+                                    <TableHead className="py-2 px-3 text-center">공휴일명</TableHead><TableHead></TableHead>
+                                </TableRow></TableHeader>
+                                <TableBody>
+                                    {filteredHolidays.map((holiday) => {
+                                    const index = localHolidays.findIndex(h => h.id === holiday.id);
+                                    return (
+                                        <TableRow key={holiday.id}>
+                                        <TableCell className="py-1 px-2 text-center">
+                                            <Input value={holiday.date} onChange={(e) => handleHolidayDateChange(index, e.target.value)} onBlur={(e) => validateHolidayDate(e.target.value, holiday.id)} className={cn("w-full h-8 mx-auto", holidayErrors[holiday.id] && "border-destructive")} placeholder="YYYY-MM-DD"/>
+                                            {holidayErrors[holiday.id] && <p className="text-xs text-destructive mt-1">{holidayErrors[holiday.id]}</p>}
+                                        </TableCell>
+                                        <TableCell className="py-1 px-2 text-center"><Input value={holiday.name} onChange={(e) => handleHolidayNameChange(index, e.target.value)} className="w-full h-8 mx-auto"/></TableCell>
+                                        <TableCell className="py-1 px-2 text-right"><Button variant="ghost" size="icon" onClick={() => handleRemoveHoliday(holiday.id)} className="h-8 w-8"><Trash2 className="h-4 w-4 text-destructive" /></Button></TableCell>
+                                        </TableRow>
+                                    );
+                                    })}
+                                </TableBody>
+                                </Table>
+                            </div>
+                            <div className="flex justify-between mt-4">
+                                <Button variant="outline" onClick={handleAddNewHoliday}><PlusCircle className="mr-2 h-4 w-4" />추가</Button>
+                                <Button onClick={handleSaveHolidays}><Save className="mr-2 h-4 w-4" />공휴일 저장</Button>
+                            </div>
+                        </div>
+                      </div>
+                    </CardContent>
                 </CollapsibleContent>
                 <CollapsibleTrigger asChild>
                     <div className="border-t w-full text-center p-2 text-sm text-muted-foreground cursor-pointer hover:bg-muted/50 rounded-b-lg">
@@ -348,35 +306,63 @@ export default function SystemStandardsManagement(props: SystemStandardsManageme
             </Collapsible>
         </Card>
 
-        <Card>
-            <Collapsible open={isGradeOpen} onOpenChange={setIsGradeOpen}>
-                <CardHeader>
-                    <div className="flex w-full items-start justify-between">
-                        <div>
-                            <CardTitle>등급/점수 관리</CardTitle>
-                            <CardDescription>평가 등급, 점수, 지급률을 관리합니다.</CardDescription>
-                        </div>
-                        {gradeLastUpdated && (
-                            <p className="text-xs text-muted-foreground pt-1 whitespace-nowrap">
-                                {format(gradeLastUpdated, "yyyy.MM.dd HH:mm", { locale: ko })}
-                            </p>
-                        )}
+      <Card>
+        <Collapsible open={isGradeOpen} onOpenChange={setIsGradeOpen}>
+          <CardHeader>
+            <div className="flex w-full items-start justify-between">
+              <div>
+                <CardTitle>등급/점수 관리</CardTitle>
+                <CardDescription>평가 등급, 점수, 지급률을 관리합니다.</CardDescription>
+              </div>
+              {gradeLastUpdated && (
+                <p className="text-xs text-muted-foreground pt-1 whitespace-nowrap">
+                    {format(gradeLastUpdated, "yyyy.MM.dd HH:mm", { locale: ko })}
+                </p>
+              )}
+            </div>
+          </CardHeader>
+          <CollapsibleContent>
+            <CardContent className="pt-4">
+                <div className="border rounded-lg overflow-x-auto">
+                    <Table>
+                    <TableHeader>
+                        <TableRow>
+                        <TableHead className="py-2 px-3 text-center">등급</TableHead>
+                        <TableHead className="py-2 px-3 text-center">점수</TableHead>
+                        <TableHead className="py-2 px-3 text-center">지급률 (%)</TableHead>
+                        <TableHead className="py-2 px-3 text-center">설명</TableHead>
+                        <TableHead></TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {localGrades.map((gradeItem, index) => (
+                        <TableRow key={index}>
+                            <TableCell className="py-1 px-2 text-center"><Input value={gradeItem.grade || ''} onChange={(e) => handleGradeNameChange(index, e.target.value)} className="w-20 h-8 mx-auto"/></TableCell>
+                            <TableCell className="py-1 px-2 text-center"><Input type="number" value={gradeItem.score} onChange={(e) => handleGradeInputChange(index, 'score', e.target.value)} className="w-20 h-8 mx-auto"/></TableCell>
+                            <TableCell className="py-1 px-2 text-center"><Input type="number" value={gradeItem.payoutRate} onChange={(e) => handleGradeInputChange(index, 'payoutRate', e.target.value)} className="w-24 h-8 mx-auto"/></TableCell>
+                            <TableCell className="py-1 px-2"><Input value={gradeItem.description} onChange={(e) => { const newGrades = [...localGrades]; newGrades[index].description = e.target.value; setLocalGrades(newGrades); }} className="w-full h-8"/></TableCell>
+                            <TableCell className="py-1 px-2 text-center"><Button variant="ghost" size="icon" onClick={() => handleRemoveGrade(index)} className="h-8 w-8"><Trash2 className="h-4 w-4 text-destructive" /></Button></TableCell>
+                        </TableRow>
+                        ))}
+                    </TableBody>
+                    </Table>
+                </div>
+                <div className="flex justify-between mt-4">
+                    <Button variant="outline" onClick={handleAddNewGrade}><PlusCircle className="mr-2 h-4 w-4" />새 등급 추가</Button>
+                    <Button onClick={handleSaveGrades}><Save className="mr-2 h-4 w-4" />등급/점수 저장</Button>
+                </div>
+            </CardContent>
+          </CollapsibleContent>
+          <CollapsibleTrigger asChild>
+                <div className="border-t w-full text-center p-2 text-sm text-muted-foreground cursor-pointer hover:bg-muted/50 rounded-b-lg">
+                    <div className="flex items-center justify-center">
+                        {isGradeOpen ? "숨기기" : "보기"}
+                        {isGradeOpen ? <ChevronUp className="h-4 w-4 ml-1" /> : <ChevronDown className="h-4 w-4 ml-1" />}
                     </div>
-                </CardHeader>
-                <CollapsibleContent>
-                    <GradeManagement {...props} onSave={updateGradeTimestamp}/>
-                </CollapsibleContent>
-                <CollapsibleTrigger asChild>
-                    <div className="border-t w-full text-center p-2 text-sm text-muted-foreground cursor-pointer hover:bg-muted/50 rounded-b-lg">
-                        <div className="flex items-center justify-center">
-                            {isGradeOpen ? "숨기기" : "보기"}
-                            {isGradeOpen ? <ChevronUp className="h-4 w-4 ml-1" /> : <ChevronDown className="h-4 w-4 ml-1" />}
-                        </div>
-                    </div>
-                </CollapsibleTrigger>
-            </Collapsible>
-        </Card>
-      </div>
+                </div>
+            </CollapsibleTrigger>
+        </Collapsible>
+      </Card>
     </div>
   );
 }
