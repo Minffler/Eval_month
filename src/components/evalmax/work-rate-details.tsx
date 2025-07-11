@@ -12,7 +12,7 @@ import {
   TableFooter
 } from '@/components/ui/table';
 import { Input } from '../ui/input';
-import { Search, ArrowUpDown, ArrowUp, ArrowDown, Download, PlusCircle, Calendar as CalendarIcon, Clock } from 'lucide-react';
+import { Search, ArrowUpDown, ArrowUp, ArrowDown, Download, PlusCircle, Calendar as CalendarIcon, ClockIcon } from 'lucide-react';
 import type { Employee, AttendanceType, Role } from '@/lib/types';
 import type { ShortenedWorkDetail, DailyAttendanceDetail } from '@/lib/work-rate-calculator';
 import { Button } from '../ui/button';
@@ -189,14 +189,7 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
               initialData = { ...selectedRecord };
           }
       } else {
-          // If a search term is present and yields a single unique employee, pre-fill their ID
-          if (searchTerm && filteredData.length > 0) {
-              const uniqueIdsInData = new Set(filteredData.map(item => item.uniqueId));
-              if (uniqueIdsInData.size === 1) {
-                  const firstItem = filteredData[0];
-                  initialData = { uniqueId: firstItem.uniqueId, name: firstItem.name };
-              }
-          } else if (viewAs === 'employee' && user) {
+          if (viewAs === 'employee' && user) {
             initialData = { uniqueId: user.uniqueId, name: user.name };
           }
       }
@@ -228,6 +221,7 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
     const evaluator = allEmployees.find(e => e.uniqueId === employee.evaluatorId);
     
     const dataType = type === 'shortenedWork' ? '단축근로' : '일근태';
+    const notificationMessage = `[결재요청] ${dataType} 변경: ${employee.name}(${employee.uniqueId})`;
     
     if (user.roles?.includes('admin')) {
         toast({ title: '자동 승인 완료', description: '관리자 권한으로 데이터가 즉시 저장 및 반영되었습니다.' });
@@ -236,14 +230,14 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
         }
         addNotification({ recipientId: employee.uniqueId, message: `[결재승인] ${dataType} 변경: ${employee.name}(${employee.uniqueId})` });
     } else if (user.roles?.includes('evaluator')) {
-        addNotification({ recipientId: '1911042', message: `[결재요청] ${dataType} 변경: ${employee.name}(${employee.uniqueId})` });
+        addNotification({ recipientId: '1911042', message: notificationMessage });
         toast({ title: '결재 상신 완료', description: '관리자에게 결재가 요청되었습니다.' });
     } else { // employee
         if (evaluator) {
-            addNotification({ recipientId: evaluator.uniqueId, message: `[결재요청] ${dataType} 변경: ${employee.name}(${employee.uniqueId})` });
+            addNotification({ recipientId: evaluator.uniqueId, message: notificationMessage });
             toast({ title: '결재 상신 완료', description: '평가자에게 결재가 요청되었습니다.' });
         } else {
-            addNotification({ recipientId: '1911042', message: `[결재요청] ${dataType} 변경: ${employee.name}(${employee.uniqueId})` });
+            addNotification({ recipientId: '1911042', message: notificationMessage });
             toast({ title: '결재 상신 완료', description: '담당 평가자가 없어 관리자에게 바로 결재가 요청되었습니다.' });
         }
     }
@@ -260,12 +254,14 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
   }, [formData.uniqueId, allEmployees]);
 
   const renderDialogContent = () => {
+    const isEmployeeView = viewAs === 'employee';
+
     if (type === 'shortenedWork') {
       return (
         <div className="space-y-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="uniqueId" className="text-right">ID</Label>
-              <Input id="uniqueId" value={formData.uniqueId || ''} onChange={(e) => handleFormChange('uniqueId', e.target.value)} className="col-span-3" placeholder="대상자 ID"/>
+              <Input id="uniqueId" value={formData.uniqueId || ''} onChange={(e) => handleFormChange('uniqueId', e.target.value)} className="col-span-3" placeholder="대상자 ID" disabled={isEmployeeView} />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="type" className="text-right">구분</Label>
@@ -311,14 +307,14 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
               <Label htmlFor="startTime" className="text-right">출근시각</Label>
               <div className="col-span-3 relative">
                 <Input id="startTime" type="time" value={formData.startTime || ''} onChange={(e) => handleFormChange('startTime', e.target.value)} className="pr-10"/>
-                <div className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 flex items-center justify-center text-muted-foreground"><Clock className="h-4 w-4"/></div>
+                <div className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 flex items-center justify-center text-muted-foreground"><ClockIcon className="h-4 w-4"/></div>
               </div>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="endTime" className="text-right">퇴근시각</Label>
               <div className="col-span-3 relative">
                 <Input id="endTime" type="time" value={formData.endTime || ''} onChange={(e) => handleFormChange('endTime', e.target.value)} className="pr-10"/>
-                <div className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 flex items-center justify-center text-muted-foreground"><Clock className="h-4 w-4"/></div>
+                <div className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 flex items-center justify-center text-muted-foreground"><ClockIcon className="h-4 w-4"/></div>
               </div>
             </div>
         </div>
@@ -328,7 +324,7 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
         <div className="space-y-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="uniqueId" className="text-right">ID</Label>
-              <Input id="uniqueId" value={formData.uniqueId || ''} onChange={(e) => handleFormChange('uniqueId', e.target.value)} className="col-span-3" placeholder="대상자 ID" />
+              <Input id="uniqueId" value={formData.uniqueId || ''} onChange={(e) => handleFormChange('uniqueId', e.target.value)} className="col-span-3" placeholder="대상자 ID" disabled={isEmployeeView} />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="date" className="text-right">일자</Label>
@@ -530,7 +526,7 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <DialogContent>
         <DialogHeader>
-            <DialogTitle>데이터 추가/변경</DialogTitle>
+            <DialogTitle>근무 데이터 추가/변경</DialogTitle>
             <DialogDescription>
                 변경된 단축근로 / 일근태 정보를 입력하고 결재를 상신합니다.
             </DialogDescription>
