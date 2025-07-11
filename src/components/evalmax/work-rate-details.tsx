@@ -12,7 +12,7 @@ import {
   TableFooter
 } from '@/components/ui/table';
 import { Input } from '../ui/input';
-import { Search, ArrowUpDown, ArrowUp, ArrowDown, Download, PlusCircle, Edit } from 'lucide-react';
+import { Search, ArrowUpDown, ArrowUp, ArrowDown, Download, PlusCircle, Edit, ChevronsUpDown } from 'lucide-react';
 import type { Employee, AttendanceType, Role } from '@/lib/types';
 import type { ShortenedWorkDetail, DailyAttendanceDetail } from '@/lib/work-rate-calculator';
 import { Button } from '../ui/button';
@@ -97,44 +97,53 @@ const DailyAttendanceIcon = ({ isShortenedDay }: { isShortenedDay: boolean }) =>
 };
 
 const DatePicker = ({ value, onChange }: { value: string, onChange: (date: string) => void }) => {
-    const date = value && !isNaN(new Date(value).getTime()) ? new Date(value) : null;
-    const year = date ? date.getFullYear() : undefined;
-    const month = date ? date.getMonth() + 1 : undefined;
-    const day = date ? date.getDate() : undefined;
+    const [year, setYear] = React.useState<number | undefined>();
+    const [month, setMonth] = React.useState<number | undefined>();
+    const [day, setDay] = React.useState<number | string | undefined>();
 
+    React.useEffect(() => {
+        if (value && !isNaN(new Date(value).getTime())) {
+            const date = new Date(value);
+            setYear(date.getFullYear());
+            setMonth(date.getMonth() + 1);
+            setDay(date.getDate());
+        } else {
+            setYear(undefined);
+            setMonth(undefined);
+            setDay(undefined);
+        }
+    }, [value]);
+    
     const years = Array.from({ length: 11 }, (_, i) => new Date().getFullYear() - 5 + i);
     const months = Array.from({ length: 12 }, (_, i) => i + 1);
 
-    const handleDatePartChange = (part: 'year' | 'month' | 'day', partValueStr: string) => {
-        const partValue = parseInt(partValueStr, 10);
-        if (part === 'day' && (isNaN(partValue) || partValue < 1 || partValue > 31)) return;
-
-        const newYear = part === 'year' ? partValue : year;
-        const newMonth = part === 'month' ? partValue : month;
-        const newDay = part === 'day' ? partValue : day;
-
-        if (newYear && newMonth && newDay) {
-            const newDate = new Date(newYear, newMonth - 1, newDay);
-            if (!isNaN(newDate.getTime())) {
-              onChange(newDate.toISOString().split('T')[0]);
+    const handleUpdate = (newYear?: number, newMonth?: number, newDay?: number | string) => {
+        if (newYear !== undefined && newMonth !== undefined && newDay !== undefined && String(newDay).trim() !== '') {
+            const dayNum = Number(newDay);
+            if (!isNaN(dayNum) && dayNum > 0 && dayNum <= 31) {
+                const newDate = new Date(newYear, newMonth - 1, dayNum);
+                // Check if the created date is valid and matches the input (e.g., Feb 30 doesn't become Mar 1/2)
+                if (!isNaN(newDate.getTime()) && newDate.getDate() === dayNum) {
+                    onChange(newDate.toISOString().split('T')[0]);
+                }
             }
         }
-    };
-
+    }
+    
     return (
         <div className="flex gap-2 items-center">
-            <Select value={year?.toString()} onValueChange={(val) => handleDatePartChange('year', val)}>
+            <Select value={year?.toString()} onValueChange={(val) => { const newYear = parseInt(val, 10); setYear(newYear); handleUpdate(newYear, month, day); }}>
                 <SelectTrigger className="w-[100px]"><SelectValue placeholder="년도" /></SelectTrigger>
                 <SelectContent>{years.map(y => <SelectItem key={y} value={y.toString()}>{y}년</SelectItem>)}</SelectContent>
             </Select>
-            <Select value={month?.toString()} onValueChange={(val) => handleDatePartChange('month', val)}>
+            <Select value={month?.toString()} onValueChange={(val) => { const newMonth = parseInt(val, 10); setMonth(newMonth); handleUpdate(year, newMonth, day); }}>
                 <SelectTrigger className="w-[80px]"><SelectValue placeholder="월" /></SelectTrigger>
                 <SelectContent>{months.map(m => <SelectItem key={m} value={m.toString()}>{m}월</SelectItem>)}</SelectContent>
             </Select>
             <Input
                 type="number"
                 value={day ?? ''}
-                onChange={(e) => handleDatePartChange('day', e.target.value)}
+                onChange={(e) => { const newDay = e.target.value; setDay(newDay); handleUpdate(year, month, newDay); }}
                 placeholder="일"
                 className="w-[70px]"
                 min="1"
@@ -146,7 +155,7 @@ const DatePicker = ({ value, onChange }: { value: string, onChange: (date: strin
 
 const TimePicker = ({ value, onChange }: { value: string, onChange: (time: string) => void }) => {
     const [hour, minute] = React.useMemo(() => {
-        if (!value) return ['',''];
+        if (!value || !value.includes(':')) return ['', ''];
         const parts = value.split(':');
         return [parts[0] || '', parts[1] || ''];
     }, [value]);
@@ -154,9 +163,7 @@ const TimePicker = ({ value, onChange }: { value: string, onChange: (time: strin
     const handleTimeChange = (part: 'hour' | 'minute', partValue: string) => {
         const newHour = part === 'hour' ? partValue : hour;
         const newMinute = part === 'minute' ? partValue : minute;
-        if (newHour && newMinute) {
-            onChange(`${newHour}:${newMinute}`);
-        }
+        onChange(`${newHour}:${newMinute}`);
     };
     
     const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
@@ -475,18 +482,40 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
                 <DatePicker value={formData.date || ''} onChange={(date) => handleFormChange('date', date)} />
               </div>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="type" className="text-right">근태 종류</Label>
-              <Select value={formData.type || ''} onValueChange={(value) => handleFormChange('type', value)}>
-                <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="근태 종류를 선택해주세요." />
-                </SelectTrigger>
-                <SelectContent>
-                    {attendanceTypes.map(type => (
-                        <SelectItem key={type.id} value={type.name}>{type.name}</SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-4 items-start gap-4">
+              <Label htmlFor="type" className="text-right pt-2">근태 종류</Label>
+              <div className="col-span-3">
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <Button variant="outline" role="combobox" className="w-full justify-between">
+                            {formData.type || "근태 종류를 선택해주세요."}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[300px] p-0">
+                        <Command>
+                            <CommandInput placeholder="근태 검색..." />
+                            <CommandList>
+                                <CommandEmpty>검색 결과가 없습니다.</CommandEmpty>
+                                <CommandGroup>
+                                    {attendanceTypes.map(type => (
+                                        <CommandItem
+                                            key={type.id}
+                                            value={type.name}
+                                            onSelect={(currentValue) => {
+                                                const selected = attendanceTypes.find(t => t.name.toLowerCase() === currentValue.toLowerCase());
+                                                handleFormChange('type', selected?.name || '');
+                                            }}
+                                        >
+                                            {type.name}
+                                        </CommandItem>
+                                    ))}
+                                </CommandGroup>
+                            </CommandList>
+                        </Command>
+                    </PopoverContent>
+                </Popover>
+              </div>
             </div>
         </div>
     );
