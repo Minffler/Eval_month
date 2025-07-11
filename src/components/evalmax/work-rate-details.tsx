@@ -105,7 +105,10 @@ const DatePicker = ({ value, onChange }: { value: string, onChange: (date: strin
     const years = Array.from({ length: 11 }, (_, i) => new Date().getFullYear() - 5 + i);
     const months = Array.from({ length: 12 }, (_, i) => i + 1);
 
-    const handleDatePartChange = (part: 'year' | 'month' | 'day', partValue: number | undefined) => {
+    const handleDatePartChange = (part: 'year' | 'month' | 'day', partValueStr: string) => {
+        const partValue = parseInt(partValueStr, 10);
+        if (part === 'day' && (isNaN(partValue) || partValue < 1 || partValue > 31)) return;
+
         const newYear = part === 'year' ? partValue : year;
         const newMonth = part === 'month' ? partValue : month;
         const newDay = part === 'day' ? partValue : day;
@@ -115,25 +118,23 @@ const DatePicker = ({ value, onChange }: { value: string, onChange: (date: strin
             if (!isNaN(newDate.getTime())) {
               onChange(newDate.toISOString().split('T')[0]);
             }
-        } else {
-            onChange('');
         }
     };
 
     return (
         <div className="flex gap-2 items-center">
-            <Select value={year?.toString()} onValueChange={(val) => handleDatePartChange('year', parseInt(val))}>
+            <Select value={year?.toString()} onValueChange={(val) => handleDatePartChange('year', val)}>
                 <SelectTrigger className="w-[100px]"><SelectValue placeholder="년도" /></SelectTrigger>
                 <SelectContent>{years.map(y => <SelectItem key={y} value={y.toString()}>{y}년</SelectItem>)}</SelectContent>
             </Select>
-            <Select value={month?.toString()} onValueChange={(val) => handleDatePartChange('month', parseInt(val))}>
+            <Select value={month?.toString()} onValueChange={(val) => handleDatePartChange('month', val)}>
                 <SelectTrigger className="w-[80px]"><SelectValue placeholder="월" /></SelectTrigger>
                 <SelectContent>{months.map(m => <SelectItem key={m} value={m.toString()}>{m}월</SelectItem>)}</SelectContent>
             </Select>
             <Input
                 type="number"
                 value={day ?? ''}
-                onChange={(e) => handleDatePartChange('day', e.target.value ? parseInt(e.target.value) : undefined)}
+                onChange={(e) => handleDatePartChange('day', e.target.value)}
                 placeholder="일"
                 className="w-[70px]"
                 min="1"
@@ -141,6 +142,38 @@ const DatePicker = ({ value, onChange }: { value: string, onChange: (date: strin
             />
         </div>
     );
+}
+
+const TimePicker = ({ value, onChange }: { value: string, onChange: (time: string) => void }) => {
+    const [hour, minute] = React.useMemo(() => {
+        if (!value) return ['',''];
+        const parts = value.split(':');
+        return [parts[0] || '', parts[1] || ''];
+    }, [value]);
+
+    const handleTimeChange = (part: 'hour' | 'minute', partValue: string) => {
+        const newHour = part === 'hour' ? partValue : hour;
+        const newMinute = part === 'minute' ? partValue : minute;
+        if (newHour && newMinute) {
+            onChange(`${newHour}:${newMinute}`);
+        }
+    };
+    
+    const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
+    const minutes = ['00', '15', '30', '45'];
+
+    return (
+        <div className="flex gap-2 items-center">
+            <Select value={hour} onValueChange={(val) => handleTimeChange('hour', val)}>
+                <SelectTrigger className="w-[100px]"><SelectValue placeholder="시" /></SelectTrigger>
+                <SelectContent>{hours.map(h => <SelectItem key={h} value={h}>{h}시</SelectItem>)}</SelectContent>
+            </Select>
+            <Select value={minute} onValueChange={(val) => handleTimeChange('minute', val)}>
+                <SelectTrigger className="w-[100px]"><SelectValue placeholder="분" /></SelectTrigger>
+                <SelectContent>{minutes.map(m => <SelectItem key={m} value={m}>{m}분</SelectItem>)}</SelectContent>
+            </Select>
+        </div>
+    )
 }
 
 export default function WorkRateDetails({ type, data, selectedDate, allEmployees, attendanceTypes, viewAs = 'admin' }: WorkRateDetailsProps) {
@@ -409,25 +442,25 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="startDate" className="text-right">시작일</Label>
               <div className="col-span-3">
-                <DatePicker value={formData.startDate} onChange={(date) => handleFormChange('startDate', date)} />
+                <DatePicker value={formData.startDate || ''} onChange={(date) => handleFormChange('startDate', date)} />
               </div>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="endDate" className="text-right">종료일</Label>
               <div className="col-span-3">
-                <DatePicker value={formData.endDate} onChange={(date) => handleFormChange('endDate', date)} />
+                <DatePicker value={formData.endDate || ''} onChange={(date) => handleFormChange('endDate', date)} />
               </div>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="startTime" className="text-right">출근시각</Label>
               <div className="col-span-3 relative">
-                <Input id="startTime" type="time" value={formData.startTime || ''} onChange={(e) => handleFormChange('startTime', e.target.value)} />
+                <TimePicker value={formData.startTime || ''} onChange={(time) => handleFormChange('startTime', time)} />
               </div>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="endTime" className="text-right">퇴근시각</Label>
               <div className="col-span-3 relative">
-                <Input id="endTime" type="time" value={formData.endTime || ''} onChange={(e) => handleFormChange('endTime', e.target.value)} />
+                <TimePicker value={formData.endTime || ''} onChange={(time) => handleFormChange('endTime', time)} />
               </div>
             </div>
         </div>
@@ -439,7 +472,7 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="date" className="text-right">일자</Label>
               <div className="col-span-3">
-                <DatePicker value={formData.date} onChange={(date) => handleFormChange('date', date)} />
+                <DatePicker value={formData.date || ''} onChange={(date) => handleFormChange('date', date)} />
               </div>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
