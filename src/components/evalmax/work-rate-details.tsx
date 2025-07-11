@@ -108,9 +108,9 @@ const DatePickerWithInput = ({ value, onChange }: { value: string, onChange: (da
     React.useEffect(() => {
         if (value) {
             const newDate = new Date(value);
-            if (!isNaN(newDate.getTime())) {
+            if (!isNaN(newDate.getTime()) && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
                 setDate(newDate);
-                setInputValue(format(newDate, 'yyyy-MM-dd'));
+                setInputValue(value);
             }
         } else {
           setDate(undefined);
@@ -132,7 +132,14 @@ const DatePickerWithInput = ({ value, onChange }: { value: string, onChange: (da
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setInputValue(e.target.value);
+        let value = e.target.value.replace(/[^0-9]/g, '');
+        if (value.length > 4) {
+          value = `${value.slice(0, 4)}-${value.slice(4)}`;
+        }
+        if (value.length > 7) {
+          value = `${value.slice(0, 7)}-${value.slice(7)}`;
+        }
+        setInputValue(value.slice(0, 10));
     };
 
     const handleInputBlur = () => {
@@ -188,7 +195,7 @@ const TimePicker = ({ value, onChange }: { value: string, onChange: (time: strin
         onChange(`${newHour}:${newMinute}`);
     };
     
-    const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
+    const hours = Array.from({ length: 14 }, (_, i) => String(i + 7).padStart(2, '0')); // 07 to 20
     const minutes = ['00', '15', '30', '45'];
 
     return (
