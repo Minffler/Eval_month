@@ -172,7 +172,7 @@ export function Sidebar({ navItems, activeView, setActiveView, isOpen, setIsOpen
           </nav>
         </ScrollArea>
         <div className="mt-auto border-t">
-            <div className="p-2 space-y-1">
+             <div className={cn("p-2 flex", isOpen ? "flex-row space-x-1" : "flex-col space-y-1")}>
               <NavLink item={approvalItem} unreadCount={unreadApprovalCount} />
               <NavLink item={notificationItem} unreadCount={unreadNotificationCount} />
             </div>
