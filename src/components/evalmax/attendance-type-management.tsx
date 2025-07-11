@@ -165,7 +165,7 @@ export default function AttendanceTypeManagement({ attendanceTypes, setAttendanc
       <Card>
         <Collapsible open={isTypesOpen} onOpenChange={setIsTypesOpen}>
           <CardHeader>
-            <CardTitle>근태 수치 관리</CardTitle>
+            <CardTitle>근태 종류별 차감 설정</CardTitle>
             <CardDescription>
                 근태 종류와 그에 따른 차감 일수를 직접 정의하고 관리합니다. 이 설정은 근무율 계산에 사용됩니다.
             </CardDescription>
@@ -242,7 +242,7 @@ export default function AttendanceTypeManagement({ attendanceTypes, setAttendanc
         <CardHeader>
            <div className="flex items-center justify-between">
               <div>
-                <CardTitle>공휴일 관리</CardTitle>
+                <CardTitle>공휴일 설정</CardTitle>
                 <CardDescription>
                   {selectedYear}년 영업일 계산 시 제외될 공휴일을 관리합니다.
                 </CardDescription>
@@ -281,7 +281,7 @@ export default function AttendanceTypeManagement({ attendanceTypes, setAttendanc
                           value={holiday.date}
                           onChange={(e) => handleHolidayDateChange(index, e.target.value)}
                           onBlur={(e) => validateHolidayDate(e.target.value, holiday.id)}
-                          className={holidayErrors[holiday.id] ? "border-destructive mx-auto" : "mx-auto"}
+                          className={cn("w-40 h-8 mx-auto", holidayErrors[holiday.id] && "border-destructive")}
                           placeholder="YYYY-MM-DD"
                         />
                          {holidayErrors[holiday.id] && <p className="text-xs text-destructive mt-1">{holidayErrors[holiday.id]}</p>}

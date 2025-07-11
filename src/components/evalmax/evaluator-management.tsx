@@ -16,13 +16,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import type { EvaluationResult, Employee } from '@/lib/types';
@@ -35,6 +28,14 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Label } from '@/components/ui/label';
 import { useNotifications } from '@/contexts/notification-context';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
 
 interface EvaluatorManagementProps {
   results: EvaluationResult[];
@@ -130,6 +131,55 @@ const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
       </PopoverContent>
     </Popover>
   );
+};
+
+
+const EvaluatorSelector = ({
+    evaluators,
+    value,
+    onSelect,
+}: {
+    evaluators: Employee[];
+    value: string;
+    onSelect: (evaluatorId: string) => void;
+}) => {
+    const [open, setOpen] = React.useState(false);
+
+    const selectedEvaluator = evaluators.find(e => e.uniqueId === value);
+    const triggerText = selectedEvaluator ? `${selectedEvaluator.name} (${selectedEvaluator.uniqueId})` : '미지정';
+
+    return (
+        <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+                <Button variant="outline" role="combobox" aria-expanded={open} className="w-[220px] justify-between h-8">
+                    <span className="truncate">{triggerText}</span>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[250px] p-0">
+                <Command>
+                    <CommandInput placeholder="평가자 검색..." />
+                    <CommandList>
+                        <CommandEmpty>검색 결과가 없습니다.</CommandEmpty>
+                        <CommandGroup>
+                            <CommandItem onSelect={() => { onSelect(''); setOpen(false); }}>
+                                미지정
+                            </CommandItem>
+                            {evaluators.map(evaluator => (
+                                <CommandItem
+                                    key={evaluator.uniqueId}
+                                    value={`${evaluator.name} ${evaluator.uniqueId}`}
+                                    onSelect={() => { onSelect(evaluator.uniqueId); setOpen(false); }}
+                                >
+                                    {evaluator.name} ({evaluator.uniqueId})
+                                </CommandItem>
+                            ))}
+                        </CommandGroup>
+                    </CommandList>
+                </Command>
+            </PopoverContent>
+        </Popover>
+    );
 };
 
 
@@ -361,18 +411,12 @@ export default function EvaluatorManagement({
 
           <div className="flex flex-wrap gap-2 my-4 p-4 border rounded-lg items-center">
             <p className="font-semibold text-sm">선택한 {selectedIds.size}명</p>
-            <Select value={bulkEvaluatorId} onValueChange={setBulkEvaluatorId}>
-              <SelectTrigger className="w-full sm:w-[250px]"><SelectValue placeholder="평가자 선택" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="unassigned">미지정</SelectItem>
-                {evaluators.map((evaluator) => (
-                    <SelectItem key={evaluator.uniqueId} value={evaluator.uniqueId}>
-                        {`${evaluator.name} (${evaluator.uniqueId})`}
-                    </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button onClick={handleBulkAssign}>일괄 반영</Button>
+            <EvaluatorSelector
+              evaluators={evaluators}
+              value={bulkEvaluatorId}
+              onSelect={setBulkEvaluatorId}
+            />
+            <Button onClick={handleBulkAssign} size="sm">일괄 반영</Button>
           </div>
           <div className="border rounded-lg">
             <Table>
@@ -383,33 +427,27 @@ export default function EvaluatorManagement({
                   <TableHead className="cursor-pointer text-center" onClick={() => requestSort('name')}><div className="flex items-center justify-center">이름{getSortIcon('name')}</div></TableHead>
                   <TableHead className="cursor-pointer text-center" onClick={() => requestSort('company')}><div className="flex items-center justify-center">회사{getSortIcon('company')}</div></TableHead>
                   <TableHead className="cursor-pointer text-center" onClick={() => requestSort('department')}><div className="flex items-center justify-center">소속부서{getSortIcon('department')}</div></TableHead>
-                  <TableHead className="cursor-pointer text-center" onClick={() => requestSort('title')}><div className="flex items-center justify-center">직책/성장레벨{getSortIcon('title')}</div></TableHead>
+                  <TableHead className="cursor-pointer text-center" onClick={() => requestSort('title')}><div className="flex items-center justify-center">직책{getSortIcon('title')}</div></TableHead>
+                  <TableHead className="cursor-pointer text-center" onClick={() => requestSort('growthLevel')}><div className="flex items-center justify-center">성장레벨{getSortIcon('growthLevel')}</div></TableHead>
                   <TableHead className="cursor-pointer text-center" onClick={() => requestSort('evaluatorName')}><div className="flex items-center justify-center">평가자{getSortIcon('evaluatorName')}</div></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredResults.map((result) => (
                   <TableRow key={result.id} data-state={selectedIds.has(result.id) ? "selected" : ""}>
-                    <TableCell className="text-center"><Checkbox checked={selectedIds.has(result.id)} onCheckedChange={(checked) => handleSelectRow(result.id, Boolean(checked))} /></TableCell>
-                    <TableCell className="text-center">{result.uniqueId}</TableCell>
-                    <TableCell className="text-center">{result.name}</TableCell>
-                    <TableCell className="text-center">{result.company}</TableCell>
-                    <TableCell className="text-center">{result.department}</TableCell>
-                    <TableCell className="text-center">{result.title} / {result.growthLevel}</TableCell>
-                    <TableCell>
-                      <Select value={result.evaluatorId || 'unassigned'} onValueChange={(newEvaluatorId) => handleEvaluatorChange(result.id, newEvaluatorId)}>
-                        <SelectTrigger className="w-[220px] mx-auto">
-                            <SelectValue placeholder="미지정" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="unassigned">미지정</SelectItem>
-                          {evaluators.map((evaluator) => (
-                              <SelectItem key={evaluator.uniqueId} value={evaluator.uniqueId}>
-                                  {`${evaluator.name} (${evaluator.uniqueId})`}
-                              </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                    <TableCell className="text-center py-1 px-2"><Checkbox checked={selectedIds.has(result.id)} onCheckedChange={(checked) => handleSelectRow(result.id, Boolean(checked))} /></TableCell>
+                    <TableCell className="text-center py-1 px-2">{result.uniqueId}</TableCell>
+                    <TableCell className="text-center py-1 px-2">{result.name}</TableCell>
+                    <TableCell className="text-center py-1 px-2">{result.company}</TableCell>
+                    <TableCell className="text-center py-1 px-2">{result.department}</TableCell>
+                    <TableCell className="text-center py-1 px-2">{result.title}</TableCell>
+                    <TableCell className="text-center py-1 px-2">{result.growthLevel}</TableCell>
+                    <TableCell className="py-1 px-2 text-center">
+                       <EvaluatorSelector
+                          evaluators={evaluators}
+                          value={result.evaluatorId || ''}
+                          onSelect={(newEvaluatorId) => handleEvaluatorChange(result.id, newEvaluatorId)}
+                        />
                     </TableCell>
                   </TableRow>
                 ))}
