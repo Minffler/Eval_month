@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/select';
 import { ConsistencyValidator } from './consistency-validator';
 import ManageData from './manage-data';
-import type { EvaluationResult, Grade, Employee, GradeInfo, EvaluationGroupCategory, User, EvaluationUploadData, WorkRateInputs, AttendanceType, Holiday, Approval } from '@/lib/types';
+import type { EvaluationResult, Grade, Employee, GradeInfo, EvaluationGroupCategory, User, EvaluationUploadData, WorkRateInputs, AttendanceType, Holiday, Approval, AppNotification } from '@/lib/types';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -58,7 +58,6 @@ import WorkRateManagement from './work-rate-management';
 import WorkRateDetails from './work-rate-details';
 import type { WorkRateDetailsResult } from '@/lib/work-rate-calculator';
 import { cn } from '@/lib/utils';
-import { useNotifications } from '@/contexts/notification-context';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
@@ -88,6 +87,9 @@ interface AdminDashboardProps {
   setHolidays: React.Dispatch<React.SetStateAction<Holiday[]>>;
   workRateDetails: WorkRateDetailsResult;
   onApprovalAction: (approval: Approval) => void;
+  notifications: AppNotification[];
+  addNotification: (notification: Omit<AppNotification, 'id' | 'date' | 'isRead'>) => void;
+  approvals: Approval[];
 }
 
 type SortConfig = {
@@ -133,6 +135,9 @@ export default function AdminDashboard({
   setHolidays,
   workRateDetails,
   onApprovalAction,
+  notifications,
+  addNotification,
+  approvals
 }: AdminDashboardProps) {
   const [results, setResults] = React.useState<EvaluationResult[]>(initialResults);
   const [activeResultsTab, setActiveResultsTab] = React.useState<EvaluationGroupCategory>('전체');
@@ -149,7 +154,6 @@ export default function AdminDashboard({
   const [evaluatorViewPopoverOpen, setEvaluatorViewPopoverOpen] = React.useState(false);
 
   const { toast } = useToast();
-  const { addNotification, approvals } = useNotifications();
 
   React.useEffect(() => {
     try {
@@ -836,6 +840,9 @@ export default function AdminDashboard({
                             allEmployees={allEmployees}
                             attendanceTypes={attendanceTypes}
                             onApprovalAction={onApprovalAction}
+                            notifications={notifications}
+                            addNotification={addNotification}
+                            approvals={approvals}
                         />
                     ) : (
                         <Card className="flex items-center justify-center h-64">
@@ -850,13 +857,13 @@ export default function AdminDashboard({
         case 'file-upload':
             return <ManageData onEmployeeUpload={onEmployeeUpload} onEvaluationUpload={onEvaluationUpload} results={initialResults} selectedDate={selectedDate} setSelectedDate={setSelectedDate} onClearEmployeeData={onClearEmployeeData} onClearEvaluationData={onClearEvaluationData} onWorkRateDataUpload={onWorkRateDataUpload} onClearWorkRateData={onClearWorkRateData} workRateInputs={currentWorkRateInputs} />;
         case 'evaluator-management':
-            return <EvaluatorManagement results={initialResults} allEmployees={allEmployees} handleResultsUpdate={handleResultsUpdate} />;
+            return <EvaluatorManagement results={initialResults} allEmployees={allEmployees} handleResultsUpdate={handleResultsUpdate} addNotification={addNotification}/>;
         case 'system-standards':
             return <SystemStandardsManagement gradingScale={gradingScale} setGradingScale={setGradingScale} attendanceTypes={attendanceTypes} setAttendanceTypes={setAttendanceTypes} holidays={holidays} setHolidays={setHolidays} />;
         case 'consistency-check':
             return <ConsistencyValidator results={initialResults} gradingScale={gradingScale} />;
         case 'work-rate-view':
-            return <WorkRateManagement results={initialResults} workRateDetails={workRateDetails} selectedDate={selectedDate} holidays={holidays} handleResultsUpdate={handleResultsUpdate} allEmployees={allEmployees} />;
+            return <WorkRateManagement results={initialResults} workRateDetails={workRateDetails} selectedDate={selectedDate} holidays={holidays} handleResultsUpdate={handleResultsUpdate} allEmployees={allEmployees} addNotification={addNotification} />;
         case 'shortened-work-details':
             return <WorkRateDetails type="shortenedWork" data={workRateDetails.shortenedWorkDetails} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} onDataChange={() => {}}/>;
         case 'daily-attendance-details':
@@ -921,7 +928,7 @@ export default function AdminDashboard({
         }
         case 'notifications':
              return (
-                <AdminNotifications />
+                <AdminNotifications notifications={notifications} />
             )
         default:
             return <div>선택된 뷰가 없습니다.</div>

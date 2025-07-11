@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -24,7 +23,6 @@ interface NotificationContextType {
 
 const NotificationContext = React.createContext<NotificationContextType | undefined>(undefined);
 
-// Helper to get all items from storage
 const getAllItems = <T,>(key: string): T[] => {
     if (typeof window === 'undefined') return [];
     try {
@@ -36,7 +34,6 @@ const getAllItems = <T,>(key: string): T[] => {
     }
 };
 
-// Helper to save all items to storage
 const saveAllItems = <T,>(key: string, items: T[]) => {
     if (typeof window === 'undefined') return;
     try {
@@ -48,45 +45,8 @@ const saveAllItems = <T,>(key: string, items: T[]) => {
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
     const { user } = useAuth();
-    const [allNotifications, setAllNotifications] = React.useState<AppNotification[]>([]);
-    const [allApprovals, setAllApprovals] = React.useState<Approval[]>([]);
-
-    React.useEffect(() => {
-        // Load notifications and clean up old ones on mount
-        const threeMonthsAgo = subMonths(new Date(), 3);
-        const currentNotifications = getAllItems<AppNotification>(NOTIFICATIONS_STORAGE_KEY);
-        const recentNotifications = currentNotifications.filter(n => new Date(n.date) >= threeMonthsAgo);
-        
-        setAllNotifications(recentNotifications);
-        if (currentNotifications.length !== recentNotifications.length) {
-            saveAllItems(NOTIFICATIONS_STORAGE_KEY, recentNotifications);
-        }
-
-        // Load all approvals (no cleanup for approvals)
-        setAllApprovals(getAllItems<Approval>(APPROVALS_STORAGE_KEY));
-    }, []);
-
-    const notificationsForUser = React.useMemo(() => {
-        if (!user) return [];
-        return allNotifications
-            .filter(n => n.recipientId === user.uniqueId || n.recipientId === 'all')
-            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    }, [user, allNotifications]);
-    
-    const approvalsForUser = React.useMemo(() => {
-        if (!user) return [];
-        return allApprovals
-            .filter(a => a.approverId === user.uniqueId)
-            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    }, [user, allApprovals]);
-
-    const unreadNotificationCount = React.useMemo(() => {
-        return notificationsForUser.filter(n => !n.isRead).length;
-    }, [notificationsForUser]);
-    
-    const unreadApprovalCount = React.useMemo(() => {
-        return approvalsForUser.filter(a => !a.isRead).length;
-    }, [approvalsForUser]);
+    const [allNotifications, setAllNotifications] = React.useState<AppNotification[]>(() => getAllItems(NOTIFICATIONS_STORAGE_KEY));
+    const [allApprovals, setAllApprovals] = React.useState<Approval[]>(() => getAllItems(APPROVALS_STORAGE_KEY));
 
     const addNotification = React.useCallback((notificationData: Omit<AppNotification, 'id' | 'date' | 'isRead'>) => {
         const newNotification: AppNotification = {
@@ -155,6 +115,28 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             });
         }, 500);
     }, [user]);
+
+    const notificationsForUser = React.useMemo(() => {
+        if (!user) return [];
+        return allNotifications
+            .filter(n => n.recipientId === user.uniqueId || n.recipientId === 'all')
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }, [user, allNotifications]);
+    
+    const approvalsForUser = React.useMemo(() => {
+        if (!user) return [];
+        return allApprovals
+            .filter(a => a.approverId === user.uniqueId)
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }, [user, allApprovals]);
+
+    const unreadNotificationCount = React.useMemo(() => {
+        return notificationsForUser.filter(n => !n.isRead).length;
+    }, [notificationsForUser]);
+    
+    const unreadApprovalCount = React.useMemo(() => {
+        return approvalsForUser.filter(a => !a.isRead).length;
+    }, [approvalsForUser]);
 
     const value = {
         notifications: notificationsForUser,

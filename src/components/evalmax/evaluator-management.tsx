@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import type { EvaluationResult, Employee } from '@/lib/types';
+import type { EvaluationResult, Employee, AppNotification } from '@/lib/types';
 import { getPositionSortValue } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowUpDown, ArrowUp, ArrowDown, ChevronsUpDown } from 'lucide-react';
@@ -27,7 +27,6 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Label } from '@/components/ui/label';
-import { useNotifications } from '@/contexts/notification-context';
 import {
   Command,
   CommandEmpty,
@@ -41,6 +40,7 @@ interface EvaluatorManagementProps {
   results: EvaluationResult[];
   allEmployees: Employee[];
   handleResultsUpdate: (updatedResults: EvaluationResult[]) => void;
+  addNotification: (notification: Omit<AppNotification, 'id' | 'date' | 'isRead'>) => void;
 }
 
 type SortConfig = {
@@ -189,6 +189,7 @@ export default function EvaluatorManagement({
   results,
   allEmployees,
   handleResultsUpdate,
+  addNotification
 }: EvaluatorManagementProps) {
   const [filteredResults, setFilteredResults] = React.useState(results);
   const [companyFilter, setCompanyFilter] = React.useState<Set<string>>(new Set());
@@ -199,7 +200,6 @@ export default function EvaluatorManagement({
   const [bulkEvaluatorId, setBulkEvaluatorId] = React.useState('');
   const [currentGroupEvaluator, setCurrentGroupEvaluator] = React.useState<string>('필터를 선택하세요');
   const { toast } = useToast();
-  const { addNotification } = useNotifications();
 
   const evaluators = React.useMemo(() => {
     return allEmployees.filter(e => allEmployees.some(emp => emp.evaluatorId === e.uniqueId));

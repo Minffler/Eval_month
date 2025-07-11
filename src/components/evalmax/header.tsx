@@ -17,22 +17,33 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useNotifications } from '@/contexts/notification-context';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import type { AppNotification, Approval } from '@/lib/types';
 
 interface HeaderProps {
     selectedDate: { year: number, month: number };
     onDateChange: (date: { year: number, month: number }) => void;
+    notifications: AppNotification[];
+    unreadNotificationCount: number;
+    markNotificationsAsRead: () => void;
+    approvals: Approval[];
+    unreadApprovalCount: number;
+    markApprovalsAsRead: () => void;
 }
 
-export default function Header({ selectedDate, onDateChange }: HeaderProps) {
+export default function Header({ 
+  selectedDate, 
+  onDateChange,
+  notifications,
+  unreadNotificationCount,
+  markNotificationsAsRead,
+  approvals,
+  unreadApprovalCount,
+  markApprovalsAsRead,
+}: HeaderProps) {
   const { user, role, setRole } = useAuth();
-  const { 
-    notifications, unreadNotificationCount, markNotificationsAsRead,
-    approvals, unreadApprovalCount, markApprovalsAsRead 
-  } = useNotifications();
 
   const roleDisplay: Record<string, string> = {
     admin: '관리자',

@@ -19,7 +19,6 @@ import { ScrollArea } from '../ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import type { User } from '@/lib/types';
 import { Separator } from '../ui/separator';
-import { useNotifications } from '@/contexts/notification-context';
 
 export type NavItem = {
   id: string;
@@ -36,11 +35,12 @@ interface SidebarProps {
   setIsOpen: (isOpen: boolean) => void;
   user: User | null;
   logout: () => void;
+  unreadNotificationCount: number;
+  unreadApprovalCount: number;
 }
 
-export function Sidebar({ navItems, activeView, setActiveView, isOpen, setIsOpen, user, logout }: SidebarProps) {
+export function Sidebar({ navItems, activeView, setActiveView, isOpen, setIsOpen, user, logout, unreadNotificationCount, unreadApprovalCount }: SidebarProps) {
   const [openAccordion, setOpenAccordion] = React.useState<string[]>([]);
-  const { unreadNotificationCount, unreadApprovalCount } = useNotifications();
 
   React.useEffect(() => {
     if (isOpen) {

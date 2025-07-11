@@ -4,7 +4,7 @@
 import * as React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import type { Employee, EvaluationResult, Holiday, ShortenedWorkType } from '@/lib/types';
+import type { Employee, EvaluationResult, Holiday, ShortenedWorkType, AppNotification } from '@/lib/types';
 import type { WorkRateDetailsResult, ShortenedWorkDetail, DailyAttendanceDetail } from '@/lib/work-rate-calculator';
 import { Button } from '../ui/button';
 import { ArrowUpDown, Download, ArrowUp, ArrowDown, Settings2, Search } from 'lucide-react';
@@ -21,7 +21,6 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useNotifications } from '@/contexts/notification-context';
 import { format } from 'date-fns';
 import { Input } from '../ui/input';
 
@@ -32,6 +31,7 @@ interface WorkRateManagementProps {
   selectedDate: { year: number, month: number };
   holidays: Holiday[];
   handleResultsUpdate: (updatedResults: EvaluationResult[]) => void;
+  addNotification: (notification: Omit<AppNotification, 'id' | 'date' | 'isRead'>) => void;
 }
 
 type DeductionType = 'attendance' | 'pregnancy' | 'care';
@@ -75,9 +75,8 @@ function countBusinessDaysForMonth(year: number, month: number, holidays: Set<st
 }
 
 
-export default function WorkRateManagement({ results, allEmployees, workRateDetails, selectedDate, holidays, handleResultsUpdate }: WorkRateManagementProps) {
+export default function WorkRateManagement({ results, allEmployees, workRateDetails, selectedDate, holidays, handleResultsUpdate, addNotification }: WorkRateManagementProps) {
   const { toast } = useToast();
-  const { addNotification } = useNotifications();
   const [sortConfig, setSortConfig] = React.useState<SortConfig>({ key: 'monthlyWorkRate', direction: 'ascending' });
   const [detailDialog, setDetailDialog] = React.useState<DetailDialogInfo>({
     isOpen: false,

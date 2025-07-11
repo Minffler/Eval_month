@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useAuth } from '@/contexts/auth-context';
-import type { EvaluationResult, Grade, GradeInfo, EvaluationGroupCategory, User, EvaluatorView, Employee, Holiday, AttendanceType, Approval } from '@/lib/types';
+import type { EvaluationResult, Grade, GradeInfo, EvaluationGroupCategory, User, EvaluatorView, Employee, Holiday, AttendanceType, Approval, AppNotification } from '@/lib/types';
 import {
   DndContext,
   closestCenter,
@@ -74,7 +74,6 @@ import {
 import { Label } from '../ui/label';
 import { ScrollArea } from '../ui/scroll-area';
 import { getPositionSortValue } from '@/lib/data';
-import { useNotifications } from '@/contexts/notification-context';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import WorkRateManagement from './work-rate-management';
@@ -98,6 +97,9 @@ interface EvaluatorDashboardProps {
   allEmployees: Employee[];
   attendanceTypes: AttendanceType[];
   onApprovalAction: (approval: Approval) => void;
+  notifications: AppNotification[];
+  addNotification: (notification: Omit<AppNotification, 'id' | 'date' | 'isRead'>) => void;
+  approvals: Approval[];
 }
 
 type SortConfig = {
@@ -1027,11 +1029,10 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, allEmploye
 };
 
 
-export default function EvaluatorDashboard({ allResults, currentMonthResults, gradingScale, selectedDate, setSelectedDate, handleResultsUpdate, evaluatorUser, activeView, onClearMyEvaluations, workRateDetails, holidays, allEmployees, attendanceTypes, onApprovalAction }: EvaluatorDashboardProps) {
+export default function EvaluatorDashboard({ allResults, currentMonthResults, gradingScale, selectedDate, setSelectedDate, handleResultsUpdate, evaluatorUser, activeView, onClearMyEvaluations, workRateDetails, holidays, allEmployees, attendanceTypes, onApprovalAction, notifications, addNotification, approvals }: EvaluatorDashboardProps) {
   const { user: authUser } = useAuth();
   const [effectiveUser, setEffectiveUser] = React.useState<User | null>(null);
-  const { approvals } = useNotifications();
-
+  
   React.useEffect(() => {
     if (evaluatorUser) { // This is an Employee object from Admin view
         // Construct a User object from the Employee object to use consistently
@@ -1096,7 +1097,7 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
                  evaluatorName={effectiveUser.name}
                />;
       case 'work-rate-view':
-          return <WorkRateManagement results={myEmployees} workRateDetails={myManagedWorkRateDetails} selectedDate={selectedDate} allEmployees={allEmployees} holidays={holidays} handleResultsUpdate={handleResultsUpdate} />;
+          return <WorkRateManagement results={myEmployees} workRateDetails={myManagedWorkRateDetails} selectedDate={selectedDate} allEmployees={allEmployees} holidays={holidays} handleResultsUpdate={handleResultsUpdate} addNotification={addNotification} />;
       case 'shortened-work-details':
           return <WorkRateDetails type="shortenedWork" data={myManagedWorkRateDetails.shortenedWorkDetails} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} onDataChange={()=>{}} />;
       case 'daily-attendance-details':
@@ -1160,7 +1161,7 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
             )
         }
       case 'notifications':
-          return <EvaluatorNotifications />;
+          return <EvaluatorNotifications notifications={notifications} />;
       default:
         return <div>선택된 뷰가 없습니다.</div>;
     }

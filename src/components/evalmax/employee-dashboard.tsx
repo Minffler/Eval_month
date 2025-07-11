@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useAuth } from '@/contexts/auth-context';
-import type { EvaluationResult, Grade, GradeInfo, Employee, EmployeeView, AttendanceType, Approval } from '@/lib/types';
+import type { EvaluationResult, Grade, GradeInfo, Employee, EmployeeView, AttendanceType, Approval, AppNotification } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -17,7 +17,6 @@ import {
 import WorkRateManagement from './work-rate-management';
 import WorkRateDetails from './work-rate-details';
 import type { WorkRateDetailsResult } from '@/lib/work-rate-calculator';
-import { useNotifications } from '@/contexts/notification-context';
 import EmployeeNotifications from './employee-dashboard-notifications';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -33,6 +32,8 @@ interface EmployeeDashboardProps {
   allEmployees: Employee[];
   attendanceTypes: AttendanceType[];
   onApprovalAction: (approval: Approval) => void;
+  notifications: AppNotification[];
+  approvals: Approval[];
 }
 
 type SortConfig = {
@@ -249,11 +250,11 @@ export default function EmployeeDashboard({
     selectedDate, 
     allEmployees, 
     attendanceTypes,
-    onApprovalAction
+    onApprovalAction,
+    notifications,
+    approvals
 }: EmployeeDashboardProps) {
   const { user, role } = useAuth();
-  const { approvals } = useNotifications();
-
 
   if (!user) {
     return <div>결과를 불러오는 중입니다...</div>;
@@ -269,7 +270,7 @@ export default function EmployeeDashboard({
       case 'my-review':
         return <MyReviewView employeeResults={employeeResults} allResults={allResults} gradingScale={gradingScale} />;
       case 'my-work-rate':
-        return <WorkRateManagement results={employeeResults} workRateDetails={myWorkRateDetails} selectedDate={selectedDate} allEmployees={allEmployees} holidays={[]} handleResultsUpdate={() => {}} />;
+        return <WorkRateManagement results={employeeResults} workRateDetails={myWorkRateDetails} selectedDate={selectedDate} allEmployees={allEmployees} holidays={[]} handleResultsUpdate={() => {}} addNotification={() => {}} />;
       case 'my-shortened-work':
         return <WorkRateDetails type="shortenedWork" data={myWorkRateDetails.shortenedWorkDetails} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} viewAs={role} onDataChange={() => {}} />;
       case 'my-daily-attendance':
@@ -324,7 +325,7 @@ export default function EmployeeDashboard({
             )
         }
       case 'notifications':
-          return <EmployeeNotifications />;
+          return <EmployeeNotifications notifications={notifications} />;
       default:
         return <div>선택된 뷰가 없습니다.</div>;
     }

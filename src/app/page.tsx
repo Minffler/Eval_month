@@ -6,7 +6,7 @@ import Header from '@/components/evalmax/header';
 import AdminDashboard from '@/components/evalmax/admin-dashboard';
 import EvaluatorDashboard from '@/components/evalmax/evaluator-dashboard';
 import EmployeeDashboard from '@/components/evalmax/employee-dashboard';
-import type { Employee, Evaluation, EvaluationResult, Grade, GradeInfo, User, EvaluatorView, EvaluationUploadData, WorkRateInputs, AttendanceType, Holiday, ShortenedWorkHourRecord, DailyAttendanceRecord, EmployeeView, Approval } from '@/lib/types';
+import type { Employee, Evaluation, EvaluationResult, Grade, GradeInfo, User, EvaluatorView, EvaluationUploadData, WorkRateInputs, AttendanceType, Holiday, ShortenedWorkHourRecord, DailyAttendanceRecord, EmployeeView, Approval, AppNotification } from '@/lib/types';
 import { mockEmployees, gradingScale as initialGradingScale, calculateFinalAmount, mockEvaluations as initialMockEvaluations, getDetailedGroup1, initialAttendanceTypes } from '@/lib/data';
 import { useRouter } from 'next/navigation';
 import { Loader2, Bell } from 'lucide-react';
@@ -133,8 +133,20 @@ const getInitialDate = () => {
 
 export default function Home() {
   const { user, role, loading, logout } = useAuth();
-  const { updateApprovalStatus } = useNotifications();
   const router = useRouter();
+
+  const {
+      notifications,
+      unreadNotificationCount,
+      addNotification,
+      markNotificationsAsRead,
+      approvals,
+      unreadApprovalCount,
+      addApproval,
+      updateApprovalStatus,
+      markApprovalsAsRead
+  } = useNotifications();
+
   
   const [employees, setEmployees] = React.useState<Record<string, Employee[]>>(() => {
     if (typeof window === 'undefined') {
@@ -753,6 +765,9 @@ export default function Home() {
                   setHolidays={setHolidays}
                   workRateDetails={workRateDetails}
                   onApprovalAction={handleApprovalAction}
+                  notifications={notifications}
+                  addNotification={addNotification}
+                  approvals={approvals}
                 />;
       case 'evaluator':
         const myManagedEmployees = results.filter(e => e.evaluatorId === user?.uniqueId);
@@ -773,9 +788,13 @@ export default function Home() {
                   allEmployees={allEmployees}
                   attendanceTypes={attendanceTypes}
                   onApprovalAction={handleApprovalAction}
+                  notifications={notifications}
+                  addNotification={addNotification}
+                  approvals={approvals}
                 />;
       case 'employee':
         const myEmployeeInfo = results.find(e => e.uniqueId === user?.uniqueId);
+        const myApprovals = approvals.filter(a => a.requesterId === user.uniqueId);
         return <EmployeeDashboard 
                   employeeResults={myEmployeeInfo ? [myEmployeeInfo] : []}
                   allResults={results.filter(e => e.uniqueId === user?.uniqueId)}
@@ -786,6 +805,8 @@ export default function Home() {
                   allEmployees={allEmployees}
                   attendanceTypes={attendanceTypes}
                   onApprovalAction={handleApprovalAction}
+                  notifications={notifications}
+                  approvals={myApprovals}
                 />;
       default:
         return null;
@@ -793,7 +814,16 @@ export default function Home() {
   };
 
   const headerContent = (
-    <Header selectedDate={selectedDate} onDateChange={setSelectedDate} />
+    <Header
+      selectedDate={selectedDate}
+      onDateChange={setSelectedDate}
+      notifications={notifications}
+      unreadNotificationCount={unreadNotificationCount}
+      markNotificationsAsRead={markNotificationsAsRead}
+      approvals={approvals}
+      unreadApprovalCount={unreadApprovalCount}
+      markApprovalsAsRead={markApprovalsAsRead}
+    />
   );
 
   if (loading) {
@@ -819,6 +849,8 @@ export default function Home() {
             setIsOpen={setIsOpen}
             user={user}
             logout={logout}
+            unreadNotificationCount={unreadNotificationCount}
+            unreadApprovalCount={unreadApprovalCount}
         />
         <div className={cn("flex flex-col flex-1 transition-all duration-300 ease-in-out", isOpen ? "ml-64" : "ml-16")}>
             <div className="sticky top-0 z-10 flex h-16 items-center justify-between gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6">

@@ -4,26 +4,20 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useNotifications } from "@/contexts/notification-context";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
+import type { AppNotification } from "@/lib/types";
 
-export default function AdminNotifications() {
-    const { notifications, unreadCount, markAllAsRead } = useNotifications();
+interface AdminNotificationsProps {
+    notifications: AppNotification[];
+}
 
+export default function AdminNotifications({ notifications }: AdminNotificationsProps) {
     return (
         <Card>
-            <CardHeader className="flex flex-row justify-between items-center">
-                <div>
-                    <CardTitle>알림함</CardTitle>
-                    <CardDescription>최근 알림 내역입니다.</CardDescription>
-                </div>
-                {unreadCount > 0 && (
-                     <Button variant="outline" size="sm" onClick={markAllAsRead}>
-                        <CheckCircle2 className="mr-2 h-4 w-4" />
-                        모두 읽음으로 표시
-                    </Button>
-                )}
+            <CardHeader>
+                <CardTitle>알림함</CardTitle>
+                <CardDescription>최근 알림 내역입니다.</CardDescription>
             </CardHeader>
             <CardContent>
                 {notifications.length > 0 ? (
