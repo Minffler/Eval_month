@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/accordion';
 import {
   Bell,
-  CheckSquare,
+  FolderKanban,
   ChevronLeft,
   LogOut,
 } from 'lucide-react';
@@ -93,7 +93,7 @@ export function Sidebar({ navItems, activeView, setActiveView, isOpen, setIsOpen
   ) : null;
 
   const notificationItem: NavItem = { id: 'notifications', label: '알림함', icon: Bell };
-  const approvalItem: NavItem = { id: 'approvals', label: '결재함', icon: CheckSquare };
+  const approvalItem: NavItem = { id: 'approvals', label: '결재함', icon: FolderKanban };
 
   return (
     <div

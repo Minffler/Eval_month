@@ -41,7 +41,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Check, Download, ArrowUpDown, ArrowUp, ArrowDown, Edit, GripVertical, ChevronUp, ChevronDown, PlusCircle, Save, X, Trash2, Users, Bell, CheckCircle2, ThumbsUp, ThumbsDown, CheckSquare } from 'lucide-react';
+import { Check, Download, ArrowUpDown, ArrowUp, ArrowDown, Edit, GripVertical, ChevronUp, ChevronDown, PlusCircle, Save, X, Trash2, Users, Bell, CheckCircle2, ThumbsUp, ThumbsDown, FolderKanban } from 'lucide-react';
 import { Progress } from '../ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { GradeHistogram } from './grade-histogram';
@@ -1150,7 +1150,7 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
                     </Table>
                   ) : (
                      <div className="flex flex-col items-center justify-center h-40 text-center">
-                        <CheckSquare className="h-10 w-10 text-muted-foreground mb-4" />
+                        <FolderKanban className="h-10 w-10 text-muted-foreground mb-4" />
                         <p className="text-muted-foreground">새로운 결재가 없습니다.</p>
                    </div>
                   )}
