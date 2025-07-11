@@ -10,8 +10,8 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import {
-  Bell,
   Inbox,
+  Bell,
   ChevronLeft,
   LogOut,
 } from 'lucide-react';
@@ -56,23 +56,15 @@ export function Sidebar({ navItems, activeView, setActiveView, isOpen, setIsOpen
     }
   };
 
-  const NavLink = ({ item, unreadCount = 0 }: { item: NavItem, unreadCount?: number }) => {
+  const NavLink = ({ item }: { item: NavItem }) => {
     return (
       <Button
         variant={activeView === item.id ? 'secondary' : 'ghost'}
-        className={cn("w-full justify-center gap-3", isOpen ? "justify-start" : "justify-center")}
+        className={cn("w-full justify-center gap-3", isOpen && "justify-start")}
         onClick={() => handleNavClick(item.id, !!item.children)}
         title={item.label}
       >
-          <div className="relative">
-              <item.icon className="h-5 w-5 flex-shrink-0" />
-              {unreadCount > 0 && (
-                  <span className={cn("absolute flex h-2.5 w-2.5", isOpen ? "-top-0.5 -right-0.5" : "top-0 right-0")}>
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-                  </span>
-              )}
-          </div>
+          <item.icon className="h-5 w-5 flex-shrink-0" />
         {isOpen && <span className="truncate flex-grow text-left">{item.label}</span>}
       </Button>
     );
