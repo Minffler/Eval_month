@@ -12,7 +12,7 @@ import {
   TableFooter
 } from '@/components/ui/table';
 import { Input } from '../ui/input';
-import { Search, ArrowUpDown, ArrowUp, ArrowDown, Download, PlusCircle, Calendar as CalendarIcon, ClockIcon, Edit } from 'lucide-react';
+import { Search, ArrowUpDown, ArrowUp, ArrowDown, Download, PlusCircle, Edit } from 'lucide-react';
 import type { Employee, AttendanceType, Role } from '@/lib/types';
 import type { ShortenedWorkDetail, DailyAttendanceDetail } from '@/lib/work-rate-calculator';
 import { Button } from '../ui/button';
@@ -39,10 +39,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Checkbox } from '../ui/checkbox';
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { Calendar } from '../ui/calendar';
-import { format } from 'date-fns';
-import { ko } from 'date-fns/locale';
 import {
   Command,
   CommandEmpty,
@@ -51,6 +47,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command"
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 
 
 type SortConfig<T> = {
@@ -99,6 +96,50 @@ const DailyAttendanceIcon = ({ isShortenedDay }: { isShortenedDay: boolean }) =>
     );
 };
 
+const DatePicker = ({ value, onChange }: { value: string, onChange: (date: string) => void }) => {
+    const date = value ? new Date(value) : null;
+    const year = date ? date.getFullYear() : undefined;
+    const month = date ? date.getMonth() + 1 : undefined;
+    const day = date ? date.getDate() : undefined;
+
+    const years = Array.from({ length: 11 }, (_, i) => new Date().getFullYear() - 5 + i);
+    const months = Array.from({ length: 12 }, (_, i) => i + 1);
+
+    const handleDatePartChange = (part: 'year' | 'month' | 'day', partValue: number | undefined) => {
+        const newYear = part === 'year' ? partValue : year;
+        const newMonth = part === 'month' ? partValue : month;
+        const newDay = part === 'day' ? partValue : day;
+
+        if (newYear && newMonth && newDay) {
+            const newDate = new Date(newYear, newMonth - 1, newDay);
+            onChange(newDate.toISOString().split('T')[0]);
+        } else {
+            onChange('');
+        }
+    };
+
+    return (
+        <div className="flex gap-2 items-center">
+            <Select value={year?.toString()} onValueChange={(val) => handleDatePartChange('year', parseInt(val))}>
+                <SelectTrigger className="w-[100px]"><SelectValue placeholder="년도" /></SelectTrigger>
+                <SelectContent>{years.map(y => <SelectItem key={y} value={y.toString()}>{y}년</SelectItem>)}</SelectContent>
+            </Select>
+            <Select value={month?.toString()} onValueChange={(val) => handleDatePartChange('month', parseInt(val))}>
+                <SelectTrigger className="w-[80px]"><SelectValue placeholder="월" /></SelectTrigger>
+                <SelectContent>{months.map(m => <SelectItem key={m} value={m.toString()}>{m}월</SelectItem>)}</SelectContent>
+            </Select>
+            <Input
+                type="number"
+                value={day ?? ''}
+                onChange={(e) => handleDatePartChange('day', e.target.value ? parseInt(e.target.value) : undefined)}
+                placeholder="일"
+                className="w-[70px]"
+                min="1"
+                max="31"
+            />
+        </div>
+    );
+}
 
 export default function WorkRateDetails({ type, data, selectedDate, allEmployees, attendanceTypes, viewAs = 'admin' }: WorkRateDetailsProps) {
   const { user } = useAuth();
@@ -287,7 +328,8 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
   const renderDialogContent = () => {
 
     const EmployeeSelector = () => {
-      if (viewAs !== 'employee' && dialogMode === 'add') {
+      // For 'add' mode, when user is evaluator or admin, show popover search.
+      if (dialogMode === 'add' && (viewAs === 'admin' || viewAs === 'evaluator')) {
           return (
               <div className="grid grid-cols-4 items-start gap-4">
                   <Label htmlFor="employee" className="text-right pt-2">대상자</Label>
@@ -322,6 +364,7 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
               </div>
           );
       }
+      // For 'edit' mode, or when user is employee, show disabled inputs.
       return (
           <>
               <div className="grid grid-cols-4 items-center gap-4">
@@ -354,31 +397,15 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="startDate" className="text-right">시작일</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant={"outline"} className={cn("col-span-3 justify-start text-left font-normal", !formData.startDate && "text-muted-foreground")}>
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.startDate ? format(new Date(formData.startDate), "PPP", { locale: ko }) : <span>날짜 선택</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar locale={ko} mode="single" selected={formData.startDate ? new Date(formData.startDate) : undefined} onSelect={(date) => handleFormChange('startDate', date ? format(date, 'yyyy-MM-dd') : '')} captionLayout="dropdown-buttons" fromYear={2020} toYear={2030} initialFocus/>
-                </PopoverContent>
-              </Popover>
+              <div className="col-span-3">
+                <DatePicker value={formData.startDate} onChange={(date) => handleFormChange('startDate', date)} />
+              </div>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="endDate" className="text-right">종료일</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant={"outline"} className={cn("col-span-3 justify-start text-left font-normal", !formData.endDate && "text-muted-foreground")}>
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.endDate ? format(new Date(formData.endDate), "PPP", { locale: ko }) : <span>날짜 선택</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar locale={ko} mode="single" selected={formData.endDate ? new Date(formData.endDate) : undefined} onSelect={(date) => handleFormChange('endDate', date ? format(date, 'yyyy-MM-dd') : '')} captionLayout="dropdown-buttons" fromYear={2020} toYear={2030} initialFocus/>
-                </PopoverContent>
-              </Popover>
+              <div className="col-span-3">
+                <DatePicker value={formData.endDate} onChange={(date) => handleFormChange('endDate', date)} />
+              </div>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="startTime" className="text-right">출근시각</Label>
@@ -400,17 +427,9 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
             <EmployeeSelector />
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="date" className="text-right">일자</Label>
-                <Popover>
-                    <PopoverTrigger asChild>
-                    <Button variant={"outline"} className={cn("col-span-3 justify-start text-left font-normal", !formData.date && "text-muted-foreground")}>
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {formData.date ? format(new Date(formData.date), "PPP", { locale: ko }) : <span>날짜 선택</span>}
-                    </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                    <Calendar locale={ko} mode="single" selected={formData.date ? new Date(formData.date) : undefined} onSelect={(date) => handleFormChange('date', date ? format(date, 'yyyy-MM-dd') : '')} captionLayout="dropdown-buttons" fromYear={2020} toYear={2030} initialFocus/>
-                    </PopoverContent>
-                </Popover>
+              <div className="col-span-3">
+                <DatePicker value={formData.date} onChange={(date) => handleFormChange('date', date)} />
+              </div>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="type" className="text-right">근태 종류</Label>
