@@ -12,7 +12,7 @@ import {
   TableFooter
 } from '@/components/ui/table';
 import { Input } from '../ui/input';
-import { Search, ArrowUpDown, ArrowUp, ArrowDown, Download, PlusCircle, Calendar as CalendarIcon, ClockIcon } from 'lucide-react';
+import { Search, ArrowUpDown, ArrowUp, ArrowDown, Download, PlusCircle, Calendar as CalendarIcon, Clock } from 'lucide-react';
 import type { Employee, AttendanceType } from '@/lib/types';
 import type { ShortenedWorkDetail, DailyAttendanceDetail } from '@/lib/work-rate-calculator';
 import { Button } from '../ui/button';
@@ -42,6 +42,7 @@ import { Checkbox } from '../ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Calendar } from '../ui/calendar';
 import { format } from 'date-fns';
+import { ko } from 'date-fns/locale';
 
 
 type SortConfig<T> = {
@@ -180,7 +181,7 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
           const selectedRecord = data.find((item: any) => {
               const itemId = type === 'shortenedWork'
                   ? `${item.uniqueId}-${item.startDate}-${item.endDate}-${item.type}`
-                  : `${item.uniqueId}-${item.date}-${item.type}`;
+                  : `${item.uniqueId}-${item.date}-${item.type}-${data.indexOf(item)}`;
               return itemId === selectedRowId;
           });
           if (selectedRecord) {
@@ -221,28 +222,35 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
     const evaluator = allEmployees.find(e => e.uniqueId === employee.evaluatorId);
     
     const dataType = type === 'shortenedWork' ? '단축근로' : '일근태';
-    const message = `[결재요청] ${employee.name}님의 ${dataType} 데이터 변경 요청이 있습니다.`;
-
+    
     if (user.roles?.includes('admin')) {
         toast({ title: '자동 승인 완료', description: '관리자 권한으로 데이터가 즉시 저장 및 반영되었습니다.' });
-    } else {
-        addNotification({ recipientId: employee.uniqueId, message }); 
         if (evaluator) {
-            addNotification({ recipientId: evaluator.uniqueId, message });
+          addNotification({ recipientId: evaluator.uniqueId, message: `[결재승인] ${dataType} 변경: ${employee.name}(${employee.uniqueId})` });
         }
-        addNotification({ recipientId: '1911042', message });
-        toast({ title: '결재 상신 완료', description: '결재 라인에 따라 알림이 발송되었습니다.' });
+        addNotification({ recipientId: employee.uniqueId, message: `[결재승인] ${dataType} 변경: ${employee.name}(${employee.uniqueId})` });
+    } else if (user.roles?.includes('evaluator')) {
+        addNotification({ recipientId: '1911042', message: `[결재요청] ${dataType} 변경: ${employee.name}(${employee.uniqueId})` });
+        toast({ title: '결재 상신 완료', description: '관리자에게 결재가 요청되었습니다.' });
+    } else { // employee
+        if (evaluator) {
+            addNotification({ recipientId: evaluator.uniqueId, message: `[결재요청] ${dataType} 변경: ${employee.name}(${employee.uniqueId})` });
+            toast({ title: '결재 상신 완료', description: '평가자에게 결재가 요청되었습니다.' });
+        } else {
+            addNotification({ recipientId: '1911042', message: `[결재요청] ${dataType} 변경: ${employee.name}(${employee.uniqueId})` });
+            toast({ title: '결재 상신 완료', description: '담당 평가자가 없어 관리자에게 바로 결재가 요청되었습니다.' });
+        }
     }
 
     setIsDialogOpen(false);
   };
   
-  const approverName = React.useMemo(() => {
+  const approverInfo = React.useMemo(() => {
     if (!formData.uniqueId) return '미지정';
     const employee = allEmployees.find(e => e.uniqueId === formData.uniqueId);
     if (!employee || !employee.evaluatorId) return '미지정';
     const evaluator = allEmployees.find(e => e.uniqueId === employee.evaluatorId);
-    return evaluator?.name || '미지정';
+    return evaluator ? `${evaluator.name}(${evaluator.uniqueId})` : '미지정';
   }, [formData.uniqueId, allEmployees]);
 
   const renderDialogContent = () => {
@@ -271,11 +279,11 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
                 <PopoverTrigger asChild>
                   <Button variant={"outline"} className={cn("col-span-3 justify-start text-left font-normal", !formData.startDate && "text-muted-foreground")}>
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.startDate ? format(new Date(formData.startDate), "PPP") : <span>날짜 선택</span>}
+                    {formData.startDate ? format(new Date(formData.startDate), "PPP", { locale: ko }) : <span>날짜 선택</span>}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
-                  <Calendar mode="single" selected={formData.startDate ? new Date(formData.startDate) : undefined} onSelect={(date) => handleFormChange('startDate', date ? format(date, 'yyyy-MM-dd') : '')} initialFocus/>
+                  <Calendar locale={ko} mode="single" selected={formData.startDate ? new Date(formData.startDate) : undefined} onSelect={(date) => handleFormChange('startDate', date ? format(date, 'yyyy-MM-dd') : '')} captionLayout="dropdown-buttons" fromYear={2020} toYear={2030} initialFocus/>
                 </PopoverContent>
               </Popover>
             </div>
@@ -285,11 +293,11 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
                 <PopoverTrigger asChild>
                   <Button variant={"outline"} className={cn("col-span-3 justify-start text-left font-normal", !formData.endDate && "text-muted-foreground")}>
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.endDate ? format(new Date(formData.endDate), "PPP") : <span>날짜 선택</span>}
+                    {formData.endDate ? format(new Date(formData.endDate), "PPP", { locale: ko }) : <span>날짜 선택</span>}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
-                  <Calendar mode="single" selected={formData.endDate ? new Date(formData.endDate) : undefined} onSelect={(date) => handleFormChange('endDate', date ? format(date, 'yyyy-MM-dd') : '')} initialFocus/>
+                  <Calendar locale={ko} mode="single" selected={formData.endDate ? new Date(formData.endDate) : undefined} onSelect={(date) => handleFormChange('endDate', date ? format(date, 'yyyy-MM-dd') : '')} captionLayout="dropdown-buttons" fromYear={2020} toYear={2030} initialFocus/>
                 </PopoverContent>
               </Popover>
             </div>
@@ -297,14 +305,14 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
               <Label htmlFor="startTime" className="text-right">출근시각</Label>
               <div className="col-span-3 relative">
                 <Input id="startTime" type="time" value={formData.startTime || ''} onChange={(e) => handleFormChange('startTime', e.target.value)} className="pr-10"/>
-                <div className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 flex items-center justify-center text-muted-foreground"><ClockIcon className="h-4 w-4"/></div>
+                <div className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 flex items-center justify-center text-muted-foreground"><Clock className="h-4 w-4"/></div>
               </div>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="endTime" className="text-right">퇴근시각</Label>
               <div className="col-span-3 relative">
                 <Input id="endTime" type="time" value={formData.endTime || ''} onChange={(e) => handleFormChange('endTime', e.target.value)} className="pr-10"/>
-                <div className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 flex items-center justify-center text-muted-foreground"><ClockIcon className="h-4 w-4"/></div>
+                <div className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 flex items-center justify-center text-muted-foreground"><Clock className="h-4 w-4"/></div>
               </div>
             </div>
         </div>
@@ -322,11 +330,11 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
                     <PopoverTrigger asChild>
                     <Button variant={"outline"} className={cn("col-span-3 justify-start text-left font-normal", !formData.date && "text-muted-foreground")}>
                         <CalendarIcon className="mr-2 h-4 w-4" />
-                        {formData.date ? format(new Date(formData.date), "PPP") : <span>날짜 선택</span>}
+                        {formData.date ? format(new Date(formData.date), "PPP", { locale: ko }) : <span>날짜 선택</span>}
                     </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0">
-                    <Calendar mode="single" selected={formData.date ? new Date(formData.date) : undefined} onSelect={(date) => handleFormChange('date', date ? format(date, 'yyyy-MM-dd') : '')} initialFocus/>
+                    <Calendar locale={ko} mode="single" selected={formData.date ? new Date(formData.date) : undefined} onSelect={(date) => handleFormChange('date', date ? format(date, 'yyyy-MM-dd') : '')} captionLayout="dropdown-buttons" fromYear={2020} toYear={2030} initialFocus/>
                     </PopoverContent>
                 </Popover>
             </div>
@@ -376,7 +384,7 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
                 const nonWorkHours = 8 - actualWorkHours;
                 const rowId = `${item.uniqueId}-${item.startDate}-${item.endDate}-${item.type}`;
                 return (
-                    <TableRow key={rowId}>
+                    <TableRow key={rowId} data-state={selectedRowId === rowId ? 'selected' : 'unselected'}>
                         <TableCell className="px-2">
                            <Checkbox checked={selectedRowId === rowId} onCheckedChange={() => handleSelectRow(rowId)} />
                         </TableCell>
@@ -436,7 +444,7 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
             {tableData.map((item, index) => {
               const rowId = `${item.uniqueId}-${item.date}-${item.type}-${index}`;
               return (
-              <TableRow key={rowId}>
+              <TableRow key={rowId} data-state={selectedRowId === rowId ? 'selected' : 'unselected'}>
                 <TableCell className="px-2">
                    <Checkbox checked={selectedRowId === rowId} onCheckedChange={() => handleSelectRow(rowId)} />
                 </TableCell>
@@ -524,7 +532,7 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
         </div>
         <DialogFooter className="sm:justify-between items-center pt-2">
           <div className="text-sm text-muted-foreground">
-              결재자: <span className="font-semibold text-foreground">{approverName}</span>
+              결재자: <span className="font-semibold text-foreground">{approverInfo}</span>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>취소</Button>
