@@ -139,6 +139,7 @@ export default function AdminDashboard({
   const [isDistributionChartOpen, setIsDistributionChartOpen] = React.useState(true);
   const [isPayoutChartOpen, setIsPayoutChartOpen] = React.useState(false);
   const [dashboardFilter, setDashboardFilter] = React.useState('전체');
+  const [popoverOpen, setPopoverOpen] = React.useState(false);
   const { toast } = useToast();
   const { addNotification, notifications, markAllAsRead, unreadCount } = useNotifications();
 
@@ -719,7 +720,6 @@ export default function AdminDashboard({
                 </div>
              );
         case 'evaluator-view': {
-            const [popoverOpen, setPopoverOpen] = React.useState(false);
             const selectedEvaluatorName = selectedEvaluatorId ? sortedEvaluatorStats.find(s => s.evaluatorUniqueId === selectedEvaluatorId)?.evaluatorName : '';
             const triggerText = selectedEvaluatorId ? `${selectedEvaluatorName} (${selectedEvaluatorId})` : "평가자를 선택하세요";
             
