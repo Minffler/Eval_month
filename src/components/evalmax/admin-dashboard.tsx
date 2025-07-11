@@ -75,7 +75,7 @@ interface AdminDashboardProps {
   activeView: string;
   onClearEmployeeData: (year: number, month: number) => void;
   onClearEvaluationData: (year: number, month: number) => void;
-  onWorkRateDataUpload: (year: number, month: number, type: keyof WorkRateInputs, data: any[]) => void;
+  onWorkRateDataUpload: (year: number, month: number, type: keyof WorkRateInputs, data: any[], isApproved: boolean) => void;
   onClearWorkRateData: (year: number, month: number, type: keyof WorkRateInputs) => void;
   workRateInputs: Record<string, WorkRateInputs>;
   attendanceTypes: AttendanceType[];
@@ -523,7 +523,7 @@ export default function AdminDashboard({
                         <Table>
                           <TableHeader>
                             <TableRow>
-                              <TableHead className="w-[50px]">
+                              <TableHead className="w-[50px] text-center">
                                 <Checkbox
                                   checked={isIndeterminateEvaluatorSelection ? 'indeterminate' : isAllEvaluatorsSelected}
                                   onCheckedChange={(checked) => handleSelectAllEvaluators(Boolean(checked))}
@@ -553,7 +553,7 @@ export default function AdminDashboard({
                           <TableBody>
                             {sortedEvaluatorStats.map(stat => (
                               <TableRow key={stat.evaluatorUniqueId}>
-                                <TableCell>
+                                <TableCell className="text-center">
                                   <Checkbox
                                     checked={selectedEvaluators.has(stat.evaluatorUniqueId)}
                                     onCheckedChange={(checked) => handleSelectEvaluator(stat.evaluatorUniqueId, Boolean(checked))}
@@ -751,6 +751,10 @@ export default function AdminDashboard({
                             evaluatorUser={selectedEvaluator}
                             activeView='evaluation-input'
                             onClearMyEvaluations={()=>{}}
+                            workRateDetails={workRateDetails}
+                            holidays={holidays}
+                            allEmployees={allEmployees}
+                            attendanceTypes={attendanceTypes}
                         />
                     ) : (
                         <Card className="flex items-center justify-center h-64">

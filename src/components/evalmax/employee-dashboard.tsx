@@ -214,9 +214,9 @@ const MyReviewView = ({ employeeResults, allResults, gradingScale }: {
                       <TableCell className="whitespace-nowrap text-center">{result.evaluatorName}</TableCell>
                       <TableCell className="whitespace-nowrap text-center">{result.grade}</TableCell>
                       <TableCell className="whitespace-nowrap text-center">{result.score}</TableCell>
-                      <TableCell className="whitespace-nowrap text-right text-center">{formatCurrency(result.baseAmount)} 원</TableCell>
-                      <TableCell className="whitespace-nowrap text-right text-center">{formatCurrency(result.gradeAmount)} 원</TableCell>
-                      <TableCell className="font-bold whitespace-nowrap text-right text-center">{formatCurrency(result.finalAmount)} 원</TableCell>
+                      <TableCell className="whitespace-nowrap text-right">{formatCurrency(result.baseAmount)} 원</TableCell>
+                      <TableCell className="whitespace-nowrap text-right">{formatCurrency(result.gradeAmount)} 원</TableCell>
+                      <TableCell className="font-bold whitespace-nowrap text-right">{formatCurrency(result.finalAmount)} 원</TableCell>
                       <TableCell className="whitespace-nowrap text-center">{result.memo}</TableCell>
                     </TableRow>
                   ))}
