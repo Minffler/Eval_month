@@ -52,7 +52,6 @@ const adminNavItems: NavItem[] = [
       { id: 'work-rate-view', label: '근무율 조회/반영', icon: Gauge },
       { id: 'shortened-work-details', label: '단축근로 상세', icon: CalendarClock },
       { id: 'daily-attendance-details', label: '일근태 상세', icon: CalendarDays },
-      { id: 'attendance-type-management', label: '근무기준 설정', icon: Settings2 },
     ]
   },
   {
@@ -62,7 +61,7 @@ const adminNavItems: NavItem[] = [
     children: [
       { id: 'file-upload', label: '파일 업로드', icon: Upload },
       { id: 'evaluator-management', label: '평가자 관리', icon: Users },
-      { id: 'grade-management', label: '등급/점수 관리', icon: Settings },
+      { id: 'system-standards', label: '시스템 기준 관리', icon: Settings2 },
     ],
   },
 ];

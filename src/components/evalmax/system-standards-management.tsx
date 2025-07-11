@@ -195,17 +195,17 @@ export default function SystemStandardsManagement({
           <div className="border rounded-lg overflow-x-auto">
             <Table>
               <TableHeader><TableRow>
-                <TableHead className="py-2 px-3">등급</TableHead><TableHead className="py-2 px-3">점수</TableHead>
-                <TableHead className="py-2 px-3">지급률 (%)</TableHead><TableHead className="py-2 px-3">설명</TableHead><TableHead></TableHead>
+                <TableHead className="py-2 px-3 text-center">등급</TableHead><TableHead className="py-2 px-3 text-center">점수</TableHead>
+                <TableHead className="py-2 px-3 text-center">지급률 (%)</TableHead><TableHead className="py-2 px-3 text-center">설명</TableHead><TableHead></TableHead>
               </TableRow></TableHeader>
               <TableBody>
                 {localGrades.map((gradeItem, index) => (
                   <TableRow key={index}>
-                    <TableCell className="py-1 px-2"><Input value={gradeItem.grade || ''} onChange={(e) => handleGradeNameChange(index, e.target.value)} className="w-20 h-8"/></TableCell>
-                    <TableCell className="py-1 px-2"><Input type="number" value={gradeItem.score} onChange={(e) => handleGradeInputChange(index, 'score', e.target.value)} className="w-20 h-8"/></TableCell>
-                    <TableCell className="py-1 px-2"><Input type="number" value={gradeItem.payoutRate} onChange={(e) => handleGradeInputChange(index, 'payoutRate', e.target.value)} className="w-24 h-8"/></TableCell>
-                    <TableCell className="py-1 px-2"><Input value={gradeItem.description} onChange={(e) => { const newGrades = [...localGrades]; newGrades[index].description = e.target.value; setLocalGrades(newGrades); }} className="w-full h-8"/></TableCell>
-                    <TableCell className="py-1 px-2"><Button variant="ghost" size="icon" onClick={() => handleRemoveGrade(index)} className="h-8 w-8"><Trash2 className="h-4 w-4 text-destructive" /></Button></TableCell>
+                    <TableCell className="py-1 px-2 text-center"><Input value={gradeItem.grade || ''} onChange={(e) => handleGradeNameChange(index, e.target.value)} className="w-20 h-8 mx-auto"/></TableCell>
+                    <TableCell className="py-1 px-2 text-center"><Input type="number" value={gradeItem.score} onChange={(e) => handleGradeInputChange(index, 'score', e.target.value)} className="w-20 h-8 mx-auto"/></TableCell>
+                    <TableCell className="py-1 px-2 text-center"><Input type="number" value={gradeItem.payoutRate} onChange={(e) => handleGradeInputChange(index, 'payoutRate', e.target.value)} className="w-24 h-8 mx-auto"/></TableCell>
+                    <TableCell className="py-1 px-2 text-center"><Input value={gradeItem.description} onChange={(e) => { const newGrades = [...localGrades]; newGrades[index].description = e.target.value; setLocalGrades(newGrades); }} className="w-full h-8 mx-auto"/></TableCell>
+                    <TableCell className="py-1 px-2 text-center"><Button variant="ghost" size="icon" onClick={() => handleRemoveGrade(index)} className="h-8 w-8"><Trash2 className="h-4 w-4 text-destructive" /></Button></TableCell>
                   </TableRow>
                 ))}
               </TableBody>
