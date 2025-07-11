@@ -39,7 +39,7 @@ const adminNavItems: NavItem[] = [
     icon: FileCheck,
     children: [
       { id: 'dashboard', label: '대시보드', icon: LayoutDashboard },
-      { id: 'all-results', label: '개인별 등급/금액', icon: FileCheck },
+      { id: 'all-results', label: '개인별 등급/금액', icon: ListChecks },
       { id: 'evaluator-view', label: '평가자별 조회', icon: Eye },
       { id: 'consistency-check', label: '편향 검토 (AI)', icon: Bot },
     ],
