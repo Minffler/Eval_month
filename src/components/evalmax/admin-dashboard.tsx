@@ -610,7 +610,7 @@ export default function AdminDashboard({
                     </Card>
                      <Tabs defaultValue="전체" onValueChange={(val) => setActiveResultsTab(val as EvaluationGroupCategory)}>
                         <TabsList className="grid w-full grid-cols-4 mb-4">
-                            {Object.keys(categorizedResults).filter(c => c !== 'C. 미평가').map(category => (
+                            {Object.keys(categorizedResults).map(category => (
                                 <TabsTrigger key={category} value={category}>{category} ({categorizedResults[category as EvaluationGroupCategory].length})</TabsTrigger>
                             ))}
                         </TabsList>
