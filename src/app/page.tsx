@@ -29,6 +29,7 @@ import {
   CalendarDays,
   CalendarClock,
   Settings2,
+  Inbox,
 } from 'lucide-react';
 import { calculateWorkRateDetails } from '@/lib/work-rate-calculator';
 import { useNotifications } from '@/contexts/notification-context';
@@ -784,6 +785,7 @@ export default function Home() {
                   selectedDate={selectedDate}
                   allEmployees={allEmployees}
                   attendanceTypes={attendanceTypes}
+                  onApprovalAction={handleApprovalAction}
                 />;
       default:
         return null;

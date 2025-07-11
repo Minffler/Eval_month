@@ -72,7 +72,7 @@ export type EvaluationResult = Employee & {
 };
 
 export type EvaluatorView = 'evaluation-input' | 'all-results' | 'assignment-management' | 'notifications' | 'approvals' | 'work-rate-view' | 'shortened-work-details' | 'daily-attendance-details';
-export type EmployeeView = 'my-review' | 'my-work-rate' | 'my-shortened-work' | 'my-daily-attendance';
+export type EmployeeView = 'my-review' | 'my-work-rate' | 'my-shortened-work' | 'my-daily-attendance' | 'notifications' | 'approvals';
 
 export type EvaluationUploadData = {
   employeeId: string;

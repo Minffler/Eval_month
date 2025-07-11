@@ -64,6 +64,7 @@ import { ko } from 'date-fns/locale';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../ui/command';
 import { Separator } from '../ui/separator';
+import AdminNotifications from './admin-dashboard-notifications';
 
 interface AdminDashboardProps {
   results: EvaluationResult[];
@@ -920,18 +921,7 @@ export default function AdminDashboard({
         }
         case 'notifications':
              return (
-                <Card>
-                    <CardHeader>
-                        <CardTitle>알림함</CardTitle>
-                        <CardDescription>최근 알림 내역입니다.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                       <div className="flex flex-col items-center justify-center h-40 text-center">
-                            <Bell className="h-10 w-10 text-muted-foreground mb-4" />
-                            <p className="text-muted-foreground">새로운 알림이 없습니다.</p>
-                       </div>
-                    </CardContent>
-                </Card>
+                <AdminNotifications />
             )
         default:
             return <div>선택된 뷰가 없습니다.</div>

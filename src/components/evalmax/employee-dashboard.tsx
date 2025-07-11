@@ -2,11 +2,11 @@
 
 import * as React from 'react';
 import { useAuth } from '@/contexts/auth-context';
-import type { EvaluationResult, Grade, GradeInfo, Employee, EmployeeView, AttendanceType } from '@/lib/types';
+import type { EvaluationResult, Grade, GradeInfo, Employee, EmployeeView, AttendanceType, Approval } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronUp, Inbox } from 'lucide-react';
 import { GradeHistogram } from './grade-histogram';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,6 +17,11 @@ import {
 import WorkRateManagement from './work-rate-management';
 import WorkRateDetails from './work-rate-details';
 import type { WorkRateDetailsResult } from '@/lib/work-rate-calculator';
+import { useNotifications } from '@/contexts/notification-context';
+import EmployeeNotifications from './employee-dashboard-notifications';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import { ko } from 'date-fns/locale';
 
 interface EmployeeDashboardProps {
   employeeResults: EvaluationResult[];
@@ -27,6 +32,7 @@ interface EmployeeDashboardProps {
   selectedDate: { year: number, month: number };
   allEmployees: Employee[];
   attendanceTypes: AttendanceType[];
+  onApprovalAction: (approval: Approval) => void;
 }
 
 type SortConfig = {
@@ -242,9 +248,12 @@ export default function EmployeeDashboard({
     workRateDetails, 
     selectedDate, 
     allEmployees, 
-    attendanceTypes 
+    attendanceTypes,
+    onApprovalAction
 }: EmployeeDashboardProps) {
   const { user, role } = useAuth();
+  const { approvals } = useNotifications();
+
 
   if (!user) {
     return <div>결과를 불러오는 중입니다...</div>;
@@ -262,9 +271,60 @@ export default function EmployeeDashboard({
       case 'my-work-rate':
         return <WorkRateManagement results={employeeResults} workRateDetails={myWorkRateDetails} selectedDate={selectedDate} allEmployees={allEmployees} holidays={[]} handleResultsUpdate={() => {}} />;
       case 'my-shortened-work':
-        return <WorkRateDetails type="shortenedWork" data={myWorkRateDetails.shortenedWorkDetails} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} viewAs={role} />;
+        return <WorkRateDetails type="shortenedWork" data={myWorkRateDetails.shortenedWorkDetails} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} viewAs={role} onDataChange={() => {}} />;
       case 'my-daily-attendance':
-        return <WorkRateDetails type="dailyAttendance" data={myWorkRateDetails.dailyAttendanceDetails} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} viewAs={role} />;
+        return <WorkRateDetails type="dailyAttendance" data={myWorkRateDetails.dailyAttendanceDetails} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} viewAs={role} onDataChange={() => {}} />;
+      case 'approvals': {
+            const mySentApprovals = approvals.filter(a => a.requesterId === user.uniqueId);
+            return (
+              <Card>
+                <CardHeader>
+                  <CardTitle>내 결재 요청</CardTitle>
+                  <CardDescription>내가 올린 근무 데이터 변경 요청 목록입니다.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {mySentApprovals.length > 0 ? (
+                    <Table>
+                      <TableHeader><TableRow>
+                        <TableHead>요청일시</TableHead>
+                        <TableHead>결재자</TableHead>
+                        <TableHead>요청내용</TableHead>
+                        <TableHead>상태</TableHead>
+                      </TableRow></TableHeader>
+                      <TableBody>
+                        {mySentApprovals.map(approval => {
+                          const approver = allEmployees.find(e => e.uniqueId === approval.approverId);
+                          return (
+                            <TableRow key={approval.id}>
+                              <TableCell>{format(new Date(approval.date), "yyyy.MM.dd HH:mm", { locale: ko })}</TableCell>
+                              <TableCell>{approver?.name || '관리자'}</TableCell>
+                              <TableCell>
+                                  {approval.payload.dataType === 'shortenedWorkHours' ? '단축근로' : '일근태'} 데이터 {approval.payload.action === 'add' ? '추가' : '변경'}
+                              </TableCell>
+                              <TableCell>
+                                  <span className={cn("px-2 py-1 rounded-full text-xs", 
+                                      approval.status === 'pending' && "bg-yellow-100 text-yellow-800",
+                                      approval.status === 'approved' && "bg-green-100 text-green-800",
+                                      approval.status === 'rejected' && "bg-red-100 text-red-800"
+                                  )}>{approval.status}</span>
+                              </TableCell>
+                            </TableRow>
+                          )
+                        })}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                     <div className="flex flex-col items-center justify-center h-40 text-center">
+                        <Inbox className="h-10 w-10 text-muted-foreground mb-4" />
+                        <p className="text-muted-foreground">요청한 결재가 없습니다.</p>
+                   </div>
+                  )}
+                </CardContent>
+              </Card>
+            )
+        }
+      case 'notifications':
+          return <EmployeeNotifications />;
       default:
         return <div>선택된 뷰가 없습니다.</div>;
     }
