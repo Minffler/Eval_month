@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useAuth } from '@/contexts/auth-context';
-import type { EvaluationResult, Grade, GradeInfo, EvaluationGroupCategory, User, EvaluatorView, Employee, Holiday, AttendanceType } from '@/lib/types';
+import type { EvaluationResult, Grade, GradeInfo, EvaluationGroupCategory, User, EvaluatorView, Employee, Holiday, AttendanceType, Approval } from '@/lib/types';
 import {
   DndContext,
   closestCenter,
@@ -41,7 +41,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Check, Download, ArrowUpDown, ArrowUp, ArrowDown, Edit, GripVertical, ChevronUp, ChevronDown, PlusCircle, Save, X, Trash2, Users, Bell, CheckCircle2 } from 'lucide-react';
+import { Check, Download, ArrowUpDown, ArrowUp, ArrowDown, Edit, GripVertical, ChevronUp, ChevronDown, PlusCircle, Save, X, Trash2, Users, Bell, CheckCircle2, ThumbsUp, ThumbsDown, CheckSquare } from 'lucide-react';
 import { Progress } from '../ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { GradeHistogram } from './grade-histogram';
@@ -96,6 +96,7 @@ interface EvaluatorDashboardProps {
   holidays: Holiday[];
   allEmployees: Employee[];
   attendanceTypes: AttendanceType[];
+  onApprovalAction: (approval: Approval) => void;
 }
 
 type SortConfig = {
@@ -1025,10 +1026,10 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, allEmploye
 };
 
 
-export default function EvaluatorDashboard({ allResults, currentMonthResults, gradingScale, selectedDate, setSelectedDate, handleResultsUpdate, evaluatorUser, activeView, onClearMyEvaluations, workRateDetails, holidays, allEmployees, attendanceTypes }: EvaluatorDashboardProps) {
+export default function EvaluatorDashboard({ allResults, currentMonthResults, gradingScale, selectedDate, setSelectedDate, handleResultsUpdate, evaluatorUser, activeView, onClearMyEvaluations, workRateDetails, holidays, allEmployees, attendanceTypes, onApprovalAction }: EvaluatorDashboardProps) {
   const { user: authUser } = useAuth();
   const [effectiveUser, setEffectiveUser] = React.useState<User | null>(null);
-  const { notifications, unreadCount, markAllAsRead } = useNotifications();
+  const { approvals } = useNotifications();
 
   React.useEffect(() => {
     if (evaluatorUser) { // This is an Employee object from Admin view
@@ -1039,7 +1040,7 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
             uniqueId: evaluatorUser.uniqueId,
             name: evaluatorUser.name,
             roles: ['evaluator', 'employee'], // Assume roles for simplicity in this view
-            avatar: 'https://placehold.co/100x100.png',
+            avatar: 'https://placehold.co/100x100.png?text=${evaluatorUser.name.charAt(0)}',
             title: evaluatorUser.title,
             department: evaluatorUser.department,
         };
@@ -1099,39 +1100,76 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
           return <WorkRateDetails type="shortenedWork" data={myManagedWorkRateDetails.shortenedWorkDetails} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} onDataChange={()=>{}} />;
       case 'daily-attendance-details':
           return <WorkRateDetails type="dailyAttendance" data={myManagedWorkRateDetails.dailyAttendanceDetails} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} onDataChange={()=>{}} />;
+      case 'approvals': {
+            return (
+              <Card>
+                <CardHeader>
+                  <CardTitle>결재함</CardTitle>
+                  <CardDescription>결재를 기다리는 요청 목록입니다.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {approvals.length > 0 ? (
+                    <Table>
+                      <TableHeader><TableRow>
+                        <TableHead>요청일시</TableHead>
+                        <TableHead>요청자</TableHead>
+                        <TableHead>요청내용</TableHead>
+                        <TableHead>상태</TableHead>
+                        <TableHead className="text-right">작업</TableHead>
+                      </TableRow></TableHeader>
+                      <TableBody>
+                        {approvals.map(approval => (
+                          <TableRow key={approval.id}>
+                            <TableCell>{format(new Date(approval.date), "yyyy.MM.dd HH:mm", { locale: ko })}</TableCell>
+                            <TableCell>{approval.requesterName}</TableCell>
+                            <TableCell>
+                                {approval.payload.dataType === 'shortenedWorkHours' ? '단축근로' : '일근태'} 데이터 {approval.payload.action === 'add' ? '추가' : '변경'}
+                            </TableCell>
+                            <TableCell>
+                                <span className={cn("px-2 py-1 rounded-full text-xs", 
+                                    approval.status === 'pending' && "bg-yellow-100 text-yellow-800",
+                                    approval.status === 'approved' && "bg-green-100 text-green-800",
+                                    approval.status === 'rejected' && "bg-red-100 text-red-800"
+                                )}>{approval.status}</span>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {approval.status === 'pending' ? (
+                                <div className="flex gap-2 justify-end">
+                                  <Button size="sm" variant="outline" onClick={() => onApprovalAction({...approval, status: 'approved'})}>
+                                    <ThumbsUp className="mr-2 h-4 w-4" /> 승인
+                                  </Button>
+                                  <Button size="sm" variant="destructive" onClick={() => onApprovalAction({...approval, status: 'rejected'})}>
+                                     <ThumbsDown className="mr-2 h-4 w-4" /> 반려
+                                  </Button>
+                                </div>
+                              ) : '처리됨'}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                     <div className="flex flex-col items-center justify-center h-40 text-center">
+                        <CheckSquare className="h-10 w-10 text-muted-foreground mb-4" />
+                        <p className="text-muted-foreground">새로운 결재가 없습니다.</p>
+                   </div>
+                  )}
+                </CardContent>
+              </Card>
+            )
+        }
       case 'notifications': {
             return (
                 <Card>
-                    <CardHeader className="flex flex-row justify-between items-center">
-                        <div>
-                            <CardTitle>알림함</CardTitle>
-                            <CardDescription>최근 알림 내역입니다.</CardDescription>
-                        </div>
-                        {unreadCount > 0 && (
-                             <Button variant="outline" size="sm" onClick={markAllAsRead}>
-                                <CheckCircle2 className="mr-2 h-4 w-4" />
-                                모두 읽음으로 표시
-                            </Button>
-                        )}
+                    <CardHeader>
+                        <CardTitle>알림함</CardTitle>
+                        <CardDescription>최근 알림 내역입니다.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        {notifications.length > 0 ? (
-                            <ul className="space-y-4">
-                            {notifications.map((notification) => (
-                                <li key={notification.id} className={cn("p-3 rounded-md border", !notification.isRead && "bg-muted/50")}>
-                                    <p className="text-sm font-medium">{notification.message}</p>
-                                    <p className="text-xs text-muted-foreground mt-1">
-                                        {format(new Date(notification.date), "yyyy.MM.dd HH:mm", { locale: ko })}
-                                    </p>
-                                </li>
-                            ))}
-                            </ul>
-                        ) : (
-                           <div className="flex flex-col items-center justify-center h-40 text-center">
-                                <Bell className="h-10 w-10 text-muted-foreground mb-4" />
-                                <p className="text-muted-foreground">새로운 알림이 없습니다.</p>
-                           </div>
-                        )}
+                       <div className="flex flex-col items-center justify-center h-40 text-center">
+                            <Bell className="h-10 w-10 text-muted-foreground mb-4" />
+                            <p className="text-muted-foreground">새로운 알림이 없습니다.</p>
+                       </div>
                     </CardContent>
                 </Card>
             )

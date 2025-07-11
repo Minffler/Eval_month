@@ -6,7 +6,7 @@ import Header from '@/components/evalmax/header';
 import AdminDashboard from '@/components/evalmax/admin-dashboard';
 import EvaluatorDashboard from '@/components/evalmax/evaluator-dashboard';
 import EmployeeDashboard from '@/components/evalmax/employee-dashboard';
-import type { Employee, Evaluation, EvaluationResult, Grade, GradeInfo, User, EvaluatorView, EvaluationUploadData, WorkRateInputs, AttendanceType, Holiday, ShortenedWorkHourRecord, DailyAttendanceRecord, EmployeeView } from '@/lib/types';
+import type { Employee, Evaluation, EvaluationResult, Grade, GradeInfo, User, EvaluatorView, EvaluationUploadData, WorkRateInputs, AttendanceType, Holiday, ShortenedWorkHourRecord, DailyAttendanceRecord, EmployeeView, Approval } from '@/lib/types';
 import { mockEmployees, gradingScale as initialGradingScale, calculateFinalAmount, mockEvaluations as initialMockEvaluations, getDetailedGroup1, initialAttendanceTypes } from '@/lib/data';
 import { useRouter } from 'next/navigation';
 import { Loader2, Bell } from 'lucide-react';
@@ -31,6 +31,7 @@ import {
   Settings2,
 } from 'lucide-react';
 import { calculateWorkRateDetails } from '@/lib/work-rate-calculator';
+import { useNotifications } from '@/contexts/notification-context';
 
 const adminNavItems: NavItem[] = [
   {
@@ -131,6 +132,7 @@ const getInitialDate = () => {
 
 export default function Home() {
   const { user, role, loading, logout } = useAuth();
+  const { updateApprovalStatus } = useNotifications();
   const router = useRouter();
   
   const [employees, setEmployees] = React.useState<Record<string, Employee[]>>(() => {
@@ -618,6 +620,35 @@ export default function Home() {
         return { ...prev, [key]: updatedEvalsForMonth };
     });
   };
+  
+  const handleApprovalAction = (approval: Approval) => {
+    if (approval.status === 'approved' && approval.type === 'workDataChange') {
+      const { dataType, action, data } = approval.payload;
+      const key = `${selectedDate.year}-${selectedDate.month}`;
+
+      setWorkRateInputs(prev => {
+        const updatedInputs = JSON.parse(JSON.stringify(prev));
+        if (!updatedInputs[key]) {
+          updatedInputs[key] = { shortenedWorkHours: [], dailyAttendance: [] };
+        }
+        
+        let targetArray = updatedInputs[key][dataType];
+
+        if (action === 'add') {
+            targetArray.push(data);
+        } else if (action === 'edit') {
+            const index = targetArray.findIndex((item: any) => item.rowId === data.rowId);
+            if (index > -1) {
+                targetArray[index] = data;
+            } else { // Fallback if rowId not found
+                targetArray.push(data);
+            }
+        }
+        return updatedInputs;
+      });
+    }
+    updateApprovalStatus(approval.id, approval.status);
+  };
 
   React.useEffect(() => {
     type MonthlyEmployee = Employee & { year: number; month: number };
@@ -720,6 +751,7 @@ export default function Home() {
                   holidays={holidays}
                   setHolidays={setHolidays}
                   workRateDetails={workRateDetails}
+                  onApprovalAction={handleApprovalAction}
                 />;
       case 'evaluator':
         const myManagedEmployees = results.filter(e => e.evaluatorId === user?.uniqueId);
@@ -739,6 +771,7 @@ export default function Home() {
                   holidays={holidays}
                   allEmployees={allEmployees}
                   attendanceTypes={attendanceTypes}
+                  onApprovalAction={handleApprovalAction}
                 />;
       case 'employee':
         const myEmployeeInfo = results.find(e => e.uniqueId === user?.uniqueId);

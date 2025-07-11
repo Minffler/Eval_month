@@ -2,59 +2,68 @@
 'use client';
 
 import * as React from 'react';
-import type { AppNotification } from '@/lib/types';
+import type { AppNotification, Approval } from '@/lib/types';
 import { useAuth } from './auth-context';
 import { subMonths } from 'date-fns';
 
 const NOTIFICATIONS_STORAGE_KEY = 'pl_eval_notifications';
+const APPROVALS_STORAGE_KEY = 'pl_eval_approvals';
 
 interface NotificationContextType {
   notifications: AppNotification[];
-  unreadCount: number;
+  unreadNotificationCount: number;
   addNotification: (notification: Omit<AppNotification, 'id' | 'date' | 'isRead'>) => void;
-  markAllAsRead: () => void;
+  markNotificationsAsRead: () => void;
+  
+  approvals: Approval[];
+  unreadApprovalCount: number;
+  addApproval: (approval: Omit<Approval, 'id' | 'date' | 'isRead' | 'status'>) => void;
+  updateApprovalStatus: (approvalId: string, status: 'approved' | 'rejected') => void;
+  markApprovalsAsRead: () => void;
 }
 
 const NotificationContext = React.createContext<NotificationContextType | undefined>(undefined);
 
-// Helper to get all notifications from storage
-const getAllNotifications = (): AppNotification[] => {
+// Helper to get all items from storage
+const getAllItems = <T,>(key: string): T[] => {
     if (typeof window === 'undefined') return [];
     try {
-        const stored = localStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
+        const stored = localStorage.getItem(key);
         return stored ? JSON.parse(stored) : [];
     } catch (error) {
-        console.error('Error reading notifications from localStorage', error);
+        console.error(`Error reading ${key} from localStorage`, error);
         return [];
     }
 };
 
-// Helper to save all notifications to storage
-const saveAllNotifications = (notifications: AppNotification[]) => {
+// Helper to save all items to storage
+const saveAllItems = <T,>(key: string, items: T[]) => {
     if (typeof window === 'undefined') return;
     try {
-        localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(notifications));
+        localStorage.setItem(key, JSON.stringify(items));
     } catch (error) {
-        console.error('Error saving notifications to localStorage', error);
+        console.error(`Error saving ${key} to localStorage`, error);
     }
 };
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
     const { user } = useAuth();
     const [allNotifications, setAllNotifications] = React.useState<AppNotification[]>([]);
+    const [allApprovals, setAllApprovals] = React.useState<Approval[]>([]);
 
     React.useEffect(() => {
         // Load notifications and clean up old ones on mount
         const threeMonthsAgo = subMonths(new Date(), 3);
-        const currentNotifications = getAllNotifications();
+        const currentNotifications = getAllItems<AppNotification>(NOTIFICATIONS_STORAGE_KEY);
         const recentNotifications = currentNotifications.filter(n => new Date(n.date) >= threeMonthsAgo);
         
         setAllNotifications(recentNotifications);
-        
-        // If there were old notifications, update storage
         if (currentNotifications.length !== recentNotifications.length) {
-            saveAllNotifications(recentNotifications);
+            saveAllItems(NOTIFICATIONS_STORAGE_KEY, recentNotifications);
         }
+
+        // Load all approvals (no cleanup for approvals)
+        setAllApprovals(getAllItems<Approval>(APPROVALS_STORAGE_KEY));
     }, []);
 
     const notificationsForUser = React.useMemo(() => {
@@ -63,10 +72,21 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             .filter(n => n.recipientId === user.uniqueId || n.recipientId === 'all')
             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     }, [user, allNotifications]);
+    
+    const approvalsForUser = React.useMemo(() => {
+        if (!user) return [];
+        return allApprovals
+            .filter(a => a.approverId === user.uniqueId)
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }, [user, allApprovals]);
 
-    const unreadCount = React.useMemo(() => {
+    const unreadNotificationCount = React.useMemo(() => {
         return notificationsForUser.filter(n => !n.isRead).length;
     }, [notificationsForUser]);
+    
+    const unreadApprovalCount = React.useMemo(() => {
+        return approvalsForUser.filter(a => !a.isRead).length;
+    }, [approvalsForUser]);
 
     const addNotification = React.useCallback((notificationData: Omit<AppNotification, 'id' | 'date' | 'isRead'>) => {
         const newNotification: AppNotification = {
@@ -75,44 +95,77 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             date: new Date().toISOString(),
             isRead: false,
         };
-
         const threeMonthsAgo = subMonths(new Date(), 3);
         setAllNotifications(prev => {
-            const updatedUnfiltered = [newNotification, ...prev];
-            // Clean up notifications older than 3 months
-            const updatedFiltered = updatedUnfiltered.filter(n => new Date(n.date) >= threeMonthsAgo);
-            saveAllNotifications(updatedFiltered);
-            return updatedFiltered;
+            const updated = [newNotification, ...prev].filter(n => new Date(n.date) >= threeMonthsAgo);
+            saveAllItems(NOTIFICATIONS_STORAGE_KEY, updated);
+            return updated;
+        });
+    }, []);
+    
+    const addApproval = React.useCallback((approvalData: Omit<Approval, 'id' | 'date' | 'isRead' | 'status'>) => {
+        const newApproval: Approval = {
+            ...approvalData,
+            id: `appr-${Date.now()}-${Math.random()}`,
+            date: new Date().toISOString(),
+            isRead: false,
+            status: 'pending',
+        };
+        setAllApprovals(prev => {
+            const updated = [newApproval, ...prev];
+            saveAllItems(APPROVALS_STORAGE_KEY, updated);
+            return updated;
+        });
+    }, []);
+    
+    const updateApprovalStatus = React.useCallback((approvalId: string, status: 'approved' | 'rejected') => {
+        setAllApprovals(prev => {
+            const updated = prev.map(a => a.id === approvalId ? { ...a, status, isRead: true } : a);
+            saveAllItems(APPROVALS_STORAGE_KEY, updated);
+            return updated;
         });
     }, []);
 
-    const markAllAsRead = React.useCallback(() => {
+    const markNotificationsAsRead = React.useCallback(() => {
         if (!user) return;
-        
         setTimeout(() => {
             setAllNotifications(prev => {
-                let changed = false;
-                const updated = prev.map(n => {
-                    if ((n.recipientId === user.uniqueId || n.recipientId === 'all') && !n.isRead) {
-                        changed = true;
-                        return { ...n, isRead: true };
-                    }
-                    return n;
-                });
-                if (changed) {
-                    saveAllNotifications(updated);
-                    return updated;
-                }
-                return prev;
+                const updated = prev.map(n =>
+                    (n.recipientId === user.uniqueId || n.recipientId === 'all') && !n.isRead
+                        ? { ...n, isRead: true }
+                        : n
+                );
+                saveAllItems(NOTIFICATIONS_STORAGE_KEY, updated);
+                return updated;
             });
-        }, 500); // Give a slight delay
+        }, 500);
+    }, [user]);
+
+    const markApprovalsAsRead = React.useCallback(() => {
+        if (!user) return;
+        setTimeout(() => {
+            setAllApprovals(prev => {
+                const updated = prev.map(a =>
+                    a.approverId === user.uniqueId && !a.isRead
+                        ? { ...a, isRead: true }
+                        : a
+                );
+                saveAllItems(APPROVALS_STORAGE_KEY, updated);
+                return updated;
+            });
+        }, 500);
     }, [user]);
 
     const value = {
         notifications: notificationsForUser,
-        unreadCount,
+        unreadNotificationCount,
         addNotification,
-        markAllAsRead,
+        markNotificationsAsRead,
+        approvals: approvalsForUser,
+        unreadApprovalCount,
+        addApproval,
+        updateApprovalStatus,
+        markApprovalsAsRead,
     };
 
     return <NotificationContext.Provider value={value}>{children}</NotificationContext.Provider>;

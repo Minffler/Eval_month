@@ -71,7 +71,7 @@ export type EvaluationResult = Employee & {
   memo?: string;
 };
 
-export type EvaluatorView = 'evaluation-input' | 'all-results' | 'assignment-management' | 'notifications' | 'work-rate-view' | 'shortened-work-details' | 'daily-attendance-details';
+export type EvaluatorView = 'evaluation-input' | 'all-results' | 'assignment-management' | 'notifications' | 'approvals' | 'work-rate-view' | 'shortened-work-details' | 'daily-attendance-details';
 export type EmployeeView = 'my-review' | 'my-work-rate' | 'my-shortened-work' | 'my-daily-attendance';
 
 export type EvaluationUploadData = {
@@ -87,6 +87,24 @@ export type AppNotification = {
   message: string;
   isRead: boolean;
   recipientId: string; // uniqueId of the user who should see this
+};
+
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
+
+export type Approval<T = any> = {
+  id: string;
+  date: string; // ISO date string
+  requesterId: string; // 요청자
+  requesterName: string;
+  approverId: string; // 결재자
+  status: ApprovalStatus;
+  isRead: boolean;
+  type: 'workDataChange'; // 결재 종류 (향후 확장 가능)
+  payload: {
+    dataType: 'shortenedWorkHours' | 'dailyAttendance';
+    action: 'add' | 'edit' | 'delete';
+    data: T;
+  };
 };
 
 export type AttendanceType = {
@@ -107,6 +125,7 @@ export type ShortenedWorkHourRecord = {
     endTime: string;
     type: ShortenedWorkType;
     lastModified?: string;
+    rowId?: string; // 클라이언트에서 생성된 고유 식별자
 }
 
 export type DailyAttendanceRecord = {
@@ -115,6 +134,7 @@ export type DailyAttendanceRecord = {
     date: string;
     type: string;
     lastModified?: string;
+    rowId?: string; // 클라이언트에서 생성된 고유 식별자
 }
 
 export type WorkRateInputs = {

@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/table';
 import { Input } from '../ui/input';
 import { Search, ArrowUpDown, ArrowUp, ArrowDown, Download, PlusCircle, Edit, ChevronsUpDown, CalendarIcon } from 'lucide-react';
-import type { Employee, AttendanceType, Role } from '@/lib/types';
+import type { Employee, AttendanceType, Role, Approval, DailyAttendanceRecord, ShortenedWorkHourRecord } from '@/lib/types';
 import type { ShortenedWorkDetail, DailyAttendanceDetail } from '@/lib/work-rate-calculator';
 import { Button } from '../ui/button';
 import * as XLSX from 'xlsx';
@@ -48,7 +48,7 @@ import {
   CommandList,
 } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { format } from 'date-fns';
+import { format, isValid, parse } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { Calendar } from '../ui/calendar';
 
@@ -101,20 +101,17 @@ const DailyAttendanceIcon = ({ isShortenedDay }: { isShortenedDay: boolean }) =>
 };
 
 const DatePickerWithInput = ({ value, onChange }: { value: string, onChange: (date?: string) => void }) => {
-    const [date, setDate] = React.useState<Date | undefined>(value ? new Date(value) : undefined);
+    const [date, setDate] = React.useState<Date | undefined>(value ? parse(value, 'yyyy-MM-dd', new Date()) : undefined);
     const [inputValue, setInputValue] = React.useState<string>(value || '');
     const [popoverOpen, setPopoverOpen] = React.useState(false);
 
     React.useEffect(() => {
-        if (value) {
-            const newDate = new Date(value);
-            if (!isNaN(newDate.getTime()) && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
-                setDate(newDate);
-                setInputValue(value);
-            }
-        } else {
-          setDate(undefined);
-          setInputValue('');
+        if (value && isValid(parse(value, 'yyyy-MM-dd', new Date()))) {
+            setDate(parse(value, 'yyyy-MM-dd', new Date()));
+            setInputValue(value);
+        } else if (!value) {
+            setDate(undefined);
+            setInputValue('');
         }
     }, [value]);
 
@@ -132,21 +129,21 @@ const DatePickerWithInput = ({ value, onChange }: { value: string, onChange: (da
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        let value = e.target.value.replace(/[^0-9]/g, '');
-        if (value.length > 4) {
-          value = `${value.slice(0, 4)}-${value.slice(4)}`;
-        }
-        if (value.length > 7) {
-          value = `${value.slice(0, 7)}-${value.slice(7)}`;
-        }
-        setInputValue(value.slice(0, 10));
+        let text = e.target.value.replace(/[^0-9]/g, '');
+        if (text.length > 4) text = `${text.slice(0, 4)}-${text.slice(4)}`;
+        if (text.length > 7) text = `${text.slice(0, 7)}-${text.slice(7)}`;
+        setInputValue(text.slice(0, 10));
     };
 
     const handleInputBlur = () => {
-        const newDate = new Date(inputValue);
-        if (!isNaN(newDate.getTime()) && /^\d{4}-\d{2}-\d{2}$/.test(inputValue)) {
-            setDate(newDate);
-            onChange(format(newDate, 'yyyy-MM-dd'));
+        const parsedDate = parse(inputValue, 'yyyy-MM-dd', new Date());
+        if (isValid(parsedDate)) {
+            const formattedDate = format(parsedDate, 'yyyy-MM-dd');
+            if (inputValue !== formattedDate) {
+                setInputValue(formattedDate);
+            }
+            setDate(parsedDate);
+            onChange(formattedDate);
         } else if (inputValue === '') {
             setDate(undefined);
             onChange(undefined);
@@ -214,7 +211,7 @@ const TimePicker = ({ value, onChange }: { value: string, onChange: (time: strin
 
 export default function WorkRateDetails({ type, data, selectedDate, allEmployees, attendanceTypes, viewAs = 'admin', onDataChange }: WorkRateDetailsProps) {
   const { user } = useAuth();
-  const { addNotification } = useNotifications();
+  const { addApproval } = useNotifications();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = React.useState('');
   const [sortConfig, setSortConfig] = React.useState<SortConfig<any>>(null);
@@ -371,55 +368,33 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
     }
     const evaluator = allEmployees.find(e => e.uniqueId === employee.evaluatorId);
     
-    const actionType = dialogMode === 'add' ? '추가' : '변경';
-    const dataType = type === 'shortenedWork' ? '단축근로' : '일근태';
-    
-    if (user.roles?.includes('admin')) {
-        toast({ title: '자동 승인 완료', description: '관리자 권한으로 데이터가 즉시 저장 및 반영되었습니다.' });
-        const approvalMessage = `[결재승인] ${dataType} ${actionType}: ${employee.name}(${employee.uniqueId})`;
-        if (evaluator) {
-          addNotification({ recipientId: evaluator.uniqueId, message: approvalMessage });
-        }
-        addNotification({ recipientId: employee.uniqueId, message: approvalMessage });
-        
-        // Directly update the data for admins
-        const updatedRecord = {
-          ...formData,
-          lastModified: new Date().toISOString(),
-        };
-        let updatedData;
-        if (dialogMode === 'add') {
-          updatedData = [...data, updatedRecord];
-        } else {
-          updatedData = data.map(item => item.rowId === formData.rowId ? updatedRecord : item);
-        }
-        onDataChange(updatedData, type === 'shortenedWork' ? 'shortenedWorkHours' : 'dailyAttendance');
+    const dataType: 'shortenedWorkHours' | 'dailyAttendance' = type === 'shortenedWork' ? 'shortenedWorkHours' : 'dailyAttendance';
+    const action = dialogMode;
+    const approverId = user.roles.includes('admin') ? user.uniqueId : (evaluator?.uniqueId || '1911042');
 
-    } else {
-        const requestMessage = `[결재요청] ${dataType} ${actionType}: ${employee.name}(${employee.uniqueId})`;
-        if (user.roles?.includes('evaluator')) {
-            addNotification({ recipientId: '1911042', message: requestMessage });
-            toast({ title: '결재 상신 완료', description: '관리자에게 결재가 요청되었습니다.' });
-        } else { // employee
-            if (evaluator) {
-                addNotification({ recipientId: evaluator.uniqueId, message: requestMessage });
-                toast({ title: '결재 상신 완료', description: '평가자에게 결재가 요청되었습니다.' });
-            } else {
-                addNotification({ recipientId: '1911042', message: requestMessage });
-                toast({ title: '결재 상신 완료', description: '담당 평가자가 없어 관리자에게 바로 결재가 요청되었습니다.' });
-            }
-        }
+    const approvalData: Omit<Approval, 'id' | 'date' | 'isRead' | 'status'> = {
+      requesterId: user.uniqueId,
+      requesterName: user.name,
+      approverId: approverId,
+      type: 'workDataChange',
+      payload: {
+        dataType,
+        action,
+        data: { ...formData, rowId: formData.rowId || `row-${Date.now()}`},
+      }
     }
-
+    addApproval(approvalData);
+    
+    toast({ title: '결재 상신 완료', description: '결재함에서 처리 상태를 확인해주세요.' });
     setIsDialogOpen(false);
   };
   
   const approverInfo = React.useMemo(() => {
     if (!formData.uniqueId) return '미지정';
     const employee = allEmployees.find(e => e.uniqueId === formData.uniqueId);
-    if (!employee || !employee.evaluatorId) return '관리자';
+    if (!employee || !employee.evaluatorId) return '관리자 (1911042)';
     const evaluator = allEmployees.find(e => e.uniqueId === employee.evaluatorId);
-    return evaluator ? `${evaluator.name}(${evaluator.uniqueId})` : '관리자';
+    return evaluator ? `${evaluator.name}(${evaluator.uniqueId})` : '관리자 (1911042)';
   }, [formData.uniqueId, allEmployees]);
 
   const renderDialogContent = () => {
@@ -435,6 +410,7 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
                           <PopoverTrigger asChild>
                               <Button variant="outline" role="combobox" className="w-full justify-between">
                                   {formData.uniqueId ? `${formData.name} (${formData.uniqueId})` : "직원 선택..."}
+                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                               </Button>
                           </PopoverTrigger>
                           <PopoverContent className="w-[300px] p-0">

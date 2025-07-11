@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, FileCheck, Bot, Upload, LayoutDashboard, Settings, Download, Bell, ArrowUpDown, ArrowUp, ArrowDown, Eye, ClipboardX, ChevronUp, ChevronDown, CheckCircle2, ChevronsUpDown, Save, X } from 'lucide-react';
+import { Users, FileCheck, Bot, Upload, LayoutDashboard, Settings, Download, Bell, ArrowUpDown, ArrowUp, ArrowDown, Eye, ClipboardX, ChevronUp, ChevronDown, CheckCircle2, ChevronsUpDown, Save, X, CheckSquare, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { GradeHistogram } from './grade-histogram';
 import {
   Table,
@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/select';
 import { ConsistencyValidator } from './consistency-validator';
 import ManageData from './manage-data';
-import type { EvaluationResult, Grade, Employee, GradeInfo, EvaluationGroupCategory, User, EvaluationUploadData, WorkRateInputs, AttendanceType, Holiday } from '@/lib/types';
+import type { EvaluationResult, Grade, Employee, GradeInfo, EvaluationGroupCategory, User, EvaluationUploadData, WorkRateInputs, AttendanceType, Holiday, Approval } from '@/lib/types';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -86,6 +86,7 @@ interface AdminDashboardProps {
   holidays: Holiday[];
   setHolidays: React.Dispatch<React.SetStateAction<Holiday[]>>;
   workRateDetails: WorkRateDetailsResult;
+  onApprovalAction: (approval: Approval) => void;
 }
 
 type SortConfig = {
@@ -130,6 +131,7 @@ export default function AdminDashboard({
   holidays,
   setHolidays,
   workRateDetails,
+  onApprovalAction,
 }: AdminDashboardProps) {
   const [results, setResults] = React.useState<EvaluationResult[]>(initialResults);
   const [activeResultsTab, setActiveResultsTab] = React.useState<EvaluationGroupCategory>('전체');
@@ -143,10 +145,10 @@ export default function AdminDashboard({
   const [isDistributionChartOpen, setIsDistributionChartOpen] = React.useState(true);
   const [isPayoutChartOpen, setIsPayoutChartOpen] = React.useState(false);
   const [dashboardFilter, setDashboardFilter] = React.useState('전체');
-  const [popoverOpen, setPopoverOpen] = React.useState(false);
+  const [evaluatorViewPopoverOpen, setEvaluatorViewPopoverOpen] = React.useState(false);
 
   const { toast } = useToast();
-  const { addNotification } = useNotifications();
+  const { addNotification, approvals } = useNotifications();
 
   React.useEffect(() => {
     try {
@@ -779,12 +781,12 @@ export default function AdminDashboard({
                                 <CardTitle>평가자별 조회</CardTitle>
                                 <CardDescription>특정 평가자의 대시보드를 확인합니다.</CardDescription>
                             </div>
-                            <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+                            <Popover open={evaluatorViewPopoverOpen} onOpenChange={setEvaluatorViewPopoverOpen}>
                                 <PopoverTrigger asChild>
                                 <Button
                                     variant="outline"
                                     role="combobox"
-                                    aria-expanded={popoverOpen}
+                                    aria-expanded={evaluatorViewPopoverOpen}
                                     className="w-full sm:w-[320px] justify-between mt-2 sm:mt-0"
                                 >
                                     <span className="truncate">{triggerText}</span>
@@ -803,7 +805,7 @@ export default function AdminDashboard({
                                             value={`${stat.name} ${stat.uniqueId}`}
                                             onSelect={() => {
                                                 setSelectedEvaluatorId(stat.uniqueId);
-                                                setPopoverOpen(false);
+                                                setEvaluatorViewPopoverOpen(false);
                                             }}
                                         >
                                             {stat.name} ({stat.uniqueId})
@@ -832,6 +834,7 @@ export default function AdminDashboard({
                             holidays={holidays}
                             allEmployees={allEmployees}
                             attendanceTypes={attendanceTypes}
+                            onApprovalAction={onApprovalAction}
                         />
                     ) : (
                         <Card className="flex items-center justify-center h-64">
@@ -857,6 +860,79 @@ export default function AdminDashboard({
             return <WorkRateDetails type="shortenedWork" data={workRateDetails.shortenedWorkDetails} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} onDataChange={() => {}}/>;
         case 'daily-attendance-details':
             return <WorkRateDetails type="dailyAttendance" data={workRateDetails.dailyAttendanceDetails} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} onDataChange={() => {}}/>;
+        case 'approvals': {
+            return (
+              <Card>
+                <CardHeader>
+                  <CardTitle>결재함</CardTitle>
+                  <CardDescription>결재를 기다리는 요청 목록입니다.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {approvals.length > 0 ? (
+                    <Table>
+                      <TableHeader><TableRow>
+                        <TableHead>요청일시</TableHead>
+                        <TableHead>요청자</TableHead>
+                        <TableHead>요청내용</TableHead>
+                        <TableHead>상태</TableHead>
+                        <TableHead className="text-right">작업</TableHead>
+                      </TableRow></TableHeader>
+                      <TableBody>
+                        {approvals.map(approval => (
+                          <TableRow key={approval.id}>
+                            <TableCell>{format(new Date(approval.date), "yyyy.MM.dd HH:mm", { locale: ko })}</TableCell>
+                            <TableCell>{approval.requesterName}</TableCell>
+                            <TableCell>
+                                {approval.payload.dataType === 'shortenedWorkHours' ? '단축근로' : '일근태'} 데이터 {approval.payload.action === 'add' ? '추가' : '변경'}
+                            </TableCell>
+                            <TableCell>
+                                <span className={cn("px-2 py-1 rounded-full text-xs", 
+                                    approval.status === 'pending' && "bg-yellow-100 text-yellow-800",
+                                    approval.status === 'approved' && "bg-green-100 text-green-800",
+                                    approval.status === 'rejected' && "bg-red-100 text-red-800"
+                                )}>{approval.status}</span>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {approval.status === 'pending' ? (
+                                <div className="flex gap-2 justify-end">
+                                  <Button size="sm" variant="outline" onClick={() => onApprovalAction({...approval, status: 'approved'})}>
+                                    <ThumbsUp className="mr-2 h-4 w-4" /> 승인
+                                  </Button>
+                                  <Button size="sm" variant="destructive" onClick={() => onApprovalAction({...approval, status: 'rejected'})}>
+                                     <ThumbsDown className="mr-2 h-4 w-4" /> 반려
+                                  </Button>
+                                </div>
+                              ) : '처리됨'}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                     <div className="flex flex-col items-center justify-center h-40 text-center">
+                        <CheckSquare className="h-10 w-10 text-muted-foreground mb-4" />
+                        <p className="text-muted-foreground">새로운 결재가 없습니다.</p>
+                   </div>
+                  )}
+                </CardContent>
+              </Card>
+            )
+        }
+        case 'notifications':
+             return (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>알림함</CardTitle>
+                        <CardDescription>최근 알림 내역입니다.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                       <div className="flex flex-col items-center justify-center h-40 text-center">
+                            <Bell className="h-10 w-10 text-muted-foreground mb-4" />
+                            <p className="text-muted-foreground">새로운 알림이 없습니다.</p>
+                       </div>
+                    </CardContent>
+                </Card>
+            )
         default:
             return <div>선택된 뷰가 없습니다.</div>
     }

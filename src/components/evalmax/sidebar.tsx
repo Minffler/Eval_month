@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/accordion';
 import {
   Bell,
+  CheckSquare,
   ChevronLeft,
   LogOut,
 } from 'lucide-react';
@@ -39,7 +40,7 @@ interface SidebarProps {
 
 export function Sidebar({ navItems, activeView, setActiveView, isOpen, setIsOpen, user, logout }: SidebarProps) {
   const [openAccordion, setOpenAccordion] = React.useState<string[]>([]);
-  const { unreadCount } = useNotifications();
+  const { unreadNotificationCount, unreadApprovalCount } = useNotifications();
 
   React.useEffect(() => {
     if (isOpen) {
@@ -55,10 +56,7 @@ export function Sidebar({ navItems, activeView, setActiveView, isOpen, setIsOpen
     }
   };
 
-  const NavLink = ({ item, hasUnread }: { item: NavItem, hasUnread: boolean }) => {
-    const isNotificationBell = item.id === 'notifications';
-    const effectiveUnreadCount = isNotificationBell ? unreadCount : 0;
-  
+  const NavLink = ({ item, unreadCount = 0 }: { item: NavItem, unreadCount?: number }) => {
     return (
       <Button
         variant={activeView === item.id ? 'secondary' : 'ghost'}
@@ -68,7 +66,7 @@ export function Sidebar({ navItems, activeView, setActiveView, isOpen, setIsOpen
       >
           <div className="relative">
               <item.icon className="h-5 w-5 flex-shrink-0" />
-              {effectiveUnreadCount > 0 && (
+              {unreadCount > 0 && (
                   <span className={cn("absolute flex h-2.5 w-2.5", isOpen ? "-top-0.5 -right-0.5" : "top-0 right-0")}>
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
@@ -94,7 +92,8 @@ export function Sidebar({ navItems, activeView, setActiveView, isOpen, setIsOpen
     </div>
   ) : null;
 
-  const notificationItem = { id: 'notifications', label: '알림함', icon: Bell };
+  const notificationItem: NavItem = { id: 'notifications', label: '알림함', icon: Bell };
+  const approvalItem: NavItem = { id: 'approvals', label: '결재함', icon: CheckSquare };
 
   return (
     <div
@@ -110,7 +109,7 @@ export function Sidebar({ navItems, activeView, setActiveView, isOpen, setIsOpen
           <nav className="flex-1 space-y-1 p-2">
               {navItems.map((item) => {
                 if (!item.children) {
-                  return <NavLink key={item.id} item={item} hasUnread={false} />;
+                  return <NavLink key={item.id} item={item} />;
                 }
 
                 if (isOpen) {
@@ -131,7 +130,7 @@ export function Sidebar({ navItems, activeView, setActiveView, isOpen, setIsOpen
                         </AccordionTrigger>
                         <AccordionContent className="pl-6 pb-0 space-y-1">
                             {item.children.map((child) => (
-                                <NavLink key={child.id} item={child} hasUnread={false} />
+                                <NavLink key={child.id} item={child} />
                             ))}
                         </AccordionContent>
                       </AccordionItem>
@@ -173,8 +172,9 @@ export function Sidebar({ navItems, activeView, setActiveView, isOpen, setIsOpen
           </nav>
         </ScrollArea>
         <div className="mt-auto border-t">
-            <div className="p-2">
-              <NavLink item={notificationItem} hasUnread={true} />
+            <div className="p-2 space-y-1">
+              <NavLink item={approvalItem} unreadCount={unreadApprovalCount} />
+              <NavLink item={notificationItem} unreadCount={unreadNotificationCount} />
             </div>
             <Separator />
             {userProfile}

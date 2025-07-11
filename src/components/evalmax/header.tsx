@@ -3,7 +3,7 @@
 import { useAuth } from '@/contexts/auth-context';
 import { RoleSwitcher } from './role-switcher';
 import { Button } from '@/components/ui/button';
-import { Bell } from 'lucide-react';
+import { Bell, CheckSquare } from 'lucide-react';
 import {
   Popover,
   PopoverContent,
@@ -29,7 +29,10 @@ interface HeaderProps {
 
 export default function Header({ selectedDate, onDateChange }: HeaderProps) {
   const { user, role, setRole } = useAuth();
-  const { notifications, unreadCount, markAllAsRead } = useNotifications();
+  const { 
+    notifications, unreadNotificationCount, markNotificationsAsRead,
+    approvals, unreadApprovalCount, markApprovalsAsRead 
+  } = useNotifications();
 
   const roleDisplay: Record<string, string> = {
     admin: '관리자',
@@ -112,11 +115,47 @@ export default function Header({ selectedDate, onDateChange }: HeaderProps) {
                <RoleSwitcher currentRole={role} availableRoles={user.roles} onRoleChange={setRole} />
             )}
             
-            <Popover onOpenChange={(open) => { if (open) markAllAsRead()}}>
+            <Popover onOpenChange={(open) => { if (open) markApprovalsAsRead()}}>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-full relative">
+                    <CheckSquare className="h-5 w-5" />
+                    {unreadApprovalCount > 0 && (
+                      <span className="absolute top-1 right-1 flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-primary/80"></span>
+                      </span>
+                    )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-96" align="end">
+                <div className="p-4">
+                  <h3 className="font-semibold text-lg">결재함</h3>
+                </div>
+                <Separator />
+                <div className="p-2 max-h-96 overflow-y-auto">
+                  {approvals.length > 0 ? (
+                    <ul className="space-y-2">
+                      {approvals.map((approval) => (
+                        <li key={approval.id} className={cn("p-2 rounded-md", !approval.isRead && "bg-muted")}>
+                            <p className="text-sm">{approval.requesterName}님의 결재 요청</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {format(new Date(approval.date), "yyyy.MM.dd HH:mm", { locale: ko })}
+                            </p>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-center text-sm text-muted-foreground p-4">새로운 결재가 없습니다.</p>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            <Popover onOpenChange={(open) => { if (open) markNotificationsAsRead()}}>
               <PopoverTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full relative">
                     <Bell className="h-5 w-5" />
-                    {unreadCount > 0 && (
+                    {unreadNotificationCount > 0 && (
                       <span className="absolute top-1 right-1 flex h-3 w-3">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                         <span className="relative inline-flex rounded-full h-3 w-3 bg-primary/80"></span>
