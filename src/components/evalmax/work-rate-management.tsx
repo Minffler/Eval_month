@@ -311,13 +311,16 @@ export default function WorkRateManagement({ results, workRateDetails, selectedD
               <div className="text-sm text-muted-foreground">
                   <span className="font-semibold text-foreground">월 소정근로시간:</span> 8시간 * {businessDays}일 = <span className="font-bold text-primary">{monthlyStandardHours}</span>시간
               </div>
-              <Tabs defaultValue="all">
+              <Tabs defaultValue="all" onValueChange={() => {}}>
                 <TabsList className="h-8">
                   {columnConfig.map(col => (
                     <TabsTrigger
                       key={col.id}
                       value={col.id}
-                      className="text-xs px-2 py-1 h-auto"
+                      className={cn(
+                        "text-xs px-2 py-1 h-auto",
+                        !visibleColumns.has(col.id) && "text-muted-foreground/70"
+                      )}
                       data-state={visibleColumns.has(col.id) ? 'active' : 'inactive'}
                       onClick={() => handleToggleColumn(col.id)}
                     >
