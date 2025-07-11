@@ -4,7 +4,7 @@
 import * as React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import type { EvaluationResult, Holiday, ShortenedWorkType } from '@/lib/types';
+import type { Employee, EvaluationResult, Holiday, ShortenedWorkType } from '@/lib/types';
 import type { WorkRateDetailsResult, ShortenedWorkDetail, DailyAttendanceDetail } from '@/lib/work-rate-calculator';
 import { Button } from '../ui/button';
 import { ArrowUpDown, Download, ArrowUp, ArrowDown, Settings2 } from 'lucide-react';
@@ -21,9 +21,11 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useNotifications } from '@/contexts/notification-context';
 
 interface WorkRateManagementProps {
   results: EvaluationResult[];
+  allEmployees: Employee[];
   workRateDetails: WorkRateDetailsResult;
   selectedDate: { year: number, month: number };
   holidays: Holiday[];
@@ -70,8 +72,9 @@ function countBusinessDaysForMonth(year: number, month: number, holidays: Set<st
 }
 
 
-export default function WorkRateManagement({ results, workRateDetails, selectedDate, holidays, handleResultsUpdate }: WorkRateManagementProps) {
+export default function WorkRateManagement({ results, allEmployees, workRateDetails, selectedDate, holidays, handleResultsUpdate }: WorkRateManagementProps) {
   const { toast } = useToast();
+  const { addNotification } = useNotifications();
   const [sortConfig, setSortConfig] = React.useState<SortConfig>({ key: 'monthlyWorkRate', direction: 'ascending' });
   const [detailDialog, setDetailDialog] = React.useState<DetailDialogInfo>({
     isOpen: false,
@@ -213,17 +216,29 @@ export default function WorkRateManagement({ results, workRateDetails, selectedD
   
   const handleApplyWorkRate = () => {
       const summariesMap = new Map(workRateSummaries.map(s => [s.uniqueId, s.monthlyWorkRate]));
+      let updatedCount = 0;
+
       const updatedResults = results.map(result => {
           const newWorkRate = summariesMap.get(result.uniqueId);
           if (newWorkRate !== undefined && newWorkRate !== result.workRate) {
+              updatedCount++;
+              const message = `${selectedDate.year}년 ${selectedDate.month}월 근무율이 ${(newWorkRate * 100).toFixed(1)}%로 반영되었습니다.`;
+              // Notify employee
+              addNotification({ recipientId: result.uniqueId, message });
+              // Notify evaluator if exists
+              if(result.evaluatorId) {
+                addNotification({ recipientId: result.evaluatorId, message: `${result.name}님의 ${message}`});
+              }
               return { ...result, workRate: newWorkRate };
           }
           return result;
       });
+      
       handleResultsUpdate(updatedResults);
+      
       toast({
           title: "반영 완료",
-          description: "계산된 근무율이 모든 대상자에게 반영되었습니다."
+          description: `총 ${updatedCount}명의 근무율이 업데이트되고 관련자에게 알림이 발송되었습니다.`
       });
   }
 
