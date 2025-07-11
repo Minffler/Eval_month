@@ -71,7 +71,8 @@ export type EvaluationResult = Employee & {
   memo?: string;
 };
 
-export type EvaluatorView = 'evaluation-input' | 'all-results' | 'assignment-management' | 'notifications';
+export type EvaluatorView = 'evaluation-input' | 'all-results' | 'assignment-management' | 'notifications' | 'work-rate-view' | 'shortened-work-details' | 'daily-attendance-details';
+export type EmployeeView = 'my-review' | 'my-work-rate' | 'my-shortened-work' | 'my-daily-attendance';
 
 export type EvaluationUploadData = {
   employeeId: string;

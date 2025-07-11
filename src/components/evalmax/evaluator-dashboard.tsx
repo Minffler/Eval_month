@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useAuth } from '@/contexts/auth-context';
-import type { EvaluationResult, Grade, GradeInfo, EvaluationGroupCategory, User, EvaluatorView, Employee } from '@/lib/types';
+import type { EvaluationResult, Grade, GradeInfo, EvaluationGroupCategory, User, EvaluatorView, Employee, Holiday, AttendanceType } from '@/lib/types';
 import {
   DndContext,
   closestCenter,
@@ -77,6 +77,10 @@ import { getPositionSortValue } from '@/lib/data';
 import { useNotifications } from '@/contexts/notification-context';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import WorkRateManagement from './work-rate-management';
+import type { WorkRateDetailsResult } from '@/lib/work-rate-calculator';
+import WorkRateDetails from './work-rate-details';
+
 
 interface EvaluatorDashboardProps {
   allResults: EvaluationResult[];
@@ -88,6 +92,10 @@ interface EvaluatorDashboardProps {
   evaluatorUser?: Employee | null;
   activeView: EvaluatorView;
   onClearMyEvaluations: (year: number, month: number, evaluatorId: string) => void;
+  workRateDetails: WorkRateDetailsResult;
+  holidays: Holiday[];
+  allEmployees: Employee[];
+  attendanceTypes: AttendanceType[];
 }
 
 type SortConfig = {
@@ -1017,7 +1025,7 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, allEmploye
 };
 
 
-export default function EvaluatorDashboard({ allResults, currentMonthResults, gradingScale, selectedDate, setSelectedDate, handleResultsUpdate, evaluatorUser, activeView, onClearMyEvaluations }: EvaluatorDashboardProps) {
+export default function EvaluatorDashboard({ allResults, currentMonthResults, gradingScale, selectedDate, setSelectedDate, handleResultsUpdate, evaluatorUser, activeView, onClearMyEvaluations, workRateDetails, holidays, allEmployees, attendanceTypes }: EvaluatorDashboardProps) {
   const { user: authUser } = useAuth();
   const [effectiveUser, setEffectiveUser] = React.useState<User | null>(null);
   const { notifications, unreadCount, markAllAsRead } = useNotifications();
@@ -1050,6 +1058,16 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
     if (!effectiveUser) return [];
     return allResults.filter(r => r.evaluatorId === effectiveUser.uniqueId);
   }, [effectiveUser, allResults]);
+  
+  const myManagedWorkRateDetails: WorkRateDetailsResult = React.useMemo(() => {
+    if (!effectiveUser) return { shortenedWorkDetails: [], dailyAttendanceDetails: [] };
+    const myManagedEmployeeIds = new Set(myEmployees.map(e => e.uniqueId));
+    return {
+      shortenedWorkDetails: workRateDetails.shortenedWorkDetails.filter(d => myManagedEmployeeIds.has(d.uniqueId)),
+      dailyAttendanceDetails: workRateDetails.dailyAttendanceDetails.filter(d => myManagedEmployeeIds.has(d.uniqueId)),
+    }
+  }, [effectiveUser, myEmployees, workRateDetails]);
+
 
   if (!effectiveUser) return <div className="p-4 md:p-6 lg:p-8">로딩중...</div>;
 
@@ -1070,11 +1088,17 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
         return <AssignmentManagementView 
                  myEmployees={myEmployees} 
                  currentMonthResults={currentMonthResults}
-                 allEmployees={allResults.filter(e => e.uniqueId !== effectiveUser.uniqueId)} // Exclude self
+                 allEmployees={allEmployees.filter(e => e.uniqueId !== effectiveUser.uniqueId)} // Exclude self
                  handleResultsUpdate={handleResultsUpdate}
                  evaluatorId={effectiveUser.uniqueId}
                  evaluatorName={effectiveUser.name}
                />;
+      case 'work-rate-view':
+          return <WorkRateManagement results={myEmployees} workRateDetails={myManagedWorkRateDetails} selectedDate={selectedDate} allEmployees={allEmployees} holidays={holidays} handleResultsUpdate={handleResultsUpdate} />;
+      case 'shortened-work-details':
+          return <WorkRateDetails type="shortenedWork" data={myManagedWorkRateDetails.shortenedWorkDetails} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} />;
+      case 'daily-attendance-details':
+          return <WorkRateDetails type="dailyAttendance" data={myManagedWorkRateDetails.dailyAttendanceDetails} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} />;
       case 'notifications': {
             return (
                 <Card>

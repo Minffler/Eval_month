@@ -6,7 +6,7 @@ import Header from '@/components/evalmax/header';
 import AdminDashboard from '@/components/evalmax/admin-dashboard';
 import EvaluatorDashboard from '@/components/evalmax/evaluator-dashboard';
 import EmployeeDashboard from '@/components/evalmax/employee-dashboard';
-import type { Employee, Evaluation, EvaluationResult, Grade, GradeInfo, User, EvaluatorView, EvaluationUploadData, WorkRateInputs, AttendanceType, Holiday, ShortenedWorkHourRecord, DailyAttendanceRecord } from '@/lib/types';
+import type { Employee, Evaluation, EvaluationResult, Grade, GradeInfo, User, EvaluatorView, EvaluationUploadData, WorkRateInputs, AttendanceType, Holiday, ShortenedWorkHourRecord, DailyAttendanceRecord, EmployeeView } from '@/lib/types';
 import { mockEmployees, gradingScale as initialGradingScale, calculateFinalAmount, mockEvaluations as initialMockEvaluations, getDetailedGroup1, initialAttendanceTypes } from '@/lib/data';
 import { useRouter } from 'next/navigation';
 import { Loader2, Bell } from 'lucide-react';
@@ -82,6 +82,30 @@ const evaluatorNavItems: NavItem[] = [
     icon: Settings,
     children: [
       { id: 'assignment-management', label: '담당 소속 관리', icon: Users },
+    ],
+  },
+  {
+    id: 'work-rate-management',
+    label: '근무율 관리',
+    icon: Hourglass,
+    children: [
+      { id: 'work-rate-view', label: '근무율 조회', icon: Gauge },
+      { id: 'shortened-work-details', label: '단축근로 상세', icon: CalendarClock },
+      { id: 'daily-attendance-details', label: '일근태 상세', icon: CalendarDays },
+    ]
+  },
+];
+
+const employeeNavItems: NavItem[] = [
+  { id: 'my-review', label: '내 성과 리뷰', icon: FileCheck },
+  {
+    id: 'work-rate-management',
+    label: '근무율 관리',
+    icon: Hourglass,
+    children: [
+      { id: 'my-work-rate', label: '근무율 조회', icon: Gauge },
+      { id: 'my-shortened-work', label: '단축근로 상세', icon: CalendarClock },
+      { id: 'my-daily-attendance', label: '일근태 상세', icon: CalendarDays },
     ],
   },
 ];
@@ -237,6 +261,10 @@ export default function Home() {
   // State for evaluator view
   const [isEvaluatorSidebarOpen, setIsEvaluatorSidebarOpen] = React.useState(true);
   const [evaluatorActiveView, setEvaluatorActiveView] = React.useState<EvaluatorView>('evaluation-input');
+
+  // State for employee view
+  const [isEmployeeSidebarOpen, setIsEmployeeSidebarOpen] = React.useState(true);
+  const [employeeActiveView, setEmployeeActiveView] = React.useState<EmployeeView>('my-review');
 
 
   React.useEffect(() => {
@@ -659,40 +687,6 @@ export default function Home() {
   }, [employees, evaluations, gradingScale, selectedDate, allEmployees]);
 
   const renderDashboard = () => {
-    const allTimeResults = Object.keys(employees).flatMap(dateKey => {
-      const [year, month] = dateKey.split('-').map(Number);
-      const monthEmployees = employees[dateKey] || [];
-      const monthEvaluations = evaluations[dateKey] || [];
-      if (!monthEmployees) return [];
-      return monthEmployees.map(employee => {
-        const evaluation = monthEvaluations.find(e => e.employeeId === employee.id);
-        const grade = evaluation?.grade || null;
-        const gradeInfo = grade ? gradingScale[grade] : null;
-        const score = gradeInfo ? gradeInfo.score : 0;
-        const payoutRate = gradeInfo ? gradeInfo.payoutRate / 100 : 0;
-        const gradeAmount = (employee.baseAmount || 0) * payoutRate;
-        const finalAmount = calculateFinalAmount(gradeAmount, employee.workRate);
-        const evaluator = allEmployees.find(e => e.uniqueId === employee.evaluatorId);
-        const detailedGroup1 = getDetailedGroup1(employee.workRate);
-        const detailedGroup2 = '기타'; // Simplified for all-time view; specific grouping logic might be complex here.
-        return {
-          ...employee,
-          year,
-          month,
-          grade,
-          score,
-          payoutRate,
-          gradeAmount,
-          finalAmount,
-          evaluatorName: evaluator?.name || (employee.evaluatorId ? `미지정 (${employee.evaluatorId})` : '미지정'),
-          evaluationGroup: '', 
-          detailedGroup1,
-          detailedGroup2,
-          memo: evaluation?.memo || employee.memo || '',
-        };
-      });
-    });
-
     switch (role) {
       case 'admin':
         return <AdminDashboard 
@@ -718,18 +712,36 @@ export default function Home() {
                   workRateDetails={workRateDetails}
                 />;
       case 'evaluator':
+        const myManagedEmployees = results.filter(e => e.evaluatorId === user?.uniqueId);
+        const myManagedEmployeeIds = new Set(myManagedEmployees.map(e => e.id));
+        const myResults = results.filter(r => myManagedEmployeeIds.has(r.id));
+        
         return <EvaluatorDashboard 
-                  allResults={allTimeResults}
-                  currentMonthResults={results}
+                  allResults={allEmployees.filter(r => r.evaluatorId === user?.uniqueId)}
+                  currentMonthResults={myResults}
                   gradingScale={gradingScale}
                   selectedDate={selectedDate}
                   setSelectedDate={setSelectedDate} 
                   handleResultsUpdate={handleResultsUpdate}
                   activeView={evaluatorActiveView}
                   onClearMyEvaluations={handleClearMyEvaluations}
+                  workRateDetails={workRateDetails}
+                  holidays={holidays}
+                  allEmployees={allEmployees}
+                  attendanceTypes={attendanceTypes}
                 />;
       case 'employee':
-        return <EmployeeDashboard allResults={allTimeResults} gradingScale={gradingScale} />;
+        const myEmployeeInfo = results.find(e => e.uniqueId === user?.uniqueId);
+        return <EmployeeDashboard 
+                  employeeResults={myEmployeeInfo ? [myEmployeeInfo] : []}
+                  allResults={results.filter(e => e.uniqueId === user?.uniqueId)}
+                  gradingScale={gradingScale} 
+                  activeView={employeeActiveView}
+                  workRateDetails={workRateDetails}
+                  selectedDate={selectedDate}
+                  allEmployees={allEmployees}
+                  attendanceTypes={attendanceTypes}
+                />;
       default:
         return null;
     }
@@ -791,6 +803,16 @@ export default function Home() {
         setEvaluatorActiveView,
         isEvaluatorSidebarOpen,
         setIsEvaluatorSidebarOpen
+      );
+  }
+  
+  if (role === 'employee') {
+      return commonLayout(
+        employeeNavItems,
+        employeeActiveView,
+        setEmployeeActiveView,
+        isEmployeeSidebarOpen,
+        setIsEmployeeSidebarOpen
       );
   }
 

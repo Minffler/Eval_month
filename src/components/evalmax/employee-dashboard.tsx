@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useAuth } from '@/contexts/auth-context';
-import type { EvaluationResult, Grade, GradeInfo } from '@/lib/types';
+import type { EvaluationResult, Grade, GradeInfo, Employee, EmployeeView, AttendanceType } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -14,10 +14,19 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from '@/components/ui/collapsible';
+import WorkRateManagement from './work-rate-management';
+import WorkRateDetails from './work-rate-details';
+import type { WorkRateDetailsResult } from '@/lib/work-rate-calculator';
 
 interface EmployeeDashboardProps {
+  employeeResults: EvaluationResult[];
   allResults: EvaluationResult[];
   gradingScale: Record<NonNullable<Grade>, GradeInfo>;
+  activeView: EmployeeView;
+  workRateDetails: WorkRateDetailsResult;
+  selectedDate: { year: number, month: number };
+  allEmployees: Employee[];
+  attendanceTypes: AttendanceType[];
 }
 
 type SortConfig = {
@@ -25,20 +34,15 @@ type SortConfig = {
   direction: 'ascending' | 'descending';
 } | null;
 
-export default function EmployeeDashboard({ allResults, gradingScale }: EmployeeDashboardProps) {
-  const { user } = useAuth();
+const MyReviewView = ({ employeeResults, allResults, gradingScale }: {
+  employeeResults: EvaluationResult[];
+  allResults: EvaluationResult[];
+  gradingScale: Record<NonNullable<Grade>, GradeInfo>;
+}) => {
   const [selectedYear, setSelectedYear] = React.useState(new Date().getFullYear().toString());
-  const [employeeResults, setEmployeeResults] = React.useState<EvaluationResult[]>([]);
   const [sortConfig, setSortConfig] = React.useState<SortConfig>(null);
   const [isChartOpen, setIsChartOpen] = React.useState(true);
-
-  React.useEffect(() => {
-    if (user) {
-      const employeeUserResults = allResults.filter(r => r.uniqueId === user.uniqueId);
-      setEmployeeResults(employeeUserResults);
-    }
-  }, [user, allResults]);
-
+  
   const formatCurrency = (value: number) => {
     if (isNaN(value) || value === null) return '0';
     return new Intl.NumberFormat('ko-KR').format(value);
@@ -107,14 +111,9 @@ export default function EmployeeDashboard({ allResults, gradingScale }: Employee
       value: counts[grade] || 0,
     }));
   }, [filteredResults, gradingScale]);
-
-
-  if (!user) {
-    return <div>결과를 불러오는 중입니다...</div>;
-  }
-
+  
   return (
-    <div className="space-y-6">
+     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-3xl font-bold tracking-tight">내 성과 리뷰</h2>
          <Select value={selectedYear} onValueChange={handleYearChange}>
@@ -230,6 +229,50 @@ export default function EmployeeDashboard({ allResults, gradingScale }: Employee
             </div>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+
+export default function EmployeeDashboard({ 
+    employeeResults, 
+    allResults, 
+    gradingScale, 
+    activeView, 
+    workRateDetails, 
+    selectedDate, 
+    allEmployees, 
+    attendanceTypes 
+}: EmployeeDashboardProps) {
+  const { user } = useAuth();
+
+  if (!user) {
+    return <div>결과를 불러오는 중입니다...</div>;
+  }
+  
+  const myWorkRateDetails: WorkRateDetailsResult = {
+      shortenedWorkDetails: workRateDetails.shortenedWorkDetails.filter(d => d.uniqueId === user.uniqueId),
+      dailyAttendanceDetails: workRateDetails.dailyAttendanceDetails.filter(d => d.uniqueId === user.uniqueId),
+  }
+
+  const renderContent = () => {
+    switch(activeView) {
+      case 'my-review':
+        return <MyReviewView employeeResults={employeeResults} allResults={allResults} gradingScale={gradingScale} />;
+      case 'my-work-rate':
+        return <WorkRateManagement results={employeeResults} workRateDetails={myWorkRateDetails} selectedDate={selectedDate} allEmployees={allEmployees} holidays={[]} handleResultsUpdate={() => {}} />;
+      case 'my-shortened-work':
+        return <WorkRateDetails type="shortenedWork" data={myWorkRateDetails.shortenedWorkDetails} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} />;
+      case 'my-daily-attendance':
+        return <WorkRateDetails type="dailyAttendance" data={myWorkRateDetails.dailyAttendanceDetails} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} />;
+      default:
+        return <div>선택된 뷰가 없습니다.</div>;
+    }
+  }
+
+  return (
+    <div className="p-4 md:p-6 lg:p-8">
+      {renderContent()}
     </div>
   );
 }
