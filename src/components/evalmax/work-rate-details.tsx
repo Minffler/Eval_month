@@ -99,57 +99,50 @@ const DailyAttendanceIcon = ({ isShortenedDay }: { isShortenedDay: boolean }) =>
 };
 
 const DatePicker = ({ value, onChange }: { value: string, onChange: (date: string) => void }) => {
-    const [year, setYear] = React.useState<number | undefined>();
-    const [month, setMonth] = React.useState<number | undefined>();
-    const [day, setDay] = React.useState<number | string | undefined>();
-
-    React.useEffect(() => {
-        if (value && !isNaN(new Date(value).getTime())) {
+    const { year, month, day } = React.useMemo(() => {
+        if (value && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
             const date = new Date(value);
-            setYear(date.getFullYear());
-            setMonth(date.getMonth() + 1);
-            setDay(date.getDate());
-        } else if (value) {
-            const parts = value.split('-');
-            if (parts.length >= 1) setYear(parseInt(parts[0], 10));
-            if (parts.length >= 2) setMonth(parseInt(parts[1], 10));
-            if (parts.length >= 3) setDay(parts[2]);
+            return {
+                year: date.getUTCFullYear(),
+                month: date.getUTCMonth() + 1,
+                day: date.getUTCDate()
+            };
         }
+        return { year: undefined, month: undefined, day: undefined };
     }, [value]);
-    
+
     const years = Array.from({ length: 11 }, (_, i) => new Date().getFullYear() - 5 + i);
     const months = Array.from({ length: 12 }, (_, i) => i + 1);
 
-    const handleUpdate = (newVal: string, type: 'year' | 'month' | 'day') => {
-        let currentParts = value ? value.split('-') : ['', '', ''];
-        if (type === 'year') currentParts[0] = newVal;
-        if (type === 'month') currentParts[1] = newVal.padStart(2, '0');
-        if (type === 'day') currentParts[2] = newVal.padStart(2, '0');
-        
-        const [y, m, d] = currentParts;
-        
-        if (y && m && d) {
-          const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
-          if (!isNaN(date.getTime()) && date.getDate() === parseInt(d)) {
-            onChange(date.toISOString().split('T')[0]);
-          }
-        }
-    }
-    
+    const handleDatePartChange = (part: 'year' | 'month' | 'day', newValue: number) => {
+        const newDate = value ? new Date(value) : new Date();
+        if (part === 'year') newDate.setUTCFullYear(newValue);
+        if (part === 'month') newDate.setUTCMonth(newValue - 1);
+        if (part === 'day') newDate.setUTCDate(newValue);
+        onChange(newDate.toISOString().split('T')[0]);
+    };
+
     return (
         <div className="flex gap-2 items-center">
-            <Select value={year?.toString() ?? ''} onValueChange={(val) => { const newYear = parseInt(val, 10); setYear(newYear); handleUpdate(val, 'year'); }}>
+            <Select value={year?.toString() ?? ''} onValueChange={(val) => handleDatePartChange('year', parseInt(val, 10))}>
                 <SelectTrigger className="w-[100px]"><SelectValue placeholder="년도" /></SelectTrigger>
                 <SelectContent>{years.map(y => <SelectItem key={y} value={y.toString()}>{y}년</SelectItem>)}</SelectContent>
             </Select>
-            <Select value={month?.toString() ?? ''} onValueChange={(val) => { const newMonth = parseInt(val, 10); setMonth(newMonth); handleUpdate(val, 'month'); }}>
+            <Select value={month?.toString() ?? ''} onValueChange={(val) => handleDatePartChange('month', parseInt(val, 10))}>
                 <SelectTrigger className="w-[80px]"><SelectValue placeholder="월" /></SelectTrigger>
                 <SelectContent>{months.map(m => <SelectItem key={m} value={m.toString()}>{m}월</SelectItem>)}</SelectContent>
             </Select>
             <Input
                 type="number"
                 value={day ?? ''}
-                onChange={(e) => { const newDay = e.target.value; setDay(newDay); handleUpdate(newDay, 'day'); }}
+                onChange={(e) => {
+                    const newDay = parseInt(e.target.value, 10);
+                    if (!isNaN(newDay) && newDay >= 1 && newDay <= 31) {
+                        handleDatePartChange('day', newDay);
+                    } else if (e.target.value === '') {
+                        // Allow clearing the input, maybe handle this case
+                    }
+                }}
                 placeholder="일"
                 className="w-[70px]"
                 min="1"
@@ -157,7 +150,7 @@ const DatePicker = ({ value, onChange }: { value: string, onChange: (date: strin
             />
         </div>
     );
-}
+};
 
 const TimePicker = ({ value, onChange }: { value: string, onChange: (time: string) => void }) => {
     const [hour, minute] = React.useMemo(() => {

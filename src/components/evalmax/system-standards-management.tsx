@@ -24,7 +24,8 @@ import {
 } from '@/components/ui/select';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '../ui/collapsible';
 import { cn } from '@/lib/utils';
-
+import { format } from 'date-fns';
+import { ko } from 'date-fns/locale';
 
 interface SystemStandardsManagementProps {
   gradingScale: Record<NonNullable<Grade>, GradeInfo>;
@@ -35,15 +36,26 @@ interface SystemStandardsManagementProps {
   setHolidays: React.Dispatch<React.SetStateAction<Holiday[]>>;
 }
 
+const GRADING_SCALE_LAST_UPDATED_KEY = 'pl_eval_grading_scale_last_updated';
+const ATTENDANCE_LAST_UPDATED_KEY = 'pl_eval_attendance_last_updated';
+
 const GradeManagement = ({ gradingScale, setGradingScale }: Pick<SystemStandardsManagementProps, 'gradingScale' | 'setGradingScale'>) => {
   const { toast } = useToast();
   const [localGrades, setLocalGrades] = React.useState(
     Object.entries(gradingScale).map(([grade, info]) => ({ ...info, grade: grade as Grade, isNew: false }))
   );
+  const [lastUpdated, setLastUpdated] = React.useState<Date | null>(null);
 
   React.useEffect(() => {
     setLocalGrades(Object.entries(gradingScale).map(([grade, info]) => ({ ...info, grade: grade as Grade, isNew: false })));
   }, [gradingScale]);
+
+  React.useEffect(() => {
+    const storedDate = localStorage.getItem(GRADING_SCALE_LAST_UPDATED_KEY);
+    if (storedDate) {
+      setLastUpdated(new Date(storedDate));
+    }
+  }, []);
 
   const handleGradeInputChange = (index: number, field: keyof GradeInfo, value: string) => {
     const newGrades = [...localGrades];
@@ -80,14 +92,26 @@ const GradeManagement = ({ gradingScale, setGradingScale }: Pick<SystemStandards
       return acc;
     }, {} as Record<NonNullable<Grade>, GradeInfo>);
     setGradingScale(newGradingScale);
+
+    const now = new Date();
+    localStorage.setItem(GRADING_SCALE_LAST_UPDATED_KEY, now.toISOString());
+    setLastUpdated(now);
+    
     toast({ title: '저장 완료', description: '등급 및 점수 변경사항이 성공적으로 저장되었습니다.' });
   };
   
   return (
     <Card>
-        <CardHeader>
-            <CardTitle>등급/점수 관리</CardTitle>
-            <CardDescription>평가 등급, 점수, 지급률을 관리합니다.</CardDescription>
+        <CardHeader className="flex flex-row justify-between items-start">
+            <div>
+                <CardTitle>등급/점수 관리</CardTitle>
+                <CardDescription>평가 등급, 점수, 지급률을 관리합니다.</CardDescription>
+            </div>
+            {lastUpdated && (
+                <p className="text-xs text-muted-foreground pt-1">
+                    {format(lastUpdated, "yyyy.MM.dd HH:mm", { locale: ko })} 업데이트
+                </p>
+            )}
         </CardHeader>
         <CardContent>
         <div className="border rounded-lg overflow-x-auto">
@@ -129,6 +153,7 @@ const AttendanceManagement = ({
   const [localTypes, setLocalTypes] = React.useState<AttendanceType[]>([]);
   const [localHolidays, setLocalHolidays] = React.useState<Holiday[]>([]);
   const [holidayErrors, setHolidayErrors] = React.useState<Record<string, string>>({});
+  const [lastUpdated, setLastUpdated] = React.useState<Date | null>(null);
 
   React.useEffect(() => {
     setLocalTypes([...attendanceTypes].sort((a,b) => {
@@ -140,6 +165,13 @@ const AttendanceManagement = ({
   React.useEffect(() => {
     setLocalHolidays([...holidays]);
   }, [holidays]);
+  
+  React.useEffect(() => {
+    const storedDate = localStorage.getItem(ATTENDANCE_LAST_UPDATED_KEY);
+    if (storedDate) {
+      setLastUpdated(new Date(storedDate));
+    }
+  }, []);
 
   const handleTypeInputChange = (index: number, field: keyof AttendanceType, value: string) => {
     const newTypes = [...localTypes];
@@ -192,6 +224,11 @@ const AttendanceManagement = ({
         return;
     }
     setAttendanceTypes(localTypes);
+    
+    const now = new Date();
+    localStorage.setItem(ATTENDANCE_LAST_UPDATED_KEY, now.toISOString());
+    setLastUpdated(now);
+    
     toast({ title: '저장 완료', description: '근무기준 변경사항이 성공적으로 저장되었습니다.' });
   };
   const handleSaveHolidays = () => {
@@ -209,6 +246,11 @@ const AttendanceManagement = ({
     const otherYearsHolidays = holidays.filter(h => !h.date.startsWith(String(selectedYear)));
     const updatedHolidays = [...otherYearsHolidays, ...holidaysForYear].sort((a, b) => a.date.localeCompare(b.date));
     setHolidays(updatedHolidays);
+    
+    const now = new Date();
+    localStorage.setItem(ATTENDANCE_LAST_UPDATED_KEY, now.toISOString());
+    setLastUpdated(now);
+    
     toast({ title: '저장 완료', description: `${selectedYear}년 공휴일 변경사항이 성공적으로 저장되었습니다.` });
   };
   
@@ -218,18 +260,24 @@ const AttendanceManagement = ({
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>근무기준 및 공휴일 관리</CardTitle>
-        <CardDescription>근무율 계산에 사용되는 근무기준과 공휴일을 관리합니다.</CardDescription>
+      <CardHeader className="flex flex-row justify-between items-start">
+        <div>
+            <CardTitle>근무기준 및 공휴일 관리</CardTitle>
+            <CardDescription>근무율 계산에 사용되는 근무기준과 공휴일을 관리합니다.</CardDescription>
+        </div>
+        {lastUpdated && (
+            <p className="text-xs text-muted-foreground pt-1">
+                {format(lastUpdated, "yyyy.MM.dd HH:mm", { locale: ko })} 업데이트
+            </p>
+        )}
       </CardHeader>
       <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-            <h4 className="font-semibold text-lg mb-2">근무기준 설정</h4>
             <div className="border rounded-lg">
                 <Table>
                 <TableHeader><TableRow>
                     <TableHead className="py-2 px-3 text-center">근태명</TableHead>
-                    <TableHead className="py-2 px-3 text-center">차감 일수</TableHead><TableHead></TableHead>
+                    <TableHead className="py-2 px-3 text-center w-1/3">차감 일수</TableHead><TableHead></TableHead>
                 </TableRow></TableHeader>
                 <TableBody>
                     {localTypes.map((type, index) => (
@@ -249,7 +297,6 @@ const AttendanceManagement = ({
         </div>
         <div>
             <div className="flex justify-between items-center mb-2">
-                <h4 className="font-semibold text-lg">공휴일 관리</h4>
                 <Select value={String(selectedYear)} onValueChange={(yearStr) => setSelectedYear(parseInt(yearStr, 10))}>
                     <SelectTrigger className="w-[120px]"><SelectValue placeholder="연도 선택" /></SelectTrigger>
                     <SelectContent>{availableYears.map(year => <SelectItem key={year} value={String(year)}>{year}년</SelectItem>)}</SelectContent>
@@ -294,14 +341,14 @@ export default function SystemStandardsManagement(props: SystemStandardsManageme
   const [isGradeOpen, setIsGradeOpen] = React.useState(false);
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="max-w-5xl mx-auto">
       <div className="space-y-6">
         <Collapsible open={isAttendanceOpen} onOpenChange={setIsAttendanceOpen}>
           <CollapsibleTrigger asChild>
             <div className="flex w-full cursor-pointer items-center justify-between p-4 rounded-lg hover:bg-muted/50 data-[state=open]:rounded-b-none border bg-card">
               <div>
-                <CardTitle>근무기준 설정</CardTitle>
-                <CardDescription>근태 종류 및 공휴일 등 근무율 계산에 사용되는 기준을 정의합니다.</CardDescription>
+                <CardTitle>근무기준 및 공휴일 관리</CardTitle>
+                <CardDescription>근무율 계산에 사용되는 근무기준과 공휴일을 관리합니다.</CardDescription>
               </div>
               <Button variant="ghost" size="icon" className="h-8 w-8">
                 <span className="sr-only">보기/숨기기</span>
