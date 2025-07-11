@@ -12,7 +12,7 @@ import {
   TableFooter
 } from '@/components/ui/table';
 import { Input } from '../ui/input';
-import { Search, ArrowUpDown, ArrowUp, ArrowDown, Download, PlusCircle, Calendar as CalendarIcon, ClockIcon } from 'lucide-react';
+import { Search, ArrowUpDown, ArrowUp, ArrowDown, Download, PlusCircle, Calendar as CalendarIcon, ClockIcon, Edit } from 'lucide-react';
 import type { Employee, AttendanceType, Role } from '@/lib/types';
 import type { ShortenedWorkDetail, DailyAttendanceDetail } from '@/lib/work-rate-calculator';
 import { Button } from '../ui/button';
@@ -43,6 +43,14 @@ import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Calendar } from '../ui/calendar';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
 
 
 type SortConfig<T> = {
@@ -98,9 +106,13 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = React.useState('');
   const [sortConfig, setSortConfig] = React.useState<SortConfig<any>>(null);
+  
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+  const [dialogMode, setDialogMode] = React.useState<'add' | 'edit'>('add');
   const [formData, setFormData] = React.useState<any>({});
-  const [selectedRowId, setSelectedRowId] = React.useState<string | null>(null);
+  const [selectedRowIds, setSelectedRowIds] = React.useState<Set<string>>(new Set());
+
+  const [employeeSearchOpen, setEmployeeSearchOpen] = React.useState(false);
 
   const filteredData = React.useMemo(() => {
     if (!searchTerm) return data;
@@ -176,40 +188,49 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
     XLSX.writeFile(workbook, fileName);
   };
 
-  const handleOpenDialog = () => {
-      let initialData: any = {};
-  
-      if (selectedRowId) {
-          const selectedRecord = data.find((item: any) => {
-              const rowId = type === 'shortenedWork'
-                  ? `${item.uniqueId}-${item.startDate}-${item.endDate}-${item.type}`
-                  : `${item.uniqueId}-${item.date}-${item.type}-${data.indexOf(item)}`;
-              return rowId === selectedRowId;
-          });
-          if (selectedRecord) {
-              initialData = { ...selectedRecord };
-          }
-      } else {
-           toast({
-              variant: 'destructive',
-              title: '오류',
-              description: '수정할 데이터를 선택해주세요.',
-           });
-           return;
-      }
-      
-      if (type === 'shortenedWork' && !initialData.startTime && !initialData.endTime) {
-        initialData.startTime = '09:00';
-        initialData.endTime = '18:00';
-      }
-
-      setFormData(initialData);
-      setIsDialogOpen(true);
+  const openAddDialog = () => {
+    setDialogMode('add');
+    let initialData: any = {};
+    if (viewAs === 'employee' && user) {
+        initialData = { uniqueId: user.uniqueId, name: user.name };
+    }
+    setFormData(initialData);
+    setIsDialogOpen(true);
   };
   
-  const handleFormChange = (field: string, value: string) => {
+  const openEditDialog = () => {
+    if (selectedRowIds.size !== 1) {
+        toast({
+            variant: 'destructive',
+            title: '오류',
+            description: '변경할 데이터 한 개를 선택해주세요.',
+        });
+        return;
+    }
+    
+    setDialogMode('edit');
+    const selectedId = Array.from(selectedRowIds)[0];
+    const selectedRecord = data.find((item: any) => {
+        const rowId = type === 'shortenedWork'
+            ? `${item.uniqueId}-${item.startDate}-${item.endDate}-${item.type}`
+            : `${item.uniqueId}-${item.date}-${item.type}-${data.indexOf(item)}`;
+        return rowId === selectedId;
+    });
+
+    if (selectedRecord) {
+        setFormData({ ...selectedRecord });
+        setIsDialogOpen(true);
+    }
+  };
+  
+  const handleFormChange = (field: string, value: any) => {
     setFormData((prev: any) => ({ ...prev, [field]: value }));
   };
+
+  const handleEmployeeSelect = (employee: Employee) => {
+    setFormData((prev: any) => ({ ...prev, uniqueId: employee.uniqueId, name: employee.name }));
+    setEmployeeSearchOpen(false);
+  }
 
   const handleSubmitForApproval = () => {
     if (!user) {
@@ -217,6 +238,11 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
       return;
     }
     
+    if (!formData.uniqueId || !formData.name) {
+        toast({ variant: 'destructive', title: '오류', description: '대상자를 선택해주세요.' });
+        return;
+    }
+
     const employee = allEmployees.find(e => e.uniqueId === formData.uniqueId);
     if (!employee) {
       toast({ variant: 'destructive', title: '오류', description: '해당 ID의 직원을 찾을 수 없습니다.' });
@@ -224,15 +250,16 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
     }
     const evaluator = allEmployees.find(e => e.uniqueId === employee.evaluatorId);
     
+    const actionType = dialogMode === 'add' ? '추가' : '변경';
     const dataType = type === 'shortenedWork' ? '단축근로' : '일근태';
-    const notificationMessage = `[결재요청] ${dataType} 변경: ${employee.name}(${employee.uniqueId})`;
+    const notificationMessage = `[결재요청] ${dataType} ${actionType}: ${employee.name}(${employee.uniqueId})`;
     
     if (user.roles?.includes('admin')) {
         toast({ title: '자동 승인 완료', description: '관리자 권한으로 데이터가 즉시 저장 및 반영되었습니다.' });
         if (evaluator) {
-          addNotification({ recipientId: evaluator.uniqueId, message: `[결재승인] ${dataType} 변경: ${employee.name}(${employee.uniqueId})` });
+          addNotification({ recipientId: evaluator.uniqueId, message: `[결재승인] ${dataType} ${actionType}: ${employee.name}(${employee.uniqueId})` });
         }
-        addNotification({ recipientId: employee.uniqueId, message: `[결재승인] ${dataType} 변경: ${employee.name}(${employee.uniqueId})` });
+        addNotification({ recipientId: employee.uniqueId, message: `[결재승인] ${dataType} ${actionType}: ${employee.name}(${employee.uniqueId})` });
     } else if (user.roles?.includes('evaluator')) {
         addNotification({ recipientId: '1911042', message: notificationMessage });
         toast({ title: '결재 상신 완료', description: '관리자에게 결재가 요청되었습니다.' });
@@ -259,17 +286,60 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
 
   const renderDialogContent = () => {
 
+    const EmployeeSelector = () => {
+      if (viewAs !== 'employee' && dialogMode === 'add') {
+          return (
+              <div className="grid grid-cols-4 items-start gap-4">
+                  <Label htmlFor="employee" className="text-right pt-2">대상자</Label>
+                  <div className="col-span-3">
+                      <Popover open={employeeSearchOpen} onOpenChange={setEmployeeSearchOpen}>
+                          <PopoverTrigger asChild>
+                              <Button variant="outline" role="combobox" className="w-full justify-between">
+                                  {formData.uniqueId ? `${formData.name} (${formData.uniqueId})` : "직원 선택..."}
+                              </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[300px] p-0">
+                              <Command>
+                                  <CommandInput placeholder="이름 또는 ID 검색..." />
+                                  <CommandList>
+                                      <CommandEmpty>검색 결과가 없습니다.</CommandEmpty>
+                                      <CommandGroup>
+                                          {allEmployees.map((emp) => (
+                                              <CommandItem
+                                                  key={emp.uniqueId}
+                                                  value={`${emp.name} ${emp.uniqueId}`}
+                                                  onSelect={() => handleEmployeeSelect(emp)}
+                                              >
+                                                  {emp.name} ({emp.uniqueId})
+                                              </CommandItem>
+                                          ))}
+                                      </CommandGroup>
+                                  </CommandList>
+                              </Command>
+                          </PopoverContent>
+                      </Popover>
+                  </div>
+              </div>
+          );
+      }
+      return (
+          <>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="uniqueId" className="text-right">ID</Label>
+                <Input id="uniqueId" value={formData.uniqueId || ''} className="col-span-3" disabled />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="name" className="text-right">이름</Label>
+                <Input id="name" value={formData.name || ''} className="col-span-3" disabled />
+              </div>
+          </>
+      );
+    }
+
     if (type === 'shortenedWork') {
       return (
         <div className="space-y-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="uniqueId" className="text-right">ID</Label>
-              <Input id="uniqueId" value={formData.uniqueId || ''} className="col-span-3" disabled />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">이름</Label>
-              <Input id="name" value={formData.name || ''} className="col-span-3" disabled />
-            </div>
+            <EmployeeSelector />
             <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="type" className="text-right">구분</Label>
                 <Select value={formData.type || ''} onValueChange={(value) => handleFormChange('type', value)}>
@@ -327,14 +397,7 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
     }
     return (
         <div className="space-y-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="uniqueId" className="text-right">ID</Label>
-              <Input id="uniqueId" value={formData.uniqueId || ''} className="col-span-3" disabled />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">이름</Label>
-              <Input id="name" value={formData.name || ''} className="col-span-3" disabled />
-            </div>
+            <EmployeeSelector />
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="date" className="text-right">일자</Label>
                 <Popover>
@@ -366,8 +429,16 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
     );
   };
   
-  const handleSelectRow = (rowId: string) => {
-    setSelectedRowId(prevId => prevId === rowId ? null : rowId);
+  const handleSelectRow = (rowId: string, checked: boolean) => {
+    setSelectedRowIds(prev => {
+        const newSelection = new Set(prev);
+        if (checked) {
+            newSelection.add(rowId);
+        } else {
+            newSelection.delete(rowId);
+        }
+        return newSelection;
+    });
   }
 
   const renderShortenedWorkTable = () => {
@@ -395,9 +466,9 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
                 const nonWorkHours = 8 - actualWorkHours;
                 const rowId = `${item.uniqueId}-${item.startDate}-${item.endDate}-${item.type}`;
                 return (
-                    <TableRow key={rowId} data-state={selectedRowId === rowId ? 'selected' : 'unselected'}>
+                    <TableRow key={rowId} data-state={selectedRowIds.has(rowId) ? 'selected' : 'unselected'}>
                         <TableCell className="px-2">
-                           <Checkbox checked={selectedRowId === rowId} onCheckedChange={() => handleSelectRow(rowId)} />
+                           <Checkbox checked={selectedRowIds.has(rowId)} onCheckedChange={(checked) => handleSelectRow(rowId, Boolean(checked))} />
                         </TableCell>
                         <TableCell className="text-center">{item.uniqueId}</TableCell>
                         <TableCell className="text-center">{item.name}</TableCell>
@@ -455,9 +526,9 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
             {tableData.map((item, index) => {
               const rowId = `${item.uniqueId}-${item.date}-${item.type}-${index}`;
               return (
-              <TableRow key={rowId} data-state={selectedRowId === rowId ? 'selected' : 'unselected'}>
+              <TableRow key={rowId} data-state={selectedRowIds.has(rowId) ? 'selected' : 'unselected'}>
                 <TableCell className="px-2">
-                   <Checkbox checked={selectedRowId === rowId} onCheckedChange={() => handleSelectRow(rowId)} />
+                   <Checkbox checked={selectedRowIds.has(rowId)} onCheckedChange={(checked) => handleSelectRow(rowId, Boolean(checked))} />
                 </TableCell>
                 <TableCell className="text-center">{item.uniqueId}</TableCell>
                 <TableCell className="text-center">{item.name}</TableCell>
@@ -512,9 +583,13 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
                       />
                   </div>
                 )}
-                 <Button onClick={handleOpenDialog} variant="outline" size="sm" disabled={!selectedRowId}>
+                 <Button onClick={openAddDialog} variant="outline" size="sm">
                     <PlusCircle className="mr-2 h-4 w-4" />
-                    데이터 추가/변경
+                    신규 데이터 추가
+                </Button>
+                <Button onClick={openEditDialog} variant="outline" size="sm" disabled={selectedRowIds.size !== 1}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    선택 데이터 변경
                 </Button>
             </div>
         </CardHeader>
@@ -535,7 +610,7 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
       <DialogContent>
         <DialogHeader>
-            <DialogTitle>근무 데이터 추가/변경</DialogTitle>
+            <DialogTitle>{dialogMode === 'add' ? '신규 근무 데이터 추가' : '근무 데이터 변경'}</DialogTitle>
             <DialogDescription>
                 변경된 단축근로 / 일근태 정보를 입력하고 결재를 상신합니다.
             </DialogDescription>
