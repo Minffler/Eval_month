@@ -31,7 +31,7 @@ interface EmployeeDashboardProps {
   selectedDate: { year: number, month: number };
   allEmployees: Employee[];
   attendanceTypes: AttendanceType[];
-  onApprovalAction: (approvalId: string, step: 'team' | 'hr', status: 'approved' | 'rejected') => void;
+  onApprovalAction: (approval: Approval) => void;
   notifications: AppNotification[];
   approvals: Approval[];
 }
@@ -315,7 +315,7 @@ export default function EmployeeDashboard({
                           return (
                             <TableRow key={approval.id}>
                               <TableCell className="text-center">{format(new Date(approval.date), "yyyy.MM.dd HH:mm", { locale: ko })}</TableCell>
-                              <TableCell className="text-center">{approver?.name || '관리자'}</TableCell>
+                              <TableCell className="text-center">{approver ? `${approver.name} (${approver.uniqueId})` : '관리자'}</TableCell>
                               <TableCell className="text-center">
                                   {approval.payload.dataType === 'shortenedWorkHours' ? '단축근로' : '일근태'} 데이터 {approval.payload.action === 'add' ? '추가' : '변경'}
                               </TableCell>

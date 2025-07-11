@@ -87,7 +87,7 @@ interface AdminDashboardProps {
   holidays: Holiday[];
   setHolidays: React.Dispatch<React.SetStateAction<Holiday[]>>;
   workRateDetails: WorkRateDetailsResult;
-  onApprovalAction: (approvalId: string, step: 'team' | 'hr', status: 'approved' | 'rejected', reason?: string) => void;
+  onApprovalAction: (approval: Approval) => void;
   notifications: AppNotification[];
   addNotification: (notification: Omit<AppNotification, 'id' | 'date' | 'isRead'>) => void;
   approvals: Approval[];
@@ -530,14 +530,24 @@ export default function AdminDashboard({
             toast({ variant: 'destructive', title: '오류', description: '반려 사유를 입력해주세요.' });
             return;
         }
-
-        onApprovalAction(selectedApproval.id, 'hr', decision, rejectionReason);
         
-        if (decision === 'approved' && selectedApproval.statusHR !== '최종승인') {
-            const { dataType, data } = selectedApproval.payload;
-            onWorkRateDataUpload(selectedDate.year, selectedDate.month, dataType, [data], true);
+        const updatedApproval = { ...selectedApproval };
+        if (decision === 'approved') {
+            updatedApproval.status = '최종승인';
+            updatedApproval.statusHR = '최종승인';
+            updatedApproval.approvedAtHR = new Date().toISOString();
+             if (!updatedApproval.approvedAtTeam) { // 현업 결재가 없었다면 같이 승인
+                updatedApproval.status = '현업승인';
+                updatedApproval.approvedAtTeam = new Date().toISOString();
+            }
+        } else {
+            updatedApproval.status = '반려';
+            updatedApproval.statusHR = '반려';
+            updatedApproval.rejectionReason = rejectionReason;
         }
-
+        
+        onApprovalAction(updatedApproval);
+        
         toast({ title: '처리 완료', description: `결재 요청이 ${decision === 'approved' ? '승인' : '반려'}되었습니다.` });
         setApprovalDetailModalOpen(false);
         setSelectedApproval(null);
@@ -550,10 +560,19 @@ export default function AdminDashboard({
             '최종승인': 'bg-green-200 text-green-800',
             '반려': 'bg-red-200 text-red-800',
         };
+        const imageStyles: Record<ApprovalStatus, {bgColor: string, textColor: string}> = {
+          '결재중': { bgColor: 'hsl(30, 20%, 98%)', textColor: 'hsl(var(--muted-foreground))' }, 
+          '현업승인': { bgColor: 'hsl(25, 20%, 92%)', textColor: 'hsl(var(--secondary-foreground))' },
+          '최종승인': { bgColor: 'hsl(25, 15%, 75%)', textColor: 'hsl(var(--secondary-foreground))' }, 
+          '반려': { bgColor: 'hsl(0, 72%, 90%)', textColor: 'hsl(var(--destructive))'},
+        }
+
         return (
-            <span className={cn("px-2 py-1 rounded-full text-xs font-semibold", styles[status])}>
+          <div className="flex items-center justify-center">
+            <div className={cn("flex items-center justify-center rounded-full text-xs font-semibold w-20 h-6")} style={{ backgroundColor: imageStyles[status].bgColor, color: imageStyles[status].textColor }}>
                 {status}
-            </span>
+            </div>
+          </div>
         );
     };
   
@@ -928,7 +947,8 @@ export default function AdminDashboard({
                       <TableHeader><TableRow>
                         <TableHead className="text-center">요청일시</TableHead>
                         <TableHead className="text-center">요청자</TableHead>
-                        <TableHead className="text-center">요청자ID</TableHead>
+                        <TableHead className="text-center">대상자ID</TableHead>
+                        <TableHead className="text-center">대상자</TableHead>
                         <TableHead className="text-center">현업 결재자</TableHead>
                         <TableHead className="text-center">요청내용</TableHead>
                         <TableHead className="text-center">현업 결재</TableHead>
@@ -943,7 +963,8 @@ export default function AdminDashboard({
                           <TableRow key={approval.id}>
                             <TableCell className="text-center">{format(new Date(approval.date), "yyyy.MM.dd HH:mm", { locale: ko })}</TableCell>
                             <TableCell className="text-center">{approval.requesterName}</TableCell>
-                            <TableCell className="text-center">{approval.requesterId}</TableCell>
+                            <TableCell className="text-center">{approval.payload.data.uniqueId}</TableCell>
+                            <TableCell className="text-center">{approval.payload.data.name}</TableCell>
                             <TableCell className="text-center">{teamApprover ? `${teamApprover.name} (${teamApprover.uniqueId})` : '미지정'}</TableCell>
                             <TableCell className="text-center">
                                <Button variant="link" onClick={() => handleApprovalModal(approval)}>
@@ -952,8 +973,8 @@ export default function AdminDashboard({
                             </TableCell>
                             <TableCell className="text-center"><StatusBadge status={approval.status} /></TableCell>
                             <TableCell className="text-center"><StatusBadge status={approval.statusHR} /></TableCell>
-                            <TableCell className="text-center">{approval.approvedAtTeam ? format(new Date(approval.approvedAtTeam), "yy.MM.dd HH:mm") : '-'}</TableCell>
-                            <TableCell className="text-center">{approval.approvedAtHR ? format(new Date(approval.approvedAtHR), "yy.MM.dd HH:mm") : '-'}</TableCell>
+                            <TableCell className="text-center">{approval.approvedAtTeam ? format(new Date(approval.approvedAtTeam), "MM.dd HH:mm") : '-'}</TableCell>
+                            <TableCell className="text-center">{approval.approvedAtHR ? format(new Date(approval.approvedAtHR), "MM.dd HH:mm") : '-'}</TableCell>
                           </TableRow>
                         )})}
                       </TableBody>
@@ -1054,13 +1075,13 @@ export default function AdminDashboard({
                     <div className="bg-muted p-2 rounded-md text-sm">
                       <pre>{JSON.stringify(selectedApproval.payload.data, null, 2)}</pre>
                     </div>
-                    {selectedApproval.statusHR === '반려' && (
+                    {selectedApproval.statusHR === '반려' && selectedApproval.rejectionReason && (
                         <div>
                             <Label htmlFor="rejectionReason">반려 사유</Label>
                             <p className="text-sm text-destructive p-2 border border-destructive rounded-md">{selectedApproval.rejectionReason}</p>
                         </div>
                     )}
-                    {(selectedApproval.status === '결재중' || (selectedApproval.status === '현업승인' && selectedApproval.statusHR === '결재중')) && (
+                    {(selectedApproval.statusHR === '결재중') && (
                          <div>
                             <Label htmlFor="rejectionReason">반려 사유 (반려 시 필수)</Label>
                             <Textarea id="rejectionReason" value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} />
