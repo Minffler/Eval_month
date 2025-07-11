@@ -106,6 +106,7 @@ export type ShortenedWorkHourRecord = {
     startTime: string;
     endTime: string;
     type: ShortenedWorkType;
+    lastModified?: string;
 }
 
 export type DailyAttendanceRecord = {
@@ -113,6 +114,7 @@ export type DailyAttendanceRecord = {
     name: string;
     date: string;
     type: string;
+    lastModified?: string;
 }
 
 export type WorkRateInputs = {

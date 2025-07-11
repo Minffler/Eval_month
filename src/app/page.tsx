@@ -459,7 +459,11 @@ export default function Home() {
     });
   };
   
-  const handleWorkRateDataUpload = (year: number, month: number, type: keyof WorkRateInputs, newData: any[]) => {
+  const handleWorkRateDataUpload = (year: number, month: number, type: keyof WorkRateInputs, newData: any[], isApproved: boolean) => {
+      if (!isApproved) {
+        // Just send notifications, don't update state
+        return;
+      }
       const key = `${year}-${month}`;
       setWorkRateInputs(prev => {
           const currentMonthInputs = prev[key] || {

@@ -3,6 +3,7 @@
 import type { WorkRateInputs, AttendanceType, Holiday, ShortenedWorkHourRecord, DailyAttendanceRecord, ShortenedWorkType } from './types';
 
 export interface ShortenedWorkDetail extends ShortenedWorkHourRecord {
+  rowId: string;
   type: ShortenedWorkType;
   workHours: number;
   actualWorkHours: number;
@@ -12,6 +13,7 @@ export interface ShortenedWorkDetail extends ShortenedWorkHourRecord {
 }
 
 export interface DailyAttendanceDetail extends DailyAttendanceRecord {
+    rowId: string;
     isShortenedDay: boolean;
     actualWorkHours: number;
     deductionDays: number;
@@ -71,7 +73,7 @@ export const calculateWorkRateDetails = (
   
   // 1. Process shortened work details first, as they are needed for daily attendance calculation
   const shortenedWorkDetails: ShortenedWorkDetail[] = currentMonthInputs.shortenedWorkHours
-    .map(record => {
+    .map((record, index) => {
       const startDate = new Date(record.startDate.replace(/\./g, '-'));
       const endDate = new Date(record.endDate.replace(/\./g, '-'));
 
@@ -97,6 +99,7 @@ export const calculateWorkRateDetails = (
 
       return {
         ...record,
+        rowId: `${record.uniqueId}-${record.startDate}-${record.endDate}-${record.type}-${index}`,
         type: record.type,
         workHours,
         actualWorkHours,
@@ -118,7 +121,7 @@ export const calculateWorkRateDetails = (
 
   // 2. Process daily attendance details
   const dailyAttendanceDetails: DailyAttendanceDetail[] = currentMonthInputs.dailyAttendance
-    .map(record => {
+    .map((record, index) => {
         const recordDate = new Date(record.date.replace(/\./g, '-'));
         if (recordDate.getFullYear() !== year || recordDate.getMonth() !== month - 1) {
             return null; // Filter out records not in the selected month
@@ -146,6 +149,7 @@ export const calculateWorkRateDetails = (
         
         return {
             ...record,
+            rowId: `${record.uniqueId}-${record.date}-${record.type}-${index}`,
             isShortenedDay,
             actualWorkHours,
             deductionDays,

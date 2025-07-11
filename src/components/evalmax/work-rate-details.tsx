@@ -48,6 +48,7 @@ import {
   CommandList,
 } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { format } from 'date-fns';
 
 
 type SortConfig<T> = {
@@ -62,6 +63,7 @@ interface WorkRateDetailsProps {
   allEmployees: Employee[];
   attendanceTypes: AttendanceType[];
   viewAs?: Role;
+  onDataChange: (data: any[], type: 'shortenedWork' | 'dailyAttendance') => void;
 }
 
 const ShortenedWorkTypeIcon = ({ type }: { type: '임신' | '육아/돌봄' }) => {
@@ -107,43 +109,47 @@ const DatePicker = ({ value, onChange }: { value: string, onChange: (date: strin
             setYear(date.getFullYear());
             setMonth(date.getMonth() + 1);
             setDay(date.getDate());
-        } else {
-            setYear(undefined);
-            setMonth(undefined);
-            setDay(undefined);
+        } else if (value) {
+            const parts = value.split('-');
+            if (parts.length >= 1) setYear(parseInt(parts[0], 10));
+            if (parts.length >= 2) setMonth(parseInt(parts[1], 10));
+            if (parts.length >= 3) setDay(parts[2]);
         }
     }, [value]);
     
     const years = Array.from({ length: 11 }, (_, i) => new Date().getFullYear() - 5 + i);
     const months = Array.from({ length: 12 }, (_, i) => i + 1);
 
-    const handleUpdate = (newYear?: number, newMonth?: number, newDay?: number | string) => {
-        if (newYear !== undefined && newMonth !== undefined && newDay !== undefined && String(newDay).trim() !== '') {
-            const dayNum = Number(newDay);
-            if (!isNaN(dayNum) && dayNum > 0 && dayNum <= 31) {
-                const newDate = new Date(newYear, newMonth - 1, dayNum);
-                // Check if the created date is valid and matches the input (e.g., Feb 30 doesn't become Mar 1/2)
-                if (!isNaN(newDate.getTime()) && newDate.getDate() === dayNum) {
-                    onChange(newDate.toISOString().split('T')[0]);
-                }
-            }
+    const handleUpdate = (newVal: string, type: 'year' | 'month' | 'day') => {
+        let currentParts = value ? value.split('-') : ['', '', ''];
+        if (type === 'year') currentParts[0] = newVal;
+        if (type === 'month') currentParts[1] = newVal.padStart(2, '0');
+        if (type === 'day') currentParts[2] = newVal.padStart(2, '0');
+        
+        const [y, m, d] = currentParts;
+        
+        if (y && m && d) {
+          const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d));
+          if (!isNaN(date.getTime()) && date.getDate() === parseInt(d)) {
+            onChange(date.toISOString().split('T')[0]);
+          }
         }
     }
     
     return (
         <div className="flex gap-2 items-center">
-            <Select value={year?.toString()} onValueChange={(val) => { const newYear = parseInt(val, 10); setYear(newYear); handleUpdate(newYear, month, day); }}>
+            <Select value={year?.toString() ?? ''} onValueChange={(val) => { const newYear = parseInt(val, 10); setYear(newYear); handleUpdate(val, 'year'); }}>
                 <SelectTrigger className="w-[100px]"><SelectValue placeholder="년도" /></SelectTrigger>
                 <SelectContent>{years.map(y => <SelectItem key={y} value={y.toString()}>{y}년</SelectItem>)}</SelectContent>
             </Select>
-            <Select value={month?.toString()} onValueChange={(val) => { const newMonth = parseInt(val, 10); setMonth(newMonth); handleUpdate(year, newMonth, day); }}>
+            <Select value={month?.toString() ?? ''} onValueChange={(val) => { const newMonth = parseInt(val, 10); setMonth(newMonth); handleUpdate(val, 'month'); }}>
                 <SelectTrigger className="w-[80px]"><SelectValue placeholder="월" /></SelectTrigger>
                 <SelectContent>{months.map(m => <SelectItem key={m} value={m.toString()}>{m}월</SelectItem>)}</SelectContent>
             </Select>
             <Input
                 type="number"
                 value={day ?? ''}
-                onChange={(e) => { const newDay = e.target.value; setDay(newDay); handleUpdate(year, month, newDay); }}
+                onChange={(e) => { const newDay = e.target.value; setDay(newDay); handleUpdate(newDay, 'day'); }}
                 placeholder="일"
                 className="w-[70px]"
                 min="1"
@@ -183,7 +189,7 @@ const TimePicker = ({ value, onChange }: { value: string, onChange: (time: strin
     )
 }
 
-export default function WorkRateDetails({ type, data, selectedDate, allEmployees, attendanceTypes, viewAs = 'admin' }: WorkRateDetailsProps) {
+export default function WorkRateDetails({ type, data, selectedDate, allEmployees, attendanceTypes, viewAs = 'admin', onDataChange }: WorkRateDetailsProps) {
   const { user } = useAuth();
   const { addNotification } = useNotifications();
   const { toast } = useToast();
@@ -209,6 +215,11 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
     let sortableItems = [...filteredData];
     if (sortConfig !== null) {
         sortableItems.sort((a, b) => {
+            if (sortConfig.key === 'lastModified') {
+                const dateA = a.lastModified ? new Date(a.lastModified).getTime() : 0;
+                const dateB = b.lastModified ? new Date(b.lastModified).getTime() : 0;
+                return sortConfig.direction === 'ascending' ? dateA - dateB : dateB - dateA;
+            }
             const aValue = a[sortConfig.key] ?? '';
             const bValue = b[sortConfig.key] ?? '';
             if (aValue < bValue) {
@@ -299,11 +310,8 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
     
     setDialogMode('edit');
     const selectedId = Array.from(selectedRowIds)[0];
-    const selectedRecord = data.find((item: any, index) => {
-        const rowId = type === 'shortenedWork'
-            ? `${item.uniqueId}-${item.startDate}-${item.endDate}-${item.type}`
-            : `${item.uniqueId}-${item.date}-${item.type}-${index}`;
-        return rowId === selectedId;
+    const selectedRecord = data.find((item: any) => {
+        return item.rowId === selectedId;
     });
 
     if (selectedRecord) {
@@ -349,6 +357,20 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
           addNotification({ recipientId: evaluator.uniqueId, message: approvalMessage });
         }
         addNotification({ recipientId: employee.uniqueId, message: approvalMessage });
+        
+        // Directly update the data for admins
+        const updatedRecord = {
+          ...formData,
+          lastModified: new Date().toISOString(),
+        };
+        let updatedData;
+        if (dialogMode === 'add') {
+          updatedData = [...data, updatedRecord];
+        } else {
+          updatedData = data.map(item => item.rowId === formData.rowId ? updatedRecord : item);
+        }
+        onDataChange(updatedData, type);
+
     } else {
         const requestMessage = `[결재요청] ${dataType} ${actionType}: ${employee.name}(${employee.uniqueId})`;
         if (user.roles?.includes('evaluator')) {
@@ -532,6 +554,15 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
         return newSelection;
     });
   }
+  
+  const formatTimestamp = (isoString?: string) => {
+    if (!isoString) return '';
+    try {
+      return format(new Date(isoString), 'MM.dd HH:mm');
+    } catch {
+      return '';
+    }
+  }
 
   const renderShortenedWorkTable = () => {
     const tableData = sortedData as ShortenedWorkDetail[];
@@ -550,13 +581,14 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
               <TableHead className="text-center">퇴근시각</TableHead>
               <TableHead className="cursor-pointer text-center" onClick={() => requestSort('actualWorkHours')}><div className="flex items-center justify-center">실근로/미근로(H){getSortIcon('actualWorkHours')}</div></TableHead>
               <TableHead className="cursor-pointer text-center" onClick={() => requestSort('totalDeductionHours')}><div className="flex items-center justify-center">미근로시간{getSortIcon('totalDeductionHours')}</div></TableHead>
+              <TableHead className="cursor-pointer text-center" onClick={() => requestSort('lastModified')}><div className="flex items-center justify-center">최종수정{getSortIcon('lastModified')}</div></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {tableData.map((item, index) => {
                 const actualWorkHours = item.actualWorkHours;
                 const nonWorkHours = 8 - actualWorkHours;
-                const rowId = `${item.uniqueId}-${item.startDate}-${item.endDate}-${item.type}`;
+                const rowId = item.rowId;
                 return (
                     <TableRow key={rowId} data-state={selectedRowIds.has(rowId) ? 'selected' : 'unselected'}>
                         <TableCell className="px-2 text-center">
@@ -581,6 +613,7 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
                           />
                         </TableCell>
                         <TableCell className="text-center font-bold">{item.totalDeductionHours.toFixed(2)}</TableCell>
+                        <TableCell className="text-center text-xs text-muted-foreground">{formatTimestamp(item.lastModified)}</TableCell>
                     </TableRow>
                 )
             })}
@@ -590,6 +623,7 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
                 <TableRow>
                     <TableCell colSpan={10} className="text-right font-bold">총 미근로시간 소계</TableCell>
                     <TableCell className="font-bold tabular-nums text-center">{totalDeductionHours.toFixed(2)}</TableCell>
+                    <TableCell></TableCell>
                 </TableRow>
             </TableFooter>
           )}
@@ -612,11 +646,12 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
               <TableHead className="cursor-pointer text-center" onClick={() => requestSort('deductionDays')}><div className="flex items-center justify-center">일수(D){getSortIcon('deductionDays')}</div></TableHead>
               <TableHead className="cursor-pointer text-center" onClick={() => requestSort('actualWorkHours')}><div className="flex items-center justify-center">실근로(H){getSortIcon('actualWorkHours')}</div></TableHead>
               <TableHead className="cursor-pointer text-center" onClick={() => requestSort('totalDeductionHours')}><div className="flex items-center justify-center">미근로시간{getSortIcon('totalDeductionHours')}</div></TableHead>
+              <TableHead className="cursor-pointer text-center" onClick={() => requestSort('lastModified')}><div className="flex items-center justify-center">최종수정{getSortIcon('lastModified')}</div></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {tableData.map((item, index) => {
-              const rowId = `${item.uniqueId}-${item.date}-${item.type}-${index}`;
+              const rowId = item.rowId;
               return (
               <TableRow key={rowId} data-state={selectedRowIds.has(rowId) ? 'selected' : 'unselected'}>
                 <TableCell className="px-2 text-center">
@@ -630,6 +665,7 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
                 <TableCell className="text-center">{item.deductionDays.toFixed(2)}</TableCell>
                 <TableCell className="text-center">{item.actualWorkHours.toFixed(2)}</TableCell>
                 <TableCell className="text-center font-bold">{item.totalDeductionHours.toFixed(2)}</TableCell>
+                <TableCell className="text-center text-xs text-muted-foreground">{formatTimestamp(item.lastModified)}</TableCell>
               </TableRow>
             )})}
           </TableBody>
@@ -638,6 +674,7 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
                   <TableRow>
                       <TableCell colSpan={8} className="text-right font-bold">총 미근로시간 소계</TableCell>
                       <TableCell className="font-bold tabular-nums text-center">{totalDeductionHours.toFixed(2)}</TableCell>
+                      <TableCell></TableCell>
                   </TableRow>
               </TableFooter>
            )}

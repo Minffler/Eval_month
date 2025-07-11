@@ -22,6 +22,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNotifications } from '@/contexts/notification-context';
+import { format } from 'date-fns';
 
 interface WorkRateManagementProps {
   results: EvaluationResult[];
@@ -43,6 +44,7 @@ interface WorkRateSummary {
   totalDeductionHours: number;
   totalWorkHours: number;
   monthlyWorkRate: number;
+  lastModified?: string;
 }
 
 type SortConfig = {
@@ -103,12 +105,18 @@ export default function WorkRateManagement({ results, allEmployees, workRateDeta
         deductionHoursAttendance: 0,
         deductionHoursPregnancy: 0,
         deductionHoursCare: 0,
+        lastModified: undefined,
       };
     });
     
+    let lastModifiedTimestamps: Record<string, string> = {};
+
     workRateDetails.dailyAttendanceDetails.forEach(detail => {
       if(summaries[detail.uniqueId]) {
         summaries[detail.uniqueId].deductionHoursAttendance += detail.totalDeductionHours;
+        if (detail.lastModified && (!lastModifiedTimestamps[detail.uniqueId] || new Date(detail.lastModified) > new Date(lastModifiedTimestamps[detail.uniqueId]))) {
+            lastModifiedTimestamps[detail.uniqueId] = detail.lastModified;
+        }
       }
     });
 
@@ -118,6 +126,9 @@ export default function WorkRateManagement({ results, allEmployees, workRateDeta
             summaries[detail.uniqueId].deductionHoursPregnancy += detail.totalDeductionHours;
           } else {
             summaries[detail.uniqueId].deductionHoursCare += detail.totalDeductionHours;
+          }
+          if (detail.lastModified && (!lastModifiedTimestamps[detail.uniqueId] || new Date(detail.lastModified) > new Date(lastModifiedTimestamps[detail.uniqueId]))) {
+              lastModifiedTimestamps[detail.uniqueId] = detail.lastModified;
           }
        }
     });
@@ -136,6 +147,7 @@ export default function WorkRateManagement({ results, allEmployees, workRateDeta
         totalDeductionHours,
         totalWorkHours,
         monthlyWorkRate,
+        lastModified: lastModifiedTimestamps[summary.uniqueId],
       };
     });
   }, [results, workRateDetails, monthlyStandardHours, visibleColumns]);
@@ -144,6 +156,12 @@ export default function WorkRateManagement({ results, allEmployees, workRateDeta
     let sortableItems = [...workRateSummaries];
     if (sortConfig !== null) {
       sortableItems.sort((a, b) => {
+        if (sortConfig.key === 'lastModified') {
+            const dateA = a.lastModified ? new Date(a.lastModified).getTime() : 0;
+            const dateB = b.lastModified ? new Date(b.lastModified).getTime() : 0;
+            return sortConfig.direction === 'ascending' ? dateA - dateB : dateB - dateA;
+        }
+
         const aValue = a[sortConfig.key] ?? '';
         const bValue = b[sortConfig.key] ?? '';
         if (typeof aValue === 'string' && typeof bValue === 'string') {
@@ -303,6 +321,15 @@ export default function WorkRateManagement({ results, allEmployees, workRateDeta
     });
   };
 
+  const formatTimestamp = (isoString?: string) => {
+    if (!isoString) return '';
+    try {
+      return format(new Date(isoString), 'MM.dd HH:mm');
+    } catch {
+      return '';
+    }
+  }
+
   return (
     <>
     <Card>
@@ -359,6 +386,7 @@ export default function WorkRateManagement({ results, allEmployees, workRateDeta
                             <TableHead className="cursor-pointer text-center" onClick={() => requestSort('totalDeductionHours')}><div className="flex items-center justify-center">총 미근로시간{getSortIcon('totalDeductionHours')}</div></TableHead>
                             <TableHead className="cursor-pointer text-center min-w-[250px]" onClick={() => requestSort('totalWorkHours')}><div className="flex items-center justify-center">근로/미근로 시간{getSortIcon('totalWorkHours')}</div></TableHead>
                             <TableHead className="cursor-pointer text-center" onClick={() => requestSort('monthlyWorkRate')}><div className="flex items-center justify-center">근무율{getSortIcon('monthlyWorkRate')}</div></TableHead>
+                            <TableHead className="cursor-pointer text-center" onClick={() => requestSort('lastModified')}><div className="flex items-center justify-center">최종수정{getSortIcon('lastModified')}</div></TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -385,6 +413,7 @@ export default function WorkRateManagement({ results, allEmployees, workRateDeta
                                 {(summary.monthlyWorkRate * 100).toFixed(1)}%
                             </div>
                           </TableCell>
+                          <TableCell className="text-center text-xs text-muted-foreground">{formatTimestamp(summary.lastModified)}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>

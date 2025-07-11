@@ -28,7 +28,7 @@ interface ManageDataProps {
   setSelectedDate: (date: { year: number, month: number }) => void;
   onClearEmployeeData: (year: number, month: number) => void;
   onClearEvaluationData: (year: number, month: number) => void;
-  onWorkRateDataUpload: (year: number, month: number, type: keyof WorkRateInputs, data: any[]) => void;
+  onWorkRateDataUpload: (year: number, month: number, type: keyof WorkRateInputs, data: any[], isApproved: boolean) => void;
   onClearWorkRateData: (year: number, month: number, type: keyof WorkRateInputs) => void;
   workRateInputs: WorkRateInputs;
 }
@@ -146,7 +146,7 @@ export default function ManageData({
         typeToClear = 'shortenedWorkHours';
         typeName = dialogOpen.workDataType;
         const filteredData = (workRateInputs[typeToClear] || []).filter(d => d.type !== dialogOpen.workDataType);
-        onWorkRateDataUpload(selectedDate.year, selectedDate.month, 'shortenedWorkHours', filteredData);
+        onWorkRateDataUpload(selectedDate.year, selectedDate.month, 'shortenedWorkHours', filteredData, true);
     } else {
         typeToClear = dialogOpen.workDataType as keyof WorkRateInputs;
         typeName = typeToClear === 'dailyAttendance' ? '일근태' : '단축근로';
@@ -182,6 +182,7 @@ export default function ManageData({
     const file = event.target.files?.[0];
     if (file) {
       try {
+        const now = new Date().toISOString();
         switch(uploadType) {
           case 'employees':
             const newEmployees = await parseExcelFile<Employee>(file, json => json.map((row, index) => {
@@ -226,9 +227,10 @@ export default function ManageData({
                 startDate: String(row['startDate'] || ''), endDate: String(row['endDate'] || ''),
                 startTime: String(row['startTime'] || ''), endTime: String(row['endTime'] || ''),
                 type: shortenedWorkType,
+                lastModified: now,
               }
             }));
-            onWorkRateDataUpload(selectedDate.year, selectedDate.month, 'shortenedWorkHours', newShortenedWork);
+            onWorkRateDataUpload(selectedDate.year, selectedDate.month, 'shortenedWorkHours', newShortenedWork, true);
             break;
           case 'dailyAttendance':
             const newDailyAttendance = await parseExcelFile<DailyAttendanceRecord>(file, json => json.map((row, index) => {
@@ -236,10 +238,11 @@ export default function ManageData({
               if (!uniqueId) throw new Error(`${index + 2}번째 행에 사번이 없습니다.`);
               return {
                 uniqueId, name: String(row['name'] || ''),
-                date: String(row['date'] || ''), type: String(row['type'] || '')
+                date: String(row['date'] || ''), type: String(row['type'] || ''),
+                lastModified: now,
               }
             }));
-            onWorkRateDataUpload(selectedDate.year, selectedDate.month, 'dailyAttendance', newDailyAttendance);
+            onWorkRateDataUpload(selectedDate.year, selectedDate.month, 'dailyAttendance', newDailyAttendance, true);
             break;
         }
         toast({ title: '업로드 성공', description: `${file.name} 파일이 성공적으로 처리되었습니다.` });
