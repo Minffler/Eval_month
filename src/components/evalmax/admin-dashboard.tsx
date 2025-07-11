@@ -557,7 +557,7 @@ export default function AdminDashboard({
         const styles: Record<ApprovalStatus, {bgColor: string, textColor: string}> = {
           '결재중': { bgColor: 'hsl(30, 20%, 98%)', textColor: 'hsl(var(--muted-foreground))' }, 
           '현업승인': { bgColor: 'hsl(25, 20%, 92%)', textColor: 'hsl(var(--secondary-foreground))' },
-          '최종승인': { bgColor: 'hsl(25, 15%, 75%)', textColor: 'hsl(var(--secondary-foreground))' }, 
+          '최종승인': { bgColor: 'hsl(140, 60%, 92%)', textColor: 'hsl(140, 80%, 30%)' }, 
           '반려': { bgColor: 'hsl(39, 94%, 94%)', textColor: 'hsl(24, 95%, 53%)'},
         }
 
@@ -949,14 +949,14 @@ export default function AdminDashboard({
                     <div className="border rounded-lg overflow-x-auto">
                     <Table>
                       <TableHeader><TableRow>
-                        <TableHead className="text-center">요청일시</TableHead>
+                        <TableHead className="text-center">요청일</TableHead>
                         <TableHead className="text-center">대상자ID</TableHead>
                         <TableHead className="text-center">대상자</TableHead>
                         <TableHead className="text-center">현업 결재자</TableHead>
                         <TableHead className="text-center">요청내용</TableHead>
                         <TableHead className="text-center">현업 결재</TableHead>
                         <TableHead className="text-center">인사부 결재</TableHead>
-                        <TableHead className="text-center">현업 승인일시</TableHead>
+                        <TableHead className="text-center">현업 승인일</TableHead>
                         <TableHead className="text-center">최종 승인일</TableHead>
                       </TableRow></TableHeader>
                       <TableBody>
@@ -969,7 +969,7 @@ export default function AdminDashboard({
                             <TableCell className="text-center">{approval.payload.data.name}</TableCell>
                             <TableCell className="text-center">{teamApprover ? `${teamApprover.name} (${teamApprover.uniqueId})` : '미지정'}</TableCell>
                             <TableCell className="text-center">
-                               <Button variant="link" className="underline" onClick={() => handleApprovalModal(approval)}>
+                               <Button variant="link" className="underline text-foreground" onClick={() => handleApprovalModal(approval)}>
                                 {approval.payload.dataType === 'shortenedWorkHours' ? '단축근로' : '일근태'} 데이터 {approval.payload.action === 'add' ? '추가' : '변경'}
                                </Button>
                             </TableCell>
@@ -1091,7 +1091,7 @@ export default function AdminDashboard({
                     )}
                 </div>
             )}
-            <DialogFooter>
+            <DialogFooter className="sm:justify-between">
                 {selectedApproval && selectedApproval.statusHR === '결재중' ? (
                   <>
                     <Button variant="destructive" onClick={() => handleApprovalDecision('rejected')}>반려</Button>
