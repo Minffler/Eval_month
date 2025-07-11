@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, FileCheck, Bot, Upload, LayoutDashboard, Settings, Download, Bell, ArrowUpDown, ArrowUp, ArrowDown, Eye, ClipboardX, ChevronUp, ChevronDown, CheckCircle2 } from 'lucide-react';
+import { Users, FileCheck, Bot, Upload, LayoutDashboard, Settings, Download, Bell, ArrowUpDown, ArrowUp, ArrowDown, Eye, ClipboardX, ChevronUp, ChevronDown, CheckCircle2, ChevronsUpDown } from 'lucide-react';
 import { GradeHistogram } from './grade-histogram';
 import {
   Table,
@@ -61,6 +61,8 @@ import { cn } from '@/lib/utils';
 import { useNotifications } from '@/contexts/notification-context';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../ui/command';
 
 interface AdminDashboardProps {
   results: EvaluationResult[];
@@ -716,7 +718,11 @@ export default function AdminDashboard({
                     </Tabs>
                 </div>
              );
-        case 'evaluator-view':
+        case 'evaluator-view': {
+            const [popoverOpen, setPopoverOpen] = React.useState(false);
+            const selectedEvaluatorName = selectedEvaluatorId ? sortedEvaluatorStats.find(s => s.evaluatorUniqueId === selectedEvaluatorId)?.evaluatorName : '';
+            const triggerText = selectedEvaluatorId ? `${selectedEvaluatorName} (${selectedEvaluatorId})` : "평가자를 선택하세요";
+            
             return (
                 <div className="space-y-4">
                     <Card>
@@ -725,18 +731,41 @@ export default function AdminDashboard({
                                 <CardTitle>평가자별 조회</CardTitle>
                                 <CardDescription>특정 평가자의 대시보드를 확인합니다.</CardDescription>
                             </div>
-                            <Select onValueChange={setSelectedEvaluatorId} value={selectedEvaluatorId}>
-                                <SelectTrigger className="w-full sm:w-[320px] mt-2 sm:mt-0">
-                                    <SelectValue placeholder="평가자를 선택하세요" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {sortedEvaluatorStats.map(stat => (
-                                        <SelectItem key={stat.evaluatorUniqueId} value={stat.evaluatorUniqueId}>
-                                            {`${stat.evaluatorName} ${stat.evaluatorUniqueId} (${stat.total})`}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+                                <PopoverTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    aria-expanded={popoverOpen}
+                                    className="w-full sm:w-[320px] justify-between mt-2 sm:mt-0"
+                                >
+                                    <span className="truncate">{triggerText}</span>
+                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[320px] p-0">
+                                <Command>
+                                    <CommandInput placeholder="평가자 검색..." />
+                                    <CommandList>
+                                    <CommandEmpty>검색 결과가 없습니다.</CommandEmpty>
+                                    <CommandGroup>
+                                        {sortedEvaluatorStats.map(stat => (
+                                        <CommandItem
+                                            key={stat.evaluatorUniqueId}
+                                            value={`${stat.evaluatorName} ${stat.evaluatorUniqueId}`}
+                                            onSelect={() => {
+                                                setSelectedEvaluatorId(stat.evaluatorUniqueId);
+                                                setPopoverOpen(false);
+                                            }}
+                                        >
+                                            {stat.evaluatorName} ({stat.evaluatorUniqueId})
+                                        </CommandItem>
+                                        ))}
+                                    </CommandGroup>
+                                    </CommandList>
+                                </Command>
+                                </PopoverContent>
+                            </Popover>
                         </CardHeader>
                     </Card>
 
@@ -765,6 +794,7 @@ export default function AdminDashboard({
                     )}
                 </div>
             );
+        }
         case 'file-upload':
             return <ManageData onEmployeeUpload={onEmployeeUpload} onEvaluationUpload={onEvaluationUpload} results={initialResults} selectedDate={selectedDate} setSelectedDate={setSelectedDate} onClearEmployeeData={onClearEmployeeData} onClearEvaluationData={onClearEvaluationData} onWorkRateDataUpload={onWorkRateDataUpload} onClearWorkRateData={onClearWorkRateData} workRateInputs={currentWorkRateInputs} />;
         case 'evaluator-management':
@@ -776,9 +806,9 @@ export default function AdminDashboard({
         case 'work-rate-view':
             return <WorkRateManagement results={initialResults} workRateDetails={workRateDetails} selectedDate={selectedDate} holidays={holidays} handleResultsUpdate={handleResultsUpdate} allEmployees={allEmployees} />;
         case 'shortened-work-details':
-            return <WorkRateDetails type="shortenedWork" data={workRateDetails.shortenedWorkDetails} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} />;
+            return <WorkRateDetails type="shortenedWork" data={workRateDetails.shortenedWorkDetails} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} onDataChange={() => {}}/>;
         case 'daily-attendance-details':
-            return <WorkRateDetails type="dailyAttendance" data={workRateDetails.dailyAttendanceDetails} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} />;
+            return <WorkRateDetails type="dailyAttendance" data={workRateDetails.dailyAttendanceDetails} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} onDataChange={() => {}}/>;
         case 'notifications': {
             return (
                 <Card>
