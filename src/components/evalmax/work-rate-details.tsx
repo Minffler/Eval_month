@@ -12,7 +12,7 @@ import {
   TableFooter
 } from '@/components/ui/table';
 import { Input } from '../ui/input';
-import { Search, ArrowUpDown, ArrowUp, ArrowDown, Download, PlusCircle, Edit, ChevronsUpDown } from 'lucide-react';
+import { Search, ArrowUpDown, ArrowUp, ArrowDown, Download, PlusCircle, Edit, ChevronsUpDown, CalendarIcon } from 'lucide-react';
 import type { Employee, AttendanceType, Role } from '@/lib/types';
 import type { ShortenedWorkDetail, DailyAttendanceDetail } from '@/lib/work-rate-calculator';
 import { Button } from '../ui/button';
@@ -49,6 +49,8 @@ import {
 } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { format } from 'date-fns';
+import { ko } from 'date-fns/locale';
+import { Calendar } from '../ui/calendar';
 
 
 type SortConfig<T> = {
@@ -98,61 +100,77 @@ const DailyAttendanceIcon = ({ isShortenedDay }: { isShortenedDay: boolean }) =>
     );
 };
 
-const DatePicker = ({ value, onChange }: { value: string, onChange: (date: string) => void }) => {
-    const [year, setYear] = React.useState<string>('');
-    const [month, setMonth] = React.useState<string>('');
-    const [day, setDay] = React.useState<string>('');
+const DatePickerWithInput = ({ value, onChange }: { value: string, onChange: (date?: string) => void }) => {
+    const [date, setDate] = React.useState<Date | undefined>(value ? new Date(value) : undefined);
+    const [inputValue, setInputValue] = React.useState<string>(value || '');
+    const [popoverOpen, setPopoverOpen] = React.useState(false);
 
     React.useEffect(() => {
-        if (value && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
-            const [y, m, d] = value.split('-');
-            setYear(y);
-            setMonth(m);
-            setDay(d);
+        if (value) {
+            const newDate = new Date(value);
+            if (!isNaN(newDate.getTime())) {
+                setDate(newDate);
+                setInputValue(format(newDate, 'yyyy-MM-dd'));
+            }
         } else {
-             setYear(''); setMonth(''); setDay('');
+          setDate(undefined);
+          setInputValue('');
         }
     }, [value]);
-    
-    const handleDateChange = (part: 'year' | 'month' | 'day', val: string) => {
-        let newYear = part === 'year' ? val : year;
-        let newMonth = part === 'month' ? val : month;
-        let newDay = part === 'day' ? val : day;
 
-        if (newYear && newMonth && newDay) {
-            onChange(`${newYear}-${newMonth.padStart(2,'0')}-${newDay.padStart(2,'0')}`);
+    const handleDateSelect = (selectedDate: Date | undefined) => {
+        setDate(selectedDate);
+        if (selectedDate) {
+            const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+            setInputValue(formattedDate);
+            onChange(formattedDate);
+        } else {
+            setInputValue('');
+            onChange(undefined);
+        }
+        setPopoverOpen(false);
+    };
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setInputValue(e.target.value);
+    };
+
+    const handleInputBlur = () => {
+        const newDate = new Date(inputValue);
+        if (!isNaN(newDate.getTime()) && /^\d{4}-\d{2}-\d{2}$/.test(inputValue)) {
+            setDate(newDate);
+            onChange(format(newDate, 'yyyy-MM-dd'));
+        } else if (inputValue === '') {
+            setDate(undefined);
+            onChange(undefined);
         }
     };
-    
-    const years = Array.from({ length: 11 }, (_, i) => (new Date().getFullYear() - 5 + i).toString());
-    const months = Array.from({ length: 12 }, (_, i) => (i + 1).toString());
 
     return (
-        <div className="flex gap-2 items-center">
-            <Select value={year} onValueChange={(val) => handleDateChange('year', val)}>
-                <SelectTrigger className="w-[100px]"><SelectValue placeholder="년도" /></SelectTrigger>
-                <SelectContent>{years.map(y => <SelectItem key={y} value={y}>{y}년</SelectItem>)}</SelectContent>
-            </Select>
-            <Select value={month} onValueChange={(val) => handleDateChange('month', val)}>
-                <SelectTrigger className="w-[80px]"><SelectValue placeholder="월" /></SelectTrigger>
-                <SelectContent>{months.map(m => <SelectItem key={m} value={m}>{m}월</SelectItem>)}</SelectContent>
-            </Select>
+        <div className="flex items-center gap-2">
             <Input
-                type="number"
-                value={day}
-                onChange={(e) => {
-                    const newDay = e.target.value;
-                    if (Number(newDay) >= 1 && Number(newDay) <= 31) {
-                        handleDateChange('day', newDay);
-                    } else if (newDay === '') {
-                        setDay('');
-                    }
-                }}
-                placeholder="일"
-                className="w-[70px]"
-                min="1"
-                max="31"
+                type="text"
+                value={inputValue}
+                onChange={handleInputChange}
+                onBlur={handleInputBlur}
+                placeholder="YYYY-MM-DD"
+                className="w-[150px]"
             />
+            <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+                <PopoverTrigger asChild>
+                    <Button variant="outline" size="icon">
+                        <CalendarIcon className="h-4 w-4" />
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                    <Calendar
+                        mode="single"
+                        selected={date}
+                        onSelect={handleDateSelect}
+                        initialFocus
+                    />
+                </PopoverContent>
+            </Popover>
         </div>
     );
 };
@@ -283,7 +301,7 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
 
   const openAddDialog = () => {
     setDialogMode('add');
-    const defaultDate = new Date(selectedDate.year, selectedDate.month - 1, 1).toISOString().split('T')[0];
+    const defaultDate = format(new Date(selectedDate.year, selectedDate.month - 1, 1), 'yyyy-MM-dd');
     let initialData: any = {
       startDate: defaultDate,
       endDate: defaultDate,
@@ -470,13 +488,13 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
             <div className="grid grid-cols-4 items-start gap-4">
               <Label htmlFor="startDate" className="text-right pt-2">시작일</Label>
               <div className="col-span-3">
-                <DatePicker value={formData.startDate || ''} onChange={(date) => handleFormChange('startDate', date)} />
+                <DatePickerWithInput value={formData.startDate || ''} onChange={(date) => handleFormChange('startDate', date)} />
               </div>
             </div>
             <div className="grid grid-cols-4 items-start gap-4">
               <Label htmlFor="endDate" className="text-right pt-2">종료일</Label>
               <div className="col-span-3">
-                <DatePicker value={formData.endDate || ''} onChange={(date) => handleFormChange('endDate', date)} />
+                <DatePickerWithInput value={formData.endDate || ''} onChange={(date) => handleFormChange('endDate', date)} />
               </div>
             </div>
             <div className="grid grid-cols-4 items-start gap-4">
@@ -500,7 +518,7 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
             <div className="grid grid-cols-4 items-start gap-4">
               <Label htmlFor="date" className="text-right pt-2">일자</Label>
               <div className="col-span-3">
-                <DatePicker value={formData.date || ''} onChange={(date) => handleFormChange('date', date)} />
+                <DatePickerWithInput value={formData.date || ''} onChange={(date) => handleFormChange('date', date)} />
               </div>
             </div>
             <div className="grid grid-cols-4 items-start gap-4">
