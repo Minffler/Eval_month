@@ -19,14 +19,6 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 
 interface WorkRateManagementProps {
@@ -323,7 +315,7 @@ export default function WorkRateManagement({ results, workRateDetails, selectedD
                             variant={visibleColumns.has(col.id) ? 'secondary' : 'outline'}
                             size="sm"
                             onClick={() => handleToggleColumn(col.id)}
-                            className="text-xs h-7 px-2"
+                            className={cn("text-xs h-7 px-2", !visibleColumns.has(col.id) && "bg-muted text-muted-foreground hover:bg-muted/80 border-muted-foreground/20")}
                         >
                             {col.label}
                         </Button>
