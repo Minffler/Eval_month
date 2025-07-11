@@ -176,31 +176,31 @@ export default function AttendanceTypeManagement({ attendanceTypes, setAttendanc
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="whitespace-nowrap py-2 px-3">근태명</TableHead>
-                      <TableHead className="whitespace-nowrap py-2 px-3">차감 일수 (단위: 일)</TableHead>
+                      <TableHead className="whitespace-nowrap py-2 px-3 text-center">근태명</TableHead>
+                      <TableHead className="whitespace-nowrap py-2 px-3 text-center">차감 일수 (단위: 일)</TableHead>
                       <TableHead></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {localTypes.map((type, index) => (
                       <TableRow key={type.id}>
-                        <TableCell className="py-1 px-2">
+                        <TableCell className="py-1 px-2 text-center">
                           <Input
                             value={type.name}
                             onChange={(e) => handleTypeInputChange(index, 'name', e.target.value)}
-                            className="w-40 h-8"
+                            className="w-40 h-8 mx-auto"
                           />
                         </TableCell>
-                        <TableCell className="py-1 px-2">
+                        <TableCell className="py-1 px-2 text-center">
                           <Input
                             type="number"
                             step="0.01"
                             value={type.deductionDays}
                             onChange={(e) => handleTypeInputChange(index, 'deductionDays', e.target.value)}
-                            className="w-40 h-8"
+                            className="w-40 h-8 mx-auto"
                           />
                         </TableCell>
-                        <TableCell className="py-1 px-2">
+                        <TableCell className="py-1 px-2 text-center">
                           <Button
                             variant="ghost"
                             size="icon"
@@ -266,8 +266,8 @@ export default function AttendanceTypeManagement({ attendanceTypes, setAttendanc
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="whitespace-nowrap py-2 px-3">날짜 (YYYY-MM-DD)</TableHead>
-                  <TableHead className="whitespace-nowrap py-2 px-3">공휴일명</TableHead>
+                  <TableHead className="whitespace-nowrap py-2 px-3 text-center">날짜 (YYYY-MM-DD)</TableHead>
+                  <TableHead className="whitespace-nowrap py-2 px-3 text-center">공휴일명</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
@@ -276,21 +276,21 @@ export default function AttendanceTypeManagement({ attendanceTypes, setAttendanc
                   const index = localHolidays.findIndex(h => h.id === holiday.id);
                   return (
                     <TableRow key={holiday.id}>
-                      <TableCell className="py-1 px-2">
+                      <TableCell className="py-1 px-2 text-center">
                         <Input
                           value={holiday.date}
                           onChange={(e) => handleHolidayDateChange(index, e.target.value)}
                           onBlur={(e) => validateHolidayDate(e.target.value, holiday.id)}
-                          className={holidayErrors[holiday.id] ? "border-destructive" : ""}
+                          className={holidayErrors[holiday.id] ? "border-destructive mx-auto" : "mx-auto"}
                           placeholder="YYYY-MM-DD"
                         />
                          {holidayErrors[holiday.id] && <p className="text-xs text-destructive mt-1">{holidayErrors[holiday.id]}</p>}
                       </TableCell>
-                      <TableCell className="py-1 px-2">
+                      <TableCell className="py-1 px-2 text-center">
                         <Input
                           value={holiday.name}
                           onChange={(e) => handleHolidayNameChange(index, e.target.value)}
-                          className="w-40 h-8"
+                          className="w-40 h-8 mx-auto"
                         />
                       </TableCell>
                       <TableCell className="py-1 px-2 text-right">

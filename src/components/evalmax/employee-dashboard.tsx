@@ -173,51 +173,51 @@ const MyReviewView = ({ employeeResults, allResults, gradingScale }: {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('month')}>
-                      <div className="flex items-center">평가월{getSortIcon('month')}</div>
+                    <TableHead className="whitespace-nowrap cursor-pointer text-center" onClick={() => requestSort('month')}>
+                      <div className="flex items-center justify-center">평가월{getSortIcon('month')}</div>
                     </TableHead>
-                    <TableHead className="whitespace-nowrap">ID</TableHead>
-                    <TableHead className="whitespace-nowrap">회사</TableHead>
-                    <TableHead className="whitespace-nowrap">이름</TableHead>
-                    <TableHead className="whitespace-nowrap">소속부서</TableHead>
-                    <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('workRate')}>
-                      <div className="flex items-center">근무율{getSortIcon('workRate')}</div>
+                    <TableHead className="whitespace-nowrap text-center">ID</TableHead>
+                    <TableHead className="whitespace-nowrap text-center">회사</TableHead>
+                    <TableHead className="whitespace-nowrap text-center">이름</TableHead>
+                    <TableHead className="whitespace-nowrap text-center">소속부서</TableHead>
+                    <TableHead className="whitespace-nowrap cursor-pointer text-center" onClick={() => requestSort('workRate')}>
+                      <div className="flex items-center justify-center">근무율{getSortIcon('workRate')}</div>
                     </TableHead>
-                    <TableHead className="whitespace-nowrap">평가자</TableHead>
-                    <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('grade')}>
-                      <div className="flex items-center">등급{getSortIcon('grade')}</div>
+                    <TableHead className="whitespace-nowrap text-center">평가자</TableHead>
+                    <TableHead className="whitespace-nowrap cursor-pointer text-center" onClick={() => requestSort('grade')}>
+                      <div className="flex items-center justify-center">등급{getSortIcon('grade')}</div>
                     </TableHead>
-                    <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestSort('score')}>
-                      <div className="flex items-center">점수{getSortIcon('score')}</div>
+                    <TableHead className="whitespace-nowrap cursor-pointer text-center" onClick={() => requestSort('score')}>
+                      <div className="flex items-center justify-center">점수{getSortIcon('score')}</div>
                     </TableHead>
-                    <TableHead className="whitespace-nowrap text-right cursor-pointer" onClick={() => requestSort('baseAmount')}>
-                      <div className="flex items-center justify-end">기준금액{getSortIcon('baseAmount')}</div>
+                    <TableHead className="whitespace-nowrap text-right cursor-pointer text-center" onClick={() => requestSort('baseAmount')}>
+                      <div className="flex items-center justify-center">기준금액{getSortIcon('baseAmount')}</div>
                     </TableHead>
-                    <TableHead className="whitespace-nowrap text-right cursor-pointer" onClick={() => requestSort('gradeAmount')}>
-                      <div className="flex items-center justify-end">등급금액{getSortIcon('gradeAmount')}</div>
+                    <TableHead className="whitespace-nowrap text-right cursor-pointer text-center" onClick={() => requestSort('gradeAmount')}>
+                      <div className="flex items-center justify-center">등급금액{getSortIcon('gradeAmount')}</div>
                     </TableHead>
-                    <TableHead className="whitespace-nowrap text-right cursor-pointer" onClick={() => requestSort('finalAmount')}>
-                      <div className="flex items-center justify-end">최종금액{getSortIcon('finalAmount')}</div>
+                    <TableHead className="whitespace-nowrap text-right cursor-pointer text-center" onClick={() => requestSort('finalAmount')}>
+                      <div className="flex items-center justify-center">최종금액{getSortIcon('finalAmount')}</div>
                     </TableHead>
-                    <TableHead className="whitespace-nowrap">비고</TableHead>
+                    <TableHead className="whitespace-nowrap text-center">비고</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {sortedFilteredResults.sort((a, b) => b.month - a.month).map((result) => (
                     <TableRow key={`${result.year}-${result.month}`}>
-                      <TableCell className="whitespace-nowrap">{result.year}년 {result.month}월</TableCell>
-                      <TableCell className="whitespace-nowrap">{result.uniqueId}</TableCell>
-                      <TableCell className="whitespace-nowrap">{result.company}</TableCell>
-                      <TableCell className="whitespace-nowrap">{result.name}</TableCell>
-                      <TableCell className="whitespace-nowrap">{result.department}</TableCell>
-                      <TableCell className="whitespace-nowrap">{(result.workRate * 100).toFixed(1)}%</TableCell>
-                      <TableCell className="whitespace-nowrap">{result.evaluatorName}</TableCell>
-                      <TableCell className="whitespace-nowrap">{result.grade}</TableCell>
-                      <TableCell className="whitespace-nowrap">{result.score}</TableCell>
-                      <TableCell className="whitespace-nowrap text-right">{formatCurrency(result.baseAmount)} 원</TableCell>
-                      <TableCell className="whitespace-nowrap text-right">{formatCurrency(result.gradeAmount)} 원</TableCell>
-                      <TableCell className="font-bold whitespace-nowrap text-right">{formatCurrency(result.finalAmount)} 원</TableCell>
-                      <TableCell className="whitespace-nowrap">{result.memo}</TableCell>
+                      <TableCell className="whitespace-nowrap text-center">{result.year}년 {result.month}월</TableCell>
+                      <TableCell className="whitespace-nowrap text-center">{result.uniqueId}</TableCell>
+                      <TableCell className="whitespace-nowrap text-center">{result.company}</TableCell>
+                      <TableCell className="whitespace-nowrap text-center">{result.name}</TableCell>
+                      <TableCell className="whitespace-nowrap text-center">{result.department}</TableCell>
+                      <TableCell className="whitespace-nowrap text-center">{(result.workRate * 100).toFixed(1)}%</TableCell>
+                      <TableCell className="whitespace-nowrap text-center">{result.evaluatorName}</TableCell>
+                      <TableCell className="whitespace-nowrap text-center">{result.grade}</TableCell>
+                      <TableCell className="whitespace-nowrap text-center">{result.score}</TableCell>
+                      <TableCell className="whitespace-nowrap text-right text-center">{formatCurrency(result.baseAmount)} 원</TableCell>
+                      <TableCell className="whitespace-nowrap text-right text-center">{formatCurrency(result.gradeAmount)} 원</TableCell>
+                      <TableCell className="font-bold whitespace-nowrap text-right text-center">{formatCurrency(result.finalAmount)} 원</TableCell>
+                      <TableCell className="whitespace-nowrap text-center">{result.memo}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

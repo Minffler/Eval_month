@@ -477,7 +477,7 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-12 px-2"></TableHead>
+              <TableHead className="w-12 px-2 text-center"></TableHead>
               <TableHead className="cursor-pointer text-center" onClick={() => requestSort('uniqueId')}><div className="flex items-center justify-center">ID{getSortIcon('uniqueId')}</div></TableHead>
               <TableHead className="cursor-pointer text-center" onClick={() => requestSort('name')}><div className="flex items-center justify-center">이름{getSortIcon('name')}</div></TableHead>
               <TableHead className="cursor-pointer text-center" onClick={() => requestSort('type')}><div className="flex items-center justify-center">구분{getSortIcon('type')}</div></TableHead>
@@ -497,7 +497,7 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
                 const rowId = `${item.uniqueId}-${item.startDate}-${item.endDate}-${item.type}`;
                 return (
                     <TableRow key={rowId} data-state={selectedRowIds.has(rowId) ? 'selected' : 'unselected'}>
-                        <TableCell className="px-2">
+                        <TableCell className="px-2 text-center">
                            <Checkbox checked={selectedRowIds.has(rowId)} onCheckedChange={(checked) => handleSelectRow(rowId, Boolean(checked))} />
                         </TableCell>
                         <TableCell className="text-center">{item.uniqueId}</TableCell>
@@ -541,7 +541,7 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-12 px-2"></TableHead>
+              <TableHead className="w-12 px-2 text-center"></TableHead>
               <TableHead className="cursor-pointer text-center" onClick={() => requestSort('uniqueId')}><div className="flex items-center justify-center">ID{getSortIcon('uniqueId')}</div></TableHead>
               <TableHead className="cursor-pointer text-center" onClick={() => requestSort('name')}><div className="flex items-center justify-center">이름{getSortIcon('name')}</div></TableHead>
               <TableHead className="cursor-pointer text-center" onClick={() => requestSort('date')}><div className="flex items-center justify-center">일자{getSortIcon('date')}</div></TableHead>
@@ -557,7 +557,7 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
               const rowId = `${item.uniqueId}-${item.date}-${item.type}-${index}`;
               return (
               <TableRow key={rowId} data-state={selectedRowIds.has(rowId) ? 'selected' : 'unselected'}>
-                <TableCell className="px-2">
+                <TableCell className="px-2 text-center">
                    <Checkbox checked={selectedRowIds.has(rowId)} onCheckedChange={(checked) => handleSelectRow(rowId, Boolean(checked))} />
                 </TableCell>
                 <TableCell className="text-center">{item.uniqueId}</TableCell>

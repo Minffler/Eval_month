@@ -181,17 +181,17 @@ const DraggableTableRow = ({ employee, gradingScale, selected, onSelect, onGrade
                     </div>
                 </TableCell>
             ) : (
-                <TableCell className="whitespace-nowrap py-1 px-2">{employee.uniqueId}</TableCell>
+                <TableCell className="whitespace-nowrap py-1 px-2 text-center">{employee.uniqueId}</TableCell>
             )}
-            <TableCell className="whitespace-nowrap py-1 px-2">{employee.company}</TableCell>
-            <TableCell className="whitespace-nowrap py-1 px-2">{employee.department}</TableCell>
-            <TableCell className="font-medium whitespace-nowrap py-1 px-2">{employee.name}</TableCell>
-            <TableCell className="whitespace-nowrap py-1 px-2">{employee.title}</TableCell>
-            <TableCell className="whitespace-nowrap py-1 px-2">{employee.growthLevel}</TableCell>
-            <TableCell className="whitespace-nowrap py-1 px-2">{(employee.workRate * 100).toFixed(1)}%</TableCell>
-            <TableCell className="whitespace-nowrap py-1 px-2">
+            <TableCell className="whitespace-nowrap py-1 px-2 text-center">{employee.company}</TableCell>
+            <TableCell className="whitespace-nowrap py-1 px-2 text-center">{employee.department}</TableCell>
+            <TableCell className="font-medium whitespace-nowrap py-1 px-2 text-center">{employee.name}</TableCell>
+            <TableCell className="whitespace-nowrap py-1 px-2 text-center">{employee.title}</TableCell>
+            <TableCell className="whitespace-nowrap py-1 px-2 text-center">{employee.growthLevel}</TableCell>
+            <TableCell className="whitespace-nowrap py-1 px-2 text-center">{(employee.workRate * 100).toFixed(1)}%</TableCell>
+            <TableCell className="whitespace-nowrap py-1 px-2 text-center">
                 <Select value={employee.grade || ''} onValueChange={(g: Grade) => onGradeChange(employee.id, g)}>
-                    <SelectTrigger className="w-[80px] h-8">
+                    <SelectTrigger className="w-[80px] h-8 mx-auto">
                         <SelectValue placeholder="등급 선택" />
                     </SelectTrigger>
                     <SelectContent>
@@ -201,7 +201,7 @@ const DraggableTableRow = ({ employee, gradingScale, selected, onSelect, onGrade
                     </SelectContent>
                 </Select>
             </TableCell>
-            <TableCell className="whitespace-nowrap py-1 px-2">{employee.score}</TableCell>
+            <TableCell className="whitespace-nowrap py-1 px-2 text-center">{employee.score}</TableCell>
             <TableCell className="py-1 px-2">
                 <Input
                     value={employee.memo || ''}
@@ -573,7 +573,7 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, handleRe
                         <SortableContext items={group.members.map(m => m.id)} strategy={verticalListSortingStrategy}>
                           <Table>
                               <TableHeader><TableRow>
-                                  <TableHead className="w-[80px] p-2"><Checkbox checked={isIndeterminate ? 'indeterminate' : allSelectedInGroup} onCheckedChange={(checked) => handleToggleGroupSelection(group, Boolean(checked))} aria-label={`Select all in ${group.name}`}/></TableHead>
+                                  <TableHead className="w-[80px] p-2 text-center"><Checkbox checked={isIndeterminate ? 'indeterminate' : allSelectedInGroup} onCheckedChange={(checked) => handleToggleGroupSelection(group, Boolean(checked))} aria-label={`Select all in ${group.name}`}/></TableHead>
                                   <TableHead className="whitespace-nowrap py-2 px-2 text-center">{isBGroupView ? '구분' : 'ID'}</TableHead>
                                   <TableHead className="whitespace-nowrap py-2 px-2 text-center">회사</TableHead>
                                   <TableHead className="whitespace-nowrap py-2 px-2 text-center">소속부서</TableHead>
@@ -737,28 +737,28 @@ const AllResultsView = ({ allResults, gradingScale }: {
           <div className="border rounded-lg">
             <Table>
               <TableHeader><TableRow>
-                <TableHead className="cursor-pointer whitespace-nowrap" onClick={() => requestSort('month')}><div className="flex items-center">평가월{getSortIcon('month')}</div></TableHead>
-                <TableHead className="cursor-pointer whitespace-nowrap" onClick={() => requestSort('company')}><div className="flex items-center">회사{getSortIcon('company')}</div></TableHead>
-                <TableHead className="cursor-pointer whitespace-nowrap" onClick={() => requestSort('department')}><div className="flex items-center">소속부서{getSortIcon('department')}</div></TableHead>
-                <TableHead className="cursor-pointer whitespace-nowrap" onClick={() => requestSort('name')}><div className="flex items-center">이름{getSortIcon('name')}</div></TableHead>
-                <TableHead className="cursor-pointer whitespace-nowrap" onClick={() => requestSort('title')}><div className="flex items-center">직책{getSortIcon('title')}</div></TableHead>
-                <TableHead className="cursor-pointer whitespace-nowrap" onClick={() => requestSort('grade')}><div className="flex items-center">등급{getSortIcon('grade')}</div></TableHead>
-                <TableHead className="cursor-pointer whitespace-nowrap" onClick={() => requestSort('score')}><div className="flex items-center">점수{getSortIcon('score')}</div></TableHead>
-                <TableHead className="text-right cursor-pointer whitespace-nowrap" onClick={() => requestSort('finalAmount')}><div className="flex items-center justify-end">최종금액{getSortIcon('finalAmount')}</div></TableHead>
-                <TableHead className="whitespace-nowrap">비고</TableHead>
+                <TableHead className="cursor-pointer whitespace-nowrap text-center" onClick={() => requestSort('month')}><div className="flex items-center justify-center">평가월{getSortIcon('month')}</div></TableHead>
+                <TableHead className="cursor-pointer whitespace-nowrap text-center" onClick={() => requestSort('company')}><div className="flex items-center justify-center">회사{getSortIcon('company')}</div></TableHead>
+                <TableHead className="cursor-pointer whitespace-nowrap text-center" onClick={() => requestSort('department')}><div className="flex items-center justify-center">소속부서{getSortIcon('department')}</div></TableHead>
+                <TableHead className="cursor-pointer whitespace-nowrap text-center" onClick={() => requestSort('name')}><div className="flex items-center justify-center">이름{getSortIcon('name')}</div></TableHead>
+                <TableHead className="cursor-pointer whitespace-nowrap text-center" onClick={() => requestSort('title')}><div className="flex items-center justify-center">직책{getSortIcon('title')}</div></TableHead>
+                <TableHead className="cursor-pointer whitespace-nowrap text-center" onClick={() => requestSort('grade')}><div className="flex items-center justify-center">등급{getSortIcon('grade')}</div></TableHead>
+                <TableHead className="cursor-pointer whitespace-nowrap text-center" onClick={() => requestSort('score')}><div className="flex items-center justify-center">점수{getSortIcon('score')}</div></TableHead>
+                <TableHead className="text-right cursor-pointer whitespace-nowrap text-center" onClick={() => requestSort('finalAmount')}><div className="flex items-center justify-center">최종금액{getSortIcon('finalAmount')}</div></TableHead>
+                <TableHead className="whitespace-nowrap text-center">비고</TableHead>
               </TableRow></TableHeader>
               <TableBody>
                 {sortedFilteredResults.length > 0 ? sortedFilteredResults.sort((a,b) => b.month - a.month).map(result => (
                   <TableRow key={`${result.year}-${result.month}-${result.id}`}>
-                    <TableCell>{result.year}년 {result.month}월</TableCell>
-                    <TableCell>{result.company}</TableCell>
-                    <TableCell>{result.department}</TableCell>
-                    <TableCell>{result.name}</TableCell>
-                    <TableCell>{result.title}</TableCell>
-                    <TableCell>{result.grade}</TableCell>
-                    <TableCell>{result.score}</TableCell>
-                    <TableCell className="text-right font-semibold">{formatCurrency(result.finalAmount)} 원</TableCell>
-                    <TableCell>{result.memo || ''}</TableCell>
+                    <TableCell className="text-center">{result.year}년 {result.month}월</TableCell>
+                    <TableCell className="text-center">{result.company}</TableCell>
+                    <TableCell className="text-center">{result.department}</TableCell>
+                    <TableCell className="text-center">{result.name}</TableCell>
+                    <TableCell className="text-center">{result.title}</TableCell>
+                    <TableCell className="text-center">{result.grade}</TableCell>
+                    <TableCell className="text-center">{result.score}</TableCell>
+                    <TableCell className="text-right font-semibold text-center">{formatCurrency(result.finalAmount)} 원</TableCell>
+                    <TableCell className="text-center">{result.memo || ''}</TableCell>
                   </TableRow>
                 )) : <TableRow><TableCell colSpan={9} className="text-center h-24">해당 연도의 평가 결과가 없습니다.</TableCell></TableRow>}
               </TableBody>
@@ -992,23 +992,23 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, allEmploye
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>회사</TableHead>
-                                <TableHead>부서</TableHead>
-                                <TableHead>ID</TableHead>
-                                <TableHead>이름</TableHead>
-                                <TableHead>직책</TableHead>
-                                <TableHead>성장레벨</TableHead>
+                                <TableHead className="text-center">회사</TableHead>
+                                <TableHead className="text-center">부서</TableHead>
+                                <TableHead className="text-center">ID</TableHead>
+                                <TableHead className="text-center">이름</TableHead>
+                                <TableHead className="text-center">직책</TableHead>
+                                <TableHead className="text-center">성장레벨</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {selectedGroupDetails.members.map(member => (
                                 <TableRow key={member.id}>
-                                    <TableCell>{member.company}</TableCell>
-                                    <TableCell>{member.department}</TableCell>
-                                    <TableCell>{member.uniqueId}</TableCell>
-                                    <TableCell>{member.name}</TableCell>
-                                    <TableCell>{member.title}</TableCell>
-                                    <TableCell>{member.growthLevel}</TableCell>
+                                    <TableCell className="text-center">{member.company}</TableCell>
+                                    <TableCell className="text-center">{member.department}</TableCell>
+                                    <TableCell className="text-center">{member.uniqueId}</TableCell>
+                                    <TableCell className="text-center">{member.name}</TableCell>
+                                    <TableCell className="text-center">{member.title}</TableCell>
+                                    <TableCell className="text-center">{member.growthLevel}</TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>

@@ -531,11 +531,11 @@ export default function AdminDashboard({
                                   aria-label="모든 평가자 선택"
                                 />
                               </TableHead>
-                              <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestEvaluatorStatsSort('evaluatorUniqueId')}>
-                                <div className="flex items-center">평가자 ID{getEvaluatorStatsSortIcon('evaluatorUniqueId')}</div>
+                              <TableHead className="whitespace-nowrap cursor-pointer text-center" onClick={() => requestEvaluatorStatsSort('evaluatorUniqueId')}>
+                                <div className="flex items-center justify-center">평가자 ID{getEvaluatorStatsSortIcon('evaluatorUniqueId')}</div>
                               </TableHead>
-                              <TableHead className="whitespace-nowrap cursor-pointer" onClick={() => requestEvaluatorStatsSort('evaluatorName')}>
-                                <div className="flex items-center">평가자{getEvaluatorStatsSortIcon('evaluatorName')}</div>
+                              <TableHead className="whitespace-nowrap cursor-pointer text-center" onClick={() => requestEvaluatorStatsSort('evaluatorName')}>
+                                <div className="flex items-center justify-center">평가자{getEvaluatorStatsSortIcon('evaluatorName')}</div>
                               </TableHead>
                               <TableHead className="whitespace-nowrap text-center cursor-pointer" onClick={() => requestEvaluatorStatsSort('total')}>
                                 <div className="flex items-center justify-center">대상 인원{getEvaluatorStatsSortIcon('total')}</div>
@@ -561,8 +561,8 @@ export default function AdminDashboard({
                                     aria-label={`${stat.evaluatorName} 선택`}
                                   />
                                 </TableCell>
-                                <TableCell className="whitespace-nowrap font-mono text-xs">{stat.evaluatorUniqueId}</TableCell>
-                                <TableCell className="font-medium whitespace-nowrap">{stat.evaluatorName}</TableCell>
+                                <TableCell className="whitespace-nowrap font-mono text-xs text-center">{stat.evaluatorUniqueId}</TableCell>
+                                <TableCell className="font-medium whitespace-nowrap text-center">{stat.evaluatorName}</TableCell>
                                 <TableCell className="text-center whitespace-nowrap">{stat.total || '-'}</TableCell>
                                 <TableCell className="text-center whitespace-nowrap">{stat.completed || '-'}</TableCell>
                                 <TableCell className={cn("text-center whitespace-nowrap", stat.pending > 0 && "text-primary")}>{stat.pending || '-'}</TableCell>

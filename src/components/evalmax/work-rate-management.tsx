@@ -412,23 +412,23 @@ export default function WorkRateManagement({ results, allEmployees, workRateDeta
                         <>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>일자</TableHead>
-                                    <TableHead>근태 종류</TableHead>
-                                    <TableHead>단축사용</TableHead>
-                                    <TableHead className="text-right">차감일수</TableHead>
-                                    <TableHead className="text-right">실근로(H)</TableHead>
-                                    <TableHead className="text-right">미근로시간</TableHead>
+                                    <TableHead className="text-center">일자</TableHead>
+                                    <TableHead className="text-center">근태 종류</TableHead>
+                                    <TableHead className="text-center">단축사용</TableHead>
+                                    <TableHead className="text-right text-center">차감일수</TableHead>
+                                    <TableHead className="text-right text-center">실근로(H)</TableHead>
+                                    <TableHead className="text-right text-center">미근로시간</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {(detailDialog.data as DailyAttendanceDetail[]).map((item, index) => (
                                     <TableRow key={index}>
-                                        <TableCell>{item.date}</TableCell>
-                                        <TableCell>{item.type}</TableCell>
-                                        <TableCell>{item.isShortenedDay ? 'Y' : 'N'}</TableCell>
-                                        <TableCell className="text-right">{item.deductionDays.toFixed(2)}</TableCell>
-                                        <TableCell className="text-right">{item.actualWorkHours.toFixed(2)}</TableCell>
-                                        <TableCell className="text-right">{item.totalDeductionHours.toFixed(2)}</TableCell>
+                                        <TableCell className="text-center">{item.date}</TableCell>
+                                        <TableCell className="text-center">{item.type}</TableCell>
+                                        <TableCell className="text-center">{item.isShortenedDay ? 'Y' : 'N'}</TableCell>
+                                        <TableCell className="text-right text-center">{item.deductionDays.toFixed(2)}</TableCell>
+                                        <TableCell className="text-right text-center">{item.actualWorkHours.toFixed(2)}</TableCell>
+                                        <TableCell className="text-right text-center">{item.totalDeductionHours.toFixed(2)}</TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>
@@ -437,8 +437,8 @@ export default function WorkRateManagement({ results, allEmployees, workRateDeta
                         <>
                              <TableHeader>
                                 <TableRow>
-                                    <TableHead>시작일</TableHead>
-                                    <TableHead>종료일</TableHead>
+                                    <TableHead className="text-center">시작일</TableHead>
+                                    <TableHead className="text-center">종료일</TableHead>
                                     <TableHead className="text-center">일수</TableHead>
                                     <TableHead className="text-center">출근시각</TableHead>
                                     <TableHead className="text-center">퇴근시각</TableHead>
@@ -449,8 +449,8 @@ export default function WorkRateManagement({ results, allEmployees, workRateDeta
                              <TableBody>
                                 {(detailDialog.data as ShortenedWorkDetail[]).map((item, index) => (
                                     <TableRow key={index}>
-                                        <TableCell>{item.startDate}</TableCell>
-                                        <TableCell>{item.endDate}</TableCell>
+                                        <TableCell className="text-center">{item.startDate}</TableCell>
+                                        <TableCell className="text-center">{item.endDate}</TableCell>
                                         <TableCell className="text-center">{item.businessDays}</TableCell>
                                         <TableCell className="text-center">{item.startTime}</TableCell>
                                         <TableCell className="text-center">{item.endTime}</TableCell>

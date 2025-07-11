@@ -378,27 +378,27 @@ export default function EvaluatorManagement({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead><Checkbox checked={isAllSelected} onCheckedChange={(checked) => handleSelectAll(Boolean(checked))} /></TableHead>
-                  <TableHead className="cursor-pointer" onClick={() => requestSort('uniqueId')}><div className="flex items-center">ID{getSortIcon('uniqueId')}</div></TableHead>
-                  <TableHead className="cursor-pointer" onClick={() => requestSort('name')}><div className="flex items-center">이름{getSortIcon('name')}</div></TableHead>
-                  <TableHead className="cursor-pointer" onClick={() => requestSort('company')}><div className="flex items-center">회사{getSortIcon('company')}</div></TableHead>
-                  <TableHead className="cursor-pointer" onClick={() => requestSort('department')}><div className="flex items-center">소속부서{getSortIcon('department')}</div></TableHead>
-                  <TableHead className="cursor-pointer" onClick={() => requestSort('title')}><div className="flex items-center">직책/성장레벨{getSortIcon('title')}</div></TableHead>
-                  <TableHead className="cursor-pointer" onClick={() => requestSort('evaluatorName')}><div className="flex items-center">평가자{getSortIcon('evaluatorName')}</div></TableHead>
+                  <TableHead className="text-center"><Checkbox checked={isAllSelected} onCheckedChange={(checked) => handleSelectAll(Boolean(checked))} /></TableHead>
+                  <TableHead className="cursor-pointer text-center" onClick={() => requestSort('uniqueId')}><div className="flex items-center justify-center">ID{getSortIcon('uniqueId')}</div></TableHead>
+                  <TableHead className="cursor-pointer text-center" onClick={() => requestSort('name')}><div className="flex items-center justify-center">이름{getSortIcon('name')}</div></TableHead>
+                  <TableHead className="cursor-pointer text-center" onClick={() => requestSort('company')}><div className="flex items-center justify-center">회사{getSortIcon('company')}</div></TableHead>
+                  <TableHead className="cursor-pointer text-center" onClick={() => requestSort('department')}><div className="flex items-center justify-center">소속부서{getSortIcon('department')}</div></TableHead>
+                  <TableHead className="cursor-pointer text-center" onClick={() => requestSort('title')}><div className="flex items-center justify-center">직책/성장레벨{getSortIcon('title')}</div></TableHead>
+                  <TableHead className="cursor-pointer text-center" onClick={() => requestSort('evaluatorName')}><div className="flex items-center justify-center">평가자{getSortIcon('evaluatorName')}</div></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredResults.map((result) => (
                   <TableRow key={result.id} data-state={selectedIds.has(result.id) ? "selected" : ""}>
-                    <TableCell><Checkbox checked={selectedIds.has(result.id)} onCheckedChange={(checked) => handleSelectRow(result.id, Boolean(checked))} /></TableCell>
-                    <TableCell>{result.uniqueId}</TableCell>
-                    <TableCell>{result.name}</TableCell>
-                    <TableCell>{result.company}</TableCell>
-                    <TableCell>{result.department}</TableCell>
-                    <TableCell>{result.title} / {result.growthLevel}</TableCell>
+                    <TableCell className="text-center"><Checkbox checked={selectedIds.has(result.id)} onCheckedChange={(checked) => handleSelectRow(result.id, Boolean(checked))} /></TableCell>
+                    <TableCell className="text-center">{result.uniqueId}</TableCell>
+                    <TableCell className="text-center">{result.name}</TableCell>
+                    <TableCell className="text-center">{result.company}</TableCell>
+                    <TableCell className="text-center">{result.department}</TableCell>
+                    <TableCell className="text-center">{result.title} / {result.growthLevel}</TableCell>
                     <TableCell>
                       <Select value={result.evaluatorId || 'unassigned'} onValueChange={(newEvaluatorId) => handleEvaluatorChange(result.id, newEvaluatorId)}>
-                        <SelectTrigger className="w-[220px]">
+                        <SelectTrigger className="w-[220px] mx-auto">
                             <SelectValue placeholder="미지정" />
                         </SelectTrigger>
                         <SelectContent>
