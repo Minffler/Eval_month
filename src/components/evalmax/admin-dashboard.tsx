@@ -160,6 +160,12 @@ export default function AdminDashboard({
 
   const { toast } = useToast();
 
+  const evaluatorsForView = React.useMemo(() => {
+      const evaluatorIds = new Set(allEmployees.map(e => e.evaluatorId).filter(Boolean));
+      return allEmployees.filter(e => evaluatorIds.has(e.uniqueId));
+  }, [allEmployees]);
+
+
   React.useEffect(() => {
     try {
       const storedTemplates = localStorage.getItem(NOTIFICATION_TEMPLATES_STORAGE_KEY);
@@ -317,11 +323,6 @@ export default function AdminDashboard({
     return sortableItems;
   }, [visibleResults, sortConfig]);
 
-  const evaluatorsForView = React.useMemo(() => {
-      const evaluatorIds = new Set(allEmployees.map(e => e.evaluatorId).filter(Boolean));
-      return allEmployees.filter(e => evaluatorIds.has(e.uniqueId));
-  }, [allEmployees]);
-
   const requestSort = (key: keyof EvaluationResult) => {
     let direction: 'ascending' | 'descending' = 'ascending';
     if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
@@ -407,7 +408,7 @@ export default function AdminDashboard({
       if (stat) {
         const message = notificationMessage
           .replace(/_평가자이름_/g, stat.evaluatorName)
-          .replace(/_%_/g, `${stat.rate.toFixed(1)}%`)
+          .replace(/_%/g, `${stat.rate.toFixed(1)}%`)
           .replace(/_평가년월_/g, monthYearString);
         
         addNotification({ recipientId: stat.evaluatorUniqueId, message });
@@ -550,9 +551,9 @@ export default function AdminDashboard({
     const StatusBadge = ({ status }: { status: ApprovalStatus }) => {
         const styles: Record<ApprovalStatus, {bgColor: string, textColor: string}> = {
           '결재중': { bgColor: 'hsl(30, 20%, 98%)', textColor: 'hsl(var(--muted-foreground))' }, 
-          '현업승인': { bgColor: 'hsl(25, 20%, 92%)', textColor: 'hsl(var(--secondary-foreground))' },
+          '현업승인': { bgColor: 'hsl(39, 94%, 94%)', textColor: 'hsl(24, 95%, 53%)'},
           '최종승인': { bgColor: 'hsl(140, 60%, 92%)', textColor: 'hsl(140, 80%, 30%)' }, 
-          '반려': { bgColor: 'hsl(39, 94%, 94%)', textColor: 'hsl(24, 95%, 53%)'},
+          '반려': { bgColor: 'hsl(0, 80%, 93%)', textColor: 'hsl(var(--destructive))'},
         }
 
         return (
@@ -1000,12 +1001,12 @@ export default function AdminDashboard({
             <DialogTitle>알림 메시지 설정</DialogTitle>
             <DialogDescription>
               평가자에게 보낼 메시지를 입력하세요. 아래 플레이스홀더를 사용하면 해당 정보로 자동 변경됩니다.
-              <ul className="list-disc pl-5 mt-2 text-muted-foreground/80">
-                  <li><code className="bg-muted px-1 rounded-sm">_평가자이름_</code> : 평가자 이름 (예: 박평가)</li>
-                  <li><code className="bg-muted px-1 rounded-sm">_%_</code> : 평가 진행률 (예: 85.7%)</li>
-                  <li><code className="bg-muted px-1 rounded-sm">_평가년월_</code> : 현재 설정된 평가 기간 (예: 2025년 7월)</li>
-              </ul>
             </DialogDescription>
+            <ul className="list-disc pl-5 pt-2 text-sm text-muted-foreground/80">
+                <li><code className="bg-muted px-1 rounded-sm">_평가자이름_</code> : 평가자 이름 (예: 박평가)</li>
+                <li><code className="bg-muted px-1 rounded-sm">_%_</code> : 평가 진행률 (예: 85.7%)</li>
+                <li><code className="bg-muted px-1 rounded-sm">_평가년월_</code> : 현재 설정된 평가 기간 (예: 2025년 7월)</li>
+            </ul>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <Textarea
