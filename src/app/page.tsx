@@ -161,6 +161,7 @@ export default function Home() {
         }
     } catch (error) {
         console.error('Error reading employees from localStorage', error);
+        localStorage.removeItem(EMPLOYEES_STORAGE_KEY);
         dataFromStorage = null;
     }
 
@@ -205,6 +206,7 @@ export default function Home() {
       return stored ? JSON.parse(stored) : { '2025-7': initialMockEvaluations };
     } catch (error) {
       console.error('Error reading evaluations from localStorage', error);
+      localStorage.removeItem(EVALUATIONS_STORAGE_KEY);
       return { '2025-7': initialMockEvaluations };
     }
   });
@@ -218,6 +220,7 @@ export default function Home() {
       return stored ? JSON.parse(stored) : initialGradingScale;
     } catch (error) {
       console.error('Error reading grading scale from localStorage', error);
+      localStorage.removeItem(GRADING_SCALE_STORAGE_KEY);
       return initialGradingScale;
     }
   });
@@ -232,6 +235,7 @@ export default function Home() {
       return stored ? JSON.parse(stored) : {};
     } catch (error) {
       console.error('Error reading work rate inputs from localStorage', error);
+      localStorage.removeItem(WORK_RATE_INPUTS_STORAGE_KEY);
       return {};
     }
   });
@@ -243,6 +247,7 @@ export default function Home() {
       return stored ? JSON.parse(stored) : initialAttendanceTypes;
     } catch (error) {
       console.error('Error reading attendance types from localStorage', error);
+      localStorage.removeItem(ATTENDANCE_TYPES_STORAGE_KEY);
       return initialAttendanceTypes;
     }
   });
@@ -254,6 +259,7 @@ export default function Home() {
       return stored ? JSON.parse(stored) : [];
     } catch (error) {
       console.error('Error reading holidays from localStorage', error);
+      localStorage.removeItem(HOLIDAYS_STORAGE_KEY);
       return [];
     }
   });
