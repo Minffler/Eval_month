@@ -1141,7 +1141,7 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
         const data = payload.data;
 
         const commonFields = [
-            { label: '이름 (ID)', value: `${data.name} (${data.uniqueId})` },
+            { label: '대상자', value: `${data.name} (${data.uniqueId})` },
         ];
 
         const typeSpecificFields = payload.dataType === 'shortenedWorkHours' ? [
@@ -1154,7 +1154,7 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
         ];
 
         return (
-             <div className="text-sm space-y-2">
+             <div className="text-sm space-y-4">
                 {[...commonFields, ...typeSpecificFields].map(field => (
                      <div key={field.label} className="grid grid-cols-4 items-center">
                         <span className="font-semibold col-span-1">{field.label}</span>
@@ -1164,6 +1164,27 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
             </div>
         );
     }
+
+    const currentApproverInfo = React.useMemo(() => {
+        if (!selectedApproval) return null;
+
+        let approverId: string | undefined;
+        let approverRole: string = '';
+
+        if (selectedApproval.status === '결재중') {
+            approverId = selectedApproval.approverTeamId;
+            approverRole = '현업 결재자';
+        } else if (selectedApproval.status === '현업승인' && selectedApproval.statusHR === '결재중') {
+            approverId = selectedApproval.approverHRId;
+            approverRole = '인사부 결재자';
+        }
+
+        if (approverId) {
+            const approver = allEmployees.find(e => e.uniqueId === approverId);
+            return `${approverRole}: ${approver ? `${approver.name} (${approver.uniqueId})` : `미지정 (${approverId})`}`;
+        }
+        return null;
+    }, [selectedApproval, allEmployees]);
 
 
   if (!effectiveUser) return <div className="p-4 md:p-6 lg:p-8">로딩중...</div>;
@@ -1224,7 +1245,7 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
                               return (
                                 <TableRow key={approval.id}>
                                   <TableCell className="text-center text-muted-foreground">{formatTimestamp(approval.date)}</TableCell>
-                                  <TableCell className="text-center">{approval.payload.data.name} ({approval.payload.data.uniqueId})</TableCell>
+                                  <TableCell className="text-center">{`${approval.payload.data.name} (${approval.payload.data.uniqueId})`}</TableCell>
                                   <TableCell className="text-center">{approver ? `${approver.name} (${approver.uniqueId})` : '미지정'}</TableCell>
                                   <TableCell className="text-center">
                                      <Button variant="link" className="underline text-foreground" onClick={() => handleApprovalModal(approval)}>
@@ -1271,7 +1292,7 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
             </DialogHeader>
             {selectedApproval && (
                 <div className="space-y-4">
-                    <div className='space-y-1 text-sm'>
+                    <div className='space-y-1 text-sm text-left'>
                         <p><strong>요청자:</strong> {selectedApproval.requesterName} ({selectedApproval.requesterId})</p>
                         <p><strong>요청일시:</strong> {formatTimestamp(selectedApproval.date)}</p>
                         <p><strong>요청내용:</strong> {selectedApproval.payload.dataType === 'shortenedWorkHours' ? '단축근로' : '일근태'} 데이터 {selectedApproval.payload.action === 'add' ? '추가' : '변경'}</p>
@@ -1282,35 +1303,35 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
                     </div>
                     {selectedApproval.status === '반려' && selectedApproval.rejectionReason && (
                         <div>
-                            <Label htmlFor="rejectionReason" className="text-destructive">현업 반려 사유</Label>
+                            <Label htmlFor="rejectionReason" className="text-destructive mb-1 block">현업 반려 사유</Label>
                             <p className="text-sm text-destructive p-2 border border-destructive rounded-md">{selectedApproval.rejectionReason}</p>
                         </div>
                     )}
                     {selectedApproval.statusHR === '반려' && selectedApproval.rejectionReason && (
                         <div>
-                            <Label htmlFor="rejectionReason" className="text-destructive">인사부 반려 사유</Label>
+                            <Label htmlFor="rejectionReason" className="text-destructive mb-1 block">인사부 반려 사유</Label>
                             <p className="text-sm text-destructive p-2 border border-destructive rounded-md">{selectedApproval.rejectionReason}</p>
                         </div>
                     )}
                     {(selectedApproval.status === '결재중') && (
                          <div>
-                            <Label htmlFor="rejectionReason">반려 사유 (반려 시 필수)</Label>
+                            <Label htmlFor="rejectionReason" className="mb-1 block">반려 사유 (반려 시 필수)</Label>
                             <Textarea id="rejectionReason" value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} />
                         </div>
                     )}
                 </div>
             )}
-            <DialogFooter className="sm:justify-between">
+            <DialogFooter className="sm:justify-between items-center pt-2">
+                 <div className="text-sm text-muted-foreground">
+                    {currentApproverInfo && <p>현재 결재자: <span className="font-semibold text-foreground">{currentApproverInfo}</span></p>}
+                </div>
                 {selectedApproval && selectedApproval.status === '결재중' ? (
-                  <>
-                    <Button variant="destructive" onClick={() => handleApprovalDecision('rejected')}>반려</Button>
-                    <div className="flex gap-2">
-                        <Button variant="outline" onClick={() => setApprovalDetailModalOpen(false)}>닫기</Button>
-                        <Button onClick={() => handleApprovalDecision('approved')}>승인</Button>
-                    </div>
-                  </>
+                  <div className="flex gap-2">
+                      <Button variant="destructive" onClick={() => handleApprovalDecision('rejected')}>반려</Button>
+                      <Button onClick={() => handleApprovalDecision('approved')}>승인</Button>
+                  </div>
                 ) : (
-                    <Button variant="outline" className="w-full" onClick={() => setApprovalDetailModalOpen(false)}>닫기</Button>
+                    <Button variant="outline" className="w-full sm:w-auto" onClick={() => setApprovalDetailModalOpen(false)}>닫기</Button>
                 )}
             </DialogFooter>
         </DialogContent>

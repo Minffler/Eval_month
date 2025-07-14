@@ -468,8 +468,8 @@ export default function EmployeeDashboard({
         return (
             <div className="text-sm space-y-4">
                  <div className="grid grid-cols-4 items-center">
-                    <span className="font-semibold col-span-1">이름 (ID)</span>
-                    <span className="col-span-3">{data.name} ({data.uniqueId})</span>
+                    <Label className="font-semibold col-span-1">대상자</Label>
+                    <span className="col-span-3">{`${data.name} (${data.uniqueId})`}</span>
                 </div>
                  <div className="grid grid-cols-4 items-center">
                     <Label htmlFor="type" className="font-semibold col-span-1">유형</Label>
@@ -509,8 +509,8 @@ export default function EmployeeDashboard({
         return (
              <div className="text-sm space-y-4">
                 <div className="grid grid-cols-4 items-center">
-                    <span className="font-semibold col-span-1">이름 (ID)</span>
-                    <span className="col-span-3">{data.name} ({data.uniqueId})</span>
+                    <Label className="font-semibold col-span-1">대상자</Label>
+                    <span className="col-span-3">{`${data.name} (${data.uniqueId})`}</span>
                 </div>
                 <div className="grid grid-cols-4 items-center">
                   <Label htmlFor="type" className="font-semibold col-span-1">유형</Label>
@@ -577,7 +577,7 @@ export default function EmployeeDashboard({
                           return (
                             <TableRow key={approval.id}>
                               <TableCell className="text-center text-muted-foreground">{formatTimestamp(approval.date)}</TableCell>
-                              <TableCell className="text-center">{approval.payload.data.name} ({approval.payload.data.uniqueId})</TableCell>
+                              <TableCell className="text-center">{`${approval.payload.data.name} (${approval.payload.data.uniqueId})`}</TableCell>
                               <TableCell className="text-center">{approver ? `${approver.name} (${approver.uniqueId})` : '관리자'}</TableCell>
                               <TableCell className="text-center">
                                 <Button variant="link" className="underline text-foreground" onClick={() => handleApprovalModalOpen(approval)}>
@@ -624,7 +624,7 @@ export default function EmployeeDashboard({
             </DialogHeader>
             {selectedApproval && (
                 <div className="space-y-4">
-                    <div className='space-y-1 text-sm'>
+                    <div className='space-y-1 text-sm text-left'>
                         <p><strong>요청자:</strong> {selectedApproval.requesterName} ({selectedApproval.requesterId})</p>
                         <p><strong>요청일시:</strong> {formatTimestamp(selectedApproval.date)}</p>
                         <p><strong>요청내용:</strong> {selectedApproval.payload.dataType === 'shortenedWorkHours' ? '단축근로' : '일근태'} 데이터 {selectedApproval.payload.action === 'add' ? '추가' : '변경'}</p>
@@ -635,7 +635,7 @@ export default function EmployeeDashboard({
                     </div>
                     {isRejected && selectedApproval.rejectionReason && (
                         <div>
-                            <Label htmlFor="rejectionReason" className="text-destructive">반려 사유</Label>
+                            <Label htmlFor="rejectionReason" className="text-destructive mb-1 block">반려 사유</Label>
                             <p className="text-sm text-destructive p-2 border border-destructive rounded-md">{selectedApproval.rejectionReason}</p>
                         </div>
                     )}
