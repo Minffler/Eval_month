@@ -1129,6 +1129,17 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
         setSelectedApproval(null);
     };
 
+    const approvalDataFieldLabels: Record<string, string> = {
+        uniqueId: "ID",
+        name: "이름",
+        date: "일자",
+        type: "유형",
+        startDate: "시작일",
+        endDate: "종료일",
+        startTime: "출근 시각",
+        endTime: "퇴근 시각",
+    };
+
 
   if (!effectiveUser) return <div className="p-4 md:p-6 lg:p-8">로딩중...</div>;
 
@@ -1228,12 +1239,25 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
             </DialogHeader>
             {selectedApproval && (
                 <div className="space-y-4">
-                    <p><strong>요청자:</strong> {selectedApproval.requesterName} ({selectedApproval.requesterId})</p>
-                    <p className="text-sm text-muted-foreground"><strong>요청일시:</strong> {formatTimestamp(selectedApproval.date)}</p>
-                    <p><strong>요청내용:</strong> {selectedApproval.payload.dataType === 'shortenedWorkHours' ? '단축근로' : '일근태'} 데이터 {selectedApproval.payload.action === 'add' ? '추가' : '변경'}</p>
+                    <div className='grid grid-cols-2 gap-x-4 gap-y-1 text-sm'>
+                        <p><strong>요청자:</strong></p><p>{selectedApproval.requesterName} ({selectedApproval.requesterId})</p>
+                        <p><strong>요청일시:</strong></p><p>{formatTimestamp(selectedApproval.date)}</p>
+                        <p><strong>요청내용:</strong></p><p>{selectedApproval.payload.dataType === 'shortenedWorkHours' ? '단축근로' : '일근태'} 데이터 {selectedApproval.payload.action === 'add' ? '추가' : '변경'}</p>
+                    </div>
                     <Separator/>
-                    <div className="bg-muted p-2 rounded-md text-sm">
-                      <pre className="whitespace-pre-wrap break-all">{JSON.stringify(selectedApproval.payload.data, null, 2)}</pre>
+                    <div className="rounded-md border bg-muted">
+                        <Table>
+                            <TableBody>
+                                {Object.entries(selectedApproval.payload.data)
+                                    .filter(([key]) => key !== 'rowId')
+                                    .map(([key, value]) => (
+                                    <TableRow key={key}>
+                                        <TableCell className="font-medium w-1/3">{approvalDataFieldLabels[key] || key}</TableCell>
+                                        <TableCell>{String(value)}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
                     </div>
                     {selectedApproval.status === '반려' && selectedApproval.rejectionReason && (
                         <div>
@@ -1257,7 +1281,7 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
                     <Button onClick={() => handleApprovalDecision('approved')}>승인</Button>
                   </>
                 ) : (
-                    <Button variant="outline" onClick={() => setApprovalDetailModalOpen(false)}>닫기</Button>
+                    <Button variant="outline" className="w-full" onClick={() => setApprovalDetailModalOpen(false)}>닫기</Button>
                 )}
             </DialogFooter>
         </DialogContent>
