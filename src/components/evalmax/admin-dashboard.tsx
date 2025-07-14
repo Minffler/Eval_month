@@ -397,7 +397,7 @@ export default function AdminDashboard({
   };
 
   const handleOpenNotificationDialog = () => {
-    setNotificationMessage(`_평가년월_ 평가 마감 3일 전입니다. (현재 진행률 _%_)`);
+    setNotificationMessage(`_평가년월_ 평가 마감 3일 전입니다. (현재 진행률: _%_)`);
     setIsNotificationDialogOpen(true);
   };
   
@@ -575,16 +575,53 @@ export default function AdminDashboard({
         return format(new Date(isoString), 'MM.dd HH:mm');
     };
 
-    const approvalDataFieldLabels: Record<string, string> = {
-        uniqueId: "ID",
-        name: "이름",
-        date: "일자",
-        type: "유형",
-        startDate: "시작일",
-        endDate: "종료일",
-        startTime: "출근 시각",
-        endTime: "퇴근 시각",
-    };
+    const renderApprovalData = (approval: Approval) => {
+        const { payload } = approval;
+        const data = payload.data;
+
+        if (payload.dataType === 'shortenedWorkHours') {
+            return (
+                <div className="text-sm space-y-2">
+                    <div className="flex justify-between">
+                        <span className="font-medium text-muted-foreground w-1/3">ID / 이름</span>
+                        <span>{data.uniqueId} / {data.name}</span>
+                    </div>
+                    <div className="flex justify-between">
+                        <span className="font-medium text-muted-foreground w-1/3">유형</span>
+                        <span>{data.type}</span>
+                    </div>
+                    <div className="flex justify-between">
+                        <span className="font-medium text-muted-foreground w-1/3">기간</span>
+                        <span>{data.startDate} ~ {data.endDate}</span>
+                    </div>
+                    <div className="flex justify-between">
+                        <span className="font-medium text-muted-foreground w-1/3">시간</span>
+                        <span>{data.startTime} ~ {data.endTime}</span>
+                    </div>
+                </div>
+            );
+        }
+
+        if (payload.dataType === 'dailyAttendance') {
+            return (
+                <div className="text-sm space-y-2">
+                    <div className="flex justify-between">
+                        <span className="font-medium text-muted-foreground w-1/3">ID / 이름</span>
+                        <span>{data.uniqueId} / {data.name}</span>
+                    </div>
+                    <div className="flex justify-between">
+                        <span className="font-medium text-muted-foreground w-1/3">유형</span>
+                        <span>{data.type}</span>
+                    </div>
+                     <div className="flex justify-between">
+                        <span className="font-medium text-muted-foreground w-1/3">일자</span>
+                        <span>{data.date}</span>
+                    </div>
+                </div>
+            );
+        }
+        return null;
+    }
   
   const renderContent = () => {
     const key = `${selectedDate.year}-${selectedDate.month}`;
@@ -1077,25 +1114,14 @@ export default function AdminDashboard({
             </DialogHeader>
             {selectedApproval && (
                 <div className="space-y-4">
-                    <div className='grid grid-cols-2 gap-x-4 gap-y-1 text-sm'>
-                        <p><strong>요청자:</strong></p><p>{selectedApproval.requesterName} ({selectedApproval.requesterId})</p>
-                        <p><strong>요청일시:</strong></p><p>{formatTimestamp(selectedApproval.date)}</p>
-                        <p><strong>요청내용:</strong></p><p>{selectedApproval.payload.dataType === 'shortenedWorkHours' ? '단축근로' : '일근태'} 데이터 {selectedApproval.payload.action === 'add' ? '추가' : '변경'}</p>
+                    <div className='grid grid-cols-1 gap-1 text-sm'>
+                        <p><strong>요청자:</strong> {selectedApproval.requesterName} ({selectedApproval.requesterId})</p>
+                        <p><strong>요청일시:</strong> {formatTimestamp(selectedApproval.date)}</p>
+                        <p><strong>요청내용:</strong> {selectedApproval.payload.dataType === 'shortenedWorkHours' ? '단축근로' : '일근태'} 데이터 {selectedApproval.payload.action === 'add' ? '추가' : '변경'}</p>
                     </div>
                     <Separator/>
-                    <div className="rounded-md border bg-muted">
-                        <Table>
-                            <TableBody>
-                                {Object.entries(selectedApproval.payload.data)
-                                    .filter(([key]) => key !== 'rowId')
-                                    .map(([key, value]) => (
-                                    <TableRow key={key}>
-                                        <TableCell className="font-medium w-1/3">{approvalDataFieldLabels[key] || key}</TableCell>
-                                        <TableCell>{String(value)}</TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                    <div className="rounded-md border bg-muted p-4">
+                        {renderApprovalData(selectedApproval)}
                     </div>
                     {selectedApproval.statusHR === '반려' && selectedApproval.rejectionReason && (
                         <div>
@@ -1115,8 +1141,10 @@ export default function AdminDashboard({
                 {selectedApproval && selectedApproval.statusHR === '결재중' ? (
                   <>
                     <Button variant="destructive" onClick={() => handleApprovalDecision('rejected')}>반려</Button>
-                    <Button variant="outline" onClick={() => setApprovalDetailModalOpen(false)}>닫기</Button>
-                    <Button onClick={() => handleApprovalDecision('approved')}>승인</Button>
+                    <div className="flex gap-2">
+                      <Button variant="outline" onClick={() => setApprovalDetailModalOpen(false)}>닫기</Button>
+                      <Button onClick={() => handleApprovalDecision('approved')}>승인</Button>
+                    </div>
                   </>
                 ) : (
                     <Button variant="outline" className="w-full" onClick={() => setApprovalDetailModalOpen(false)}>닫기</Button>
