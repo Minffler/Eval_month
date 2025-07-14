@@ -17,7 +17,7 @@ interface NotificationContextType {
   approvals: Approval[];
   unreadApprovalCount: number;
   addApproval: (approval: Omit<Approval, 'id' | 'date' | 'isRead' | 'status' | 'statusHR' | 'approvedAtTeam' | 'approvedAtHR' | 'rejectionReason'>) => void;
-  updateApprovalStatus: (approvalId: string, step: 'team' | 'hr', status: 'approved' | 'rejected', reason?: string) => void;
+  updateApprovalStatus: (approvalId: string, status: ApprovalStatus, reason?: string) => void;
   markApprovalsAsRead: () => void;
 }
 
@@ -47,6 +47,23 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     const { user } = useAuth();
     const [allNotifications, setAllNotifications] = React.useState<AppNotification[]>(() => getAllItems(NOTIFICATIONS_STORAGE_KEY));
     const [allApprovals, setAllApprovals] = React.useState<Approval[]>(() => getAllItems(APPROVALS_STORAGE_KEY));
+
+    React.useEffect(() => {
+        const handleStorageChange = (event: StorageEvent) => {
+            if (event.key === NOTIFICATIONS_STORAGE_KEY) {
+                setAllNotifications(getAllItems(NOTIFICATIONS_STORAGE_KEY));
+            }
+            if (event.key === APPROVALS_STORAGE_KEY) {
+                setAllApprovals(getAllItems(APPROVALS_STORAGE_KEY));
+            }
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+        };
+    }, []);
 
     const addNotification = React.useCallback((notificationData: Omit<AppNotification, 'id' | 'date' | 'isRead'>) => {
         setAllNotifications(prev => {
@@ -82,29 +99,32 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         });
     }, []);
     
-    const updateApprovalStatus = React.useCallback((approvalId: string, step: 'team' | 'hr', status: 'approved' | 'rejected', reason: string = '') => {
+    const updateApprovalStatus = React.useCallback((approvalId: string, newStatus: ApprovalStatus, reason: string = '') => {
         setAllApprovals(prev => {
             const updated = prev.map(a => {
                 if (a.id === approvalId) {
                     const now = new Date().toISOString();
-                    if (step === 'team') {
-                        return { 
-                            ...a, 
-                            status: status === 'approved' ? '현업승인' : '반려',
-                            approvedAtTeam: status === 'approved' ? now : null,
-                            isRead: true, // Mark as read for current user
-                            rejectionReason: status === 'rejected' ? reason : '',
-                         };
+                    const updatedApproval = { ...a };
+
+                    // 현업 승인 단계
+                    if (newStatus === '현업승인') {
+                        updatedApproval.status = '현업승인';
+                        updatedApproval.approvedAtTeam = now;
                     }
-                    if (step === 'hr') {
-                         return { 
-                            ...a, 
-                            statusHR: status === 'approved' ? '최종승인' : '반려',
-                            approvedAtHR: status === 'approved' ? now : null,
-                            isRead: true, // Mark as read for current user
-                            rejectionReason: status === 'rejected' ? reason : '',
-                         };
+                    // 최종 승인 단계
+                    else if (newStatus === '최종승인') {
+                        updatedApproval.statusHR = '최종승인';
+                        updatedApproval.approvedAtHR = now;
                     }
+                    // 반려 단계
+                    else if (newStatus === '반려') {
+                         if (a.status === '결재중') { // 현업 결재 단계에서 반려
+                            updatedApproval.status = '반려';
+                         }
+                         updatedApproval.statusHR = '반려'; // 인사부 최종 상태도 반려
+                         updatedApproval.rejectionReason = reason;
+                    }
+                    return updatedApproval;
                 }
                 return a;
             });
@@ -123,7 +143,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                         ? { ...n, isRead: true }
                         : n
                 );
-                saveAllItems(NOTIFICATIONS_STORAGE_KEY, updated);
+                if (JSON.stringify(updated) !== JSON.stringify(prev)) {
+                    saveAllItems(NOTIFICATIONS_STORAGE_KEY, updated);
+                }
                 return updated;
             });
         }, 500);
@@ -133,20 +155,27 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         if (!user) return;
         setTimeout(() => {
             setAllApprovals(prev => {
-                const isTeamApprover = prev.some(a => a.approverTeamId === user.uniqueId);
-                const isHrApprover = prev.some(a => a.approverHRId === user.uniqueId);
-
+                 let hasChanged = false;
                 const updated = prev.map(a => {
                     let shouldMarkAsRead = false;
-                    if (isTeamApprover && a.approverTeamId === user.uniqueId) shouldMarkAsRead = true;
-                    if (isHrApprover && a.approverHRId === user.uniqueId) shouldMarkAsRead = true;
+                    // 현업 결재자가 자신의 턴일 때
+                    if (a.approverTeamId === user.uniqueId && a.status === '결재중') shouldMarkAsRead = true;
+                    // 인사부 결재자가 자신의 턴일 때 (현업 승인 후)
+                    if (a.approverHRId === user.uniqueId && a.status === '현업승인' && a.statusHR === '결재중') shouldMarkAsRead = true;
+                    // 요청자가 반려 상태를 확인할 때
+                    if (a.requesterId === user.uniqueId && (a.status === '반려' || a.statusHR === '반려')) shouldMarkAsRead = true;
+
 
                     if (shouldMarkAsRead && !a.isRead) {
+                        hasChanged = true;
                         return { ...a, isRead: true };
                     }
                     return a;
                 });
-                saveAllItems(APPROVALS_STORAGE_KEY, updated);
+                
+                if (hasChanged) {
+                    saveAllItems(APPROVALS_STORAGE_KEY, updated);
+                }
                 return updated;
             });
         }, 500);
@@ -175,7 +204,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         if (!user) return 0;
         return approvalsForUser.filter(a => {
             if (a.approverTeamId === user.uniqueId && a.status === '결재중' && !a.isRead) return true;
-            if (a.approverHRId === user.uniqueId && a.statusHR === '결재중' && !a.isRead) return true;
+            if (a.approverHRId === user.uniqueId && a.status === '현업승인' && a.statusHR === '결재중' && !a.isRead) return true;
+            if (a.requesterId === user.uniqueId && (a.status === '반려' || a.statusHR === '반려') && !a.isRead) return true;
             return false;
         }).length;
     }, [user, approvalsForUser]);
