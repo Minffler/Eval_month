@@ -536,11 +536,20 @@ export default function AdminDashboard({
             toast({ variant: 'destructive', title: '오류', description: '반려 사유를 입력해주세요.' });
             return;
         }
+
+        const newApprovalState: Partial<Approval> = {
+            rejectionReason,
+        };
+
+        if (decision === 'approved') {
+            newApprovalState.statusHR = '최종승인';
+        } else {
+            newApprovalState.statusHR = '반려';
+        }
         
         onApprovalAction({ 
             ...selectedApproval,
-            statusHR: decision === 'approved' ? '최종승인' : '반려',
-            rejectionReason: rejectionReason,
+            ...newApprovalState
         });
         
         toast({ title: '처리 완료', description: `결재 요청이 ${decision === 'approved' ? '승인' : '반려'}되었습니다.` });
@@ -582,21 +591,21 @@ export default function AdminDashboard({
         if (payload.dataType === 'shortenedWorkHours') {
             return (
                 <div className="text-sm space-y-2">
-                    <div className="flex justify-between">
-                        <span className="font-medium text-muted-foreground w-1/3">이름 (ID)</span>
-                        <span>{data.name} ({data.uniqueId})</span>
+                    <div className="flex">
+                        <span className="font-medium text-muted-foreground w-1/4">이름 (ID)</span>
+                        <span className="w-3/4">{data.name} ({data.uniqueId})</span>
                     </div>
-                    <div className="flex justify-between">
-                        <span className="font-medium text-muted-foreground w-1/3">유형</span>
-                        <span>단축근로 ({data.type})</span>
+                    <div className="flex">
+                        <span className="font-medium text-muted-foreground w-1/4">유형</span>
+                        <span className="w-3/4">단축근로 ({data.type})</span>
                     </div>
-                    <div className="flex justify-between">
-                        <span className="font-medium text-muted-foreground w-1/3">사용기간</span>
-                        <span>{data.startDate} ~ {data.endDate}</span>
+                    <div className="flex">
+                        <span className="font-medium text-muted-foreground w-1/4">사용기간</span>
+                        <span className="w-3/4">{data.startDate} ~ {data.endDate}</span>
                     </div>
-                    <div className="flex justify-between">
-                        <span className="font-medium text-muted-foreground w-1/3">근무시간</span>
-                        <span>{data.startTime} ~ {data.endTime}</span>
+                    <div className="flex">
+                        <span className="font-medium text-muted-foreground w-1/4">근무시간</span>
+                        <span className="w-3/4">{data.startTime} ~ {data.endTime}</span>
                     </div>
                 </div>
             );
@@ -605,17 +614,17 @@ export default function AdminDashboard({
         if (payload.dataType === 'dailyAttendance') {
             return (
                 <div className="text-sm space-y-2">
-                    <div className="flex justify-between">
-                        <span className="font-medium text-muted-foreground w-1/3">이름 (ID)</span>
-                        <span>{data.name} ({data.uniqueId})</span>
+                    <div className="flex">
+                        <span className="font-medium text-muted-foreground w-1/4">이름 (ID)</span>
+                        <span className="w-3/4">{data.name} ({data.uniqueId})</span>
                     </div>
-                    <div className="flex justify-between">
-                        <span className="font-medium text-muted-foreground w-1/3">유형</span>
-                        <span>일근태 ({data.type})</span>
+                    <div className="flex">
+                        <span className="font-medium text-muted-foreground w-1/4">유형</span>
+                        <span className="w-3/4">일근태 ({data.type})</span>
                     </div>
-                     <div className="flex justify-between">
-                        <span className="font-medium text-muted-foreground w-1/3">사용일자</span>
-                        <span>{data.date}</span>
+                    <div className="flex">
+                        <span className="font-medium text-muted-foreground w-1/4">사용일자</span>
+                        <span className="w-3/4">{data.date}</span>
                     </div>
                 </div>
             );
@@ -1047,15 +1056,15 @@ export default function AdminDashboard({
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>알림 메시지 설정</DialogTitle>
-            <DialogDescription>
-              평가자에게 보낼 메시지를 입력하세요. 아래 플레이스홀더를 사용하면 해당 정보로 자동 변경됩니다.
-            </DialogDescription>
+              <DialogDescription>
+                평가자에게 보낼 메시지를 입력하세요. 아래 플레이스홀더를 사용하면 해당 정보로 자동 변경됩니다.
+              </DialogDescription>
           </DialogHeader>
-          <ul className="list-disc pl-5 pt-2 text-sm text-muted-foreground/80">
-              <li><code className="bg-muted px-1 rounded-sm">_평가자이름_</code> : 평가자 이름 (예: 박평가)</li>
-              <li><code className="bg-muted px-1 rounded-sm">_%_</code> : 평가 진행률 (예: 85.7%)</li>
-              <li><code className="bg-muted px-1 rounded-sm">_평가년월_</code> : 현재 설정된 평가 기간 (예: 2025년 7월)</li>
-          </ul>
+            <ul className="list-disc pl-5 pt-2 text-sm text-muted-foreground/80">
+                <li><code className="bg-muted px-1 rounded-sm">_평가자이름_</code> : 평가자 이름 (예: 박평가)</li>
+                <li><code className="bg-muted px-1 rounded-sm">_%_</code> : 평가 진행률 (예: 85.7%)</li>
+                <li><code className="bg-muted px-1 rounded-sm">_평가년월_</code> : 현재 설정된 평가 기간 (예: 2025년 7월)</li>
+            </ul>
           <div className="grid gap-4 py-4">
             <Textarea
                 id="notification-message"
@@ -1128,7 +1137,13 @@ export default function AdminDashboard({
                     </div>
                     {selectedApproval.statusHR === '반려' && selectedApproval.rejectionReason && (
                         <div>
-                            <Label htmlFor="rejectionReason">반려 사유</Label>
+                            <Label htmlFor="rejectionReason">인사부 반려 사유</Label>
+                            <p className="text-sm text-destructive p-2 border border-destructive rounded-md">{selectedApproval.rejectionReason}</p>
+                        </div>
+                    )}
+                    {selectedApproval.status === '반려' && selectedApproval.rejectionReason && (
+                        <div>
+                            <Label htmlFor="rejectionReason">현업 반려 사유</Label>
                             <p className="text-sm text-destructive p-2 border border-destructive rounded-md">{selectedApproval.rejectionReason}</p>
                         </div>
                     )}

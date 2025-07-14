@@ -1113,16 +1113,19 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
             return;
         }
         
-        const updatedApproval = { ...selectedApproval };
+        const newApprovalState: Partial<Approval> = {
+            rejectionReason,
+        };
         if (decision === 'approved') {
-            updatedApproval.status = '현업승인';
-            updatedApproval.approvedAtTeam = new Date().toISOString();
+            newApprovalState.status = '현업승인';
         } else {
-            updatedApproval.status = '반려';
-            updatedApproval.rejectionReason = rejectionReason;
+            newApprovalState.status = '반려';
         }
         
-        onApprovalAction(updatedApproval);
+        onApprovalAction({ 
+            ...selectedApproval,
+            ...newApprovalState,
+        });
         
         toast({ title: '처리 완료', description: `결재 요청이 ${decision === 'approved' ? '승인' : '반려'}되었습니다.` });
         setApprovalDetailModalOpen(false);
@@ -1136,21 +1139,21 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
         if (payload.dataType === 'shortenedWorkHours') {
             return (
                 <div className="text-sm space-y-2">
-                    <div className="flex justify-between">
-                        <span className="font-medium text-muted-foreground w-1/3">이름 (ID)</span>
-                        <span>{data.name} ({data.uniqueId})</span>
+                    <div className="flex">
+                        <span className="font-medium text-muted-foreground w-1/4">이름 (ID)</span>
+                        <span className="w-3/4">{data.name} ({data.uniqueId})</span>
                     </div>
-                    <div className="flex justify-between">
-                        <span className="font-medium text-muted-foreground w-1/3">유형</span>
-                        <span>단축근로 ({data.type})</span>
+                    <div className="flex">
+                        <span className="font-medium text-muted-foreground w-1/4">유형</span>
+                        <span className="w-3/4">단축근로 ({data.type})</span>
                     </div>
-                    <div className="flex justify-between">
-                        <span className="font-medium text-muted-foreground w-1/3">사용기간</span>
-                        <span>{data.startDate} ~ {data.endDate}</span>
+                    <div className="flex">
+                        <span className="font-medium text-muted-foreground w-1/4">사용기간</span>
+                        <span className="w-3/4">{data.startDate} ~ {data.endDate}</span>
                     </div>
-                    <div className="flex justify-between">
-                        <span className="font-medium text-muted-foreground w-1/3">근무시간</span>
-                        <span>{data.startTime} ~ {data.endTime}</span>
+                    <div className="flex">
+                        <span className="font-medium text-muted-foreground w-1/4">근무시간</span>
+                        <span className="w-3/4">{data.startTime} ~ {data.endTime}</span>
                     </div>
                 </div>
             );
@@ -1159,17 +1162,17 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
         if (payload.dataType === 'dailyAttendance') {
             return (
                 <div className="text-sm space-y-2">
-                    <div className="flex justify-between">
-                        <span className="font-medium text-muted-foreground w-1/3">이름 (ID)</span>
-                        <span>{data.name} ({data.uniqueId})</span>
+                    <div className="flex">
+                        <span className="font-medium text-muted-foreground w-1/4">이름 (ID)</span>
+                        <span className="w-3/4">{data.name} ({data.uniqueId})</span>
                     </div>
-                    <div className="flex justify-between">
-                        <span className="font-medium text-muted-foreground w-1/3">유형</span>
-                        <span>일근태 ({data.type})</span>
+                    <div className="flex">
+                        <span className="font-medium text-muted-foreground w-1/4">유형</span>
+                        <span className="w-3/4">일근태 ({data.type})</span>
                     </div>
-                     <div className="flex justify-between">
-                        <span className="font-medium text-muted-foreground w-1/3">사용일자</span>
-                        <span>{data.date}</span>
+                    <div className="flex">
+                        <span className="font-medium text-muted-foreground w-1/4">사용일자</span>
+                        <span className="w-3/4">{data.date}</span>
                     </div>
                 </div>
             );
@@ -1290,7 +1293,13 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
                     </div>
                     {selectedApproval.status === '반려' && selectedApproval.rejectionReason && (
                         <div>
-                            <Label htmlFor="rejectionReason">반려 사유</Label>
+                            <Label htmlFor="rejectionReason">현업 반려 사유</Label>
+                            <p className="text-sm text-destructive p-2 border border-destructive rounded-md">{selectedApproval.rejectionReason}</p>
+                        </div>
+                    )}
+                    {selectedApproval.statusHR === '반려' && selectedApproval.rejectionReason && (
+                        <div>
+                            <Label htmlFor="rejectionReason">인사부 반려 사유</Label>
                             <p className="text-sm text-destructive p-2 border border-destructive rounded-md">{selectedApproval.rejectionReason}</p>
                         </div>
                     )}
