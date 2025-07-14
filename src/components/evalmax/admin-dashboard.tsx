@@ -408,7 +408,7 @@ export default function AdminDashboard({
       if (stat) {
         const message = notificationMessage
           .replace(/_평가자이름_/g, stat.evaluatorName)
-          .replace(/_%/g, `${stat.rate.toFixed(1)}%`)
+          .replace(/_%_/g, `${stat.rate.toFixed(1)}%`)
           .replace(/_평가년월_/g, monthYearString);
         
         addNotification({ recipientId: stat.evaluatorUniqueId, message });
@@ -1002,12 +1002,12 @@ export default function AdminDashboard({
             <DialogDescription>
               평가자에게 보낼 메시지를 입력하세요. 아래 플레이스홀더를 사용하면 해당 정보로 자동 변경됩니다.
             </DialogDescription>
-            <ul className="list-disc pl-5 pt-2 text-sm text-muted-foreground/80">
-                <li><code className="bg-muted px-1 rounded-sm">_평가자이름_</code> : 평가자 이름 (예: 박평가)</li>
-                <li><code className="bg-muted px-1 rounded-sm">_%_</code> : 평가 진행률 (예: 85.7%)</li>
-                <li><code className="bg-muted px-1 rounded-sm">_평가년월_</code> : 현재 설정된 평가 기간 (예: 2025년 7월)</li>
-            </ul>
           </DialogHeader>
+          <ul className="list-disc pl-5 pt-2 text-sm text-muted-foreground/80">
+              <li><code className="bg-muted px-1 rounded-sm">_평가자이름_</code> : 평가자 이름 (예: 박평가)</li>
+              <li><code className="bg-muted px-1 rounded-sm">_%_</code> : 평가 진행률 (예: 85.7%)</li>
+              <li><code className="bg-muted px-1 rounded-sm">_평가년월_</code> : 현재 설정된 평가 기간 (예: 2025년 7월)</li>
+          </ul>
           <div className="grid gap-4 py-4">
             <Textarea
                 id="notification-message"
