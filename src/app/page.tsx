@@ -142,8 +142,7 @@ export default function Home() {
       markNotificationsAsRead,
       approvals,
       unreadApprovalCount,
-      addApproval,
-      updateApprovalStatus,
+      handleApprovalAction,
       markApprovalsAsRead
   } = useNotifications();
 
@@ -640,7 +639,7 @@ export default function Home() {
     });
   };
   
-  const handleApprovalAction = (approval: Approval) => {
+  const onApprovalAction = (approval: Approval) => {
     if (approval.status === 'approved' && approval.type === 'workDataChange') {
       const { dataType, action, data } = approval.payload;
       const key = `${selectedDate.year}-${selectedDate.month}`;
@@ -666,7 +665,7 @@ export default function Home() {
         return updatedInputs;
       });
     }
-    updateApprovalStatus(approval.id, approval.status);
+    handleApprovalAction(approval);
   };
 
   React.useEffect(() => {
@@ -770,7 +769,7 @@ export default function Home() {
                   holidays={holidays}
                   setHolidays={setHolidays}
                   workRateDetails={workRateDetails}
-                  onApprovalAction={handleApprovalAction}
+                  onApprovalAction={onApprovalAction}
                   notifications={notifications}
                   addNotification={addNotification}
                   approvals={approvals}
@@ -793,7 +792,7 @@ export default function Home() {
                   holidays={holidays}
                   allEmployees={allEmployees}
                   attendanceTypes={attendanceTypes}
-                  onApprovalAction={handleApprovalAction}
+                  onApprovalAction={onApprovalAction}
                   notifications={notifications}
                   addNotification={addNotification}
                   approvals={approvals}
@@ -810,7 +809,7 @@ export default function Home() {
                   selectedDate={selectedDate}
                   allEmployees={allEmployees}
                   attendanceTypes={attendanceTypes}
-                  onApprovalAction={handleApprovalAction}
+                  onApprovalAction={onApprovalAction}
                   notifications={notifications}
                   approvals={myApprovals}
                 />;
