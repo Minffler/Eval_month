@@ -57,7 +57,7 @@ const prompt = ai.definePrompt({
   name: 'validateGradeConsistencyPrompt',
   input: {schema: ValidateGradeConsistencyInputSchema},
   output: {schema: ValidateGradeConsistencyOutputSchema},
-  prompt: `당신은 HR 분석 전문가입니다. 평가자별 등급 부여 데이터와 이상적인 분포 가이드를 바탕으로, 평가자 간의 등급 부여 경향에 편향이 있는지 분석해 주십시오.
+  prompt: `당신은 HR 분석 전문가입니다. 주어진 평가자별 등급 데이터와 이상적인 분포 가이드를 바탕으로, 평가자 간 등급 부여 경향에 편향이 있는지 분석해 주십시오.
 
   분석 목표:
   - 평가자 간의 등급 부여 일관성을 검토합니다.
@@ -86,10 +86,15 @@ const validateGradeConsistencyFlow = ai.defineFlow(
     outputSchema: ValidateGradeConsistencyOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
-    if (!output) {
-      throw new Error("AI 모델이 유효한 분석 결과를 생성하지 못했습니다. 잠시 후 다시 시도해주세요.");
+    try {
+      const {output} = await prompt(input);
+      if (!output) {
+        throw new Error("AI 모델이 유효한 분석 결과를 생성하지 못했습니다. 잠시 후 다시 시도해주세요.");
+      }
+      return output;
+    } catch (error) {
+       console.error("Error in validateGradeConsistencyFlow: ", error);
+       throw new Error("AI 모델이 유효한 분석 결과를 생성하지 못했습니다. 잠시 후 다시 시도해주세요.");
     }
-    return output;
   }
 );
