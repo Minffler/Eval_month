@@ -21,6 +21,17 @@ import EmployeeNotifications from './employee-dashboard-notifications';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Label } from '../ui/label';
+import { Separator } from '../ui/separator';
+import { useToast } from '@/hooks/use-toast';
 
 interface EmployeeDashboardProps {
   employeeResults: EvaluationResult[];
@@ -277,6 +288,11 @@ export default function EmployeeDashboard({
     approvals
 }: EmployeeDashboardProps) {
   const { user, role } = useAuth();
+  const { toast } = useToast();
+  const [isApprovalModalOpen, setIsApprovalModalOpen] = React.useState(false);
+  const [selectedApproval, setSelectedApproval] = React.useState<Approval | null>(null);
+  const [formData, setFormData] = React.useState<any>({});
+
 
   if (!user) {
     return <div>결과를 불러오는 중입니다...</div>;
@@ -285,6 +301,83 @@ export default function EmployeeDashboard({
   const myWorkRateDetails: WorkRateDetailsResult = {
       shortenedWorkDetails: workRateDetails.shortenedWorkDetails.filter(d => d.uniqueId === user.uniqueId),
       dailyAttendanceDetails: workRateDetails.dailyAttendanceDetails.filter(d => d.uniqueId === user.uniqueId),
+  }
+  
+  const handleApprovalModalOpen = (approval: Approval) => {
+    setSelectedApproval(approval);
+    setFormData(approval.payload.data);
+    setIsApprovalModalOpen(true);
+  };
+  
+  const handleResubmit = () => {
+    if (!selectedApproval) return;
+
+    const resubmittedApproval: Approval = {
+        ...selectedApproval,
+        status: '결재중',
+        statusHR: '결재중',
+        date: new Date().toISOString(),
+        isRead: false,
+        rejectionReason: '',
+        approvedAtTeam: null,
+        approvedAtHR: null,
+        payload: {
+            ...selectedApproval.payload,
+            data: formData,
+        }
+    };
+    
+    onApprovalAction(resubmittedApproval);
+    toast({ title: '재상신 완료', description: '결재 요청이 다시 제출되었습니다.' });
+    setIsApprovalModalOpen(false);
+  }
+
+  const renderApprovalData = (approval: Approval) => {
+    const { payload } = approval;
+    const data = payload.data;
+
+    if (payload.dataType === 'shortenedWorkHours') {
+        return (
+            <div className="text-sm space-y-2">
+                <div className="flex">
+                    <span className="font-medium text-muted-foreground w-1/4">이름 (ID)</span>
+                    <span className="w-3/4">{data.name} ({data.uniqueId})</span>
+                </div>
+                <div className="flex">
+                    <span className="font-medium text-muted-foreground w-1/4">유형</span>
+                    <span className="w-3/4">단축근로 ({data.type})</span>
+                </div>
+                <div className="flex">
+                    <span className="font-medium text-muted-foreground w-1/4">사용기간</span>
+                    <span className="w-3/4">{data.startDate} ~ {data.endDate}</span>
+                </div>
+                <div className="flex">
+                    <span className="font-medium text-muted-foreground w-1/4">근무시간</span>
+                    <span className="w-3/4">{data.startTime} ~ {data.endTime}</span>
+                </div>
+            </div>
+        );
+    }
+
+    if (payload.dataType === 'dailyAttendance') {
+        return (
+            <div className="text-sm space-y-2">
+                <div className="flex">
+                    <span className="font-medium text-muted-foreground w-1/4">이름 (ID)</span>
+                    <span className="w-3/4">{data.name} ({data.uniqueId})</span>
+                </div>
+                <div className="flex">
+                    <span className="font-medium text-muted-foreground w-1/4">유형</span>
+                    <span className="w-3/4">일근태 ({data.type})</span>
+                </div>
+                <div className="flex">
+                    <span className="font-medium text-muted-foreground w-1/4">사용일자</span>
+                    <span className="w-3/4">{data.date}</span>
+                </div>
+            </div>
+        );
+    }
+    return null;
   }
 
   const renderContent = () => {
@@ -325,7 +418,9 @@ export default function EmployeeDashboard({
                               <TableCell className="text-center text-muted-foreground">{formatTimestamp(approval.date)}</TableCell>
                               <TableCell className="text-center">{approver ? `${approver.name} (${approver.uniqueId})` : '관리자'}</TableCell>
                               <TableCell className="text-center">
+                                <Button variant="link" className="underline text-foreground" onClick={() => handleApprovalModalOpen(approval)}>
                                   {approval.payload.dataType === 'shortenedWorkHours' ? '단축근로' : '일근태'} 데이터 {approval.payload.action === 'add' ? '추가' : '변경'}
+                                </Button>
                               </TableCell>
                               <TableCell className="text-center"><StatusBadge status={approval.status} /></TableCell>
                               <TableCell className="text-center"><StatusBadge status={approval.statusHR} /></TableCell>
@@ -356,9 +451,44 @@ export default function EmployeeDashboard({
     }
   }
 
+  const isRejected = selectedApproval?.status === '반려' || selectedApproval?.statusHR === '반려';
+
   return (
     <div className="p-4 md:p-6 lg:p-8">
       {renderContent()}
+      <Dialog open={isApprovalModalOpen} onOpenChange={setIsApprovalModalOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>결재 상세 정보</DialogTitle>
+            </DialogHeader>
+            {selectedApproval && (
+                <div className="space-y-4">
+                    <div className='grid grid-cols-1 gap-1 text-sm text-left'>
+                        <p><strong>요청자:</strong> {selectedApproval.requesterName} ({selectedApproval.requesterId})</p>
+                        <p><strong>요청일시:</strong> {formatTimestamp(selectedApproval.date)}</p>
+                        <p><strong>요청내용:</strong> {selectedApproval.payload.dataType === 'shortenedWorkHours' ? '단축근로' : '일근태'} 데이터 {selectedApproval.payload.action === 'add' ? '추가' : '변경'}</p>
+                    </div>
+                    <Separator/>
+                    <div className="rounded-md border bg-muted p-4">
+                        {renderApprovalData(selectedApproval)}
+                    </div>
+                    {isRejected && selectedApproval.rejectionReason && (
+                        <div>
+                            <Label htmlFor="rejectionReason" className="text-destructive">반려 사유</Label>
+                            <p className="text-sm text-destructive p-2 border border-destructive rounded-md">{selectedApproval.rejectionReason}</p>
+                        </div>
+                    )}
+                </div>
+            )}
+            <DialogFooter className="sm:justify-end">
+                {isRejected ? (
+                    <Button onClick={handleResubmit}>수정 후 재상신</Button>
+                ) : (
+                    <Button variant="outline" onClick={() => setIsApprovalModalOpen(false)}>닫기</Button>
+                )}
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -17,7 +17,7 @@ interface NotificationContextType {
   approvals: Approval[];
   unreadApprovalCount: number;
   addApproval: (approval: Omit<Approval, 'id' | 'date' | 'isRead' | 'status' | 'statusHR' | 'approvedAtTeam' | 'approvedAtHR' | 'rejectionReason'>) => void;
-  updateApprovalStatus: (approvalId: string, status: ApprovalStatus, reason?: string) => void;
+  handleApprovalAction: (approval: Approval) => void;
   markApprovalsAsRead: () => void;
 }
 
@@ -126,40 +126,34 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         });
     }, []);
     
-    const updateApprovalStatus = React.useCallback((approvalId: string, newStatus: ApprovalStatus, reason: string = '') => {
+    const handleApprovalAction = React.useCallback((approval: Approval) => {
         setAllApprovals(prev => {
-            let changed = false;
-            const updated = prev.map(a => {
-                if (a.id === approvalId) {
-                    changed = true;
-                    const now = new Date().toISOString();
-                    const updatedApproval = { ...a };
+            const now = new Date().toISOString();
+            
+            // For resubmissions, we replace the existing approval with the new one.
+            const isResubmission = approval.status === '결재중' && (prev.find(a => a.id === approval.id)?.status === '반려' || prev.find(a => a.id === approval.id)?.statusHR === '반려');
 
-                    // 현업 승인 단계
-                    if (newStatus === '현업승인') {
-                        updatedApproval.status = '현업승인';
+            if (isResubmission) {
+                const updated = prev.map(a => a.id === approval.id ? approval : a);
+                saveAllItems(APPROVALS_STORAGE_KEY, updated);
+                return updated;
+            }
+
+            // For normal status updates
+            const updated = prev.map(a => {
+                if (a.id === approval.id) {
+                    const updatedApproval = { ...a, ...approval };
+                    if (approval.status === '현업승인' && a.status !== '현업승인') {
                         updatedApproval.approvedAtTeam = now;
                     }
-                    // 최종 승인 단계
-                    else if (newStatus === '최종승인') {
-                        updatedApproval.statusHR = '최종승인';
+                    if (approval.statusHR === '최종승인' && a.statusHR !== '최종승인') {
                         updatedApproval.approvedAtHR = now;
-                    }
-                    // 반려 단계
-                    else if (newStatus === '반려') {
-                         if (a.status === '결재중') { // 현업 결재 단계에서 반려
-                            updatedApproval.status = '반려';
-                         }
-                         updatedApproval.statusHR = '반려'; // 인사부 최종 상태도 반려
-                         updatedApproval.rejectionReason = reason;
                     }
                     return updatedApproval;
                 }
                 return a;
             });
-            if (changed) {
-                saveAllItems(APPROVALS_STORAGE_KEY, updated);
-            }
+            saveAllItems(APPROVALS_STORAGE_KEY, updated);
             return updated;
         });
     }, []);
@@ -254,7 +248,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         approvals: approvalsForUser,
         unreadApprovalCount,
         addApproval,
-        updateApprovalStatus,
+        handleApprovalAction,
         markApprovalsAsRead,
     };
 
