@@ -730,7 +730,7 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
                   ? (type === 'shortenedWork' ? renderShortenedWorkTable() : renderDailyAttendanceTable())
                   : (
                     <div className="flex items-center justify-center h-64">
-                        <p className="text-muted-foreground">데이터가 없습니다. 파일 업로드 화면에서 데이터를 업로드해주세요.</p>
+                        <p className="text-muted-foreground">데이터가 없습니다. 새로운 데이터를 추가하려면 [신규추가] 버튼을 눌러주세요.</p>
                     </div>
                   )
                 }
