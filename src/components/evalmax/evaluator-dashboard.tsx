@@ -1139,22 +1139,10 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
         if (payload.dataType === 'shortenedWorkHours') {
             return (
                 <div className="text-sm space-y-2">
-                    <div className="flex">
-                        <span className="font-medium text-muted-foreground w-1/4">이름 (ID)</span>
-                        <span className="w-3/4">{data.name} ({data.uniqueId})</span>
-                    </div>
-                    <div className="flex">
-                        <span className="font-medium text-muted-foreground w-1/4">유형</span>
-                        <span className="w-3/4">단축근로 ({data.type})</span>
-                    </div>
-                    <div className="flex">
-                        <span className="font-medium text-muted-foreground w-1/4">사용기간</span>
-                        <span className="w-3/4">{data.startDate} ~ {data.endDate}</span>
-                    </div>
-                    <div className="flex">
-                        <span className="font-medium text-muted-foreground w-1/4">근무시간</span>
-                        <span className="w-3/4">{data.startTime} ~ {data.endTime}</span>
-                    </div>
+                    <p><strong>이름 (ID):</strong> {data.name} ({data.uniqueId})</p>
+                    <p><strong>유형:</strong> 단축근로 ({data.type})</p>
+                    <p><strong>사용기간:</strong> {data.startDate} ~ {data.endDate}</p>
+                    <p><strong>근무시간:</strong> {data.startTime} ~ {data.endTime}</p>
                 </div>
             );
         }
@@ -1162,18 +1150,9 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
         if (payload.dataType === 'dailyAttendance') {
             return (
                 <div className="text-sm space-y-2">
-                    <div className="flex">
-                        <span className="font-medium text-muted-foreground w-1/4">이름 (ID)</span>
-                        <span className="w-3/4">{data.name} ({data.uniqueId})</span>
-                    </div>
-                    <div className="flex">
-                        <span className="font-medium text-muted-foreground w-1/4">유형</span>
-                        <span className="w-3/4">일근태 ({data.type})</span>
-                    </div>
-                    <div className="flex">
-                        <span className="font-medium text-muted-foreground w-1/4">사용일자</span>
-                        <span className="w-3/4">{data.date}</span>
-                    </div>
+                    <p><strong>이름 (ID):</strong> {data.name} ({data.uniqueId})</p>
+                    <p><strong>유형:</strong> 일근태 ({data.type})</p>
+                    <p><strong>사용일자:</strong> {data.date}</p>
                 </div>
             );
         }
@@ -1273,7 +1252,7 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
      <div className="p-4 md:p-6 lg:p-8">
       {renderContent()}
       <Dialog open={approvalDetailModalOpen} onOpenChange={setApprovalDetailModalOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-xl">
             <DialogHeader>
                 <DialogTitle>결재 상세 정보</DialogTitle>
                 <DialogDescription>
@@ -1282,7 +1261,7 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
             </DialogHeader>
             {selectedApproval && (
                 <div className="space-y-4">
-                    <div className='grid grid-cols-1 gap-1 text-sm text-left'>
+                    <div className='grid grid-cols-1 gap-1 text-sm'>
                         <p><strong>요청자:</strong> {selectedApproval.requesterName} ({selectedApproval.requesterId})</p>
                         <p><strong>요청일시:</strong> {formatTimestamp(selectedApproval.date)}</p>
                         <p><strong>요청내용:</strong> {selectedApproval.payload.dataType === 'shortenedWorkHours' ? '단축근로' : '일근태'} 데이터 {selectedApproval.payload.action === 'add' ? '추가' : '변경'}</p>

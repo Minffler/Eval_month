@@ -135,7 +135,7 @@ const TimePicker = ({ value, onChange, disabled }: { value: string, onChange: (t
     const minutes = ['00', '15', '30', '45'];
 
     return (
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-2 items-center w-full">
             <Select value={hour} onValueChange={(val) => handleTimeChange('hour', val)} disabled={disabled}>
                 <SelectTrigger className="w-full"><SelectValue placeholder="시" /></SelectTrigger>
                 <SelectContent>{hours.map(h => <SelectItem key={h} value={h}>{h}시</SelectItem>)}</SelectContent>
@@ -607,13 +607,13 @@ export default function EmployeeDashboard({
     <div className="p-4 md:p-6 lg:p-8">
       {renderContent()}
       <Dialog open={isApprovalModalOpen} onOpenChange={setIsApprovalModalOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-xl">
             <DialogHeader>
                 <DialogTitle>결재 상세 정보</DialogTitle>
             </DialogHeader>
             {selectedApproval && (
                 <div className="space-y-4">
-                    <div className='grid grid-cols-1 gap-1 text-sm text-left'>
+                    <div className='grid grid-cols-1 gap-1 text-sm'>
                         <p><strong>요청자:</strong> {selectedApproval.requesterName} ({selectedApproval.requesterId})</p>
                         <p><strong>요청일시:</strong> {formatTimestamp(selectedApproval.date)}</p>
                         <p><strong>요청내용:</strong> {selectedApproval.payload.dataType === 'shortenedWorkHours' ? '단축근로' : '일근태'} 데이터 {selectedApproval.payload.action === 'add' ? '추가' : '변경'}</p>

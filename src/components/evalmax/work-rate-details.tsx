@@ -196,7 +196,7 @@ const TimePicker = ({ value, onChange }: { value: string, onChange: (time: strin
     const minutes = ['00', '15', '30', '45'];
 
     return (
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-2 items-center w-full">
             <Select value={hour} onValueChange={(val) => handleTimeChange('hour', val)}>
                 <SelectTrigger className="w-full"><SelectValue placeholder="시" /></SelectTrigger>
                 <SelectContent>{hours.map(h => <SelectItem key={h} value={h}>{h}시</SelectItem>)}</SelectContent>
@@ -739,7 +739,7 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
     </Card>
 
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
             <DialogTitle>{dialogMode === 'add' ? '신규 근무 데이터 추가' : '근무 데이터 변경'}</DialogTitle>
             <DialogDescription>
