@@ -21,12 +21,20 @@ import { Checkbox } from '@/components/ui/checkbox';
 import type { EvaluationResult, Employee, AppNotification } from '@/lib/types';
 import { getPositionSortValue } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowUpDown, ArrowUp, ArrowDown, ChevronsUpDown } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, ChevronsUpDown, PlusCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Command,
   CommandEmpty,
@@ -199,6 +207,9 @@ export default function EvaluatorManagement({
   const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
   const [bulkEvaluatorId, setBulkEvaluatorId] = React.useState('');
   const [currentGroupEvaluator, setCurrentGroupEvaluator] = React.useState<string>('필터를 선택하세요');
+  const [isAddEvaluatorDialogOpen, setIsAddEvaluatorDialogOpen] = React.useState(false);
+  const [newEvaluatorName, setNewEvaluatorName] = React.useState('');
+  const [newEvaluatorUniqueId, setNewEvaluatorUniqueId] = React.useState('');
   const { toast } = useToast();
 
   const evaluators = React.useMemo(() => {
@@ -388,6 +399,55 @@ export default function EvaluatorManagement({
     setBulkEvaluatorId('');
   };
 
+  const handleAddEvaluator = () => {
+    if (!newEvaluatorName.trim() || !newEvaluatorUniqueId.trim()) {
+        toast({ variant: 'destructive', title: '오류', description: '평가자 이름과 ID를 모두 입력해주세요.' });
+        return;
+    }
+    if (allEmployees.some(e => e.uniqueId === newEvaluatorUniqueId)) {
+        toast({ variant: 'destructive', title: '오류', description: '이미 존재하는 ID입니다.' });
+        return;
+    }
+
+    const newEvaluator: Employee = {
+        id: `E${newEvaluatorUniqueId}`,
+        uniqueId: newEvaluatorUniqueId,
+        name: newEvaluatorName,
+        company: 'N/A',
+        department: 'N/A',
+        title: '평가자',
+        position: '평가자',
+        growthLevel: '',
+        workRate: 1.0,
+        evaluatorId: '',
+        baseAmount: 0,
+    };
+    
+    // We create a dummy result to pass to handleResultsUpdate
+    const dummyResult: EvaluationResult = {
+        ...newEvaluator,
+        year: results[0]?.year || new Date().getFullYear(),
+        month: results[0]?.month || new Date().getMonth() + 1,
+        grade: null,
+        score: 0,
+        payoutRate: 0,
+        gradeAmount: 0,
+        finalAmount: 0,
+        evaluatorName: '',
+        evaluationGroup: '',
+        detailedGroup1: '',
+        detailedGroup2: '',
+    };
+    
+    // This will effectively add the new employee to the `allEmployees` state in page.tsx
+    handleResultsUpdate([...results, dummyResult]);
+
+    toast({ title: '성공', description: `평가자 '${newEvaluatorName}'님이 추가되었습니다.` });
+    setIsAddEvaluatorDialogOpen(false);
+    setNewEvaluatorName('');
+    setNewEvaluatorUniqueId('');
+  };
+
   const isAllSelected = filteredResults.length > 0 && selectedIds.size === filteredResults.length;
 
   return (
@@ -420,6 +480,12 @@ export default function EvaluatorManagement({
                   className="h-9 sm:w-64"
                 />
                 <Button onClick={handleBulkAssign} size="sm">일괄 반영</Button>
+                <div className="flex-grow sm:flex-grow-0 sm:ml-auto">
+                    <Button onClick={() => setIsAddEvaluatorDialogOpen(true)} size="sm" variant="outline">
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        평가자 추가
+                    </Button>
+                </div>
             </div>
           </div>
           
@@ -461,6 +527,34 @@ export default function EvaluatorManagement({
           </div>
         </CardContent>
       </Card>
+      <Dialog open={isAddEvaluatorDialogOpen} onOpenChange={setIsAddEvaluatorDialogOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>새 평가자 추가</DialogTitle>
+                <DialogDescription>
+                    시스템에 존재하지 않는 평가자를 직접 추가합니다. 추가된 평가자는 평가자 목록에 즉시 반영됩니다.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="evaluator-name" className="text-right">
+                        평가자 이름
+                    </Label>
+                    <Input id="evaluator-name" value={newEvaluatorName} onChange={(e) => setNewEvaluatorName(e.target.value)} className="col-span-3" />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="evaluator-id" className="text-right">
+                        평가자 ID
+                    </Label>
+                    <Input id="evaluator-id" value={newEvaluatorUniqueId} onChange={(e) => setNewEvaluatorUniqueId(e.target.value)} className="col-span-3" />
+                </div>
+            </div>
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setIsAddEvaluatorDialogOpen(false)}>취소</Button>
+                <Button onClick={handleAddEvaluator}>추가</Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
