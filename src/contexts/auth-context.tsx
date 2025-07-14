@@ -2,10 +2,14 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import type { User, Role, Employee } from '@/lib/types';
-import { mockEmployees } from '@/lib/data';
-
-const EMPLOYEES_STORAGE_KEY = 'pl_eval_employees';
+import type { User, Role } from '@/lib/types';
+import { auth, db } from '@/lib/firebase';
+import { 
+  onAuthStateChanged, 
+  signInWithEmailAndPassword, 
+  signOut as firebaseSignOut 
+} from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 interface AuthContextType {
   user: User | null;
@@ -18,23 +22,6 @@ interface AuthContextType {
 
 const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
 
-const getAllEmployeesFromStorage = (): Employee[] => {
-    if (typeof window === 'undefined') {
-        return mockEmployees;
-    }
-    try {
-        const storedData = localStorage.getItem(EMPLOYEES_STORAGE_KEY);
-        if (storedData) {
-            const parsedData = JSON.parse(storedData);
-            // Data is stored as Record<string, Employee[]>, so we flatten it
-            return Object.values(parsedData).flat();
-        }
-        return mockEmployees;
-    } catch {
-        return mockEmployees;
-    }
-}
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = React.useState<User | null>(null);
   const [role, setRole] = React.useState<Role>(null);
@@ -42,71 +29,90 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   React.useEffect(() => {
-    try {
-      const storedUser = localStorage.getItem('pl-eval-user');
-      if (storedUser) {
-        const parsedUser: User = JSON.parse(storedUser);
-        setUser(parsedUser);
-        setRole(parsedUser.roles[0] || null);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        // User is signed in, get their profile from Firestore.
+        const userDocRef = doc(db, 'users', firebaseUser.uid);
+        const userDoc = await getDoc(userDocRef);
+
+        if (userDoc.exists()) {
+          const userData = userDoc.data() as User;
+          setUser(userData);
+          // Set role based on the stored roles, prioritizing admin/evaluator
+          const preferredRole = userData.roles.includes('admin') ? 'admin' : userData.roles.includes('evaluator') ? 'evaluator' : 'employee';
+          setRole(preferredRole);
+        } else {
+          // This case might happen if a user exists in Auth but not in Firestore.
+          // For this app, we'll log them out.
+          await firebaseSignOut(auth);
+          setUser(null);
+          setRole(null);
+        }
+      } else {
+        // User is signed out
+        setUser(null);
+        setRole(null);
       }
-    } catch (error) {
-      console.error('Failed to parse user from localStorage', error);
-      localStorage.removeItem('pl-eval-user');
-    } finally {
       setLoading(false);
-    }
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const login = React.useCallback(
     async (id: string, pass: string): Promise<boolean> => {
-      if (id !== pass) return false;
+      try {
+        // Firebase Auth requires an email format, so we append a dummy domain.
+        const email = `${id}@example.com`;
+        const userCredential = await signInWithEmailAndPassword(auth, email, pass);
+        const firebaseUser = userCredential.user;
 
-      const allEmployees = getAllEmployeesFromStorage();
-      const employee = allEmployees.find((e) => e.uniqueId === id);
-      
-      if (!employee) return false;
+        // After successful sign-in, check for/create user profile in Firestore
+        const userDocRef = doc(db, "users", firebaseUser.uid);
+        const userDoc = await getDoc(userDocRef);
 
-      // Determine roles dynamically
-      const roles: Role[] = ['employee'];
-      const evaluatorUniqueIds = new Set(allEmployees.map(e => e.evaluatorId).filter(Boolean));
-      
-      if (evaluatorUniqueIds.has(id)) {
-          roles.push('evaluator');
+        if (!userDoc.exists()) {
+          // If profile doesn't exist, create a basic one.
+          // This would typically be expanded upon with real data.
+          const newUser: User = {
+            id: firebaseUser.uid,
+            employeeId: id,
+            uniqueId: id,
+            name: id, // Placeholder name
+            roles: ['employee'], // Default role
+            avatar: `https://placehold.co/100x100.png?text=${id.charAt(0)}`,
+            title: '팀원', // Placeholder
+            department: '미지정' // Placeholder
+          };
+          await setDoc(userDocRef, newUser);
+          setUser(newUser);
+          setRole('employee');
+        }
+        return true;
+      } catch (error) {
+        console.error("Firebase login failed:", error);
+        return false;
       }
-      // Special case for admin - unique ID '1911042'
-      if (id === '1911042') {
-          if (!roles.includes('admin')) {
-            roles.push('admin');
-          }
-      }
-      
-      const userToLogin: User = {
-        id: `user-from-${employee.id}`,
-        employeeId: employee.id,
-        uniqueId: employee.uniqueId,
-        name: employee.name,
-        roles: roles.reverse(), // admin/evaluator preferred as default
-        avatar: `https://placehold.co/100x100.png?text=${employee.name.charAt(0)}`,
-        title: employee.title,
-        department: employee.department,
-      };
-
-      setUser(userToLogin);
-      setRole(userToLogin.roles[0]);
-      localStorage.setItem('pl-eval-user', JSON.stringify(userToLogin));
-      return true;
     },
     []
   );
 
-  const logout = React.useCallback(() => {
-    setUser(null);
-    setRole(null);
-    localStorage.removeItem('pl-eval-user');
-    router.push('/login');
+  const logout = React.useCallback(async () => {
+    try {
+      await firebaseSignOut(auth);
+      router.push('/login');
+    } catch (error) {
+      console.error("Firebase logout failed:", error);
+    }
   }, [router]);
 
-  const value = { user, role, setRole, login, logout, loading };
+  const handleSetRole = (newRole: Role) => {
+    if (user && user.roles.includes(newRole)) {
+      setRole(newRole);
+    }
+  }
+
+  const value = { user, role, setRole: handleSetRole, login, logout, loading };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

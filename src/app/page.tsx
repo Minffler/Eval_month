@@ -33,6 +33,9 @@ import {
 } from 'lucide-react';
 import { calculateWorkRateDetails } from '@/lib/work-rate-calculator';
 import { useNotifications } from '@/contexts/notification-context';
+import { db } from '@/lib/firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 const adminNavItems: NavItem[] = [
   {
@@ -112,13 +115,6 @@ const employeeNavItems: NavItem[] = [
   },
 ];
 
-const EMPLOYEES_STORAGE_KEY = 'pl_eval_employees';
-const EVALUATIONS_STORAGE_KEY = 'pl_eval_evaluations';
-const GRADING_SCALE_STORAGE_KEY = 'pl_eval_grading_scale';
-const WORK_RATE_INPUTS_STORAGE_KEY = 'pl_eval_work_rate_inputs';
-const ATTENDANCE_TYPES_STORAGE_KEY = 'pl_eval_attendance_types';
-const HOLIDAYS_STORAGE_KEY = 'pl_eval_holidays';
-
 const getInitialDate = () => {
     const today = new Date();
     // A month is available only after it has completely passed.
@@ -131,9 +127,12 @@ const getInitialDate = () => {
     return { year, month };
 };
 
+const dataDocRef = (docId: string) => doc(db, 'app-data', docId);
+
 export default function Home() {
   const { user, role, loading, logout } = useAuth();
   const router = useRouter();
+  const { toast } = useToast();
 
   const {
       notifications,
@@ -146,122 +145,81 @@ export default function Home() {
       markApprovalsAsRead
   } = useNotifications();
 
+  // Main data states, now fetched from Firestore
+  const [employees, setEmployees] = React.useState<Record<string, Employee[]>>({ '2025-7': mockEmployees });
+  const [evaluations, setEvaluations] = React.useState<Record<string, Evaluation[]>>({ '2025-7': initialMockEvaluations });
+  const [gradingScale, setGradingScale] = React.useState<Record<NonNullable<Grade>, GradeInfo>>(initialGradingScale);
+  const [workRateInputs, setWorkRateInputs] = React.useState<Record<string, WorkRateInputs>>({});
+  const [attendanceTypes, setAttendanceTypes] = React.useState<AttendanceType[]>(initialAttendanceTypes);
+  const [holidays, setHolidays] = React.useState<Holiday[]>([]);
+  const [dataLoading, setDataLoading] = React.useState(true);
   
-  const [employees, setEmployees] = React.useState<Record<string, Employee[]>>(() => {
-    if (typeof window === 'undefined') {
-        return { '2025-7': mockEmployees };
-    }
+  // Fetch initial data from Firestore
+  React.useEffect(() => {
+    const fetchData = async () => {
+      setDataLoading(true);
+      try {
+        const [
+          employeesDoc, 
+          evaluationsDoc, 
+          gradingScaleDoc, 
+          workRateInputsDoc, 
+          attendanceTypesDoc, 
+          holidaysDoc
+        ] = await Promise.all([
+          getDoc(dataDocRef('employees')),
+          getDoc(dataDocRef('evaluations')),
+          getDoc(dataDocRef('gradingScale')),
+          getDoc(dataDocRef('workRateInputs')),
+          getDoc(dataDocRef('attendanceTypes')),
+          getDoc(dataDocRef('holidays')),
+        ]);
 
-    let dataFromStorage: Record<string, Employee[]> | null = null;
-    try {
-        const stored = window.localStorage.getItem(EMPLOYEES_STORAGE_KEY);
-        if (stored) {
-            dataFromStorage = JSON.parse(stored);
-        }
-    } catch (error) {
-        console.error('Error reading employees from localStorage', error);
-        localStorage.removeItem(EMPLOYEES_STORAGE_KEY);
-        dataFromStorage = null;
-    }
+        if (employeesDoc.exists()) setEmployees(employeesDoc.data().data); else setEmployees({ '2025-7': mockEmployees });
+        if (evaluationsDoc.exists()) setEvaluations(evaluationsDoc.data().data); else setEvaluations({ '2025-7': initialMockEvaluations });
+        if (gradingScaleDoc.exists()) setGradingScale(gradingScaleDoc.data().data); else setGradingScale(initialGradingScale);
+        if (workRateInputsDoc.exists()) setWorkRateInputs(workRateInputsDoc.data().data); else setWorkRateInputs({});
+        if (attendanceTypesDoc.exists()) setAttendanceTypes(attendanceTypesDoc.data().data); else setAttendanceTypes(initialAttendanceTypes);
+        if (holidaysDoc.exists()) setHolidays(holidaysDoc.data().data); else setHolidays([]);
 
-    let dataToProcess = dataFromStorage || { '2025-7': mockEmployees };
-
-    let wasUpdated = false;
-    const adminEmployeeData = mockEmployees.find(e => e.uniqueId === '1911042');
-
-    if (adminEmployeeData) {
-        Object.keys(dataToProcess).forEach(key => {
-            let adminFound = false;
-            dataToProcess[key] = dataToProcess[key].map(emp => {
-                if (emp.uniqueId === '1911042') {
-                    adminFound = true;
-                    if (emp.department !== adminEmployeeData.department || emp.title !== adminEmployeeData.title) {
-                        wasUpdated = true;
-                        return { ...emp, department: adminEmployeeData.department, title: adminEmployeeData.title, position: adminEmployeeData.position };
-                    }
-                }
-                return emp;
-            });
+      } catch (error) {
+        console.error("Error fetching data from Firestore:", error);
+        toast({
+          variant: 'destructive',
+          title: '데이터 로딩 실패',
+          description: '데이터를 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
         });
-    }
-
-    if (wasUpdated) {
-        try {
-            window.localStorage.setItem(EMPLOYEES_STORAGE_KEY, JSON.stringify(dataToProcess));
-        } catch (error) {
-            console.error('Error saving updated employees to localStorage', error);
-        }
-    }
-
-    return dataToProcess;
-  });
-
-  const [evaluations, setEvaluations] = React.useState<Record<string, Evaluation[]>>(() => {
-    if (typeof window === 'undefined') {
-      return { '2025-7': initialMockEvaluations };
-    }
-    try {
-      const stored = window.localStorage.getItem(EVALUATIONS_STORAGE_KEY);
-      return stored ? JSON.parse(stored) : { '2025-7': initialMockEvaluations };
-    } catch (error) {
-      console.error('Error reading evaluations from localStorage', error);
-      localStorage.removeItem(EVALUATIONS_STORAGE_KEY);
-      return { '2025-7': initialMockEvaluations };
-    }
-  });
-
-  const [gradingScale, setGradingScale] = React.useState<Record<NonNullable<Grade>, GradeInfo>>(() => {
-    if (typeof window === 'undefined') {
-      return initialGradingScale;
-    }
-    try {
-      const stored = window.localStorage.getItem(GRADING_SCALE_STORAGE_KEY);
-      return stored ? JSON.parse(stored) : initialGradingScale;
-    } catch (error) {
-      console.error('Error reading grading scale from localStorage', error);
-      localStorage.removeItem(GRADING_SCALE_STORAGE_KEY);
-      return initialGradingScale;
-    }
-  });
+      } finally {
+        setDataLoading(false);
+      }
+    };
+    fetchData();
+  }, [toast]);
   
+  // Persist data changes to Firestore
+  const saveDataToFirestore = React.useCallback(async (docId: string, data: any) => {
+    try {
+      await setDoc(dataDocRef(docId), { data });
+    } catch (error) {
+      console.error(`Error saving ${docId} to Firestore:`, error);
+      toast({
+        variant: 'destructive',
+        title: '데이터 저장 실패',
+        description: '데이터를 저장하는 중 오류가 발생했습니다.',
+      });
+    }
+  }, [toast]);
+  
+  React.useEffect(() => { saveDataToFirestore('employees', employees); }, [employees, saveDataToFirestore]);
+  React.useEffect(() => { saveDataToFirestore('evaluations', evaluations); }, [evaluations, saveDataToFirestore]);
+  React.useEffect(() => { saveDataToFirestore('gradingScale', gradingScale); }, [gradingScale, saveDataToFirestore]);
+  React.useEffect(() => { saveDataToFirestore('workRateInputs', workRateInputs); }, [workRateInputs, saveDataToFirestore]);
+  React.useEffect(() => { saveDataToFirestore('attendanceTypes', attendanceTypes); }, [attendanceTypes, saveDataToFirestore]);
+  React.useEffect(() => { saveDataToFirestore('holidays', holidays); }, [holidays, saveDataToFirestore]);
+
+
   const [results, setResults] = React.useState<EvaluationResult[]>([]);
   const [selectedDate, setSelectedDate] = React.useState(getInitialDate);
-  
-  const [workRateInputs, setWorkRateInputs] = React.useState<Record<string, WorkRateInputs>>(() => {
-    if (typeof window === 'undefined') return {};
-    try {
-      const stored = window.localStorage.getItem(WORK_RATE_INPUTS_STORAGE_KEY);
-      return stored ? JSON.parse(stored) : {};
-    } catch (error) {
-      console.error('Error reading work rate inputs from localStorage', error);
-      localStorage.removeItem(WORK_RATE_INPUTS_STORAGE_KEY);
-      return {};
-    }
-  });
-
-  const [attendanceTypes, setAttendanceTypes] = React.useState<AttendanceType[]>(() => {
-    if (typeof window === 'undefined') return initialAttendanceTypes;
-    try {
-      const stored = localStorage.getItem(ATTENDANCE_TYPES_STORAGE_KEY);
-      return stored ? JSON.parse(stored) : initialAttendanceTypes;
-    } catch (error) {
-      console.error('Error reading attendance types from localStorage', error);
-      localStorage.removeItem(ATTENDANCE_TYPES_STORAGE_KEY);
-      return initialAttendanceTypes;
-    }
-  });
-
-  const [holidays, setHolidays] = React.useState<Holiday[]>(() => {
-    if (typeof window === 'undefined') return [];
-    try {
-      const stored = localStorage.getItem(HOLIDAYS_STORAGE_KEY);
-      return stored ? JSON.parse(stored) : [];
-    } catch (error) {
-      console.error('Error reading holidays from localStorage', error);
-      localStorage.removeItem(HOLIDAYS_STORAGE_KEY);
-      return [];
-    }
-  });
 
   const workRateDetails = React.useMemo(() => {
       return calculateWorkRateDetails(
@@ -272,7 +230,6 @@ export default function Home() {
           selectedDate.month
       );
   }, [workRateInputs, attendanceTypes, holidays, selectedDate]);
-
 
   // State for admin view
   const [isAdminSidebarOpen, setIsAdminSidebarOpen] = React.useState(true);
@@ -292,56 +249,7 @@ export default function Home() {
       router.push('/login');
     }
   }, [user, loading, router]);
-
-  React.useEffect(() => {
-    try {
-      window.localStorage.setItem(EMPLOYEES_STORAGE_KEY, JSON.stringify(employees));
-    } catch (error) {
-      console.error('Error saving employees to localStorage', error);
-    }
-  }, [employees]);
-
-  React.useEffect(() => {
-    try {
-      window.localStorage.setItem(EVALUATIONS_STORAGE_KEY, JSON.stringify(evaluations));
-    } catch (error) {
-      console.error('Error saving evaluations to localStorage', error);
-    }
-  }, [evaluations]);
-
-  React.useEffect(() => {
-    try {
-      window.localStorage.setItem(GRADING_SCALE_STORAGE_KEY, JSON.stringify(gradingScale));
-    } catch (error) {
-      console.error('Error saving grading scale from localStorage', error);
-    }
-  }, [gradingScale]);
   
-  React.useEffect(() => {
-    try {
-        window.localStorage.setItem(WORK_RATE_INPUTS_STORAGE_KEY, JSON.stringify(workRateInputs));
-    } catch (error) {
-        console.error('Error saving work rate inputs to localStorage', error);
-    }
-  }, [workRateInputs]);
-  
-  React.useEffect(() => {
-    try {
-        window.localStorage.setItem(ATTENDANCE_TYPES_STORAGE_KEY, JSON.stringify(attendanceTypes));
-    } catch (error) {
-        console.error('Error saving attendance types to localStorage', error);
-    }
-  }, [attendanceTypes]);
-  
-  React.useEffect(() => {
-    try {
-        window.localStorage.setItem(HOLIDAYS_STORAGE_KEY, JSON.stringify(holidays));
-    } catch (error) {
-        console.error('Error saving holidays to localStorage', error);
-    }
-  }, [holidays]);
-
-
   const allEmployees = React.useMemo(() => {
     const employeeMap = new Map<string, Employee>();
     Object.values(employees).flat().forEach(employee => {
@@ -831,7 +739,7 @@ export default function Home() {
     />
   );
 
-  if (loading) {
+  if (loading || dataLoading) {
     return (
       <div className="flex flex-col min-h-screen bg-background items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
