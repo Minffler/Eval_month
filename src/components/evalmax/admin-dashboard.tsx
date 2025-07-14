@@ -583,19 +583,19 @@ export default function AdminDashboard({
             return (
                 <div className="text-sm space-y-2">
                     <div className="flex justify-between">
-                        <span className="font-medium text-muted-foreground w-1/3">ID / 이름</span>
-                        <span>{data.uniqueId} / {data.name}</span>
+                        <span className="font-medium text-muted-foreground w-1/3">이름 (ID)</span>
+                        <span>{data.name} ({data.uniqueId})</span>
                     </div>
                     <div className="flex justify-between">
                         <span className="font-medium text-muted-foreground w-1/3">유형</span>
-                        <span>{data.type}</span>
+                        <span>단축근로 ({data.type})</span>
                     </div>
                     <div className="flex justify-between">
-                        <span className="font-medium text-muted-foreground w-1/3">기간</span>
+                        <span className="font-medium text-muted-foreground w-1/3">사용기간</span>
                         <span>{data.startDate} ~ {data.endDate}</span>
                     </div>
                     <div className="flex justify-between">
-                        <span className="font-medium text-muted-foreground w-1/3">시간</span>
+                        <span className="font-medium text-muted-foreground w-1/3">근무시간</span>
                         <span>{data.startTime} ~ {data.endTime}</span>
                     </div>
                 </div>
@@ -606,15 +606,15 @@ export default function AdminDashboard({
             return (
                 <div className="text-sm space-y-2">
                     <div className="flex justify-between">
-                        <span className="font-medium text-muted-foreground w-1/3">ID / 이름</span>
-                        <span>{data.uniqueId} / {data.name}</span>
+                        <span className="font-medium text-muted-foreground w-1/3">이름 (ID)</span>
+                        <span>{data.name} ({data.uniqueId})</span>
                     </div>
                     <div className="flex justify-between">
                         <span className="font-medium text-muted-foreground w-1/3">유형</span>
-                        <span>{data.type}</span>
+                        <span>일근태 ({data.type})</span>
                     </div>
                      <div className="flex justify-between">
-                        <span className="font-medium text-muted-foreground w-1/3">일자</span>
+                        <span className="font-medium text-muted-foreground w-1/3">사용일자</span>
                         <span>{data.date}</span>
                     </div>
                 </div>
@@ -1111,10 +1111,13 @@ export default function AdminDashboard({
         <DialogContent>
             <DialogHeader>
                 <DialogTitle>결재 상세 정보</DialogTitle>
+                <DialogDescription>
+                    요청된 근무 데이터 변경 사항입니다.
+                </DialogDescription>
             </DialogHeader>
             {selectedApproval && (
                 <div className="space-y-4">
-                    <div className='grid grid-cols-1 gap-1 text-sm'>
+                    <div className='grid grid-cols-1 gap-1 text-sm text-left'>
                         <p><strong>요청자:</strong> {selectedApproval.requesterName} ({selectedApproval.requesterId})</p>
                         <p><strong>요청일시:</strong> {formatTimestamp(selectedApproval.date)}</p>
                         <p><strong>요청내용:</strong> {selectedApproval.payload.dataType === 'shortenedWorkHours' ? '단축근로' : '일근태'} 데이터 {selectedApproval.payload.action === 'add' ? '추가' : '변경'}</p>
