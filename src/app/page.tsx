@@ -588,8 +588,8 @@ export default function Home() {
 
     setEvaluations(prev => {
         const newState = { ...prev };
-        for(const key in updatedEvaluationsByMonth) {
-            newState[key] = updatedEvaluationsByMonth[key];
+        for(const key in updatedEmployeesByMonth) {
+            newState[key] = updatedEmployeesByMonth[key];
         }
         return newState;
     });
