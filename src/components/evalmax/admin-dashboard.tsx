@@ -396,7 +396,7 @@ export default function AdminDashboard({
   };
 
   const handleOpenNotificationDialog = () => {
-    setNotificationMessage(`<평가년월> 평가 마감 3일 전입니다. (현재 진행률 <%>`);
+    setNotificationMessage(`_평가년월_ 평가 마감 3일 전입니다. (현재 진행률 _%_)`);
     setIsNotificationDialogOpen(true);
   };
   
@@ -406,9 +406,9 @@ export default function AdminDashboard({
       const stat = evaluatorStats.find(s => s.evaluatorUniqueId === evaluatorId);
       if (stat) {
         const message = notificationMessage
-          .replace(/<평가자이름>/g, stat.evaluatorName)
-          .replace(/<%>%/g, `${stat.rate.toFixed(1)}%`)
-          .replace(/<평가년월>/g, monthYearString);
+          .replace(/_평가자이름_/g, stat.evaluatorName)
+          .replace(/_%_/g, `${stat.rate.toFixed(1)}%`)
+          .replace(/_평가년월_/g, monthYearString);
         
         addNotification({ recipientId: stat.evaluatorUniqueId, message });
       }
@@ -999,7 +999,12 @@ export default function AdminDashboard({
           <DialogHeader>
             <DialogTitle>알림 메시지 설정</DialogTitle>
             <DialogDescription>
-              평가자에게 보낼 메시지를 입력하세요. 플레이스홀더를 사용하여 개인화할 수 있습니다: &lt;평가자이름&gt;, &lt;%&gt;, &lt;평가년월&gt;
+              평가자에게 보낼 메시지를 입력하세요. 아래 플레이스홀더를 사용하면 해당 정보로 자동 변경됩니다.
+              <ul className="list-disc pl-5 mt-2 text-muted-foreground/80">
+                  <li><code className="bg-muted px-1 rounded-sm">_평가자이름_</code> : 평가자 이름 (예: 박평가)</li>
+                  <li><code className="bg-muted px-1 rounded-sm">_%_</code> : 평가 진행률 (예: 85.7%)</li>
+                  <li><code className="bg-muted px-1 rounded-sm">_평가년월_</code> : 현재 설정된 평가 기간 (예: 2025년 7월)</li>
+              </ul>
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -1089,7 +1094,7 @@ export default function AdminDashboard({
                     <Button onClick={() => handleApprovalDecision('approved')}>승인</Button>
                   </>
                 ) : (
-                    <Button variant="outline" onClick={() => setApprovalDetailModalOpen(false)}>닫기</Button>
+                    <Button variant="outline" className="w-full" onClick={() => setApprovalDetailModalOpen(false)}>닫기</Button>
                 )}
             </DialogFooter>
         </DialogContent>
