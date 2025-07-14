@@ -537,20 +537,20 @@ export default function AdminDashboard({
             return;
         }
 
-        const newApprovalState: Partial<Approval> = {
-            rejectionReason,
-        };
+        let newStatus = selectedApproval.status;
+        let newStatusHR = selectedApproval.statusHR;
 
         if (decision === 'approved') {
-            newApprovalState.statusHR = '최종승인';
-        } else {
-            newApprovalState.statusHR = '반려';
+            newStatusHR = '최종승인';
+        } else { // rejected
+            newStatusHR = '반려';
         }
         
         onApprovalAction({ 
             ...selectedApproval,
-            ...newApprovalState,
-            status: decision === 'rejected' ? selectedApproval.status : '현업승인'
+            rejectionReason,
+            status: newStatus,
+            statusHR: newStatusHR,
         });
         
         toast({ title: '처리 완료', description: `결재 요청이 ${decision === 'approved' ? '승인' : '반려'}되었습니다.` });
@@ -589,27 +589,29 @@ export default function AdminDashboard({
         const { payload } = approval;
         const data = payload.data;
 
-        if (payload.dataType === 'shortenedWorkHours') {
-            return (
-                <div className="text-sm space-y-2">
-                    <p><strong>이름 (ID):</strong> {data.name} ({data.uniqueId})</p>
-                    <p><strong>유형:</strong> 단축근로 ({data.type})</p>
-                    <p><strong>사용기간:</strong> {data.startDate} ~ {data.endDate}</p>
-                    <p><strong>근무시간:</strong> {data.startTime} ~ {data.endTime}</p>
-                </div>
-            );
-        }
+        const commonFields = [
+            { label: '이름 (ID)', value: `${data.name} (${data.uniqueId})` },
+        ];
 
-        if (payload.dataType === 'dailyAttendance') {
-            return (
-                <div className="text-sm space-y-2">
-                    <p><strong>이름 (ID):</strong> {data.name} ({data.uniqueId})</p>
-                    <p><strong>유형:</strong> 일근태 ({data.type})</p>
-                    <p><strong>사용일자:</strong> {data.date}</p>
-                </div>
-            );
-        }
-        return null;
+        const typeSpecificFields = payload.dataType === 'shortenedWorkHours' ? [
+            { label: '유형', value: `단축근로 (${data.type})` },
+            { label: '사용기간', value: `${data.startDate} ~ ${data.endDate}` },
+            { label: '근무시간', value: `${data.startTime} ~ ${data.endTime}` },
+        ] : [
+            { label: '유형', value: `일근태 (${data.type})` },
+            { label: '사용일자', value: data.date },
+        ];
+
+        return (
+            <div className="text-sm space-y-2">
+                {[...commonFields, ...typeSpecificFields].map(field => (
+                     <div key={field.label} className="grid grid-cols-4 items-center">
+                        <span className="font-semibold col-span-1">{field.label}</span>
+                        <span className="col-span-3">{field.value}</span>
+                    </div>
+                ))}
+            </div>
+        );
     }
   
   const renderContent = () => {
@@ -978,8 +980,7 @@ export default function AdminDashboard({
                     <Table>
                       <TableHeader><TableRow>
                         <TableHead className="text-center">요청일</TableHead>
-                        <TableHead className="text-center">대상자ID</TableHead>
-                        <TableHead className="text-center">대상자</TableHead>
+                        <TableHead className="text-center">대상자 (ID)</TableHead>
                         <TableHead className="text-center">현업 결재자</TableHead>
                         <TableHead className="text-center">요청내용</TableHead>
                         <TableHead className="text-center">현업 결재</TableHead>
@@ -993,8 +994,7 @@ export default function AdminDashboard({
                           return (
                           <TableRow key={approval.id}>
                             <TableCell className="text-center text-muted-foreground">{formatTimestamp(approval.date)}</TableCell>
-                            <TableCell className="text-center">{approval.payload.data.uniqueId}</TableCell>
-                            <TableCell className="text-center">{approval.payload.data.name}</TableCell>
+                            <TableCell className="text-center">{approval.payload.data.name} ({approval.payload.data.uniqueId})</TableCell>
                             <TableCell className="text-center">{teamApprover ? `${teamApprover.name} (${teamApprover.uniqueId})` : '미지정'}</TableCell>
                             <TableCell className="text-center">
                                <Button variant="link" className="underline text-foreground" onClick={() => handleApprovalModal(approval)}>
@@ -1100,13 +1100,10 @@ export default function AdminDashboard({
         <DialogContent className="sm:max-w-xl">
             <DialogHeader>
                 <DialogTitle>결재 상세 정보</DialogTitle>
-                <DialogDescription>
-                    요청된 근무 데이터 변경 사항입니다.
-                </DialogDescription>
             </DialogHeader>
             {selectedApproval && (
                 <div className="space-y-4">
-                    <div className='grid grid-cols-1 gap-1 text-sm'>
+                    <div className='space-y-1 text-sm'>
                         <p><strong>요청자:</strong> {selectedApproval.requesterName} ({selectedApproval.requesterId})</p>
                         <p><strong>요청일시:</strong> {formatTimestamp(selectedApproval.date)}</p>
                         <p><strong>요청내용:</strong> {selectedApproval.payload.dataType === 'shortenedWorkHours' ? '단축근로' : '일근태'} 데이터 {selectedApproval.payload.action === 'add' ? '추가' : '변경'}</p>
@@ -1117,13 +1114,13 @@ export default function AdminDashboard({
                     </div>
                     {selectedApproval.statusHR === '반려' && selectedApproval.rejectionReason && (
                         <div>
-                            <Label htmlFor="rejectionReason">인사부 반려 사유</Label>
+                            <Label htmlFor="rejectionReason" className="text-destructive">인사부 반려 사유</Label>
                             <p className="text-sm text-destructive p-2 border border-destructive rounded-md">{selectedApproval.rejectionReason}</p>
                         </div>
                     )}
                     {selectedApproval.status === '반려' && selectedApproval.rejectionReason && (
                         <div>
-                            <Label htmlFor="rejectionReason">현업 반려 사유</Label>
+                            <Label htmlFor="rejectionReason" className="text-destructive">현업 반려 사유</Label>
                             <p className="text-sm text-destructive p-2 border border-destructive rounded-md">{selectedApproval.rejectionReason}</p>
                         </div>
                     )}

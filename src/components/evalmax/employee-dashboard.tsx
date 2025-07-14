@@ -388,6 +388,11 @@ const formatTimestamp = (isoString: string | null) => {
     return format(new Date(isoString), 'yyyy.MM.dd HH:mm');
 };
 
+const formatTimestampShort = (isoString: string | null) => {
+    if (!isoString) return '-';
+    return format(new Date(isoString), 'MM.dd HH:mm');
+};
+
 
 export default function EmployeeDashboard({ 
     employeeResults, 
@@ -457,36 +462,39 @@ export default function EmployeeDashboard({
     if (!selectedApproval) return null;
     const { payload } = selectedApproval;
 
+    const data = formData as any;
+
     if (payload.dataType === 'shortenedWorkHours') {
-        const data = formData as any;
         return (
-            <div className="space-y-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                    <Label className="text-right">이름 (ID)</Label>
-                    <div className="col-span-3 font-medium">{data.name} ({data.uniqueId})</div>
+            <div className="text-sm space-y-4">
+                 <div className="grid grid-cols-4 items-center">
+                    <span className="font-semibold col-span-1">이름 (ID)</span>
+                    <span className="col-span-3">{data.name} ({data.uniqueId})</span>
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="type" className="text-right">유형</Label>
-                    <Select value={data.type || ''} onValueChange={(value) => handleFormChange('type', value)} disabled={!isRejected}>
-                        <SelectTrigger className="col-span-3">
-                            <SelectValue placeholder="구분 선택" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="임신">단축근로 (임신)</SelectItem>
-                            <SelectItem value="육아/돌봄">단축근로 (육아/돌봄)</SelectItem>
-                        </SelectContent>
-                    </Select>
+                 <div className="grid grid-cols-4 items-center">
+                    <Label htmlFor="type" className="font-semibold col-span-1">유형</Label>
+                    <div className="col-span-3">
+                        <Select value={data.type || ''} onValueChange={(value) => handleFormChange('type', value)} disabled={!isRejected}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="구분 선택" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="임신">단축근로 (임신)</SelectItem>
+                                <SelectItem value="육아/돌봄">단축근로 (육아/돌봄)</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </div>
-                <div className="grid grid-cols-4 items-start gap-4">
-                    <Label className="text-right pt-2">사용기간</Label>
+                 <div className="grid grid-cols-4 items-start">
+                    <Label className="font-semibold col-span-1 pt-2">사용기간</Label>
                     <div className="col-span-3 flex items-center gap-2">
                         <DatePickerWithInput value={data.startDate || ''} onChange={(date) => handleFormChange('startDate', date)} disabled={!isRejected}/>
                         <span>~</span>
                         <DatePickerWithInput value={data.endDate || ''} onChange={(date) => handleFormChange('endDate', date)} disabled={!isRejected}/>
                     </div>
                 </div>
-                 <div className="grid grid-cols-4 items-start gap-4">
-                    <Label className="text-right pt-2">근무시간</Label>
+                 <div className="grid grid-cols-4 items-start">
+                    <Label className="font-semibold col-span-1 pt-2">근무시간</Label>
                     <div className="col-span-3 flex items-center gap-2">
                          <TimePicker value={data.startTime || ''} onChange={(time) => handleFormChange('startTime', time)} disabled={!isRejected}/>
                           <span>~</span>
@@ -498,15 +506,14 @@ export default function EmployeeDashboard({
     }
 
     if (payload.dataType === 'dailyAttendance') {
-        const data = formData as any;
         return (
-            <div className="space-y-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                    <Label className="text-right">이름 (ID)</Label>
-                    <div className="col-span-3 font-medium">{data.name} ({data.uniqueId})</div>
+             <div className="text-sm space-y-4">
+                <div className="grid grid-cols-4 items-center">
+                    <span className="font-semibold col-span-1">이름 (ID)</span>
+                    <span className="col-span-3">{data.name} ({data.uniqueId})</span>
                 </div>
-                <div className="grid grid-cols-4 items-start gap-4">
-                  <Label htmlFor="type" className="text-right pt-2">유형</Label>
+                <div className="grid grid-cols-4 items-center">
+                  <Label htmlFor="type" className="font-semibold col-span-1">유형</Label>
                   <div className="col-span-3">
                     <Select value={data.type || ''} onValueChange={(value) => handleFormChange('type', value)} disabled={!isRejected}>
                         <SelectTrigger>
@@ -520,8 +527,8 @@ export default function EmployeeDashboard({
                     </Select>
                   </div>
                 </div>
-                <div className="grid grid-cols-4 items-start gap-4">
-                  <Label className="text-right pt-2">사용일자</Label>
+                <div className="grid grid-cols-4 items-start">
+                  <Label className="font-semibold col-span-1 pt-2">사용일자</Label>
                   <div className="col-span-3">
                     <DatePickerWithInput value={data.date || ''} onChange={(date) => handleFormChange('date', date)} disabled={!isRejected} />
                   </div>
@@ -543,7 +550,7 @@ export default function EmployeeDashboard({
       case 'my-daily-attendance':
         return <WorkRateDetails type="dailyAttendance" data={myWorkRateDetails.dailyAttendanceDetails} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} viewAs={role} onDataChange={() => {}} />;
       case 'approvals': {
-            const mySentApprovals = approvals.filter(a => a.requesterId === user.uniqueId);
+            const mySentApprovals = approvals.filter(a => a.requesterId === user.uniqueId).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
             return (
               <Card>
                 <CardHeader>
@@ -556,11 +563,13 @@ export default function EmployeeDashboard({
                     <Table>
                       <TableHeader><TableRow>
                         <TableHead className="text-center">요청일</TableHead>
+                        <TableHead className="text-center">대상자 (ID)</TableHead>
                         <TableHead className="text-center">현업 결재자</TableHead>
                         <TableHead className="text-center">요청내용</TableHead>
                         <TableHead className="text-center">현업 결재</TableHead>
                         <TableHead className="text-center">인사부 결재</TableHead>
-                        <TableHead className="text-center">반려 사유</TableHead>
+                        <TableHead className="text-center">현업 승인일</TableHead>
+                        <TableHead className="text-center">최종 승인일</TableHead>
                       </TableRow></TableHeader>
                       <TableBody>
                         {mySentApprovals.map(approval => {
@@ -568,6 +577,7 @@ export default function EmployeeDashboard({
                           return (
                             <TableRow key={approval.id}>
                               <TableCell className="text-center text-muted-foreground">{formatTimestamp(approval.date)}</TableCell>
+                              <TableCell className="text-center">{approval.payload.data.name} ({approval.payload.data.uniqueId})</TableCell>
                               <TableCell className="text-center">{approver ? `${approver.name} (${approver.uniqueId})` : '관리자'}</TableCell>
                               <TableCell className="text-center">
                                 <Button variant="link" className="underline text-foreground" onClick={() => handleApprovalModalOpen(approval)}>
@@ -576,7 +586,8 @@ export default function EmployeeDashboard({
                               </TableCell>
                               <TableCell className="text-center"><StatusBadge status={approval.status} /></TableCell>
                               <TableCell className="text-center"><StatusBadge status={approval.statusHR} /></TableCell>
-                              <TableCell className="text-center text-destructive">{approval.rejectionReason}</TableCell>
+                              <TableCell className="text-center text-muted-foreground">{formatTimestampShort(approval.approvedAtTeam)}</TableCell>
+                              <TableCell className="text-center text-muted-foreground">{formatTimestampShort(approval.approvedAtHR)}</TableCell>
                             </TableRow>
                           )
                         })}
@@ -613,7 +624,7 @@ export default function EmployeeDashboard({
             </DialogHeader>
             {selectedApproval && (
                 <div className="space-y-4">
-                    <div className='grid grid-cols-1 gap-1 text-sm'>
+                    <div className='space-y-1 text-sm'>
                         <p><strong>요청자:</strong> {selectedApproval.requesterName} ({selectedApproval.requesterId})</p>
                         <p><strong>요청일시:</strong> {formatTimestamp(selectedApproval.date)}</p>
                         <p><strong>요청내용:</strong> {selectedApproval.payload.dataType === 'shortenedWorkHours' ? '단축근로' : '일근태'} 데이터 {selectedApproval.payload.action === 'add' ? '추가' : '변경'}</p>
