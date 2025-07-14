@@ -23,38 +23,61 @@ interface NotificationContextType {
 
 const NotificationContext = React.createContext<NotificationContextType | undefined>(undefined);
 
-const getAllItems = <T,>(key: string): T[] => {
+// Helper to remove duplicates from an array of objects based on a key
+const uniqueById = <T extends { id: string }>(items: T[]): T[] => {
+    const seen = new Set<string>();
+    return items.filter(item => {
+        const duplicate = seen.has(item.id);
+        seen.add(item.id);
+        return !duplicate;
+    });
+};
+
+const getAllItems = <T extends { id: string }>(key: string): T[] => {
     if (typeof window === 'undefined') return [];
     try {
         const stored = localStorage.getItem(key);
-        return stored ? JSON.parse(stored) : [];
+        const items = stored ? JSON.parse(stored) : [];
+        return uniqueById(items); // Ensure data from storage is unique
     } catch (error) {
         console.error(`Error reading ${key} from localStorage`, error);
         return [];
     }
 };
 
-const saveAllItems = <T,>(key: string, items: T[]) => {
+const saveAllItems = <T extends { id: string }>(key: string, items: T[]) => {
     if (typeof window === 'undefined') return;
     try {
-        localStorage.setItem(key, JSON.stringify(items));
+        // Ensure we are saving a unique list
+        localStorage.setItem(key, JSON.stringify(uniqueById(items)));
     } catch (error) {
         console.error(`Error saving ${key} to localStorage`, error);
     }
 };
 
+
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
     const { user } = useAuth();
-    const [allNotifications, setAllNotifications] = React.useState<AppNotification[]>(() => getAllItems(NOTIFICATIONS_STORAGE_KEY));
-    const [allApprovals, setAllApprovals] = React.useState<Approval[]>(() => getAllItems(APPROVALS_STORAGE_KEY));
+    const [allNotifications, setAllNotifications] = React.useState<AppNotification[]>(() => getAllItems<AppNotification>(NOTIFICATIONS_STORAGE_KEY));
+    const [allApprovals, setAllApprovals] = React.useState<Approval[]>(() => getAllItems<Approval>(APPROVALS_STORAGE_KEY));
 
     React.useEffect(() => {
         const handleStorageChange = (event: StorageEvent) => {
-            if (event.key === NOTIFICATIONS_STORAGE_KEY) {
-                setAllNotifications(getAllItems(NOTIFICATIONS_STORAGE_KEY));
+            if (event.key === NOTIFICATIONS_STORAGE_KEY && event.newValue) {
+                try {
+                    const newItems = JSON.parse(event.newValue);
+                    setAllNotifications(uniqueById(newItems));
+                } catch (e) {
+                    console.error('Error parsing notifications from storage event', e);
+                }
             }
-            if (event.key === APPROVALS_STORAGE_KEY) {
-                setAllApprovals(getAllItems(APPROVALS_STORAGE_KEY));
+            if (event.key === APPROVALS_STORAGE_KEY && event.newValue) {
+                 try {
+                    const newItems = JSON.parse(event.newValue);
+                    setAllApprovals(uniqueById(newItems));
+                } catch (e) {
+                    console.error('Error parsing approvals from storage event', e);
+                }
             }
         };
 
@@ -66,43 +89,49 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }, []);
 
     const addNotification = React.useCallback((notificationData: Omit<AppNotification, 'id' | 'date' | 'isRead'>) => {
+        const newNotification: AppNotification = {
+            ...notificationData,
+            id: `notif-${Date.now()}-${Math.random()}`,
+            date: new Date().toISOString(),
+            isRead: false,
+        };
+        const threeMonthsAgo = subMonths(new Date(), 3);
+        
         setAllNotifications(prev => {
-            const newNotification: AppNotification = {
-                ...notificationData,
-                id: `notif-${Date.now()}-${Math.random()}`,
-                date: new Date().toISOString(),
-                isRead: false,
-            };
-            const threeMonthsAgo = subMonths(new Date(), 3);
             const updated = [newNotification, ...prev].filter(n => new Date(n.date) >= threeMonthsAgo);
-            saveAllItems(NOTIFICATIONS_STORAGE_KEY, updated);
-            return updated;
+            const uniqueUpdated = uniqueById(updated);
+            saveAllItems(NOTIFICATIONS_STORAGE_KEY, uniqueUpdated);
+            return uniqueUpdated;
         });
     }, []);
     
     const addApproval = React.useCallback((approvalData: Omit<Approval, 'id' | 'date' | 'isRead' | 'status' | 'statusHR' | 'approvedAtTeam' | 'approvedAtHR' | 'rejectionReason'>) => {
+        const newApproval: Approval = {
+            ...approvalData,
+            id: `appr-${Date.now()}-${Math.random()}`,
+            date: new Date().toISOString(),
+            isRead: false,
+            status: '결재중',
+            statusHR: '결재중',
+            approvedAtTeam: null,
+            approvedAtHR: null,
+            rejectionReason: '',
+        };
+        
         setAllApprovals(prev => {
-             const newApproval: Approval = {
-                ...approvalData,
-                id: `appr-${Date.now()}-${Math.random()}`,
-                date: new Date().toISOString(),
-                isRead: false,
-                status: '결재중',
-                statusHR: '결재중',
-                approvedAtTeam: null,
-                approvedAtHR: null,
-                rejectionReason: '',
-            };
             const updated = [newApproval, ...prev];
-            saveAllItems(APPROVALS_STORAGE_KEY, updated);
-            return updated;
+            const uniqueUpdated = uniqueById(updated);
+            saveAllItems(APPROVALS_STORAGE_KEY, uniqueUpdated);
+            return uniqueUpdated;
         });
     }, []);
     
     const updateApprovalStatus = React.useCallback((approvalId: string, newStatus: ApprovalStatus, reason: string = '') => {
         setAllApprovals(prev => {
+            let changed = false;
             const updated = prev.map(a => {
                 if (a.id === approvalId) {
+                    changed = true;
                     const now = new Date().toISOString();
                     const updatedApproval = { ...a };
 
@@ -128,7 +157,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                 }
                 return a;
             });
-            saveAllItems(APPROVALS_STORAGE_KEY, updated);
+            if (changed) {
+                saveAllItems(APPROVALS_STORAGE_KEY, updated);
+            }
             return updated;
         });
     }, []);
@@ -138,12 +169,16 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         if (!user) return;
         setTimeout(() => {
             setAllNotifications(prev => {
-                const updated = prev.map(n =>
-                    (n.recipientId === user.uniqueId || n.recipientId === 'all') && !n.isRead
-                        ? { ...n, isRead: true }
-                        : n
-                );
-                if (JSON.stringify(updated) !== JSON.stringify(prev)) {
+                let hasChanged = false;
+                const updated = prev.map(n => {
+                    if ((n.recipientId === user.uniqueId || n.recipientId === 'all') && !n.isRead) {
+                        hasChanged = true;
+                        return { ...n, isRead: true };
+                    }
+                    return n;
+                });
+                
+                if (hasChanged) {
                     saveAllItems(NOTIFICATIONS_STORAGE_KEY, updated);
                 }
                 return updated;
@@ -155,7 +190,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         if (!user) return;
         setTimeout(() => {
             setAllApprovals(prev => {
-                 let hasChanged = false;
+                let hasChanged = false;
                 const updated = prev.map(a => {
                     let shouldMarkAsRead = false;
                     // 현업 결재자가 자신의 턴일 때
