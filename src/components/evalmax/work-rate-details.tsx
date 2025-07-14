@@ -158,7 +158,7 @@ const DatePickerWithInput = ({ value, onChange }: { value: string, onChange: (da
                 onChange={handleInputChange}
                 onBlur={handleInputBlur}
                 placeholder="YYYY-MM-DD"
-                className="w-[150px]"
+                className="w-full"
             />
             <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
                 <PopoverTrigger asChild>
@@ -198,11 +198,11 @@ const TimePicker = ({ value, onChange }: { value: string, onChange: (time: strin
     return (
         <div className="flex gap-2 items-center">
             <Select value={hour} onValueChange={(val) => handleTimeChange('hour', val)}>
-                <SelectTrigger className="w-[100px]"><SelectValue placeholder="시" /></SelectTrigger>
+                <SelectTrigger className="w-full"><SelectValue placeholder="시" /></SelectTrigger>
                 <SelectContent>{hours.map(h => <SelectItem key={h} value={h}>{h}시</SelectItem>)}</SelectContent>
             </Select>
             <Select value={minute} onValueChange={(val) => handleTimeChange('minute', val)}>
-                <SelectTrigger className="w-[100px]"><SelectValue placeholder="분" /></SelectTrigger>
+                <SelectTrigger className="w-full"><SelectValue placeholder="분" /></SelectTrigger>
                 <SelectContent>{minutes.map(m => <SelectItem key={m} value={m}>{m}분</SelectItem>)}</SelectContent>
             </Select>
         </div>
