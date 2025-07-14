@@ -142,12 +142,15 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             // For normal status updates
             const updated = prev.map(a => {
                 if (a.id === approval.id) {
-                    const updatedApproval = { ...a, ...approval };
+                    const updatedApproval = { ...a, ...approval, payload: { ...a.payload, ...approval.payload } };
                     if (approval.status === '현업승인' && a.status !== '현업승인') {
                         updatedApproval.approvedAtTeam = now;
                     }
                     if (approval.statusHR === '최종승인' && a.statusHR !== '최종승인') {
                         updatedApproval.approvedAtHR = now;
+                    }
+                    if (approval.statusHR === '반려' && a.statusHR !== '반려') {
+                        updatedApproval.statusHR = '반려';
                     }
                     return updatedApproval;
                 }

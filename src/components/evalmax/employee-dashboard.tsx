@@ -6,7 +6,7 @@ import type { EvaluationResult, Grade, GradeInfo, Employee, EmployeeView, Attend
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronUp, Inbox } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronUp, Inbox, ChevronsUpDown, CalendarIcon } from 'lucide-react';
 import { GradeHistogram } from './grade-histogram';
 import { Button } from '@/components/ui/button';
 import {
@@ -19,7 +19,7 @@ import WorkRateDetails from './work-rate-details';
 import type { WorkRateDetailsResult } from '@/lib/work-rate-calculator';
 import EmployeeNotifications from './employee-dashboard-notifications';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, isValid, parse } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import {
   Dialog,
@@ -32,6 +32,121 @@ import {
 import { Label } from '../ui/label';
 import { Separator } from '../ui/separator';
 import { useToast } from '@/hooks/use-toast';
+import { Input } from '../ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { Calendar } from '../ui/calendar';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../ui/command';
+
+
+const DatePickerWithInput = ({ value, onChange, disabled }: { value: string, onChange: (date?: string) => void, disabled?: boolean }) => {
+    const [date, setDate] = React.useState<Date | undefined>(value ? parse(value, 'yyyy-MM-dd', new Date()) : undefined);
+    const [inputValue, setInputValue] = React.useState<string>(value || '');
+    const [popoverOpen, setPopoverOpen] = React.useState(false);
+
+    React.useEffect(() => {
+        if (value && isValid(parse(value, 'yyyy-MM-dd', new Date()))) {
+            setDate(parse(value, 'yyyy-MM-dd', new Date()));
+            setInputValue(value);
+        } else if (!value) {
+            setDate(undefined);
+            setInputValue('');
+        }
+    }, [value]);
+
+    const handleDateSelect = (selectedDate: Date | undefined) => {
+        setDate(selectedDate);
+        if (selectedDate) {
+            const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+            setInputValue(formattedDate);
+            onChange(formattedDate);
+        } else {
+            setInputValue('');
+            onChange(undefined);
+        }
+        setPopoverOpen(false);
+    };
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        let text = e.target.value.replace(/[^0-9]/g, '');
+        if (text.length > 4) text = `${text.slice(0, 4)}-${text.slice(4)}`;
+        if (text.length > 7) text = `${text.slice(0, 7)}-${text.slice(7)}`;
+        setInputValue(text.slice(0, 10));
+    };
+
+    const handleInputBlur = () => {
+        const parsedDate = parse(inputValue, 'yyyy-MM-dd', new Date());
+        if (isValid(parsedDate)) {
+            const formattedDate = format(parsedDate, 'yyyy-MM-dd');
+            if (inputValue !== formattedDate) {
+                setInputValue(formattedDate);
+            }
+            setDate(parsedDate);
+            onChange(formattedDate);
+        } else if (inputValue === '') {
+            setDate(undefined);
+            onChange(undefined);
+        }
+    };
+
+    return (
+        <div className="flex items-center gap-2">
+            <Input
+                type="text"
+                value={inputValue}
+                onChange={handleInputChange}
+                onBlur={handleInputBlur}
+                placeholder="YYYY-MM-DD"
+                className="w-full"
+                disabled={disabled}
+            />
+            <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+                <PopoverTrigger asChild>
+                    <Button variant="outline" size="icon" disabled={disabled}>
+                        <CalendarIcon className="h-4 w-4" />
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                    <Calendar
+                        mode="single"
+                        selected={date}
+                        onSelect={handleDateSelect}
+                        initialFocus
+                    />
+                </PopoverContent>
+            </Popover>
+        </div>
+    );
+};
+
+const TimePicker = ({ value, onChange, disabled }: { value: string, onChange: (time: string) => void, disabled?: boolean }) => {
+    const [hour, minute] = React.useMemo(() => {
+        if (!value || !value.includes(':')) return ['', ''];
+        const parts = value.split(':');
+        return [parts[0] || '', parts[1] || ''];
+    }, [value]);
+
+    const handleTimeChange = (part: 'hour' | 'minute', partValue: string) => {
+        const newHour = part === 'hour' ? partValue : hour;
+        const newMinute = part === 'minute' ? partValue : minute;
+        onChange(`${newHour}:${newMinute}`);
+    };
+    
+    const hours = Array.from({ length: 14 }, (_, i) => String(i + 7).padStart(2, '0')); // 07 to 20
+    const minutes = ['00', '15', '30', '45'];
+
+    return (
+        <div className="flex gap-2 items-center">
+            <Select value={hour} onValueChange={(val) => handleTimeChange('hour', val)} disabled={disabled}>
+                <SelectTrigger className="w-full"><SelectValue placeholder="시" /></SelectTrigger>
+                <SelectContent>{hours.map(h => <SelectItem key={h} value={h}>{h}시</SelectItem>)}</SelectContent>
+            </Select>
+            <Select value={minute} onValueChange={(val) => handleTimeChange('minute', val)} disabled={disabled}>
+                <SelectTrigger className="w-full"><SelectValue placeholder="분" /></SelectTrigger>
+                <SelectContent>{minutes.map(m => <SelectItem key={m} value={m}>{m}분</SelectItem>)}</SelectContent>
+            </Select>
+        </div>
+    )
+}
 
 interface EmployeeDashboardProps {
   employeeResults: EvaluationResult[];
@@ -331,48 +446,85 @@ export default function EmployeeDashboard({
     toast({ title: '재상신 완료', description: '결재 요청이 다시 제출되었습니다.' });
     setIsApprovalModalOpen(false);
   }
+  
+  const handleFormChange = (field: string, value: any) => {
+    setFormData((prev: any) => ({ ...prev, [field]: value }));
+  };
 
-  const renderApprovalData = (approval: Approval) => {
-    const { payload } = approval;
-    const data = payload.data;
+  const isRejected = selectedApproval?.status === '반려' || selectedApproval?.statusHR === '반려';
+
+  const renderApprovalData = () => {
+    if (!selectedApproval) return null;
+    const { payload } = selectedApproval;
 
     if (payload.dataType === 'shortenedWorkHours') {
+        const data = formData as any;
         return (
-            <div className="text-sm space-y-2">
-                <div className="flex">
-                    <span className="font-medium text-muted-foreground w-1/4">이름 (ID)</span>
-                    <span className="w-3/4">{data.name} ({data.uniqueId})</span>
+            <div className="space-y-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                    <Label className="text-right">이름 (ID)</Label>
+                    <div className="col-span-3 font-medium">{data.name} ({data.uniqueId})</div>
                 </div>
-                <div className="flex">
-                    <span className="font-medium text-muted-foreground w-1/4">유형</span>
-                    <span className="w-3/4">단축근로 ({data.type})</span>
+                <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="type" className="text-right">유형</Label>
+                    <Select value={data.type || ''} onValueChange={(value) => handleFormChange('type', value)} disabled={!isRejected}>
+                        <SelectTrigger className="col-span-3">
+                            <SelectValue placeholder="구분 선택" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="임신">단축근로 (임신)</SelectItem>
+                            <SelectItem value="육아/돌봄">단축근로 (육아/돌봄)</SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
-                <div className="flex">
-                    <span className="font-medium text-muted-foreground w-1/4">사용기간</span>
-                    <span className="w-3/4">{data.startDate} ~ {data.endDate}</span>
+                <div className="grid grid-cols-4 items-start gap-4">
+                    <Label className="text-right pt-2">사용기간</Label>
+                    <div className="col-span-3 flex items-center gap-2">
+                        <DatePickerWithInput value={data.startDate || ''} onChange={(date) => handleFormChange('startDate', date)} disabled={!isRejected}/>
+                        <span>~</span>
+                        <DatePickerWithInput value={data.endDate || ''} onChange={(date) => handleFormChange('endDate', date)} disabled={!isRejected}/>
+                    </div>
                 </div>
-                <div className="flex">
-                    <span className="font-medium text-muted-foreground w-1/4">근무시간</span>
-                    <span className="w-3/4">{data.startTime} ~ {data.endTime}</span>
+                 <div className="grid grid-cols-4 items-start gap-4">
+                    <Label className="text-right pt-2">근무시간</Label>
+                    <div className="col-span-3 flex items-center gap-2">
+                         <TimePicker value={data.startTime || ''} onChange={(time) => handleFormChange('startTime', time)} disabled={!isRejected}/>
+                          <span>~</span>
+                         <TimePicker value={data.endTime || ''} onChange={(time) => handleFormChange('endTime', time)} disabled={!isRejected}/>
+                    </div>
                 </div>
             </div>
         );
     }
 
     if (payload.dataType === 'dailyAttendance') {
+        const data = formData as any;
         return (
-            <div className="text-sm space-y-2">
-                <div className="flex">
-                    <span className="font-medium text-muted-foreground w-1/4">이름 (ID)</span>
-                    <span className="w-3/4">{data.name} ({data.uniqueId})</span>
+            <div className="space-y-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                    <Label className="text-right">이름 (ID)</Label>
+                    <div className="col-span-3 font-medium">{data.name} ({data.uniqueId})</div>
                 </div>
-                <div className="flex">
-                    <span className="font-medium text-muted-foreground w-1/4">유형</span>
-                    <span className="w-3/4">일근태 ({data.type})</span>
+                <div className="grid grid-cols-4 items-start gap-4">
+                  <Label htmlFor="type" className="text-right pt-2">유형</Label>
+                  <div className="col-span-3">
+                    <Select value={data.type || ''} onValueChange={(value) => handleFormChange('type', value)} disabled={!isRejected}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="근태 종류 선택" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {attendanceTypes.map(type => (
+                                <SelectItem key={type.id} value={type.name}>일근태 ({type.name})</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                <div className="flex">
-                    <span className="font-medium text-muted-foreground w-1/4">사용일자</span>
-                    <span className="w-3/4">{data.date}</span>
+                <div className="grid grid-cols-4 items-start gap-4">
+                  <Label className="text-right pt-2">사용일자</Label>
+                  <div className="col-span-3">
+                    <DatePickerWithInput value={data.date || ''} onChange={(date) => handleFormChange('date', date)} disabled={!isRejected} />
+                  </div>
                 </div>
             </div>
         );
@@ -451,13 +603,11 @@ export default function EmployeeDashboard({
     }
   }
 
-  const isRejected = selectedApproval?.status === '반려' || selectedApproval?.statusHR === '반려';
-
   return (
     <div className="p-4 md:p-6 lg:p-8">
       {renderContent()}
       <Dialog open={isApprovalModalOpen} onOpenChange={setIsApprovalModalOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-lg">
             <DialogHeader>
                 <DialogTitle>결재 상세 정보</DialogTitle>
             </DialogHeader>
@@ -470,7 +620,7 @@ export default function EmployeeDashboard({
                     </div>
                     <Separator/>
                     <div className="rounded-md border bg-muted p-4">
-                        {renderApprovalData(selectedApproval)}
+                        {renderApprovalData()}
                     </div>
                     {isRejected && selectedApproval.rejectionReason && (
                         <div>
