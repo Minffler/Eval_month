@@ -9,6 +9,9 @@ export type User = {
   avatar: string;
   title: string;
   department: string;
+  evaluatorId: string; // 평가자 ID (고유사번)
+  password?: string;
+  company?: string;
 };
 
 export type Company = 'OK' | 'OC' | 'OCI' | 'OFI' | 'EX' | 'OKDS' | 'OKH' | 'OKIP' | 'OKV' | 'OT';

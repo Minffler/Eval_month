@@ -210,21 +210,22 @@ export default function Home() {
   
   const role = user ? allUsers.find(u => u.id === user.id)?.roles.find(r => r === (localStorage.getItem('role') || 'employee')) : 'employee';
   
-  const handleUserAdd = (newEmployee: Employee, roles: Role[]) => {
-      if (allUsers.some(u => u.uniqueId === newEmployee.uniqueId)) {
-        toast({ variant: 'destructive', title: '오류', description: '이미 존재하는 ID입니다.' });
+  const handleUserAdd = (newEmployeeData: Partial<Employee>, roles: Role[]) => {
+      if (!newEmployeeData.uniqueId || allUsers.some(u => u.uniqueId === newEmployeeData.uniqueId)) {
+        toast({ variant: 'destructive', title: '오류', description: 'ID가 없거나 이미 존재하는 ID입니다.' });
         return;
       }
       const newUser: User = {
-        id: `user-${newEmployee.uniqueId}`,
-        employeeId: newEmployee.id,
-        uniqueId: newEmployee.uniqueId,
-        name: newEmployee.name,
+        id: `user-${newEmployeeData.uniqueId}`,
+        employeeId: `E${newEmployeeData.uniqueId}`,
+        uniqueId: newEmployeeData.uniqueId,
+        name: newEmployeeData.name || `사용자(${newEmployeeData.uniqueId})`,
+        department: newEmployeeData.department || '미지정',
+        title: newEmployeeData.title || '팀원',
         roles,
-        avatar: `https://placehold.co/100x100.png?text=${newEmployee.name.charAt(0)}`,
-        title: newEmployee.title,
-        department: newEmployee.department,
-        password: '1'
+        avatar: `https://placehold.co/100x100.png?text=${(newEmployeeData.name || 'U').charAt(0)}`,
+        password: '1',
+        evaluatorId: newEmployeeData.evaluatorId || '',
       };
       setUsers(prev => [...prev, newUser]);
   };
@@ -250,7 +251,7 @@ export default function Home() {
 
     newEmployees.forEach(emp => {
       const existingUser = allUsers.find(u => u.uniqueId === emp.uniqueId);
-      const employeeDataForUser: Partial<User> = { name: emp.name, department: emp.department, title: emp.title };
+      const employeeDataForUser: Partial<User> = { name: emp.name, department: emp.department, title: emp.title, evaluatorId: emp.evaluatorId };
 
       if (!existingUser) {
         handleUserAdd({ ...emp, company: emp.company || 'N/A', position: emp.position || emp.title || '팀원', }, ['employee']);
@@ -297,6 +298,11 @@ export default function Home() {
         const uniqueId = employeeId.replace('E','');
 
         const existingUser = allUsers.find(u => u.uniqueId === uniqueId);
+        const userDataToUpdate: Partial<User> = {
+            name: empData.name, department: empData.department, title: empData.title,
+            evaluatorId: evaluatorId || (existingUser ? existingUser.evaluatorId : '')
+        };
+
         if (!existingUser) {
             handleUserAdd({
                 id: employeeId, uniqueId: uniqueId, name: empData.name || `사용자(${uniqueId})`,
@@ -306,7 +312,7 @@ export default function Home() {
                 evaluatorId: evaluatorId || '', baseAmount: empData.baseAmount || 0,
             }, ['employee']);
         } else {
-            handleUserUpdate(existingUser.id, { name: empData.name, department: empData.department, title: empData.title });
+            handleUserUpdate(existingUser.id, userDataToUpdate);
         }
 
         if (evaluatorId) {
@@ -330,7 +336,7 @@ export default function Home() {
         uploadedData.forEach(uploadItem => {
             const empIndex = newEmpsForMonth.findIndex((e: Employee) => e.id === uploadItem.employeeId);
             const dataToUpdate = {
-                evaluatorId: uploadItem.evaluatorId, baseAmount: uploadItem.baseAmount, workRate: uploadItem.workRate,
+                baseAmount: uploadItem.baseAmount, workRate: uploadItem.workRate,
             };
             if (empIndex > -1) Object.assign(newEmpsForMonth[empIndex], dataToUpdate);
             else newEmpsForMonth.push({ uniqueId: uploadItem.employeeId.replace('E',''), id: uploadItem.employeeId, ...dataToUpdate });
@@ -414,47 +420,16 @@ export default function Home() {
     });
   };
 
-  const handleResultsUpdate = (updatedResults: EvaluationResult[]) => {
-      const newEmployees: Record<string, Partial<Employee>[]> = {};
-      const newEvaluations: Record<string, Evaluation[]> = {};
-
-      updatedResults.forEach(res => {
-          const { year, month, grade, score, payoutRate, gradeAmount, finalAmount, evaluatorName, evaluationGroup, detailedGroup1, detailedGroup2, memo, ...employeeData } = res;
-          const key = `${year}-${month}`;
-
-          if (!newEmployees[key]) newEmployees[key] = [];
-          if (!newEvaluations[key]) newEvaluations[key] = [];
-
-          const monthlyEmployeeData: Partial<Employee> = {
-              id: employeeData.id, uniqueId: employeeData.uniqueId, workRate: employeeData.workRate,
-              baseAmount: employeeData.baseAmount, evaluatorId: employeeData.evaluatorId,
-              company: employeeData.company, growthLevel: employeeData.growthLevel,
-          };
-          
-          const empIndex = newEmployees[key].findIndex(e => e.id === employeeData.id);
-          if (empIndex > -1) newEmployees[key][empIndex] = { ...newEmployees[key][empIndex], ...monthlyEmployeeData };
-          else newEmployees[key].push(monthlyEmployeeData);
-          
-          const newEval: Evaluation = {
-              id: `eval-${employeeData.id}-${year}-${month}`, employeeId: employeeData.id,
-              year, month, grade, memo: memo || '',
-          };
-          
-          const evalIndex = newEvaluations[key].findIndex(e => e.employeeId === employeeData.id);
-          if (evalIndex > -1) newEvaluations[key][evalIndex] = newEval;
-          else newEvaluations[key].push(newEval);
-      });
-      
-      setUsers(prevUsers => {
-          return prevUsers.map(user => {
-              const res = updatedResults.find(r => r.uniqueId === user.uniqueId);
-              if (res) return { ...user, name: res.name, department: res.department, title: res.title, };
-              return user;
+  const handleEvaluatorAssignmentChange = (updatedUserId: string, newEvaluatorId: string) => {
+     setUsers(prevUsers => {
+          const newUsers = prevUsers.map(u => {
+              if (u.id === updatedUserId) {
+                  return { ...u, evaluatorId: newEvaluatorId };
+              }
+              return u;
           });
+          return newUsers;
       });
-
-      setEmployees(prev => ({ ...prev, ...newEmployees }));
-      setEvaluations(prev => ({ ...prev, ...newEvaluations }));
   };
 
   const handleUserDelete = (userId: string) => {
@@ -490,7 +465,9 @@ export default function Home() {
   const handleClearMyEvaluations = (year: number, month: number, evaluatorId: string) => {
     const key = `${year}-${month}`;
     if (!evaluatorId) return;
-    const myEmployeeUniqueIds = new Set(Object.values(employees).flat().filter(e => e.evaluatorId === evaluatorId).map(e => e.uniqueId));
+
+    const myEmployeeUniqueIds = new Set(allUsers.filter(u => u.evaluatorId === evaluatorId).map(u => u.uniqueId));
+
     setEvaluations(prev => {
         const updatedEvalsForMonth = (prev[key] || []).map(ev => {
             const empUniqueId = ev.employeeId.replace('E', '');
@@ -554,7 +531,7 @@ export default function Home() {
                 department: user.department, title: user.title, position: user.title,
                 company: employeeData?.company || 'N/A', growthLevel: employeeData?.growthLevel || '',
                 workRate: employeeData?.workRate ?? 1.0, baseAmount: employeeData?.baseAmount ?? 0,
-                evaluatorId: employeeData?.evaluatorId || '',
+                evaluatorId: user.evaluatorId || '',
             };
             
             const grade = evaluation?.grade || null;
@@ -611,7 +588,7 @@ export default function Home() {
                   setGradingScale={setGradingScale}
                   selectedDate={selectedDate}
                   setSelectedDate={setSelectedDate}
-                  handleResultsUpdate={handleResultsUpdate}
+                  onEvaluatorAssignmentChange={handleEvaluatorAssignmentChange}
                   onUserAdd={handleUserAdd}
                   onRolesChange={handleRolesChange}
                   onUserUpdate={handleUserUpdate}
@@ -647,7 +624,7 @@ export default function Home() {
                   gradingScale={gradingScale}
                   selectedDate={selectedDate}
                   setSelectedDate={setSelectedDate} 
-                  handleResultsUpdate={handleResultsUpdate}
+                  handleEvaluatorAssignmentChange={handleEvaluatorAssignmentChange}
                   activeView={evaluatorActiveView}
                   onClearMyEvaluations={handleClearMyEvaluations}
                   workRateDetails={workRateDetails}

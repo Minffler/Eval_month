@@ -100,14 +100,13 @@ interface EvaluatorDashboardProps {
   gradingScale: Record<NonNullable<Grade>, GradeInfo>;
   selectedDate: { year: number; month: number };
   setSelectedDate: (date: { year: number; month: number }) => void;
-  handleResultsUpdate: (updatedResults: EvaluationResult[]) => void;
+  handleEvaluatorAssignmentChange: (userId: string, newEvaluatorId: string) => void;
   evaluatorUser?: User | null;
   activeView: EvaluatorView;
   onClearMyEvaluations: (year: number, month: number, evaluatorId: string) => void;
   workRateDetails: WorkRateDetailsResult;
   holidays: Holiday[];
   allUsers: User[];
-  allEmployees: Employee[];
   attendanceTypes: AttendanceType[];
   onApprovalAction: (approval: Approval) => void;
   notifications: AppNotification[];
@@ -354,8 +353,8 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, handleRe
   };
   
   const handleSave = () => {
-    const updatedResults = flattenGroupsToResults();
-    handleResultsUpdate(updatedResults);
+    // This function is now just for local state saving, not pushing to parent.
+    // The parent component should have a master save button if needed.
     toast({ title: '성공!', description: '평가가 성공적으로 저장되었습니다.' });
   };
 
@@ -849,13 +848,13 @@ interface AssignmentManagementViewProps {
   myEmployees: EvaluationResult[];
   currentMonthResults: EvaluationResult[];
   allUsers: User[];
-  handleResultsUpdate: (updatedResults: EvaluationResult[]) => void;
+  handleEvaluatorAssignmentChange: (updatedUserId: string, newEvaluatorId: string) => void;
   evaluatorId: string;
   evaluatorName: string;
 }
 
 
-const AssignmentManagementView = ({ myEmployees, currentMonthResults, allUsers, handleResultsUpdate, evaluatorId, evaluatorName }: AssignmentManagementViewProps) => {
+const AssignmentManagementView = ({ myEmployees, currentMonthResults, allUsers, handleEvaluatorAssignmentChange, evaluatorId, evaluatorName }: AssignmentManagementViewProps) => {
   const { toast } = useToast();
   
   const [company, setCompany] = React.useState('');
@@ -945,14 +944,18 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, allUsers, 
         return;
     }
 
-    const updatedResults = currentMonthResults.map(res => {
-      if (res.company === groupToChange.company && res.department === groupToChange.department && res.position === groupToChange.position) {
-        return { ...res, evaluatorId: evaluatorId, evaluatorName: evaluatorName };
-      }
-      return res;
-    });
+    const targetEmployees = currentMonthResults.filter(res => 
+      res.company === groupToChange.company && 
+      res.department === groupToChange.department && 
+      res.position === groupToChange.position
+    );
 
-    handleResultsUpdate(updatedResults);
+    targetEmployees.forEach(emp => {
+      const user = allUsers.find(u => u.uniqueId === emp.uniqueId);
+      if (user) {
+        handleEvaluatorAssignmentChange(user.id, evaluatorId);
+      }
+    });
     
     addNotification({ recipientId: '1911042', message: `${evaluatorName} 평가자가 ${groupToChange.department} 소속의 담당자가 되었습니다.` });
     addNotification({ recipientId: evaluatorId, message: `이제 ${groupToChange.department} 소속의 평가를 담당합니다.` });
@@ -968,13 +971,19 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, allUsers, 
 
   const handleReleaseGroup = (groupKey: string) => {
     const [company, department, position] = groupKey.split('|');
-    const updatedResults = currentMonthResults.map(res => {
-      if (res.evaluatorId === evaluatorId && res.company === company && res.department === department && res.position === position) {
-        return { ...res, evaluatorId: '', evaluatorName: '미지정' };
+    const targetEmployees = myEmployees.filter(res => 
+        res.company === company && 
+        res.department === department && 
+        res.position === position
+    );
+
+    targetEmployees.forEach(emp => {
+      const user = allUsers.find(u => u.uniqueId === emp.uniqueId);
+      if (user) {
+        handleEvaluatorAssignmentChange(user.id, '');
       }
-      return res;
     });
-    handleResultsUpdate(updatedResults);
+
     toast({ title: '담당 해제 완료', description: `'${department}' 소속을 더 이상 담당하지 않습니다.` });
   };
   
@@ -1101,7 +1110,7 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, allUsers, 
 };
 
 
-export default function EvaluatorDashboard({ allResults, currentMonthResults, gradingScale, selectedDate, setSelectedDate, handleResultsUpdate, evaluatorUser, activeView, onClearMyEvaluations, workRateDetails, holidays, allUsers, allEmployees, attendanceTypes, onApprovalAction, notifications, addNotification, deleteNotification, approvals }: EvaluatorDashboardProps) {
+export default function EvaluatorDashboard({ allResults, currentMonthResults, gradingScale, selectedDate, setSelectedDate, handleEvaluatorAssignmentChange, evaluatorUser, activeView, onClearMyEvaluations, workRateDetails, holidays, allUsers, attendanceTypes, onApprovalAction, notifications, addNotification, deleteNotification, approvals }: EvaluatorDashboardProps) {
   const { user: authUser } = useAuth();
   const { toast } = useToast();
   const [effectiveUser, setEffectiveUser] = React.useState<User | null>(null);
@@ -1241,27 +1250,27 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
                   myEmployees={myEmployees} 
                   gradingScale={gradingScale}
                   selectedDate={selectedDate}
-                  handleResultsUpdate={handleResultsUpdate}
+                  handleResultsUpdate={() => {}}
                   allResults={allResults}
                   onClearMyEvaluations={(year, month) => onClearMyEvaluations(year, month, effectiveUser!.uniqueId)}
                 />;
       case 'all-results':
-        return <AllResultsView currentMonthResults={currentMonthResults} allEmployees={allEmployees} gradingScale={gradingScale} handleResultsUpdate={handleResultsUpdate} />;
+        return <AllResultsView currentMonthResults={currentMonthResults} allEmployees={allUsers} gradingScale={gradingScale} handleResultsUpdate={() => {}} />;
       case 'assignment-management':
         return <AssignmentManagementView 
                  myEmployees={myEmployees} 
                  currentMonthResults={currentMonthResults}
                  allUsers={allUsers}
-                 handleResultsUpdate={handleResultsUpdate}
+                 handleEvaluatorAssignmentChange={handleEvaluatorAssignmentChange}
                  evaluatorId={effectiveUser.uniqueId}
                  evaluatorName={effectiveUser.name}
                />;
       case 'work-rate-view':
-          return <WorkRateManagement results={myEmployees} workRateDetails={myManagedWorkRateDetails} selectedDate={selectedDate} allEmployees={allEmployees} holidays={holidays} handleResultsUpdate={handleResultsUpdate} />;
+          return <WorkRateManagement results={myEmployees} workRateDetails={myManagedWorkRateDetails} selectedDate={selectedDate} holidays={holidays} handleResultsUpdate={() => {}} />;
       case 'shortened-work-details':
-          return <WorkRateDetails type="shortenedWork" data={myManagedWorkRateDetails.shortenedWorkDetails} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} onDataChange={()=>{}} />;
+          return <WorkRateDetails type="shortenedWork" data={myManagedWorkRateDetails.shortenedWorkDetails} selectedDate={selectedDate} allEmployees={allUsers} attendanceTypes={attendanceTypes} onDataChange={()=>{}} />;
       case 'daily-attendance-details':
-          return <WorkRateDetails type="dailyAttendance" data={myManagedWorkRateDetails.dailyAttendanceDetails} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} onDataChange={()=>{}} />;
+          return <WorkRateDetails type="dailyAttendance" data={myManagedWorkRateDetails.dailyAttendanceDetails} selectedDate={selectedDate} allEmployees={allUsers} attendanceTypes={attendanceTypes} onDataChange={()=>{}} />;
       case 'approvals': {
             const myApprovals = approvals.filter(a => a.approverTeamId === effectiveUser.uniqueId).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
             return (

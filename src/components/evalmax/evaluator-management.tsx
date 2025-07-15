@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import type { EvaluationResult, Employee, User } from '@/lib/types';
+import type { User } from '@/lib/types';
 import { getPositionSortValue } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowUpDown, ArrowUp, ArrowDown, ChevronsUpDown } from 'lucide-react';
@@ -37,13 +37,13 @@ import {
 } from "@/components/ui/command"
 
 interface EvaluatorManagementProps {
-  results: EvaluationResult[];
+  results: (User & { evaluatorName?: string})[];
   allUsers: User[];
-  handleResultsUpdate: (updatedResults: EvaluationResult[]) => void;
+  onEvaluatorAssignmentChange: (userId: string, newEvaluatorId: string) => void;
 }
 
 type SortConfig = {
-  key: keyof EvaluationResult;
+  key: keyof (User & { evaluatorName?: string});
   direction: 'ascending' | 'descending';
 } | null;
 
@@ -187,7 +187,7 @@ const EvaluatorSelector = ({
 export default function EvaluatorManagement({
   results,
   allUsers,
-  handleResultsUpdate,
+  onEvaluatorAssignmentChange,
 }: EvaluatorManagementProps) {
   const [filteredResults, setFilteredResults] = React.useState(results);
   const [companyFilter, setCompanyFilter] = React.useState<Set<string>>(new Set());
@@ -291,7 +291,7 @@ export default function EvaluatorManagement({
   const allDepartments = React.useMemo(() => [...new Set(results.map((r) => r.department).filter(Boolean))].sort(), [results]);
   const allTitles = ['지부장', '센터장', '팀장', '지점장', '팀원'];
 
-  const requestSort = (key: keyof EvaluationResult) => {
+  const requestSort = (key: keyof User) => {
     let direction: 'ascending' | 'descending' = 'ascending';
     if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
       direction = 'descending';
@@ -299,7 +299,7 @@ export default function EvaluatorManagement({
     setSortConfig({ key, direction });
   };
   
-  const getSortIcon = (key: keyof EvaluationResult) => {
+  const getSortIcon = (key: keyof User) => {
     if (!sortConfig || sortConfig.key !== key) {
         return <ArrowUpDown className="ml-2 h-4 w-4 opacity-30" />;
     }
@@ -326,14 +326,7 @@ export default function EvaluatorManagement({
 
   const handleEvaluatorChange = (employeeId: string, newEvaluatorId: string) => {
     const finalEvaluatorId = newEvaluatorId === 'unassigned' ? '' : newEvaluatorId;
-    const updatedResults = results.map((r) => {
-      if (r.id === employeeId) {
-        const newEvaluator = allUsers.find(u => u.uniqueId === finalEvaluatorId);
-        return { ...r, evaluatorId: finalEvaluatorId, evaluatorName: finalEvaluatorId ? (newEvaluator?.name || `ID: ${finalEvaluatorId}`) : '미지정' };
-      }
-      return r;
-    });
-    handleResultsUpdate(updatedResults);
+    onEvaluatorAssignmentChange(employeeId, finalEvaluatorId);
   };
   
   const handleBulkAssign = () => {
@@ -346,16 +339,11 @@ export default function EvaluatorManagement({
       return;
     }
     const finalEvaluatorId = bulkEvaluatorId === 'unassigned' ? '' : bulkEvaluatorId;
-    const newEvaluator = allUsers.find(u => u.uniqueId === finalEvaluatorId);
-
-    const updatedResults = results.map(r => {
-      if (selectedIds.has(r.id)) {
-        return { ...r, evaluatorId: finalEvaluatorId, evaluatorName: finalEvaluatorId ? (newEvaluator?.name || `ID: ${finalEvaluatorId}`) : '미지정' };
-      }
-      return r;
+    
+    selectedIds.forEach(id => {
+      onEvaluatorAssignmentChange(id, finalEvaluatorId);
     });
 
-    handleResultsUpdate(updatedResults);
     toast({
       title: '일괄 반영 완료',
       description: `${selectedIds.size}명의 직원에 대한 평가자가 변경되었습니다.`,
@@ -409,7 +397,6 @@ export default function EvaluatorManagement({
                   <TableHead className="cursor-pointer text-center" onClick={() => requestSort('company')}><div className="flex items-center justify-center">회사{getSortIcon('company')}</div></TableHead>
                   <TableHead className="cursor-pointer text-center" onClick={() => requestSort('department')}><div className="flex items-center justify-center">소속부서{getSortIcon('department')}</div></TableHead>
                   <TableHead className="cursor-pointer text-center" onClick={() => requestSort('title')}><div className="flex items-center justify-center">직책{getSortIcon('title')}</div></TableHead>
-                  <TableHead className="cursor-pointer text-center" onClick={() => requestSort('growthLevel')}><div className="flex items-center justify-center">성장레벨{getSortIcon('growthLevel')}</div></TableHead>
                   <TableHead className="cursor-pointer text-center" onClick={() => requestSort('evaluatorName')}><div className="flex items-center justify-center">평가자{getSortIcon('evaluatorName')}</div></TableHead>
                 </TableRow>
               </TableHeader>
@@ -422,7 +409,6 @@ export default function EvaluatorManagement({
                     <TableCell className="text-center py-1 px-2">{result.company}</TableCell>
                     <TableCell className="text-center py-1 px-2">{result.department}</TableCell>
                     <TableCell className="text-center py-1 px-2">{result.title}</TableCell>
-                    <TableCell className="text-center py-1 px-2">{result.growthLevel}</TableCell>
                     <TableCell className="py-1 px-2 text-center">
                        <EvaluatorSelector
                           evaluators={evaluators}

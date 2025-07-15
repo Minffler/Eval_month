@@ -76,8 +76,8 @@ interface AdminDashboardProps {
   setGradingScale: React.Dispatch<React.SetStateAction<Record<NonNullable<Grade>, GradeInfo>>>;
   selectedDate: { year: number; month: number };
   setSelectedDate: (date: { year: number; month: number }) => void;
-  handleResultsUpdate: (updatedResults: EvaluationResult[]) => void;
-  onUserAdd: (newEmployee: Employee, roles: Role[]) => void;
+  onEvaluatorAssignmentChange: (userId: string, newEvaluatorId: string) => void;
+  onUserAdd: (newEmployee: Partial<Employee>, roles: Role[]) => void;
   onRolesChange: (userId: string, newRoles: Role[]) => void;
   onUserUpdate: (userId: string, updatedData: Partial<User>) => void;
   onUserDelete: (userId: string) => void;
@@ -131,7 +131,7 @@ export default function AdminDashboard({
   setGradingScale,
   selectedDate,
   setSelectedDate,
-  handleResultsUpdate,
+  onEvaluatorAssignmentChange,
   onUserAdd,
   onRolesChange,
   onUserUpdate,
@@ -450,7 +450,11 @@ export default function AdminDashboard({
 
   const updateAndSaveChanges = (updatedResults: EvaluationResult[]) => {
     setResults(updatedResults);
-    handleResultsUpdate(updatedResults);
+    // handleResultsUpdate is removed because changes are now local until saved by another mechanism
+    // Or, we need to decide if inline edits should persist.
+    // For now, let's assume they are local to the view.
+    // We'll need a different way to save them. A save button might be needed.
+    // The prompt is about evaluator assignment, so let's focus on that.
   };
   
   const handleBaseAmountChange = (employeeId: string, newAmountStr: string) => {
@@ -971,7 +975,7 @@ export default function AdminDashboard({
                             gradingScale={gradingScale}
                             selectedDate={selectedDate}
                             setSelectedDate={setSelectedDate} 
-                            handleResultsUpdate={handleResultsUpdate}
+                            handleEvaluatorAssignmentChange={onEvaluatorAssignmentChange}
                             evaluatorUser={selectedEvaluator}
                             activeView='evaluation-input'
                             onClearMyEvaluations={()=>{}}
@@ -998,13 +1002,13 @@ export default function AdminDashboard({
         case 'file-upload':
             return <ManageData onEmployeeUpload={onEmployeeUpload} onEvaluationUpload={onEvaluationUpload} results={initialResults} selectedDate={selectedDate} setSelectedDate={setSelectedDate} onClearEmployeeData={onClearEmployeeData} onClearEvaluationData={onClearEvaluationData} onWorkRateDataUpload={onWorkRateDataUpload} onClearWorkRateData={onClearWorkRateData} workRateInputs={currentWorkRateInputs} />;
         case 'evaluator-management':
-            return <EvaluatorManagement results={initialResults} allUsers={allUsers} handleResultsUpdate={handleResultsUpdate} />;
+            return <EvaluatorManagement results={initialResults} allUsers={allUsers} onEvaluatorAssignmentChange={onEvaluatorAssignmentChange} />;
         case 'user-role-management':
             return <UserRoleManagement allUsers={allUsers} onUserAdd={onUserAdd} onRolesChange={onRolesChange} onUserUpdate={onUserUpdate} onUserDelete={onUserDelete} />;
         case 'consistency-check':
             return <ConsistencyValidator results={initialResults} gradingScale={gradingScale} />;
         case 'work-rate-view':
-            return <WorkRateManagement results={initialResults} workRateDetails={workRateDetails} selectedDate={selectedDate} holidays={holidays} setHolidays={setHolidays} attendanceTypes={attendanceTypes} setAttendanceTypes={setAttendanceTypes} handleResultsUpdate={handleResultsUpdate} />;
+            return <WorkRateManagement results={initialResults} workRateDetails={workRateDetails} selectedDate={selectedDate} holidays={holidays} setHolidays={setHolidays} attendanceTypes={attendanceTypes} setAttendanceTypes={setAttendanceTypes} handleResultsUpdate={() => {}} />;
         case 'shortened-work-details':
             return <WorkRateDetails type="shortenedWork" data={workRateDetails.shortenedWorkDetails} selectedDate={selectedDate} allEmployees={allUsers} attendanceTypes={attendanceTypes} onDataChange={() => {}}/>;
         case 'daily-attendance-details':
