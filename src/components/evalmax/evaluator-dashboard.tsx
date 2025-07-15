@@ -41,7 +41,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Check, Download, ArrowUpDown, ArrowUp, ArrowDown, Edit, GripVertical, ChevronUp, ChevronDown, PlusCircle, Save, X, Trash2, Users, Bell, CheckCircle2, ThumbsUp, ThumbsDown, Inbox } from 'lucide-react';
+import { Check, Download, ArrowUpDown, ArrowUp, ArrowDown, Edit, GripVertical, ChevronUp, ChevronDown, PlusCircle, Save, X, Trash2, Users, Bell, CheckCircle2, ThumbsUp, ThumbsDown, Inbox, ChevronsUpDown } from 'lucide-react';
 import { Progress } from '../ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { GradeHistogram } from './grade-histogram';
@@ -83,6 +83,15 @@ import EvaluatorNotifications from './evaluator-dashboard-notifications';
 import { Textarea } from '../ui/textarea';
 import { Separator } from '../ui/separator';
 import { useNotifications } from '@/contexts/notification-context';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
 
 
 interface EvaluatorDashboardProps {
@@ -102,6 +111,8 @@ interface EvaluatorDashboardProps {
   attendanceTypes: AttendanceType[];
   onApprovalAction: (approval: Approval) => void;
   notifications: AppNotification[];
+  addNotification: (notification: Omit<AppNotification, 'id' | 'date' | 'isRead'>) => void;
+  deleteNotification: (notificationId: string) => void;
   approvals: Approval[];
 }
 
@@ -693,21 +704,25 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, handleRe
   );
 }
 
-const AllResultsView = ({ allResults, gradingScale }: {
-  allResults: EvaluationResult[],
-  gradingScale: Record<NonNullable<Grade>, GradeInfo>,
+const AllResultsView = ({ currentMonthResults, allEmployees, gradingScale, handleResultsUpdate }: {
+  currentMonthResults: EvaluationResult[];
+  allEmployees: Employee[];
+  gradingScale: Record<NonNullable<Grade>, GradeInfo>;
+  handleResultsUpdate: (updatedResults: EvaluationResult[]) => void;
 }) => {
-  const [selectedYear, setSelectedYear] = React.useState(new Date().getFullYear().toString());
   const [sortConfig, setSortConfig] = React.useState<SortConfig>(null);
-
-  const availableYears = React.useMemo(() => {
-    const years = new Set(allResults.map(r => r.year));
-    return Array.from(years).sort((a,b) => b - a);
-  }, [allResults]);
+  const [companyFilter, setCompanyFilter] = React.useState<string>('all');
+  const [departmentFilter, setDepartmentFilter] = React.useState<string>('all');
+  const [positionFilter, setPositionFilter] = React.useState<string>('all');
 
   const filteredResults = React.useMemo(() => {
-    return allResults.filter(r => r.year.toString() === selectedYear);
-  }, [allResults, selectedYear]);
+    return currentMonthResults.filter(r => {
+      const companyMatch = companyFilter === 'all' || r.company === companyFilter;
+      const departmentMatch = departmentFilter === 'all' || r.department === departmentFilter;
+      const positionMatch = positionFilter === 'all' || r.position === positionFilter;
+      return companyMatch && departmentMatch && positionMatch;
+    });
+  }, [currentMonthResults, companyFilter, departmentFilter, positionFilter]);
 
   const sortedFilteredResults = React.useMemo(() => {
     let sortableItems = [...filteredResults];
@@ -730,6 +745,10 @@ const AllResultsView = ({ allResults, gradingScale }: {
     }
     return sortableItems;
   }, [filteredResults, sortConfig]);
+  
+  const allCompanies = React.useMemo(() => ['all', ...Array.from(new Set(currentMonthResults.map(e => e.company).filter(Boolean)))], [currentMonthResults]);
+  const allDepartments = React.useMemo(() => ['all', ...Array.from(new Set(currentMonthResults.map(e => e.department).filter(Boolean)))].sort(), [currentMonthResults]);
+  const allPositions = React.useMemo(() => ['all', ...Array.from(new Set(currentMonthResults.map(e => e.position).filter(Boolean)))].sort((a,b) => getPositionSortValue(a) - getPositionSortValue(b)), [currentMonthResults]);
 
   const requestSort = (key: keyof EvaluationResult) => {
     let direction: 'ascending' | 'descending' = 'ascending';
@@ -751,46 +770,72 @@ const AllResultsView = ({ allResults, gradingScale }: {
     if (isNaN(value) || value === null) return '0';
     return new Intl.NumberFormat('ko-KR').format(value);
   }
+  
+  const EvaluationGroupIcon = ({ group }: { group: string }) => {
+    const groupChar = group.charAt(0);
+    switch (groupChar) {
+      case 'A':
+        return <div className="mx-auto flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold text-stone-700" style={{ backgroundColor: 'hsl(25, 15%, 75%)' }}>{groupChar}</div>;
+      case 'B':
+        return <div className="mx-auto flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold text-stone-800" style={{ backgroundColor: 'hsl(25, 20%, 92%)' }}>{groupChar}</div>;
+      case 'C':
+        return <div className="mx-auto flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold text-stone-400" style={{ backgroundColor: 'hsl(30, 20%, 98%)' }}>{groupChar}</div>;
+      default:
+        return <span>{group}</span>;
+    }
+  };
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold tracking-tight">전체 결과 조회</h2>
-        <Select value={selectedYear} onValueChange={setSelectedYear}>
-          <SelectTrigger className="w-[180px]"><SelectValue placeholder="연도 선택" /></SelectTrigger>
-          <SelectContent>{availableYears.map(year => <SelectItem key={year} value={year.toString()}>{year}년</SelectItem>)}</SelectContent>
-        </Select>
-      </div>
       <Card>
-        <CardHeader><CardTitle>{selectedYear}년 평가 결과</CardTitle><CardDescription>선택한 연도의 성과 평가 요약입니다.</CardDescription></CardHeader>
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Select value={companyFilter} onValueChange={setCompanyFilter}>
+              <SelectTrigger className="w-full sm:w-[180px]"><SelectValue placeholder="회사 선택" /></SelectTrigger>
+              <SelectContent>{allCompanies.map(c => <SelectItem key={c} value={c}>{c === 'all' ? '모든 회사' : c}</SelectItem>)}</SelectContent>
+            </Select>
+            <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+              <SelectTrigger className="w-full sm:w-[180px]"><SelectValue placeholder="부서 선택" /></SelectTrigger>
+              <SelectContent>{allDepartments.map(d => <SelectItem key={d} value={d}>{d === 'all' ? '모든 부서' : d}</SelectItem>)}</SelectContent>
+            </Select>
+            <Select value={positionFilter} onValueChange={setPositionFilter}>
+              <SelectTrigger className="w-full sm:w-[180px]"><SelectValue placeholder="직책 선택" /></SelectTrigger>
+              <SelectContent>{allPositions.map(p => <SelectItem key={p} value={p}>{p === 'all' ? '모든 직책' : p}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+        </CardHeader>
         <CardContent>
           <div className="border rounded-lg">
             <Table>
               <TableHeader><TableRow>
-                <TableHead className="cursor-pointer whitespace-nowrap text-center" onClick={() => requestSort('month')}><div className="flex items-center justify-center">평가월{getSortIcon('month')}</div></TableHead>
                 <TableHead className="cursor-pointer whitespace-nowrap text-center" onClick={() => requestSort('company')}><div className="flex items-center justify-center">회사{getSortIcon('company')}</div></TableHead>
                 <TableHead className="cursor-pointer whitespace-nowrap text-center" onClick={() => requestSort('department')}><div className="flex items-center justify-center">소속부서{getSortIcon('department')}</div></TableHead>
                 <TableHead className="cursor-pointer whitespace-nowrap text-center" onClick={() => requestSort('name')}><div className="flex items-center justify-center">이름{getSortIcon('name')}</div></TableHead>
                 <TableHead className="cursor-pointer whitespace-nowrap text-center" onClick={() => requestSort('title')}><div className="flex items-center justify-center">직책{getSortIcon('title')}</div></TableHead>
+                <TableHead className="cursor-pointer whitespace-nowrap text-center" onClick={() => requestSort('evaluationGroup')}><div className="flex items-center justify-center">구분{getSortIcon('evaluationGroup')}</div></TableHead>
+                <TableHead className="cursor-pointer whitespace-nowrap text-center" onClick={() => requestSort('workRate')}><div className="flex items-center justify-center">근무율{getSortIcon('workRate')}</div></TableHead>
                 <TableHead className="cursor-pointer whitespace-nowrap text-center" onClick={() => requestSort('grade')}><div className="flex items-center justify-center">등급{getSortIcon('grade')}</div></TableHead>
                 <TableHead className="cursor-pointer whitespace-nowrap text-center" onClick={() => requestSort('score')}><div className="flex items-center justify-center">점수{getSortIcon('score')}</div></TableHead>
+                <TableHead className="text-right cursor-pointer whitespace-nowrap text-center" onClick={() => requestSort('baseAmount')}><div className="flex items-center justify-center">기준금액{getSortIcon('baseAmount')}</div></TableHead>
                 <TableHead className="text-right cursor-pointer whitespace-nowrap text-center" onClick={() => requestSort('finalAmount')}><div className="flex items-center justify-center">최종금액{getSortIcon('finalAmount')}</div></TableHead>
                 <TableHead className="whitespace-nowrap text-center">비고</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {sortedFilteredResults.length > 0 ? sortedFilteredResults.sort((a,b) => b.month - a.month).map(result => (
+                {sortedFilteredResults.length > 0 ? sortedFilteredResults.map(result => (
                   <TableRow key={`${result.year}-${result.month}-${result.id}`}>
-                    <TableCell className="text-center">{result.year}년 {result.month}월</TableCell>
                     <TableCell className="text-center">{result.company}</TableCell>
                     <TableCell className="text-center">{result.department}</TableCell>
                     <TableCell className="text-center">{result.name}</TableCell>
                     <TableCell className="text-center">{result.title}</TableCell>
+                    <TableCell className="text-center"><EvaluationGroupIcon group={result.evaluationGroup} /></TableCell>
+                    <TableCell className="text-center">{(result.workRate * 100).toFixed(1)}%</TableCell>
                     <TableCell className="text-center">{result.grade}</TableCell>
                     <TableCell className="text-center">{result.score}</TableCell>
-                    <TableCell className="text-right font-semibold text-center">{formatCurrency(result.finalAmount)} 원</TableCell>
+                    <TableCell className="text-right">{formatCurrency(result.baseAmount)}</TableCell>
+                    <TableCell className="text-right font-semibold">{formatCurrency(result.finalAmount)}</TableCell>
                     <TableCell className="text-center">{result.memo || ''}</TableCell>
                   </TableRow>
-                )) : <TableRow><TableCell colSpan={9} className="text-center h-24">해당 연도의 평가 결과가 없습니다.</TableCell></TableRow>}
+                )) : <TableRow><TableCell colSpan={11} className="text-center h-24">해당 조건의 결과가 없습니다.</TableCell></TableRow>}
               </TableBody>
             </Table>
           </div>
@@ -1056,14 +1101,13 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, allUsers, 
 };
 
 
-export default function EvaluatorDashboard({ allResults, currentMonthResults, gradingScale, selectedDate, setSelectedDate, handleResultsUpdate, evaluatorUser, activeView, onClearMyEvaluations, workRateDetails, holidays, allUsers, allEmployees, attendanceTypes, onApprovalAction, notifications, approvals }: EvaluatorDashboardProps) {
+export default function EvaluatorDashboard({ allResults, currentMonthResults, gradingScale, selectedDate, setSelectedDate, handleResultsUpdate, evaluatorUser, activeView, onClearMyEvaluations, workRateDetails, holidays, allUsers, allEmployees, attendanceTypes, onApprovalAction, notifications, addNotification, deleteNotification, approvals }: EvaluatorDashboardProps) {
   const { user: authUser } = useAuth();
   const { toast } = useToast();
   const [effectiveUser, setEffectiveUser] = React.useState<User | null>(null);
   const [approvalDetailModalOpen, setApprovalDetailModalOpen] = React.useState(false);
   const [selectedApproval, setSelectedApproval] = React.useState<Approval | null>(null);
   const [rejectionReason, setRejectionReason] = React.useState('');
-  const { deleteNotification } = useNotifications();
   
   React.useEffect(() => {
     if (evaluatorUser) {
@@ -1202,7 +1246,7 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
                   onClearMyEvaluations={(year, month) => onClearMyEvaluations(year, month, effectiveUser!.uniqueId)}
                 />;
       case 'all-results':
-        return <AllResultsView allResults={myAllTimeResults} gradingScale={gradingScale} />;
+        return <AllResultsView currentMonthResults={currentMonthResults} allEmployees={allEmployees} gradingScale={gradingScale} handleResultsUpdate={handleResultsUpdate} />;
       case 'assignment-management':
         return <AssignmentManagementView 
                  myEmployees={myEmployees} 

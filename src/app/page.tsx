@@ -77,8 +77,8 @@ const evaluatorNavItems: NavItem[] = [
     label: '평가입력/조회',
     icon: FileCheck,
     children: [
-      { id: 'evaluation-input', label: '평가입력', icon: Edit2 },
-      { id: 'all-results', label: '전체 결과', icon: ListChecks },
+      { id: 'evaluation-input', label: '평가 입력', icon: Edit2 },
+      { id: 'all-results', label: '결과 상세', icon: ListChecks },
     ],
   },
   {
