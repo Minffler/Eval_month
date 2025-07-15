@@ -469,8 +469,31 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, handleRe
     if (!newGroupName.trim()) { toast({ variant: 'destructive', title: '오류', description: '그룹 이름을 입력해주세요.' }); return; }
     if (idsForNewGroup.size === 0) { toast({ variant: 'destructive', title: '오류', description: '그룹에 추가할 멤버를 한 명 이상 선택해주세요.' }); return; }
     if (Object.keys(groups).includes(newGroupName.trim())) { toast({ variant: 'destructive', title: '오류', description: '이미 존재하는 그룹 이름입니다.' }); return; }
-    const finalUpdatedResults = allResults.map(res => idsForNewGroup.has(res.id) ? { ...res, detailedGroup2: newGroupName.trim() } : res);
-    handleResultsUpdate(finalUpdatedResults);
+    
+    setGroups(prevGroups => {
+        const newGroups = { ...prevGroups };
+        
+        // Remove members from their old groups
+        idsForNewGroup.forEach(id => {
+            for (const key in newGroups) {
+                const index = newGroups[key].members.findIndex(m => m.id === id);
+                if (index > -1) {
+                    newGroups[key].members.splice(index, 1);
+                }
+            }
+        });
+
+        // Add new group
+        newGroups[newGroupName.trim()] = {
+            name: newGroupName.trim(),
+            members: allResults.filter(r => idsForNewGroup.has(r.id)),
+        };
+
+        return newGroups;
+    });
+
+    handleSave();
+    
     toast({ title: '성공', description: `'${newGroupName.trim()}' 그룹이 생성되었습니다.` });
     setIsAddGroupDialogOpen(false);
   };

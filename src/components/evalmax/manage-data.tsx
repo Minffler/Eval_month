@@ -183,6 +183,8 @@ export default function ManageData({
     if (file) {
       try {
         const now = new Date().toISOString();
+        let uploadCount = 0;
+
         switch(uploadType) {
           case 'employees':
             const newEmployees = await parseExcelFile<Employee>(file, json => json.map((row, index) => {
@@ -197,6 +199,7 @@ export default function ManageData({
                 memo: String(row['비고'] || ''),
               };
             }));
+            uploadCount = newEmployees.length;
             onEmployeeUpload(selectedDate.year, selectedDate.month, newEmployees);
             break;
           case 'evaluations':
@@ -215,6 +218,7 @@ export default function ManageData({
                   grade: (String(row['등급'] || '') || null) as Grade, memo: row['비고'] !== undefined ? String(row['비고']) : undefined,
               };
             }));
+            uploadCount = newEvals.length;
             onEvaluationUpload(selectedDate.year, selectedDate.month, newEvals);
             break;
           case 'shortenedWork':
@@ -230,6 +234,7 @@ export default function ManageData({
                 lastModified: now,
               }
             }));
+            uploadCount = newShortenedWork.length;
             onWorkRateDataUpload(selectedDate.year, selectedDate.month, 'shortenedWorkHours', newShortenedWork, true);
             break;
           case 'dailyAttendance':
@@ -242,10 +247,11 @@ export default function ManageData({
                 lastModified: now,
               }
             }));
+            uploadCount = newDailyAttendance.length;
             onWorkRateDataUpload(selectedDate.year, selectedDate.month, 'dailyAttendance', newDailyAttendance, true);
             break;
         }
-        toast({ title: '업로드 성공', description: `${file.name} 파일이 성공적으로 처리되었습니다.` });
+        toast({ title: '업로드 성공', description: `${uploadCount}명의 데이터가 처리되었습니다.` });
       } catch (error: any) {
         toast({ variant: 'destructive', title: '파일 처리 오류', description: error.message || '파일 처리 중 오류가 발생했습니다.' });
       } finally {

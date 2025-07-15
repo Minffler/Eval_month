@@ -155,8 +155,8 @@ export default function Home() {
       markApprovalsAsRead
   } = useNotifications();
   
-  const [employees, setEmployees] = React.useState<Record<string, Employee[]>>(() => getFromLocalStorage('employees', { '2025-7': mockEmployees }));
-  const [evaluations, setEvaluations] = React.useState<Record<string, Evaluation[]>>(() => getFromLocalStorage('evaluations', { '2025-7': initialMockEvaluations }));
+  const [employees, setEmployees] = React.useState<Record<string, Employee[]>>(() => getFromLocalStorage('employees', {}));
+  const [evaluations, setEvaluations] = React.useState<Record<string, Evaluation[]>>(() => getFromLocalStorage('evaluations', {}));
   const [gradingScale, setGradingScale] = React.useState<Record<NonNullable<Grade>, GradeInfo>>(() => getFromLocalStorage('gradingScale', initialGradingScale));
   const [workRateInputs, setWorkRateInputs] = React.useState<Record<string, WorkRateInputs>>(() => getFromLocalStorage('workRateInputs', {}));
   const [attendanceTypes, setAttendanceTypes] = React.useState<AttendanceType[]>(() => getFromLocalStorage('attendanceTypes', initialAttendanceTypes));
@@ -431,50 +431,43 @@ export default function Home() {
     });
   };
 
-  const handleResultsUpdate = (updatedResultsForMonth: EvaluationResult[]) => {
-    const allEmployeeIdsInUpdate = new Set(updatedResultsForMonth.map(r => r.id));
-    const currentMonthKey = `${selectedDate.year}-${selectedDate.month}`;
+  const handleResultsUpdate = (updatedResults: EvaluationResult[]) => {
+      // Create maps for faster lookups
+      const updatedEmployeesMap = new Map(updatedResults.map(r => [r.id, r]));
 
-    const updatedEmployeesByMonth = updatedResultsForMonth.reduce((acc, r) => {
-        const key = `${r.year}-${r.month}`;
-        if (!acc[key]) acc[key] = [];
-
-        const { year, month, grade, score, payoutRate, gradeAmount, finalAmount, evaluatorName, evaluationGroup, detailedGroup1, detailedGroup2, memo, ...employeeData } = r;
-        acc[key].push(employeeData);
-        return acc;
-    }, {} as Record<string, Employee[]>);
-
-    const updatedEvaluationsByMonth = updatedResultsForMonth.reduce((acc, r) => {
-        const key = `${r.year}-${r.month}`;
-        if (!acc[key]) acc[key] = [];
-        acc[key].push({
-            id: `eval-${r.id}-${r.year}-${r.month}`,
-            employeeId: r.id,
-            year: r.year,
-            month: r.month,
-            grade: r.grade,
-            memo: r.memo
-        });
-        return acc;
-    }, {} as Record<string, Evaluation[]>);
-
-
-    setEmployees(prev => {
-        const newState = { ...prev };
-        for(const key in updatedEmployeesByMonth) {
-            newState[key] = updatedEmployeesByMonth[key];
-        }
-        return newState;
-    });
-
-    setEvaluations(prev => {
-        const newState = { ...prev };
-        for(const key in updatedEmployeesByMonth) {
-            newState[key] = updatedEmployeesByMonth[key];
-        }
-        return newState;
-    });
-};
+      setEmployees(prev => {
+          const newState = JSON.parse(JSON.stringify(prev));
+          for (const key in newState) {
+              newState[key] = newState[key].map((emp: Employee) => {
+                  const updatedEmp = updatedEmployeesMap.get(emp.id);
+                  if (updatedEmp) {
+                      const { year, month, grade, score, payoutRate, gradeAmount, finalAmount, evaluatorName, evaluationGroup, detailedGroup1, detailedGroup2, ...employeeData } = updatedEmp;
+                      return employeeData;
+                  }
+                  return emp;
+              });
+          }
+          return newState;
+      });
+      
+      setEvaluations(prev => {
+          const newState = JSON.parse(JSON.stringify(prev));
+           for (const key in newState) {
+              newState[key] = newState[key].map((ev: Evaluation) => {
+                  const updatedRes = updatedEmployeesMap.get(ev.employeeId);
+                  if (updatedRes) {
+                      return {
+                          ...ev,
+                          grade: updatedRes.grade,
+                          memo: updatedRes.memo,
+                      };
+                  }
+                  return ev;
+              });
+          }
+          return newState;
+      });
+  };
 
   const handleClearEmployeeData = (year: number, month: number) => {
     const key = `${year}-${month}`;

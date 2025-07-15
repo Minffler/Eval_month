@@ -439,7 +439,6 @@ export default function EvaluatorManagement({
         detailedGroup2: '',
     };
     
-    // This will effectively add the new employee to the `allEmployees` state in page.tsx
     handleResultsUpdate([...results, dummyResult]);
 
     toast({ title: '성공', description: `평가자 '${newEvaluatorName}'님이 추가되었습니다.` });
