@@ -773,7 +773,8 @@ export default function Home() {
                   onClearMyEvaluations={handleClearMyEvaluations}
                   workRateDetails={workRateDetails}
                   holidays={holidays}
-                  allEmployees={allEmployees}
+                  allUsers={allUsers}
+                  allEmployees={allEmployeesFromState}
                   attendanceTypes={attendanceTypes}
                   onApprovalAction={onApprovalAction}
                   notifications={notifications}

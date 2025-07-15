@@ -963,6 +963,7 @@ export default function AdminDashboard({
                             onClearMyEvaluations={()=>{}}
                             workRateDetails={workRateDetails}
                             holidays={holidays}
+                            allUsers={allUsers}
                             allEmployees={allEmployees}
                             attendanceTypes={attendanceTypes}
                             onApprovalAction={onApprovalAction}

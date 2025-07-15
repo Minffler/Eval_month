@@ -97,6 +97,7 @@ interface EvaluatorDashboardProps {
   onClearMyEvaluations: (year: number, month: number, evaluatorId: string) => void;
   workRateDetails: WorkRateDetailsResult;
   holidays: Holiday[];
+  allUsers: User[];
   allEmployees: Employee[];
   attendanceTypes: AttendanceType[];
   onApprovalAction: (approval: Approval) => void;
@@ -1055,7 +1056,7 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, allUsers, 
 };
 
 
-export default function EvaluatorDashboard({ allResults, currentMonthResults, gradingScale, selectedDate, setSelectedDate, handleResultsUpdate, evaluatorUser, activeView, onClearMyEvaluations, workRateDetails, holidays, allEmployees, attendanceTypes, onApprovalAction, notifications, approvals }: EvaluatorDashboardProps) {
+export default function EvaluatorDashboard({ allResults, currentMonthResults, gradingScale, selectedDate, setSelectedDate, handleResultsUpdate, evaluatorUser, activeView, onClearMyEvaluations, workRateDetails, holidays, allUsers, allEmployees, attendanceTypes, onApprovalAction, notifications, approvals }: EvaluatorDashboardProps) {
   const { user: authUser } = useAuth();
   const { toast } = useToast();
   const [effectiveUser, setEffectiveUser] = React.useState<User | null>(null);
