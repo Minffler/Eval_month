@@ -25,7 +25,6 @@ import type { EvaluationResult, Grade, Employee, GradeInfo, EvaluationGroupCateg
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { useToast } from '@/hooks/use-toast';
-import SystemStandardsManagement from './system-standards-management';
 import { calculateFinalAmount, getPositionSortValue } from '@/lib/data';
 import * as XLSX from 'xlsx';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
@@ -66,6 +65,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Separator } from '../ui/separator';
 import AdminNotifications from './admin-dashboard-notifications';
 import { Label } from '../ui/label';
+import GradeManagement from './grade-management';
 
 interface AdminDashboardProps {
   results: EvaluationResult[];
@@ -172,6 +172,7 @@ export default function AdminDashboard({
   const [approvalDetailModalOpen, setApprovalDetailModalOpen] = React.useState(false);
   const [selectedApproval, setSelectedApproval] = React.useState<Approval | null>(null);
   const [rejectionReason, setRejectionReason] = React.useState('');
+  const [isGradeDialogOpen, setIsGradeDialogOpen] = React.useState(false);
 
   const { toast } = useToast();
 
@@ -808,7 +809,11 @@ export default function AdminDashboard({
                             ))}
                         </TabsList>
                         
-                        <div className="flex justify-end mb-4">
+                        <div className="flex justify-end mb-4 gap-2">
+                        <Button onClick={() => setIsGradeDialogOpen(true)} variant="outline">
+                            <Settings className="mr-2 h-4 w-4" />
+                            평가등급 관리
+                        </Button>
                         <Button onClick={handleDownloadExcel} variant="outline">
                             <Download className="mr-2 h-4 w-4" />
                             엑셀 다운로드
@@ -996,12 +1001,10 @@ export default function AdminDashboard({
             return <EvaluatorManagement results={initialResults} allUsers={allUsers} handleResultsUpdate={handleResultsUpdate} />;
         case 'user-role-management':
             return <UserRoleManagement allUsers={allUsers} onUserAdd={onUserAdd} onRolesChange={onRolesChange} onUserUpdate={onUserUpdate} onUserDelete={onUserDelete} />;
-        case 'system-standards':
-            return <SystemStandardsManagement gradingScale={gradingScale} setGradingScale={setGradingScale} attendanceTypes={attendanceTypes} setAttendanceTypes={setAttendanceTypes} holidays={holidays} setHolidays={setHolidays} />;
         case 'consistency-check':
             return <ConsistencyValidator results={initialResults} gradingScale={gradingScale} />;
         case 'work-rate-view':
-            return <WorkRateManagement results={initialResults} workRateDetails={workRateDetails} selectedDate={selectedDate} holidays={holidays} handleResultsUpdate={handleResultsUpdate} allEmployees={allEmployees} addNotification={addNotification} />;
+            return <WorkRateManagement results={initialResults} workRateDetails={workRateDetails} selectedDate={selectedDate} holidays={holidays} handleResultsUpdate={handleResultsUpdate} allEmployees={allEmployees} addNotification={addNotification} setHolidays={setHolidays} attendanceTypes={attendanceTypes} setAttendanceTypes={setAttendanceTypes} />;
         case 'shortened-work-details':
             return <WorkRateDetails type="shortenedWork" data={workRateDetails.shortenedWorkDetails} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} onDataChange={() => {}}/>;
         case 'daily-attendance-details':
@@ -1194,6 +1197,15 @@ export default function AdminDashboard({
                     <Button variant="outline" className="w-full sm:w-auto" onClick={() => setApprovalDetailModalOpen(false)}>닫기</Button>
                 )}
             </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={isGradeDialogOpen} onOpenChange={setIsGradeDialogOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>평가등급 관리</DialogTitle>
+            <DialogDescription>평가 등급, 점수, 지급률을 관리합니다.</DialogDescription>
+          </DialogHeader>
+          <GradeManagement gradingScale={gradingScale} setGradingScale={setGradingScale} />
         </DialogContent>
       </Dialog>
     </div>

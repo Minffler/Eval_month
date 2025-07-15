@@ -67,7 +67,6 @@ const adminNavItems: NavItem[] = [
       { id: 'file-upload', label: '파일 업로드', icon: Upload },
       { id: 'evaluator-management', label: '평가자 관리', icon: Users },
       { id: 'user-role-management', label: '사용자 및 권한 관리', icon: UserCog },
-      { id: 'system-standards', label: '시스템 기준 관리', icon: Settings },
     ],
   },
 ];
@@ -726,6 +725,7 @@ export default function Home() {
                   results={results}
                   allEmployees={allEmployeesFromState}
                   allUsers={allUsers}
+                  employeesData={employees}
                   onEmployeeUpload={handleEmployeeUpload}
                   onEvaluationUpload={handleEvaluationUpload}
                   gradingScale={gradingScale}
@@ -753,7 +753,6 @@ export default function Home() {
                   addNotification={addNotification}
                   deleteNotification={deleteNotification}
                   approvals={approvals}
-                  employeesData={employees}
                 />;
       case 'evaluator':
         if (evaluatorActiveView === 'personal-settings' && user) {
@@ -774,7 +773,7 @@ export default function Home() {
                   onClearMyEvaluations={handleClearMyEvaluations}
                   workRateDetails={workRateDetails}
                   holidays={holidays}
-                  allEmployees={allEmployeesFromState}
+                  allEmployees={allEmployees}
                   attendanceTypes={attendanceTypes}
                   onApprovalAction={onApprovalAction}
                   notifications={notifications}

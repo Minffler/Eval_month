@@ -4,7 +4,7 @@
 import * as React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import type { Employee, EvaluationResult, Holiday, ShortenedWorkType, AppNotification } from '@/lib/types';
+import type { Employee, EvaluationResult, Holiday, ShortenedWorkType, AppNotification, AttendanceType } from '@/lib/types';
 import type { WorkRateDetailsResult, ShortenedWorkDetail, DailyAttendanceDetail } from '@/lib/work-rate-calculator';
 import { Button } from '../ui/button';
 import { ArrowUpDown, Download, ArrowUp, ArrowDown, Settings2, Search } from 'lucide-react';
@@ -23,6 +23,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { format } from 'date-fns';
 import { Input } from '../ui/input';
+import GradeManagement from './grade-management';
 
 interface WorkRateManagementProps {
   results: EvaluationResult[];
@@ -30,6 +31,9 @@ interface WorkRateManagementProps {
   workRateDetails: WorkRateDetailsResult;
   selectedDate: { year: number, month: number };
   holidays: Holiday[];
+  setHolidays: React.Dispatch<React.SetStateAction<Holiday[]>>;
+  attendanceTypes: AttendanceType[];
+  setAttendanceTypes: React.Dispatch<React.SetStateAction<AttendanceType[]>>;
   handleResultsUpdate: (updatedResults: EvaluationResult[]) => void;
   addNotification: (notification: Omit<AppNotification, 'id' | 'date' | 'isRead'>) => void;
 }
@@ -75,7 +79,18 @@ function countBusinessDaysForMonth(year: number, month: number, holidays: Set<st
 }
 
 
-export default function WorkRateManagement({ results, allEmployees, workRateDetails, selectedDate, holidays, handleResultsUpdate, addNotification }: WorkRateManagementProps) {
+export default function WorkRateManagement({ 
+  results, 
+  allEmployees, 
+  workRateDetails, 
+  selectedDate, 
+  holidays, 
+  setHolidays,
+  attendanceTypes,
+  setAttendanceTypes,
+  handleResultsUpdate, 
+  addNotification 
+}: WorkRateManagementProps) {
   const { toast } = useToast();
   const [sortConfig, setSortConfig] = React.useState<SortConfig>({ key: 'monthlyWorkRate', direction: 'ascending' });
   const [detailDialog, setDetailDialog] = React.useState<DetailDialogInfo>({
@@ -88,6 +103,7 @@ export default function WorkRateManagement({ results, allEmployees, workRateDeta
     new Set(['attendance', 'pregnancy', 'care'])
   );
   const [searchTerm, setSearchTerm] = React.useState('');
+  const [isSettingsDialogOpen, setIsSettingsDialogOpen] = React.useState(false);
 
   const businessDays = React.useMemo(() => {
     const holidaySet = new Set(holidays.map(h => h.date));
@@ -361,6 +377,10 @@ export default function WorkRateManagement({ results, allEmployees, workRateDeta
                 </CardDescription>
               </div>
               <div className="flex gap-2">
+                <Button onClick={() => setIsSettingsDialogOpen(true)} variant="outline" size="sm">
+                  <Settings2 className="mr-2 h-4 w-4" />
+                  근무기준 설정
+                </Button>
                 <Button onClick={handleDownloadExcel} variant="outline" size="sm">
                   <Download className="mr-2 h-4 w-4" />
                   엑셀 다운로드
@@ -528,6 +548,26 @@ export default function WorkRateManagement({ results, allEmployees, workRateDeta
             </DialogFooter>
         </DialogContent>
     </Dialog>
+    <Dialog open={isSettingsDialogOpen} onOpenChange={setIsSettingsDialogOpen}>
+        <DialogContent className="max-w-4xl">
+            <DialogHeader>
+                <DialogTitle>근무기준 및 공휴일 관리</DialogTitle>
+                <DialogDescription>
+                    근무율 계산에 사용되는 근무기준과 공휴일을 관리합니다.
+                </DialogDescription>
+            </DialogHeader>
+            <GradeManagement
+                isGradeCard={false}
+                attendanceTypes={attendanceTypes}
+                setAttendanceTypes={setAttendanceTypes}
+                holidays={holidays}
+                setHolidays={setHolidays}
+            />
+             <DialogFooter>
+                <Button variant="outline" onClick={() => setIsSettingsDialogOpen(false)}>닫기</Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
