@@ -26,6 +26,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea } from '../ui/scroll-area';
 
 const GRADING_SCALE_LAST_UPDATED_KEY = 'pl_eval_grading_scale_last_updated';
 const ATTENDANCE_LAST_UPDATED_KEY = 'pl_eval_attendance_last_updated';
@@ -218,7 +219,7 @@ export default function GradeManagement({
   };
   
   const currentClientYear = new Date().getFullYear();
-  const availableYears = Array.from({ length: Math.max(0, currentClientYear - 2022 + 1) }, (_, i) => 2023 + i).reverse();
+  const availableYears = Array.from({ length: Math.max(0, currentClientYear - 2022 + 2) }, (_, i) => 2023 + i).reverse();
   const filteredHolidays = localHolidays.filter(h => h.date.startsWith(String(selectedYear))).sort((a,b) => a.date.localeCompare(b.date));
 
   const renderGradeCard = () => (
@@ -237,6 +238,7 @@ export default function GradeManagement({
         </div>
       </CardHeader>
       <CardContent>
+        <ScrollArea className="h-[400px]">
           <div className="border rounded-lg overflow-x-auto">
               <Table>
               <TableHeader>
@@ -261,6 +263,7 @@ export default function GradeManagement({
               </TableBody>
               </Table>
           </div>
+        </ScrollArea>
           <div className="flex justify-between mt-4">
               <Button variant="outline" onClick={handleAddNewGrade}><PlusCircle className="mr-2 h-4 w-4" />새 등급 추가</Button>
               <Button onClick={handleSaveGrades}><Save className="mr-2 h-4 w-4" />등급/점수 저장</Button>
@@ -275,6 +278,7 @@ export default function GradeManagement({
         <TabsTrigger value="types">근태 종류별 차감</TabsTrigger>
         <TabsTrigger value="holidays">공휴일</TabsTrigger>
       </TabsList>
+      <ScrollArea className="h-[450px] p-1">
       <TabsContent value="types" className="pt-4">
         <div className="border rounded-lg">
             <Table>
@@ -334,6 +338,7 @@ export default function GradeManagement({
               <Button onClick={handleSaveHolidays}><Save className="mr-2 h-4 w-4" />공휴일 저장</Button>
           </div>
       </TabsContent>
+      </ScrollArea>
     </Tabs>
   );
 
