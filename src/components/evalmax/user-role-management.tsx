@@ -67,6 +67,8 @@ export default function UserRoleManagement({
   // State for adding a new user
   const [newUserName, setNewUserName] = React.useState('');
   const [newUserId, setNewUserId] = React.useState('');
+  const [newUserDepartment, setNewUserDepartment] = React.useState('');
+  const [newUserTitle, setNewUserTitle] = React.useState('');
   const [newUserRoles, setNewUserRoles] = React.useState<Role[]>(['employee']);
   
   // State for editing an existing user
@@ -106,9 +108,9 @@ export default function UserRoleManagement({
       uniqueId: newUserId,
       name: newUserName,
       company: 'N/A',
-      department: 'N/A',
-      title: '미지정',
-      position: '미지정',
+      department: newUserDepartment,
+      title: newUserTitle,
+      position: newUserTitle,
       growthLevel: '',
       workRate: 1.0,
       evaluatorId: '',
@@ -122,6 +124,8 @@ export default function UserRoleManagement({
     setIsAddUserDialogOpen(false);
     setNewUserName('');
     setNewUserId('');
+    setNewUserDepartment('');
+    setNewUserTitle('');
     setNewUserRoles(['employee']);
   };
   
@@ -289,13 +293,21 @@ export default function UserRoleManagement({
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+             <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="new-user-id" className="text-right">ID (고유사번)</Label>
+              <Input id="new-user-id" value={newUserId} onChange={(e) => setNewUserId(e.target.value)} className="col-span-3" />
+            </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="new-user-name" className="text-right">이름</Label>
               <Input id="new-user-name" value={newUserName} onChange={(e) => setNewUserName(e.target.value)} className="col-span-3" />
             </div>
+             <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="new-user-department" className="text-right">부서</Label>
+              <Input id="new-user-department" value={newUserDepartment} onChange={(e) => setNewUserDepartment(e.target.value)} className="col-span-3" />
+            </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="new-user-id" className="text-right">ID (고유사번)</Label>
-              <Input id="new-user-id" value={newUserId} onChange={(e) => setNewUserId(e.target.value)} className="col-span-3" />
+              <Label htmlFor="new-user-title" className="text-right">직책</Label>
+              <Input id="new-user-title" value={newUserTitle} onChange={(e) => setNewUserTitle(e.target.value)} className="col-span-3" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label className="text-right">역할</Label>

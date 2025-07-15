@@ -31,6 +31,7 @@ interface HeaderProps {
     approvals: Approval[];
     unreadApprovalCount: number;
     markApprovalsAsRead: () => void;
+    setActiveView: (view: string) => void;
 }
 
 const formatTimestamp = (isoString: string | null) => {
@@ -47,6 +48,7 @@ export default function Header({
   approvals,
   unreadApprovalCount,
   markApprovalsAsRead,
+  setActiveView
 }: HeaderProps) {
   const { user, role, setRole } = useAuth();
 
@@ -152,7 +154,7 @@ export default function Header({
                   {approvals.length > 0 ? (
                     <ul className="space-y-2">
                       {approvals.map((approval) => (
-                        <li key={approval.id} className={cn("p-2 rounded-md", !approval.isRead && "bg-muted")}>
+                        <li key={approval.id} className={cn("p-2 rounded-md hover:bg-muted cursor-pointer", !approval.isRead && "bg-muted")} onClick={() => setActiveView('approvals')}>
                             <p className="text-sm">{approval.requesterName}님의 결재 요청</p>
                             <p className="text-xs text-muted-foreground mt-1">
                               {formatTimestamp(approval.date)}

@@ -10,7 +10,7 @@ import PersonalSettings from '@/components/evalmax/personal-settings';
 import type { Employee, Evaluation, EvaluationResult, Grade, GradeInfo, User, EvaluatorView, EvaluationUploadData, WorkRateInputs, AttendanceType, Holiday, ShortenedWorkHourRecord, DailyAttendanceRecord, EmployeeView, Approval, AppNotification, ShortenedWorkType, Role } from '@/lib/types';
 import { mockEmployees as initialMockEmployees, gradingScale as initialGradingScale, calculateFinalAmount, mockEvaluations as initialMockEvaluations, getDetailedGroup1, initialAttendanceTypes, mockUsers as initialMockUsers } from '@/lib/data';
 import { useRouter } from 'next/navigation';
-import { Loader2, Bell } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { Sidebar, type NavItem } from '@/components/evalmax/sidebar';
 import { cn } from '@/lib/utils';
 import {
@@ -39,14 +39,15 @@ import { useToast } from '@/hooks/use-toast';
 
 const adminNavItems: NavItem[] = [
   {
-    id: 'results',
-    label: '평가결과',
+    id: 'evaluation-management',
+    label: '평가 관리',
     icon: FileCheck,
     children: [
       { id: 'dashboard', label: '대시보드', icon: LayoutDashboard },
-      { id: 'all-results', label: '개인별 등급/금액', icon: ListChecks },
+      { id: 'all-results', label: '등급/금액 상세', icon: ListChecks },
       { id: 'evaluator-view', label: '평가자별 조회', icon: Eye },
       { id: 'consistency-check', label: '편향 검토 (AI)', icon: Bot },
+      { id: 'evaluator-management', label: '평가자 배정', icon: Users },
     ],
   },
   {
@@ -60,12 +61,11 @@ const adminNavItems: NavItem[] = [
     ]
   },
   {
-    id: 'data-management',
-    label: '데이터 관리',
-    icon: Database,
+    id: 'system-management',
+    label: '시스템 관리',
+    icon: Settings,
     children: [
       { id: 'file-upload', label: '파일 업로드', icon: Upload },
-      { id: 'evaluator-management', label: '평가자 관리', icon: Users },
       { id: 'user-role-management', label: '사용자 및 권한 관리', icon: UserCog },
     ],
   },
@@ -816,6 +816,7 @@ export default function Home() {
       approvals={approvals}
       unreadApprovalCount={unreadApprovalCount}
       markApprovalsAsRead={markApprovalsAsRead}
+      setActiveView={role === 'admin' ? setAdminActiveView : (role === 'evaluator' ? setEvaluatorActiveView : setEmployeeActiveView)}
     />
   );
 

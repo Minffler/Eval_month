@@ -215,7 +215,8 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                 });
                 
                 if (hasChanged) {
-                    saveAllItems(APPROVALS_STORAGE_KEY, updated);
+                    const uniqueUpdated = uniqueById(updated);
+                    saveAllItems(APPROVALS_STORAGE_KEY, uniqueUpdated);
                 }
                 return updated;
             });
