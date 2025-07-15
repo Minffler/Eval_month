@@ -23,21 +23,10 @@ export const initialAttendanceTypes: AttendanceType[] = [
 ];
 
 export const mockEmployees: Employee[] = [
-  { id: 'E1911042', uniqueId: '1911042', name: '김관리', company: 'OK', department: '인사기획팀', title: '팀원', position: '팀원', growthLevel: 'Lv.5', workRate: 1.0, evaluatorId: '1911042', baseAmount: 8000000, memo: '' },
-  { id: 'E0000002', uniqueId: '0000002', name: '박평가', company: 'OK', department: '제품 개발', title: '팀장', position: '팀장', growthLevel: 'Lv.4', workRate: 1.0, evaluatorId: '1911042', baseAmount: 7500000, memo: '' },
-  { id: 'E0000003', uniqueId: '0000003', name: '이주임', company: 'OK', department: '제품 개발', title: '팀원', position: '팀원', growthLevel: 'Lv.2', workRate: 1.0, evaluatorId: '0000002', baseAmount: 5000000, memo: '프로젝트 기여도 높음' },
-  { id: 'E0000004', uniqueId: '0000004', name: '최사원', company: 'OC', department: '제품 개발', title: '팀원', position: '팀원', growthLevel: 'Lv.1', workRate: 1.0, evaluatorId: '0000002', baseAmount: 4500000, memo: '' },
-  { id: 'E0000005', uniqueId: '0000005', name: '정대리', company: 'OCI', department: '디자인', title: '팀원', position: '팀원', growthLevel: 'Lv.3', workRate: 1.0, evaluatorId: '0000002', baseAmount: 5500000, memo: '마감일 준수' },
-  { id: 'E0000006', uniqueId: '0000006', name: '윤과장', company: 'OFI', department: '마케팅', title: '팀원', position: '팀원', growthLevel: 'Lv.4', workRate: 1.0, evaluatorId: '0000006', baseAmount: 6500000, memo: '' },
+  { id: 'E1911042', uniqueId: '1911042', name: '김민선', company: 'OK', department: '인사부', title: '팀원', position: '팀원', growthLevel: 'Lv.5', workRate: 1.0, evaluatorId: '1911042', baseAmount: 8000000, memo: '' },
 ];
 
 export const mockEvaluations: Evaluation[] = [
-  { id: 'eval-E0000003', employeeId: 'E0000003', year: 2025, month: 7, grade: 'A', memo: '프로젝트 기여도 높음' },
-  { id: 'eval-E0000004', employeeId: 'E0000004', year: 2025, month: 7, grade: 'B+', memo: '' },
-  { id: 'eval-E0000005', employeeId: 'E0000005', year: 2025, month: 7, grade: 'B', memo: '마감일 준수' },
-  { id: 'eval-E0000006', employeeId: 'E0000006', year: 2025, month: 7, grade: null, memo: '' },
-  { id: 'eval-E1911042', employeeId: 'E1911042', year: 2025, month: 7, grade: null, memo: '' },
-  { id: 'eval-E0000002', employeeId: 'E0000002', year: 2025, month: 7, grade: null, memo: '' },
 ];
 
 

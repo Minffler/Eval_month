@@ -17,9 +17,10 @@ interface AuthContextType {
 const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
 
 const mockUsers: User[] = [
-  { id: 'user-1', employeeId: 'E1911042', uniqueId: '1911042', name: '김관리', roles: ['admin', 'evaluator', 'employee'], avatar: 'https://placehold.co/100x100.png?text=A', title: '인사총무팀장', department: '인사총무팀' },
+  { id: 'user-1', employeeId: 'E1911042', uniqueId: '1911042', name: '김민선', roles: ['admin', 'evaluator', 'employee'], avatar: 'https://placehold.co/100x100.png?text=A', title: '인사부', department: '인사부' },
   { id: 'user-2', employeeId: 'E0000002', uniqueId: '0000002', name: '박평가', roles: ['evaluator', 'employee'], avatar: 'https://placehold.co/100x100.png?text=E', title: '개발팀장', department: '개발팀' },
   { id: 'user-3', employeeId: 'E0000003', uniqueId: '0000003', name: '이주임', roles: ['employee'], avatar: 'https://placehold.co/100x100.png?text=E', title: '주임', department: '개발팀' },
+  { id: 'user-admin', employeeId: 'Eadmin', uniqueId: 'admin', name: '김관리', roles: ['admin', 'evaluator', 'employee'], avatar: 'https://placehold.co/100x100.png?text=A', title: '인사부', department: '인사부' },
 ];
 
 
@@ -53,7 +54,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       // Simple mock auth logic, can be replaced with real auth
       if (id === 'admin' && pass === '1') {
-        foundUser = mockUsers.find(u => u.roles.includes('admin'));
+        foundUser = mockUsers.find(u => u.uniqueId === 'admin');
       } else if (id === 'evaluator' && pass === '1') {
         foundUser = mockUsers.find(u => u.roles.includes('evaluator') && !u.roles.includes('admin'));
       } else if (id === 'employee' && pass === '1') {
