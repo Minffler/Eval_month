@@ -785,7 +785,7 @@ export default function Home() {
         const myResults = results.filter(r => myManagedEmployeeIds.has(r.id));
         
         return <EvaluatorDashboard 
-                  allResults={allResults}
+                  allResults={results}
                   currentMonthResults={myResults}
                   gradingScale={gradingScale}
                   selectedDate={selectedDate}
