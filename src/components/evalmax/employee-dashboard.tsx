@@ -248,25 +248,11 @@ const MyReviewView = ({ employeeResults, allResults, gradingScale }: {
   
   return (
      <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold tracking-tight">내 성과 리뷰</h2>
-         <Select value={selectedYear} onValueChange={handleYearChange}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="연도 선택" />
-          </SelectTrigger>
-          <SelectContent>
-            {availableYears.map(year => (
-                <SelectItem key={year} value={year.toString()}>{year}년</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">{selectedYear}년 평가 결과</CardTitle>
+          <CardTitle className="text-2xl">월별 평가 결과</CardTitle>
           <CardDescription>
-            선택한 연도의 성과 평가 및 보상 요약입니다.
+            월별 성과 평가 및 보상 요약입니다.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-8">
@@ -546,7 +532,7 @@ export default function EmployeeDashboard({
       case 'my-review':
         return <MyReviewView employeeResults={employeeResults} allResults={allResults} gradingScale={gradingScale} />;
       case 'my-work-rate':
-        return <WorkRateManagement results={employeeResults} workRateDetails={myWorkRateDetails} selectedDate={selectedDate} allEmployees={allEmployees} holidays={[]} handleResultsUpdate={() => {}} />;
+        return <WorkRateManagement results={employeeResults} workRateDetails={myWorkRateDetails} selectedDate={selectedDate} allEmployees={allEmployees} holidays={[]} setHolidays={() => {}} attendanceTypes={attendanceTypes} setAttendanceTypes={() => {}} handleResultsUpdate={() => {}} addNotification={() => {}} />;
       case 'my-shortened-work':
         return <WorkRateDetails type="shortenedWork" data={myWorkRateDetails.shortenedWorkDetails} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} viewAs={role} onDataChange={() => {}} />;
       case 'my-daily-attendance':

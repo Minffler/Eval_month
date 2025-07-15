@@ -31,11 +31,11 @@ interface WorkRateManagementProps {
   workRateDetails: WorkRateDetailsResult;
   selectedDate: { year: number, month: number };
   holidays: Holiday[];
-  setHolidays: React.Dispatch<React.SetStateAction<Holiday[]>>;
+  setHolidays?: React.Dispatch<React.SetStateAction<Holiday[]>>;
   attendanceTypes: AttendanceType[];
-  setAttendanceTypes: React.Dispatch<React.SetStateAction<AttendanceType[]>>;
+  setAttendanceTypes?: React.Dispatch<React.SetStateAction<AttendanceType[]>>;
   handleResultsUpdate: (updatedResults: EvaluationResult[]) => void;
-  addNotification: (notification: Omit<AppNotification, 'id' | 'date' | 'isRead'>) => void;
+  addNotification?: (notification: Omit<AppNotification, 'id' | 'date' | 'isRead'>) => void;
 }
 
 type DeductionType = 'attendance' | 'pregnancy' | 'care';
@@ -267,7 +267,7 @@ export default function WorkRateManagement({
           if (newWorkRate !== undefined && newWorkRate !== result.workRate) {
               updatedCount++;
               const message = `${selectedDate.year}년 ${selectedDate.month}월 근무율이 ${(newWorkRate * 100).toFixed(1)}%로 반영되었습니다.`;
-              addNotification({ recipientId: result.uniqueId, message });
+              addNotification?.({ recipientId: result.uniqueId, message });
               
               if(result.evaluatorId) {
                 if (!evaluatorNotifications[result.evaluatorId]) {
@@ -282,7 +282,7 @@ export default function WorkRateManagement({
       
       handleResultsUpdate(updatedResults);
 
-      if (updatedCount > 0) {
+      if (updatedCount > 0 && addNotification) {
         Object.entries(evaluatorNotifications).forEach(([evaluatorId, count]) => {
             addNotification({ recipientId: evaluatorId, message: `담당 직원 ${count}명의 근무율이 업데이트되었습니다.`});
         });
@@ -377,15 +377,19 @@ export default function WorkRateManagement({
                 </CardDescription>
               </div>
               <div className="flex gap-2">
-                <Button onClick={() => setIsSettingsDialogOpen(true)} variant="outline" size="sm">
-                  <Settings2 className="mr-2 h-4 w-4" />
-                  근무기준 설정
-                </Button>
+                { setHolidays && setAttendanceTypes && (
+                  <Button onClick={() => setIsSettingsDialogOpen(true)} variant="outline" size="sm">
+                    <Settings2 className="mr-2 h-4 w-4" />
+                    근무기준 설정
+                  </Button>
+                )}
                 <Button onClick={handleDownloadExcel} variant="outline" size="sm">
                   <Download className="mr-2 h-4 w-4" />
                   엑셀 다운로드
                 </Button>
-                <Button onClick={handleApplyWorkRate} size="sm">근무율 반영</Button>
+                {handleResultsUpdate && (
+                  <Button onClick={handleApplyWorkRate} size="sm">근무율 반영</Button>
+                )}
               </div>
             </div>
             <div className="flex flex-col sm:flex-row justify-between items-center pt-4 gap-4">
@@ -548,26 +552,28 @@ export default function WorkRateManagement({
             </DialogFooter>
         </DialogContent>
     </Dialog>
-    <Dialog open={isSettingsDialogOpen} onOpenChange={setIsSettingsDialogOpen}>
-        <DialogContent className="max-w-2xl">
-            <DialogHeader>
-                <DialogTitle>근무기준 및 공휴일 관리</DialogTitle>
-                <DialogDescription>
-                    근무율 계산에 사용되는 근무기준과 공휴일을 관리합니다.
-                </DialogDescription>
-            </DialogHeader>
-            <GradeManagement
-                isGradeCard={false}
-                attendanceTypes={attendanceTypes}
-                setAttendanceTypes={setAttendanceTypes}
-                holidays={holidays}
-                setHolidays={setHolidays}
-            />
-             <DialogFooter>
-                <Button variant="outline" onClick={() => setIsSettingsDialogOpen(false)}>닫기</Button>
-            </DialogFooter>
-        </DialogContent>
-      </Dialog>
+    {setHolidays && setAttendanceTypes && (
+      <Dialog open={isSettingsDialogOpen} onOpenChange={setIsSettingsDialogOpen}>
+          <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                  <DialogTitle>근무기준 및 공휴일 관리</DialogTitle>
+                  <DialogDescription>
+                      근무율 계산에 사용되는 근무기준과 공휴일을 관리합니다.
+                  </DialogDescription>
+              </DialogHeader>
+              <GradeManagement
+                  isGradeCard={false}
+                  attendanceTypes={attendanceTypes}
+                  setAttendanceTypes={setAttendanceTypes}
+                  holidays={holidays}
+                  setHolidays={setHolidays}
+              />
+              <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsSettingsDialogOpen(false)}>닫기</Button>
+              </DialogFooter>
+          </DialogContent>
+        </Dialog>
+    )}
     </>
   );
 }
