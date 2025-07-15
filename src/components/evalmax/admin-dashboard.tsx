@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, FileCheck, Bot, Upload, LayoutDashboard, Settings, Download, Bell, ArrowUpDown, ArrowUp, ArrowDown, Eye, ClipboardX, ChevronUp, ChevronDown, CheckCircle2, ChevronsUpDown, Save, X, ThumbsUp, ThumbsDown, Inbox, FileText, AlertTriangle, UserCog } from 'lucide-react';
+import { Users, FileCheck, Bot, Upload, LayoutDashboard, Settings, Download, Bell, ArrowUpDown, ArrowUp, ArrowDown, Eye, ClipboardX, ChevronUp, ChevronDown, CheckCircle2, ChevronsUpDown, Save, X, ThumbsUp, ThumbsDown, Inbox, FileText, AlertTriangle, UserCog, Settings2 } from 'lucide-react';
 import { GradeHistogram } from './grade-histogram';
 import {
   Table,
@@ -811,7 +811,7 @@ export default function AdminDashboard({
                         
                         <div className="flex justify-end mb-4 gap-2">
                         <Button onClick={() => setIsGradeDialogOpen(true)} variant="outline">
-                            <Settings className="mr-2 h-4 w-4" />
+                            <Settings2 className="mr-2 h-4 w-4" />
                             평가등급 관리
                         </Button>
                         <Button onClick={handleDownloadExcel} variant="outline">
@@ -1004,7 +1004,7 @@ export default function AdminDashboard({
         case 'consistency-check':
             return <ConsistencyValidator results={initialResults} gradingScale={gradingScale} />;
         case 'work-rate-view':
-            return <WorkRateManagement results={initialResults} workRateDetails={workRateDetails} selectedDate={selectedDate} holidays={holidays} handleResultsUpdate={handleResultsUpdate} allEmployees={allEmployees} addNotification={addNotification} setHolidays={setHolidays} attendanceTypes={attendanceTypes} setAttendanceTypes={setAttendanceTypes} />;
+            return <WorkRateManagement results={initialResults} workRateDetails={workRateDetails} selectedDate={selectedDate} holidays={holidays} setHolidays={setHolidays} attendanceTypes={attendanceTypes} setAttendanceTypes={setAttendanceTypes} handleResultsUpdate={handleResultsUpdate} allEmployees={allEmployees} addNotification={addNotification} />;
         case 'shortened-work-details':
             return <WorkRateDetails type="shortenedWork" data={workRateDetails.shortenedWorkDetails} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} onDataChange={() => {}}/>;
         case 'daily-attendance-details':
