@@ -273,9 +273,9 @@ export default function ManageData({
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <Card>
         <CardHeader>
-          <CardTitle>평가 데이터 관리</CardTitle>
+          <CardTitle>월별 대상자 관리</CardTitle>
           <CardDescription>
-            핵심 평가 데이터인 대상자 및 평가 결과를 업로드합니다.
+            월별 대상자 및 평가자를 업로드합니다.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
