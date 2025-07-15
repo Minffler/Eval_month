@@ -52,6 +52,7 @@ import {
 import { Textarea } from '../ui/textarea';
 import EvaluatorDashboard from './evaluator-dashboard';
 import UserRoleManagement from './user-role-management';
+import EvaluatorManagement from './evaluator-management';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
 import { AmountDistributionChart } from './amount-distribution-chart';
 import WorkRateManagement from './work-rate-management';
@@ -80,6 +81,8 @@ interface AdminDashboardProps {
   handleResultsUpdate: (updatedResults: EvaluationResult[]) => void;
   onUserAdd: (newEmployee: Employee, roles: Role[]) => void;
   onRolesChange: (userId: string, newRoles: Role[]) => void;
+  onUserUpdate: (userId: string, updatedData: Partial<User>) => void;
+  onUserDelete: (userId: string) => void;
   activeView: string;
   onClearEmployeeData: (year: number, month: number) => void;
   onClearEvaluationData: (year: number, month: number) => void;
@@ -133,6 +136,8 @@ export default function AdminDashboard({
   handleResultsUpdate,
   onUserAdd,
   onRolesChange,
+  onUserUpdate,
+  onUserDelete,
   activeView,
   onClearEmployeeData,
   onClearEvaluationData,
@@ -987,8 +992,10 @@ export default function AdminDashboard({
         }
         case 'file-upload':
             return <ManageData onEmployeeUpload={onEmployeeUpload} onEvaluationUpload={onEvaluationUpload} allEmployees={employeesData} results={initialResults} selectedDate={selectedDate} setSelectedDate={setSelectedDate} onClearEmployeeData={onClearEmployeeData} onClearEvaluationData={onClearEvaluationData} onWorkRateDataUpload={onWorkRateDataUpload} onClearWorkRateData={onClearWorkRateData} workRateInputs={currentWorkRateInputs} />;
+        case 'evaluator-management':
+            return <EvaluatorManagement results={initialResults} allUsers={allUsers} handleResultsUpdate={handleResultsUpdate} />;
         case 'user-role-management':
-            return <UserRoleManagement allUsers={allUsers} allEmployees={allEmployees} onUserAdd={onUserAdd} onRolesChange={onRolesChange} />;
+            return <UserRoleManagement allUsers={allUsers} onUserAdd={onUserAdd} onRolesChange={onRolesChange} onUserUpdate={onUserUpdate} onUserDelete={onUserDelete} />;
         case 'system-standards':
             return <SystemStandardsManagement gradingScale={gradingScale} setGradingScale={setGradingScale} attendanceTypes={attendanceTypes} setAttendanceTypes={setAttendanceTypes} holidays={holidays} setHolidays={setHolidays} />;
         case 'consistency-check':

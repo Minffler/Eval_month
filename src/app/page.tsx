@@ -6,6 +6,7 @@ import Header from '@/components/evalmax/header';
 import AdminDashboard from '@/components/evalmax/admin-dashboard';
 import EvaluatorDashboard from '@/components/evalmax/evaluator-dashboard';
 import EmployeeDashboard from '@/components/evalmax/employee-dashboard';
+import PersonalSettings from '@/components/evalmax/personal-settings';
 import type { Employee, Evaluation, EvaluationResult, Grade, GradeInfo, User, EvaluatorView, EvaluationUploadData, WorkRateInputs, AttendanceType, Holiday, ShortenedWorkHourRecord, DailyAttendanceRecord, EmployeeView, Approval, AppNotification, ShortenedWorkType, Role } from '@/lib/types';
 import { mockEmployees as initialMockEmployees, gradingScale as initialGradingScale, calculateFinalAmount, mockEvaluations as initialMockEvaluations, getDetailedGroup1, initialAttendanceTypes, mockUsers as initialMockUsers } from '@/lib/data';
 import { useRouter } from 'next/navigation';
@@ -64,6 +65,7 @@ const adminNavItems: NavItem[] = [
     icon: Database,
     children: [
       { id: 'file-upload', label: '파일 업로드', icon: Upload },
+      { id: 'evaluator-management', label: '평가자 관리', icon: Users },
       { id: 'user-role-management', label: '사용자 및 권한 관리', icon: UserCog },
       { id: 'system-standards', label: '시스템 기준 관리', icon: Settings },
     ],
@@ -112,6 +114,7 @@ const employeeNavItems: NavItem[] = [
       { id: 'my-daily-attendance', label: '일근태 상세', icon: CalendarDays },
     ],
   },
+  { id: 'personal-settings', label: '개인정보 설정', icon: Settings2, isBottom: true },
 ];
 
 const getInitialDate = () => {
@@ -141,7 +144,7 @@ const getFromLocalStorage = (key: string, defaultValue: any) => {
 }
 
 export default function Home() {
-  const { user, loading, logout } = useAuth();
+  const { user, users: allUsers, loading, logout, setUsers, setUser, login } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -158,7 +161,6 @@ export default function Home() {
       markApprovalsAsRead
   } = useNotifications();
   
-  const [users, setUsers] = React.useState<User[]>(() => getFromLocalStorage('users', initialMockUsers));
   const [employees, setEmployees] = React.useState<Record<string, Employee[]>>(() => getFromLocalStorage('employees', { '2025-7': initialMockEmployees }));
   const [evaluations, setEvaluations] = React.useState<Record<string, Evaluation[]>>(() => getFromLocalStorage('evaluations', { '2025-7': initialMockEvaluations }));
   const [gradingScale, setGradingScale] = React.useState<Record<NonNullable<Grade>, GradeInfo>>(() => getFromLocalStorage('gradingScale', initialGradingScale));
@@ -166,7 +168,6 @@ export default function Home() {
   const [attendanceTypes, setAttendanceTypes] = React.useState<AttendanceType[]>(() => getFromLocalStorage('attendanceTypes', initialAttendanceTypes));
   const [holidays, setHolidays] = React.useState<Holiday[]>(() => getFromLocalStorage('holidays', []));
 
-  React.useEffect(() => { localStorage.setItem('users', JSON.stringify(users)); }, [users]);
   React.useEffect(() => { localStorage.setItem('employees', JSON.stringify(employees)); }, [employees]);
   React.useEffect(() => { localStorage.setItem('evaluations', JSON.stringify(evaluations)); }, [evaluations]);
   React.useEffect(() => { localStorage.setItem('gradingScale', JSON.stringify(gradingScale)); }, [gradingScale]);
@@ -206,9 +207,9 @@ export default function Home() {
     }
   }, [user, loading, router]);
   
-  const role = user ? users.find(u => u.id === user.id)?.roles.find(r => r === (localStorage.getItem('role') || 'employee')) : 'employee';
+  const role = user ? allUsers.find(u => u.id === user.id)?.roles.find(r => r === (localStorage.getItem('role') || 'employee')) : 'employee';
   
-  const allEmployees = React.useMemo(() => {
+  const allEmployeesFromState = React.useMemo(() => {
     const employeeMap = new Map<string, Employee>();
     Object.values(employees).flat().forEach(employee => {
         if (!employeeMap.has(employee.uniqueId)) {
@@ -489,8 +490,75 @@ export default function Home() {
         avatar: `https://placehold.co/100x100.png?text=${newEmployee.name.charAt(0)}`,
         title: newEmployee.title,
         department: newEmployee.department,
+        password: '1'
       };
       return [...prev, newUser];
+    });
+  };
+
+  const handleUserUpdate = (userId: string, updatedData: Partial<User>) => {
+    let employeeUpdated = false;
+    let oldUniqueId = '';
+    
+    setUsers(prevUsers => {
+        return prevUsers.map(u => {
+            if (u.id === userId) {
+                oldUniqueId = u.uniqueId;
+                if (u.uniqueId !== updatedData.uniqueId || u.name !== updatedData.name || u.department !== updatedData.department || u.title !== updatedData.title) {
+                    employeeUpdated = true;
+                }
+                const newPass = updatedData.password;
+                if(newPass && newPass.trim() !== '') {
+                    login(u.uniqueId, '1'); //This is a hack to make sure the user object is updated
+                }
+
+                return { ...u, ...updatedData };
+            }
+            return u;
+        });
+    });
+
+    if (employeeUpdated) {
+        setEmployees(prevEmployees => {
+            const newEmployees = { ...prevEmployees };
+            const userToUpdate = allUsers.find(u => u.id === userId);
+            if (!userToUpdate) return prevEmployees;
+
+            for (const monthKey in newEmployees) {
+                newEmployees[monthKey] = newEmployees[monthKey].map(emp => {
+                    if (emp.uniqueId === oldUniqueId) {
+                        return { 
+                            ...emp, 
+                            uniqueId: updatedData.uniqueId ?? emp.uniqueId,
+                            id: updatedData.uniqueId ? `E${updatedData.uniqueId}` : emp.id,
+                            name: updatedData.name ?? emp.name,
+                            department: updatedData.department ?? emp.department,
+                            title: updatedData.title ?? emp.title,
+                            position: updatedData.title ?? emp.position,
+                        };
+                    }
+                    if(emp.evaluatorId === oldUniqueId) {
+                        return { ...emp, evaluatorId: updatedData.uniqueId ?? emp.evaluatorId };
+                    }
+                    return emp;
+                });
+            }
+            return newEmployees;
+        });
+    }
+  };
+
+  const handleUserDelete = (userId: string) => {
+    const userToDelete = allUsers.find(u => u.id === userId);
+    if (!userToDelete) return;
+
+    setUsers(prev => prev.filter(u => u.id !== userId));
+    setEmployees(prev => {
+        const newState = { ...prev };
+        for (const key in newState) {
+            newState[key] = newState[key].filter(e => e.uniqueId !== userToDelete.uniqueId);
+        }
+        return newState;
     });
   };
 
@@ -645,16 +713,19 @@ export default function Home() {
         monthlyEmployees = (employees[dateKey] || []).map(e => ({ ...e, year, month }));
     }
     
-    setResults(getFullEvaluationResults(monthlyEmployees, evaluations, gradingScale, allEmployees));
-  }, [employees, evaluations, gradingScale, selectedDate, allEmployees]);
+    setResults(getFullEvaluationResults(monthlyEmployees, evaluations, gradingScale, allEmployeesFromState));
+  }, [employees, evaluations, gradingScale, selectedDate, allEmployeesFromState]);
 
   const renderDashboard = () => {
     switch (role) {
       case 'admin':
+        if (adminActiveView === 'personal-settings' && user) {
+            return <PersonalSettings user={user} onUserUpdate={handleUserUpdate} />;
+        }
         return <AdminDashboard 
                   results={results}
-                  allEmployees={allEmployees}
-                  allUsers={users}
+                  allEmployees={allEmployeesFromState}
+                  allUsers={allUsers}
                   onEmployeeUpload={handleEmployeeUpload}
                   onEvaluationUpload={handleEvaluationUpload}
                   gradingScale={gradingScale}
@@ -664,6 +735,8 @@ export default function Home() {
                   handleResultsUpdate={handleResultsUpdate}
                   onUserAdd={handleUserAdd}
                   onRolesChange={handleRolesChange}
+                  onUserUpdate={handleUserUpdate}
+                  onUserDelete={handleUserDelete}
                   activeView={adminActiveView}
                   onClearEmployeeData={handleClearEmployeeData}
                   onClearEvaluationData={handleClearEvaluationData}
@@ -683,12 +756,15 @@ export default function Home() {
                   employeesData={employees}
                 />;
       case 'evaluator':
+        if (evaluatorActiveView === 'personal-settings' && user) {
+            return <PersonalSettings user={user} onUserUpdate={handleUserUpdate} />;
+        }
         const myManagedEmployees = results.filter(e => e.evaluatorId === user?.uniqueId);
         const myManagedEmployeeIds = new Set(myManagedEmployees.map(e => e.id));
         const myResults = results.filter(r => myManagedEmployeeIds.has(r.id));
         
         return <EvaluatorDashboard 
-                  allResults={allEmployees.filter(r => r.evaluatorId === user?.uniqueId)}
+                  allResults={allEmployeesFromState.filter(r => r.evaluatorId === user?.uniqueId)}
                   currentMonthResults={myResults}
                   gradingScale={gradingScale}
                   selectedDate={selectedDate}
@@ -698,7 +774,7 @@ export default function Home() {
                   onClearMyEvaluations={handleClearMyEvaluations}
                   workRateDetails={workRateDetails}
                   holidays={holidays}
-                  allEmployees={allEmployees}
+                  allEmployees={allEmployeesFromState}
                   attendanceTypes={attendanceTypes}
                   onApprovalAction={onApprovalAction}
                   notifications={notifications}
@@ -707,6 +783,9 @@ export default function Home() {
                   approvals={approvals}
                 />;
       case 'employee':
+        if (employeeActiveView === 'personal-settings' && user) {
+            return <PersonalSettings user={user} onUserUpdate={handleUserUpdate} />;
+        }
         const myEmployeeInfo = results.find(e => e.uniqueId === user?.uniqueId);
         const myApprovals = approvals.filter(a => a.requesterId === user.uniqueId);
         return <EmployeeDashboard 
@@ -716,7 +795,7 @@ export default function Home() {
                   activeView={employeeActiveView}
                   workRateDetails={workRateDetails}
                   selectedDate={selectedDate}
-                  allEmployees={allEmployees}
+                  allEmployees={allEmployeesFromState}
                   attendanceTypes={attendanceTypes}
                   onApprovalAction={onApprovalAction}
                   notifications={notifications}
@@ -779,8 +858,12 @@ export default function Home() {
   )
 
   if (role === 'admin') {
+      const extendedNavItems = [
+          ...adminNavItems,
+          { id: 'personal-settings', label: '개인정보 설정', icon: Settings2, isBottom: true },
+      ];
       return commonLayout(
-        adminNavItems,
+        extendedNavItems,
         adminActiveView,
         setAdminActiveView,
         isAdminSidebarOpen,
@@ -789,8 +872,12 @@ export default function Home() {
   }
 
   if (role === 'evaluator') {
+      const extendedNavItems = [
+          ...evaluatorNavItems,
+          { id: 'personal-settings', label: '개인정보 설정', icon: Settings2, isBottom: true },
+      ];
       return commonLayout(
-        evaluatorNavItems,
+        extendedNavItems,
         evaluatorActiveView,
         setEvaluatorActiveView,
         isEvaluatorSidebarOpen,

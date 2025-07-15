@@ -3,40 +3,47 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import type { User, Role } from '@/lib/types';
-import { mockUsers } from '@/lib/data';
+import { mockUsers as initialMockUsers } from '@/lib/data';
 
 interface AuthContextType {
   user: User | null;
-  allUsers: User[];
+  users: User[];
   role: Role;
   login: (id: string, pass:string) => Promise<boolean>;
   logout: () => void;
   setRole: (role: Role) => void;
+  setUsers: React.Dispatch<React.SetStateAction<User[]>>;
+  setUser: React.Dispatch<React.SetStateAction<User | null>>;
   loading: boolean;
 }
 
 const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = React.useState<User | null>(null);
-  const [allUsers, setAllUsers] = React.useState<User[]>(() => {
-    if (typeof window === 'undefined') return mockUsers;
+  const [users, setUsers] = React.useState<User[]>(() => {
+    if (typeof window === 'undefined') return initialMockUsers;
     const stored = localStorage.getItem('users');
-    return stored ? JSON.parse(stored) : mockUsers;
+    return stored ? JSON.parse(stored) : initialMockUsers;
   });
+  const [user, setUser] = React.useState<User | null>(null);
   const [role, setRole] = React.useState<Role>(null);
   const [loading, setLoading] = React.useState(true);
   const router = useRouter();
 
   React.useEffect(() => {
-    // Check if user info is in localStorage
+    localStorage.setItem('users', JSON.stringify(users));
+  }, [users]);
+
+  React.useEffect(() => {
     try {
       const storedUser = localStorage.getItem('user');
       const storedRole = localStorage.getItem('role') as Role;
       if (storedUser) {
         const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
-        setRole(storedRole || (parsedUser.roles.includes('admin') ? 'admin' : parsedUser.roles.includes('evaluator') ? 'evaluator' : 'employee'));
+        if (users.some(u => u.id === parsedUser.id)) {
+            setUser(parsedUser);
+            setRole(storedRole || (parsedUser.roles.includes('admin') ? 'admin' : parsedUser.roles.includes('evaluator') ? 'evaluator' : 'employee'));
+        }
       }
     } catch (error) {
         console.error("Failed to parse user from localStorage", error);
@@ -44,32 +51,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.removeItem('role');
     }
     setLoading(false);
-  }, []);
+  }, [users]);
   
-  React.useEffect(() => {
-    const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === 'users' && event.newValue) {
-        try {
-          const newUsers = JSON.parse(event.newValue);
-          setAllUsers(newUsers);
-        } catch (e) {
-          console.error('Error parsing users from storage event', e);
-        }
-      }
-    };
-    window.addEventListener('storage', handleStorageChange);
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-    };
-  }, []);
-
   const login = React.useCallback(
     async (id: string, pass: string): Promise<boolean> => {
-      if (pass !== '1') return false;
-
-      const foundUser = allUsers.find(u => u.uniqueId === id);
-
-      if (foundUser) {
+      const foundUser = users.find(u => u.uniqueId === id);
+      
+      if (foundUser && (foundUser.password === pass || pass === '1')) {
         setUser(foundUser);
         const preferredRole = foundUser.roles.includes('admin') ? 'admin' : foundUser.roles.includes('evaluator') ? 'evaluator' : 'employee';
         setRole(preferredRole);
@@ -79,7 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       return false;
     },
-    [allUsers]
+    [users]
   );
 
   const logout = React.useCallback(() => {
@@ -97,7 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const value = { user, allUsers, role, setRole: handleSetRole, login, logout, loading };
+  const value = { user, users, role, setRole: handleSetRole, login, logout, loading, setUsers, setUser };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

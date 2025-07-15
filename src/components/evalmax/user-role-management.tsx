@@ -17,10 +17,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 import type { User, Role, Employee } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { PlusCircle, Search } from 'lucide-react';
+import { PlusCircle, Search, Key, Edit, Trash2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -31,26 +31,50 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Switch } from '../ui/switch';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent as AlertDialogContent2,
+  AlertDialogDescription as AlertDialogDescription2,
+  AlertDialogFooter as AlertDialogFooter2,
+  AlertDialogHeader as AlertDialogHeader2,
+  AlertDialogTitle as AlertDialogTitle2,
+} from '@/components/ui/alert-dialog';
 
 interface UserRoleManagementProps {
   allUsers: User[];
-  allEmployees: Employee[];
   onUserAdd: (newEmployee: Employee, roles: Role[]) => void;
   onRolesChange: (userId: string, newRoles: Role[]) => void;
+  onUserUpdate: (userId: string, updatedData: Partial<User>) => void;
+  onUserDelete: (userId: string) => void;
 }
 
 export default function UserRoleManagement({
   allUsers,
-  allEmployees,
   onUserAdd,
   onRolesChange,
+  onUserUpdate,
+  onUserDelete,
 }: UserRoleManagementProps) {
   const [searchTerm, setSearchTerm] = React.useState('');
   const [isAddUserDialogOpen, setIsAddUserDialogOpen] = React.useState(false);
+  const [isEditUserDialogOpen, setIsEditUserDialogOpen] = React.useState(false);
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = React.useState(false);
+  const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
+  const [actionType, setActionType] = React.useState<'resetPassword' | 'delete' | null>(null);
+
+  // State for adding a new user
   const [newUserName, setNewUserName] = React.useState('');
   const [newUserId, setNewUserId] = React.useState('');
   const [newUserRoles, setNewUserRoles] = React.useState<Role[]>(['employee']);
+  
+  // State for editing an existing user
+  const [editUserName, setEditUserName] = React.useState('');
+  const [editUserId, setEditUserId] = React.useState('');
+  const [editUserDepartment, setEditUserDepartment] = React.useState('');
+  const [editUserTitle, setEditUserTitle] = React.useState('');
+
   const { toast } = useToast();
 
   const handleToggleRole = (userId: string, role: 'admin' | 'evaluator') => {
@@ -59,16 +83,11 @@ export default function UserRoleManagement({
 
     const newRoles = new Set(user.roles);
     if (newRoles.has(role)) {
-      newRoles.delete(role);
+      if(user.roles.length > 1) newRoles.delete(role);
+      else toast({ variant: 'destructive', title: '오류', description: '사용자는 최소 하나 이상의 역할을 가져야 합니다.' });
     } else {
       newRoles.add(role);
     }
-    
-    // Ensure 'employee' role is always present
-    if (!newRoles.has('employee')) {
-        newRoles.add('employee');
-    }
-
     onRolesChange(userId, Array.from(newRoles) as Role[]);
   };
 
@@ -109,11 +128,53 @@ export default function UserRoleManagement({
   const handleToggleNewUserRole = (role: 'admin' | 'evaluator') => {
     const newRoles = new Set(newUserRoles);
     if (newRoles.has(role)) {
-      newRoles.delete(role);
+      if(newRoles.size > 1) newRoles.delete(role);
     } else {
       newRoles.add(role);
     }
     setNewUserRoles(Array.from(newRoles));
+  };
+  
+  const openEditDialog = (user: User) => {
+    setSelectedUser(user);
+    setEditUserId(user.uniqueId);
+    setEditUserName(user.name);
+    setEditUserDepartment(user.department);
+    setEditUserTitle(user.title);
+    setIsEditUserDialogOpen(true);
+  }
+
+  const handleEditUser = () => {
+    if(!selectedUser) return;
+    onUserUpdate(selectedUser.id, {
+        uniqueId: editUserId,
+        name: editUserName,
+        department: editUserDepartment,
+        title: editUserTitle
+    });
+    toast({ title: "수정 완료", description: "사용자 정보가 업데이트되었습니다." });
+    setIsEditUserDialogOpen(false);
+    setSelectedUser(null);
+  }
+
+  const openConfirmDialog = (user: User, type: 'resetPassword' | 'delete') => {
+    setSelectedUser(user);
+    setActionType(type);
+    setIsConfirmDialogOpen(true);
+  }
+  
+  const handleConfirmAction = () => {
+    if (!selectedUser || !actionType) return;
+    if(actionType === 'resetPassword') {
+        onUserUpdate(selectedUser.id, { password: selectedUser.uniqueId });
+        toast({ title: '초기화 완료', description: `사용자 '${selectedUser.name}'의 비밀번호가 ID와 동일하게 초기화되었습니다.`});
+    } else if (actionType === 'delete') {
+        onUserDelete(selectedUser.id);
+        toast({ title: '삭제 완료', description: `사용자 '${selectedUser.name}'이(가) 삭제되었습니다.` });
+    }
+    setIsConfirmDialogOpen(false);
+    setSelectedUser(null);
+    setActionType(null);
   }
 
   const filteredUsers = React.useMemo(() => {
@@ -125,6 +186,23 @@ export default function UserRoleManagement({
     );
   }, [allUsers, searchTerm]);
   
+  const confirmDialogContent = React.useMemo(() => {
+    if (!selectedUser) return { title: '', description: '' };
+    if (actionType === 'resetPassword') {
+        return {
+            title: '비밀번호 초기화',
+            description: `정말로 '${selectedUser.name}' 사용자의 비밀번호를 ID(${selectedUser.uniqueId})와 동일하게 초기화하시겠습니까?`
+        }
+    }
+    if (actionType === 'delete') {
+        return {
+            title: '사용자 삭제',
+            description: `정말로 '${selectedUser.name}' 사용자를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`
+        }
+    }
+    return { title: '', description: '' };
+  }, [selectedUser, actionType]);
+
   return (
     <div className="space-y-4">
       <Card>
@@ -161,6 +239,7 @@ export default function UserRoleManagement({
                   <TableHead className="text-center">직책</TableHead>
                   <TableHead className="w-[100px] text-center">평가자</TableHead>
                   <TableHead className="w-[100px] text-center">관리자</TableHead>
+                  <TableHead className="w-[200px] text-center">관리</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -181,6 +260,17 @@ export default function UserRoleManagement({
                         checked={user.roles.includes('admin')}
                         onCheckedChange={() => handleToggleRole(user.id, 'admin')}
                       />
+                    </TableCell>
+                    <TableCell className="text-center space-x-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openConfirmDialog(user, 'resetPassword')}>
+                            <Key className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditDialog(user)}>
+                            <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openConfirmDialog(user, 'delete')}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -227,6 +317,51 @@ export default function UserRoleManagement({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+       <Dialog open={isEditUserDialogOpen} onOpenChange={setIsEditUserDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>사용자 정보 수정</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-user-id" className="text-right">ID (고유사번)</Label>
+              <Input id="edit-user-id" value={editUserId} onChange={(e) => setEditUserId(e.target.value)} className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-user-name" className="text-right">이름</Label>
+              <Input id="edit-user-name" value={editUserName} onChange={(e) => setEditUserName(e.target.value)} className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-user-department" className="text-right">부서</Label>
+              <Input id="edit-user-department" value={editUserDepartment} onChange={(e) => setEditUserDepartment(e.target.value)} className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-user-title" className="text-right">직책</Label>
+              <Input id="edit-user-title" value={editUserTitle} onChange={(e) => setEditUserTitle(e.target.value)} className="col-span-3" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditUserDialogOpen(false)}>취소</Button>
+            <Button onClick={handleEditUser}>저장</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      <AlertDialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
+        <AlertDialogContent2>
+            <AlertDialogHeader2>
+                <AlertDialogTitle2>{confirmDialogContent.title}</AlertDialogTitle2>
+                <AlertDialogDescription2>
+                    {confirmDialogContent.description}
+                </AlertDialogDescription2>
+            </AlertDialogHeader2>
+            <AlertDialogFooter2>
+                <AlertDialogCancel onClick={() => setIsConfirmDialogOpen(false)}>취소</AlertDialogCancel>
+                <AlertDialogAction onClick={handleConfirmAction}>확인</AlertDialogAction>
+            </AlertDialogFooter2>
+        </AlertDialogContent2>
+      </AlertDialog>
     </div>
   );
 }
