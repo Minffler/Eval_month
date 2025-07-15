@@ -35,34 +35,23 @@ interface ManageDataProps {
 }
 
 const headerMapping: Record<string, string> = {
-    '고유사번': 'uniqueId_primary', '사번': 'uniqueId_secondary', 'ID': 'uniqueId_tertiary',
+    '고유사번': 'uniqueId', '사번': 'uniqueId', 'ID': 'uniqueId',
     '성명': 'name', '이름': 'name', '피평가자': 'name',
     '부서': 'department', '소속부서': 'department',
     '시작일': 'startDate', '시작일자': 'startDate',
     '종료일': 'endDate', '종료일자': 'endDate',
     '출근시각': 'startTime', '퇴근시각': 'endTime',
     '일자': 'date', '근태사용일': 'date',
-    '근태': 'type', '근태종류': 'type'
+    '근태': 'type', '근태종류': 'type',
+    '평가자 ID': 'evaluatorId', '평가자사번': 'evaluatorId',
 };
 
 const mapRowToSchema = <T extends {}>(row: any): T => {
     const newRow: any = {};
-    const tempRow: any = {};
-
     for (const key in row) {
         const mappedKey = headerMapping[key.trim()] || key.trim();
-        tempRow[mappedKey] = row[key];
+        newRow[mappedKey] = row[key];
     }
-    
-    const uniqueId = String(tempRow['uniqueId_primary'] ?? tempRow['uniqueId_secondary'] ?? tempRow['uniqueId_tertiary'] ?? '');
-    
-    for(const key in tempRow) {
-        if (!key.startsWith('uniqueId_')) {
-            newRow[key] = tempRow[key];
-        }
-    }
-    newRow['uniqueId'] = uniqueId;
-    
     return newRow as T;
 }
 
@@ -183,7 +172,7 @@ export default function ManageData({
                 company: String(row['회사'] || ''), department: String(row['department'] || ''),
                 title: String(row['직책'] || '팀원'), position: String(row['직책'] || '팀원'),
                 growthLevel: String(row['성장레벨'] || ''), workRate: parseFloat(String(row['실근무율'] || '0')) || 0,
-                evaluatorId: String(row['평가자 ID'] || ''), baseAmount: Number(String(row['개인별 기준금액'] || '0').replace(/,/g, '')) || 0,
+                evaluatorId: String(row['evaluatorId'] || ''), baseAmount: Number(String(row['개인별 기준금액'] || '0').replace(/,/g, '')) || 0,
                 memo: String(row['비고'] || ''),
               };
             }));
@@ -201,7 +190,7 @@ export default function ManageData({
                   department: row['department'] ? String(row['department']) : undefined, title: row['직책'] ? String(row['직책']) : undefined,
                   position: row['직책'] ? String(row['직책']) : undefined, growthLevel: row['성장레벨'] ? String(row['성장레벨']) : undefined,
                   workRate: workRateValue !== undefined && workRateValue !== null ? parseFloat(String(workRateValue)) : undefined,
-                  evaluatorId: row['평가자 ID'] ? String(row['평가자 ID']) : undefined, evaluatorName: row['평가자'] ? String(row['평가자']) : undefined,
+                  evaluatorId: row['evaluatorId'] ? String(row['evaluatorId']) : undefined, evaluatorName: row['평가자'] ? String(row['평가자']) : undefined,
                   baseAmount: baseAmountValue !== undefined && baseAmountValue !== null ? Number(String(baseAmountValue).replace(/,/g, '')) : undefined,
                   grade: (String(row['등급'] || '') || null) as Grade, memo: row['비고'] !== undefined ? String(row['비고']) : undefined,
               };
