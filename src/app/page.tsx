@@ -253,16 +253,40 @@ export default function Home() {
   const handleEvaluationUpload = (year: number, month: number, uploadedData: EvaluationUploadData[]) => {
     const key = `${year}-${month}`;
 
+    // Add new evaluators from the upload to the main user list
+    const evaluatorsInUpload = new Map<string, string>();
+    uploadedData.forEach(item => {
+        if (item.evaluatorId && item.evaluatorName) {
+            evaluatorsInUpload.set(item.evaluatorId, item.evaluatorName);
+        }
+    });
+
+    if (evaluatorsInUpload.size > 0) {
+        setUsers(prevUsers => {
+            const newUsersToAdd: User[] = [];
+            evaluatorsInUpload.forEach((name, id) => {
+                const evaluatorExists = prevUsers.some(u => u.uniqueId === id);
+                if (!evaluatorExists) {
+                    newUsersToAdd.push({
+                        id: `user-${id}`,
+                        employeeId: `E${id}`,
+                        uniqueId: id,
+                        name: name,
+                        roles: ['evaluator', 'employee'], // Default roles for new evaluators
+                        avatar: `https://placehold.co/100x100.png?text=${name.charAt(0)}`,
+                        title: '평가자', // Default title
+                        department: '미지정', // Default department
+                        password: '1',
+                    });
+                }
+            });
+            return [...prevUsers, ...newUsersToAdd];
+        });
+    }
+
     setEmployees(prevEmps => {
         const newState = JSON.parse(JSON.stringify(prevEmps));
         
-        const evaluatorsInUpload = new Map<string, string>();
-        uploadedData.forEach(item => {
-            if (item.evaluatorId && item.evaluatorName) {
-                evaluatorsInUpload.set(item.evaluatorId, item.evaluatorName);
-            }
-        });
-
         // Ensure all evaluators from the upload exist as employees. If not, create a stub record.
         evaluatorsInUpload.forEach((name, id) => {
             const evaluatorExists = Object.values(newState).flat().some((emp: Employee) => emp.uniqueId === id);
@@ -294,7 +318,7 @@ export default function Home() {
         // Part B: Update data for the employees evaluated in this month's upload.
         const newEmpsForMonth = newState[key] ? [...newState[key]] : [];
         uploadedData.forEach(uploadItem => {
-            const empIndex = newEmpsForMonth.findIndex(e => e.id === uploadItem.employeeId);
+            const empIndex = newEmpsForMonth.findIndex(e => e.employeeId === uploadItem.employeeId);
             if (empIndex > -1) {
                 const existingEmp = newEmpsForMonth[empIndex];
                 newEmpsForMonth[empIndex] = {
@@ -664,7 +688,7 @@ export default function Home() {
         monthlyEmployees: MonthlyEmployee[],
         allEvaluations: Record<string, Evaluation[]>,
         currentGradingScale: Record<NonNullable<Grade>, GradeInfo>,
-        allTimeEmployees: Employee[]
+        users: User[]
     ): EvaluationResult[] => {
       if (!monthlyEmployees) return [];
       
@@ -679,7 +703,7 @@ export default function Home() {
         
         const gradeAmount = (employee.baseAmount || 0) * payoutRate;
         const finalAmount = calculateFinalAmount(gradeAmount, employee.workRate);
-        const evaluator = allTimeEmployees.find(e => e.uniqueId === employee.evaluatorId);
+        const evaluator = users.find(u => u.uniqueId === employee.evaluatorId);
 
         const getEvaluationGroup = (workRate: number): string => {
             if (workRate >= 0.7) return 'A. 정규평가';
@@ -731,8 +755,8 @@ export default function Home() {
         monthlyEmployees = (employees[dateKey] || []).map(e => ({ ...e, year, month }));
     }
     
-    setResults(getFullEvaluationResults(monthlyEmployees, evaluations, gradingScale, allEmployeesFromState));
-  }, [employees, evaluations, gradingScale, selectedDate, allEmployeesFromState]);
+    setResults(getFullEvaluationResults(monthlyEmployees, evaluations, gradingScale, allUsers));
+  }, [employees, evaluations, gradingScale, selectedDate, allUsers]);
 
   const renderDashboard = () => {
     switch (role) {
@@ -781,8 +805,7 @@ export default function Home() {
             return <PersonalSettings user={user} onUserUpdate={handleUserUpdate} />;
         }
         const myManagedEmployees = results.filter(e => e.evaluatorId === user?.uniqueId);
-        const myManagedEmployeeIds = new Set(myManagedEmployees.map(e => e.id));
-        const myResults = results.filter(r => myManagedEmployeeIds.has(r.id));
+        const myResults = results.filter(r => myManagedEmployees.map(e=>e.id).includes(r.id));
         
         return <EvaluatorDashboard 
                   allResults={results}
