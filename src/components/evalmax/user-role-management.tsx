@@ -41,6 +41,7 @@ import {
   AlertDialogHeader as AlertDialogHeader2,
   AlertDialogTitle as AlertDialogTitle2,
 } from '@/components/ui/alert-dialog';
+import { cn } from '@/lib/utils';
 
 interface UserRoleManagementProps {
   allUsers: User[];
@@ -58,6 +59,7 @@ export default function UserRoleManagement({
   onUserDelete,
 }: UserRoleManagementProps) {
   const [searchTerm, setSearchTerm] = React.useState('');
+  const [roleFilter, setRoleFilter] = React.useState<Set<Role>>(new Set());
   const [isAddUserDialogOpen, setIsAddUserDialogOpen] = React.useState(false);
   const [isEditUserDialogOpen, setIsEditUserDialogOpen] = React.useState(false);
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = React.useState(false);
@@ -78,6 +80,38 @@ export default function UserRoleManagement({
   const [editUserTitle, setEditUserTitle] = React.useState('');
 
   const { toast } = useToast();
+  
+  const handleToggleRoleFilter = (role: Role) => {
+    const newFilter = new Set(roleFilter);
+    if (newFilter.has(role)) {
+      newFilter.delete(role);
+    } else {
+      newFilter.add(role);
+    }
+    setRoleFilter(newFilter);
+  };
+  
+  const filteredUsers = React.useMemo(() => {
+    let users = [...allUsers];
+    
+    // Role filter
+    if (roleFilter.size > 0) {
+      users = users.filter(user => {
+        return Array.from(roleFilter).every(role => user.roles.includes(role));
+      });
+    }
+
+    // Search term filter
+    if (searchTerm) {
+      users = users.filter(user => 
+        user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        user.uniqueId.includes(searchTerm) ||
+        user.department.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    return users;
+  }, [allUsers, searchTerm, roleFilter]);
 
   const handleToggleRole = (userId: string, role: 'admin' | 'evaluator') => {
     const user = allUsers.find(u => u.id === userId);
@@ -181,15 +215,6 @@ export default function UserRoleManagement({
     setActionType(null);
   }
 
-  const filteredUsers = React.useMemo(() => {
-    if (!searchTerm) return allUsers;
-    return allUsers.filter(user => 
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      user.uniqueId.includes(searchTerm) ||
-      user.department.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [allUsers, searchTerm]);
-  
   const confirmDialogContent = React.useMemo(() => {
     if (!selectedUser) return { title: '', description: '' };
     if (actionType === 'resetPassword') {
@@ -217,8 +242,8 @@ export default function UserRoleManagement({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex justify-between items-center mb-4">
-            <div className="relative w-full max-w-sm">
+          <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
+            <div className="relative w-full sm:max-w-sm">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="이름, ID, 부서로 검색..."
@@ -226,6 +251,11 @@ export default function UserRoleManagement({
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-8"
               />
+            </div>
+            <div className="flex items-center gap-2">
+                <Button variant={roleFilter.size === 0 ? 'secondary': 'outline'} size="sm" onClick={() => setRoleFilter(new Set())}>전체 보기</Button>
+                <Button variant={roleFilter.has('evaluator') ? 'secondary': 'outline'} size="sm" onClick={() => handleToggleRoleFilter('evaluator')}>평가자</Button>
+                <Button variant={roleFilter.has('admin') ? 'secondary': 'outline'} size="sm" onClick={() => handleToggleRoleFilter('admin')}>관리자</Button>
             </div>
             <Button onClick={() => setIsAddUserDialogOpen(true)}>
               <PlusCircle className="mr-2 h-4 w-4" />
