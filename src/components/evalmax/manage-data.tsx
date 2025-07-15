@@ -29,7 +29,7 @@ interface ManageDataProps {
   onClearEmployeeData: (year: number, month: number) => void;
   onClearEvaluationData: (year: number, month: number) => void;
   onWorkRateDataUpload: (year: number, month: number, type: keyof WorkRateInputs, data: any[], isApproved: boolean) => void;
-  onClearWorkRateData: (year: number, month: number, type: keyof WorkRateInputs) => void;
+  onClearWorkRateData: (year: number, month: number, type: keyof WorkRateInputs | ShortenedWorkType) => void;
   workRateInputs: WorkRateInputs;
 }
 
@@ -138,17 +138,8 @@ export default function ManageData({
   
   const handleResetWorkData = () => {
     if (!dialogOpen?.workDataType) return;
-
-    if (dialogOpen.workDataType === '임신' || dialogOpen.workDataType === '육아/돌봄') {
-        const typeToClear: ShortenedWorkType = dialogOpen.workDataType;
-        const remainingData = (workRateInputs.shortenedWorkHours || []).filter(d => d.type !== typeToClear);
-        onWorkRateDataUpload(selectedDate.year, selectedDate.month, 'shortenedWorkHours', remainingData, true);
-        toast({ title: '초기화 완료', description: `해당 월의 '${typeToClear}' 단축근로 데이터가 초기화되었습니다.` });
-    } else if (dialogOpen.workDataType === 'dailyAttendance') {
-        onClearWorkRateData(selectedDate.year, selectedDate.month, 'dailyAttendance');
-        toast({ title: '초기화 완료', description: '해당 월의 일근태 데이터가 초기화되었습니다.' });
-    }
-    
+    onClearWorkRateData(selectedDate.year, selectedDate.month, dialogOpen.workDataType);
+    toast({ title: '초기화 완료', description: `선택한 근무 데이터가 초기화되었습니다.` });
     setDialogOpen(null);
   }
 
@@ -256,37 +247,31 @@ export default function ManageData({
   };
 
   const handleDownloadTemplate = (type: 'employees' | 'evaluations' | 'shortenedWork' | 'dailyAttendance') => {
-    let dataForSheet: any[], headers: string[], fileName: string;
-    const { shortenedWorkHours = [], dailyAttendance = [] } = workRateInputs;
-
+    let dataToExport: any[] = [{}];
+    let headers: string[];
+    let fileName: string;
+    
     switch (type) {
-      case 'employees':
-        dataForSheet = results.map(r => ({'ID': r.uniqueId, '이름': r.name, '회사': r.company, '소속부서': r.department, '직책': r.title, '성장레벨': r.growthLevel, '실근무율': r.workRate, '평가자 ID': r.evaluatorId, '개인별 기준금액': r.baseAmount, '비고': r.memo}));
-        headers = ['ID', '이름', '회사', '소속부서', '직책', '성장레벨', '실근무율', '평가자 ID', '개인별 기준금액', '비고'];
-        fileName = `${selectedDate.year}.${String(selectedDate.month).padStart(2,'0')}_월성과대상자_양식.xlsx`;
-        break;
-      case 'evaluations':
-        dataForSheet = results.map(r => ({'ID': r.uniqueId, '이름': r.name, '회사': r.company, '소속부서': r.department, '직책': r.title, '성장레벨': r.growthLevel, '근무율': r.workRate, '평가그룹': r.evaluationGroup, '세부구분1': r.detailedGroup1, '세부구분2': r.detailedGroup2, '평가자 ID': r.evaluatorId, '평가자': r.evaluatorName, '점수': r.score, '등급': r.grade, '기준금액': r.baseAmount, '최종금액': r.finalAmount, '비고': r.memo}));
-        headers = ['ID', '이름', '회사', '소속부서', '직책', '성장레벨', '근무율', '평가그룹', '세부구분1', '세부구분2', '평가자 ID', '평가자', '점수', '등급', '기준금액', '최종금액', '비고'];
-        fileName = `${selectedDate.year}.${String(selectedDate.month).padStart(2, '0')}_월성과데이터_양식.xlsx`;
-        break;
-      case 'shortenedWork':
-        headers = ['고유사번', '성명', '시작일', '종료일', '출근시각', '퇴근시각'];
-        dataForSheet = shortenedWorkHours.length > 0
-            ? shortenedWorkHours.map(d => ({ '고유사번': d.uniqueId, '성명': d.name, '시작일': d.startDate, '종료일': d.endDate, '출근시각': d.startTime, '퇴근시각': d.endTime }))
-            : [{}];
-        fileName = '단축근로_양식.xlsx';
-        break;
-      case 'dailyAttendance':
-        headers = ['고유사번', '성명', '근태사용일', '근태종류'];
-        dataForSheet = dailyAttendance.length > 0
-            ? dailyAttendance.map(d => ({ '고유사번': d.uniqueId, '성명': d.name, '근태사용일': d.date, '근태종류': d.type }))
-            : [{}];
-        fileName = '일근태_양식.xlsx';
-        break;
-      default:
-        return;
+        case 'employees':
+            headers = ['ID', '이름', '회사', '소속부서', '직책', '성장레벨', '실근무율', '평가자 ID', '개인별 기준금액', '비고'];
+            fileName = `${selectedDate.year}.${String(selectedDate.month).padStart(2,'0')}_월성과대상자_양식.xlsx`;
+            break;
+        case 'evaluations':
+            headers = ['ID', '이름', '회사', '소속부서', '직책', '성장레벨', '근무율', '평가그룹', '세부구분1', '세부구분2', '평가자 ID', '평가자', '점수', '등급', '기준금액', '최종금액', '비고'];
+            fileName = `${selectedDate.year}.${String(selectedDate.month).padStart(2, '0')}_월성과데이터_양식.xlsx`;
+            break;
+        case 'shortenedWork':
+            headers = ['고유사번', '성명', '시작일', '종료일', '출근시각', '퇴근시각'];
+            fileName = '단축근로_양식.xlsx';
+            break;
+        case 'dailyAttendance':
+            headers = ['고유사번', '성명', '근태사용일', '근태종류'];
+            fileName = '일근태_양식.xlsx';
+            break;
+        default:
+            return;
     }
+
     const worksheet = XLSX.utils.json_to_sheet(dataToExport, { header: headers });
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Data');

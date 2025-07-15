@@ -6,7 +6,7 @@ import Header from '@/components/evalmax/header';
 import AdminDashboard from '@/components/evalmax/admin-dashboard';
 import EvaluatorDashboard from '@/components/evalmax/evaluator-dashboard';
 import EmployeeDashboard from '@/components/evalmax/employee-dashboard';
-import type { Employee, Evaluation, EvaluationResult, Grade, GradeInfo, User, EvaluatorView, EvaluationUploadData, WorkRateInputs, AttendanceType, Holiday, ShortenedWorkHourRecord, DailyAttendanceRecord, EmployeeView, Approval, AppNotification } from '@/lib/types';
+import type { Employee, Evaluation, EvaluationResult, Grade, GradeInfo, User, EvaluatorView, EvaluationUploadData, WorkRateInputs, AttendanceType, Holiday, ShortenedWorkHourRecord, DailyAttendanceRecord, EmployeeView, Approval, AppNotification, ShortenedWorkType } from '@/lib/types';
 import { mockEmployees, gradingScale as initialGradingScale, calculateFinalAmount, mockEvaluations as initialMockEvaluations, getDetailedGroup1, initialAttendanceTypes } from '@/lib/data';
 import { useRouter } from 'next/navigation';
 import { Loader2, Bell } from 'lucide-react';
@@ -409,16 +409,21 @@ export default function Home() {
       }
   };
 
-  const handleClearWorkRateData = (year: number, month: number, type: keyof WorkRateInputs) => {
+  const handleClearWorkRateData = (year: number, month: number, type: keyof WorkRateInputs | ShortenedWorkType) => {
     const key = `${year}-${month}`;
     setWorkRateInputs(prev => {
         const currentMonthInputs = prev[key];
         if (!currentMonthInputs) return prev;
 
-        const updatedMonthInputs = {
-            ...currentMonthInputs,
-            [type]: [],
-        };
+        const updatedMonthInputs = { ...currentMonthInputs };
+
+        if (type === '임신' || type === '육아/돌봄') {
+            updatedMonthInputs.shortenedWorkHours = (currentMonthInputs.shortenedWorkHours || []).filter(d => d.type !== type);
+        } else if (type === 'dailyAttendance') {
+            updatedMonthInputs.dailyAttendance = [];
+        } else if (type === 'shortenedWorkHours') { // For backward compatibility if needed
+            updatedMonthInputs.shortenedWorkHours = [];
+        }
         
         // If all work rate data for the month is empty, remove the key
         if (updatedMonthInputs.shortenedWorkHours.length === 0 && updatedMonthInputs.dailyAttendance.length === 0) {
