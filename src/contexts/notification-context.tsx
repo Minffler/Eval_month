@@ -12,6 +12,7 @@ interface NotificationContextType {
   notifications: AppNotification[];
   unreadNotificationCount: number;
   addNotification: (notification: Omit<AppNotification, 'id' | 'date' | 'isRead'>) => void;
+  deleteNotification: (notificationId: string) => void;
   markNotificationsAsRead: () => void;
   
   approvals: Approval[];
@@ -102,6 +103,14 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             const uniqueUpdated = uniqueById(updated);
             saveAllItems(NOTIFICATIONS_STORAGE_KEY, uniqueUpdated);
             return uniqueUpdated;
+        });
+    }, []);
+
+    const deleteNotification = React.useCallback((notificationId: string) => {
+        setAllNotifications(prev => {
+            const updated = prev.filter(n => n.id !== notificationId);
+            saveAllItems(NOTIFICATIONS_STORAGE_KEY, updated);
+            return updated;
         });
     }, []);
     
@@ -217,7 +226,13 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         if (!user) return [];
         return allNotifications
             .filter(n => n.recipientId === user.uniqueId || n.recipientId === 'all')
-            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            .sort((a, b) => {
+                // Important notifications first
+                if (a.isImportant && !b.isImportant) return -1;
+                if (!a.isImportant && b.isImportant) return 1;
+                // Then by date descending
+                return new Date(b.date).getTime() - new Date(a.date).getTime();
+            });
     }, [user, allNotifications]);
     
     const approvalsForUser = React.useMemo(() => {
@@ -247,6 +262,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         notifications: notificationsForUser,
         unreadNotificationCount,
         addNotification,
+        deleteNotification,
         markNotificationsAsRead,
         approvals: approvalsForUser,
         unreadApprovalCount,

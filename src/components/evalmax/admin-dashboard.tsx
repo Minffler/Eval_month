@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, FileCheck, Bot, Upload, LayoutDashboard, Settings, Download, Bell, ArrowUpDown, ArrowUp, ArrowDown, Eye, ClipboardX, ChevronUp, ChevronDown, CheckCircle2, ChevronsUpDown, Save, X, ThumbsUp, ThumbsDown, Inbox, FileText } from 'lucide-react';
+import { Users, FileCheck, Bot, Upload, LayoutDashboard, Settings, Download, Bell, ArrowUpDown, ArrowUp, ArrowDown, Eye, ClipboardX, ChevronUp, ChevronDown, CheckCircle2, ChevronsUpDown, Save, X, ThumbsUp, ThumbsDown, Inbox, FileText, AlertTriangle } from 'lucide-react';
 import { GradeHistogram } from './grade-histogram';
 import {
   Table,
@@ -65,6 +65,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Separator } from '../ui/separator';
 import AdminNotifications from './admin-dashboard-notifications';
 import { Label } from '../ui/label';
+import { useNotifications } from '@/contexts/notification-context';
 
 interface AdminDashboardProps {
   results: EvaluationResult[];
@@ -90,7 +91,6 @@ interface AdminDashboardProps {
   workRateDetails: WorkRateDetailsResult;
   onApprovalAction: (approval: Approval) => void;
   notifications: AppNotification[];
-  addNotification: (notification: Omit<AppNotification, 'id' | 'date' | 'isRead'>) => void;
   approvals: Approval[];
 }
 
@@ -139,7 +139,6 @@ export default function AdminDashboard({
   workRateDetails,
   onApprovalAction,
   notifications,
-  addNotification,
   approvals
 }: AdminDashboardProps) {
   const [results, setResults] = React.useState<EvaluationResult[]>(initialResults);
@@ -147,6 +146,7 @@ export default function AdminDashboard({
   const [selectedEvaluators, setSelectedEvaluators] = React.useState<Set<string>>(new Set());
   const [isNotificationDialogOpen, setIsNotificationDialogOpen] = React.useState(false);
   const [notificationMessage, setNotificationMessage] = React.useState('');
+  const [isImportantNotification, setIsImportantNotification] = React.useState(false);
   const [notificationTemplates, setNotificationTemplates] = React.useState<string[]>([]);
   const [sortConfig, setSortConfig] = React.useState<SortConfig>(null);
   const [evaluatorStatsSortConfig, setEvaluatorStatsSortConfig] = React.useState<EvaluatorStatsSortConfig>({ key: 'rate', direction: 'ascending' });
@@ -159,7 +159,7 @@ export default function AdminDashboard({
   const [selectedApproval, setSelectedApproval] = React.useState<Approval | null>(null);
   const [rejectionReason, setRejectionReason] = React.useState('');
 
-
+  const { addNotification, deleteNotification } = useNotifications();
   const { toast } = useToast();
 
   const evaluatorsForView = React.useMemo(() => {
@@ -400,6 +400,7 @@ export default function AdminDashboard({
 
   const handleOpenNotificationDialog = () => {
     setNotificationMessage(`_평가년월_ 평가 마감 3일 전입니다. (현재 진행률: _%_)`);
+    setIsImportantNotification(false);
     setIsNotificationDialogOpen(true);
   };
   
@@ -413,7 +414,11 @@ export default function AdminDashboard({
           .replace(/_평가년월_/g, monthYearString)
           .replace(/_%_/g, `${stat.rate.toFixed(1)}%`);
         
-        addNotification({ recipientId: stat.evaluatorUniqueId, message });
+        addNotification({ 
+          recipientId: stat.evaluatorUniqueId, 
+          message,
+          isImportant: isImportantNotification,
+        });
       }
     });
 
@@ -960,7 +965,6 @@ export default function AdminDashboard({
                             attendanceTypes={attendanceTypes}
                             onApprovalAction={onApprovalAction}
                             notifications={notifications}
-                            addNotification={addNotification}
                             approvals={approvals}
                         />
                     ) : (
@@ -976,13 +980,13 @@ export default function AdminDashboard({
         case 'file-upload':
             return <ManageData onEmployeeUpload={onEmployeeUpload} onEvaluationUpload={onEvaluationUpload} allEmployees={employeesData} results={initialResults} selectedDate={selectedDate} setSelectedDate={setSelectedDate} onClearEmployeeData={onClearEmployeeData} onClearEvaluationData={onClearEvaluationData} onWorkRateDataUpload={onWorkRateDataUpload} onClearWorkRateData={onClearWorkRateData} workRateInputs={currentWorkRateInputs} />;
         case 'evaluator-management':
-            return <EvaluatorManagement results={initialResults} allEmployees={allEmployees} handleResultsUpdate={handleResultsUpdate} addNotification={addNotification}/>;
+            return <EvaluatorManagement results={initialResults} allEmployees={allEmployees} handleResultsUpdate={handleResultsUpdate} />;
         case 'system-standards':
             return <SystemStandardsManagement gradingScale={gradingScale} setGradingScale={setGradingScale} attendanceTypes={attendanceTypes} setAttendanceTypes={setAttendanceTypes} holidays={holidays} setHolidays={setHolidays} />;
         case 'consistency-check':
             return <ConsistencyValidator results={initialResults} gradingScale={gradingScale} />;
         case 'work-rate-view':
-            return <WorkRateManagement results={initialResults} workRateDetails={workRateDetails} selectedDate={selectedDate} holidays={holidays} handleResultsUpdate={handleResultsUpdate} allEmployees={allEmployees} addNotification={addNotification} />;
+            return <WorkRateManagement results={initialResults} workRateDetails={workRateDetails} selectedDate={selectedDate} holidays={holidays} handleResultsUpdate={handleResultsUpdate} allEmployees={allEmployees} />;
         case 'shortened-work-details':
             return <WorkRateDetails type="shortenedWork" data={workRateDetails.shortenedWorkDetails} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} onDataChange={() => {}}/>;
         case 'daily-attendance-details':
@@ -1043,7 +1047,7 @@ export default function AdminDashboard({
         }
         case 'notifications':
              return (
-                <AdminNotifications notifications={notifications} />
+                <AdminNotifications notifications={notifications} deleteNotification={deleteNotification} />
             )
         default:
             return <div>선택된 뷰가 없습니다.</div>
@@ -1080,6 +1084,15 @@ export default function AdminDashboard({
                     템플릿으로 저장
                 </Button>
                 <p className="text-xs text-muted-foreground">({notificationTemplates.length}/5개)</p>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox id="is-important" checked={isImportantNotification} onCheckedChange={(checked) => setIsImportantNotification(Boolean(checked))} />
+              <label
+                htmlFor="is-important"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                [중요] 이 알림은 삭제할 수 없으며, 항상 상단에 고정됩니다.
+              </label>
             </div>
           </div>
           {notificationTemplates.length > 0 && (

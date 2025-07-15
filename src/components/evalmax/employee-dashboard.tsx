@@ -36,6 +36,7 @@ import { Input } from '../ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Calendar } from '../ui/calendar';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '../ui/command';
+import { useNotifications } from '@/contexts/notification-context';
 
 
 const DatePickerWithInput = ({ value, onChange, disabled }: { value: string, onChange: (date?: string) => void, disabled?: boolean }) => {
@@ -409,6 +410,7 @@ export default function EmployeeDashboard({
 }: EmployeeDashboardProps) {
   const { user, role } = useAuth();
   const { toast } = useToast();
+  const { deleteNotification } = useNotifications();
   const [isApprovalModalOpen, setIsApprovalModalOpen] = React.useState(false);
   const [selectedApproval, setSelectedApproval] = React.useState<Approval | null>(null);
   const [formData, setFormData] = React.useState<any>({});
@@ -544,7 +546,7 @@ export default function EmployeeDashboard({
       case 'my-review':
         return <MyReviewView employeeResults={employeeResults} allResults={allResults} gradingScale={gradingScale} />;
       case 'my-work-rate':
-        return <WorkRateManagement results={employeeResults} workRateDetails={myWorkRateDetails} selectedDate={selectedDate} allEmployees={allEmployees} holidays={[]} handleResultsUpdate={() => {}} addNotification={() => {}} />;
+        return <WorkRateManagement results={employeeResults} workRateDetails={myWorkRateDetails} selectedDate={selectedDate} allEmployees={allEmployees} holidays={[]} handleResultsUpdate={() => {}} />;
       case 'my-shortened-work':
         return <WorkRateDetails type="shortenedWork" data={myWorkRateDetails.shortenedWorkDetails} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} viewAs={role} onDataChange={() => {}} />;
       case 'my-daily-attendance':
@@ -605,7 +607,7 @@ export default function EmployeeDashboard({
             )
         }
       case 'notifications':
-          return <EmployeeNotifications notifications={notifications} />;
+          return <EmployeeNotifications notifications={notifications} deleteNotification={deleteNotification} />;
       default:
         return <div className="flex flex-col items-center justify-center h-40 text-center">
                   <Inbox className="h-10 w-10 text-muted-foreground mb-4" />

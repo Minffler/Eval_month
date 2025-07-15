@@ -87,6 +87,7 @@ export type AppNotification = {
   message: string;
   isRead: boolean;
   recipientId: string; // uniqueId of the user who should see this
+  isImportant?: boolean;
 };
 
 export type ApprovalStatus = '결재중' | '현업승인' | '최종승인' | '반려';

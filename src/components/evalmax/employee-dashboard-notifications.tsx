@@ -1,7 +1,8 @@
 'use client';
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Bell } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Bell, AlertTriangle, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
@@ -9,6 +10,7 @@ import type { AppNotification } from "@/lib/types";
 
 interface EmployeeNotificationsProps {
     notifications: AppNotification[];
+    deleteNotification: (notificationId: string) => void;
 }
 
 const formatTimestamp = (isoString: string | null) => {
@@ -16,7 +18,7 @@ const formatTimestamp = (isoString: string | null) => {
     return format(new Date(isoString), 'yyyy.MM.dd HH:mm');
 };
 
-export default function EmployeeNotifications({ notifications }: EmployeeNotificationsProps) {
+export default function EmployeeNotifications({ notifications, deleteNotification }: EmployeeNotificationsProps) {
     return (
         <Card>
             <CardHeader>
@@ -27,11 +29,30 @@ export default function EmployeeNotifications({ notifications }: EmployeeNotific
                 {notifications.length > 0 ? (
                     <ul className="space-y-4">
                     {notifications.map((notification) => (
-                        <li key={notification.id} className={cn("p-3 rounded-md border", !notification.isRead && "bg-muted/50")}>
-                            <p className="text-sm font-medium">{notification.message}</p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                                {formatTimestamp(notification.date)}
-                            </p>
+                        <li key={notification.id} className={cn(
+                            "group relative p-3 rounded-md border", 
+                            !notification.isRead && "bg-muted/50",
+                            notification.isImportant && "border-primary/50 bg-primary/5"
+                        )}>
+                            <div className="flex items-start gap-3">
+                                {notification.isImportant && <AlertTriangle className="h-5 w-5 text-primary mt-0.5" />}
+                                <div className="flex-1">
+                                    <p className="text-sm font-medium">{notification.message}</p>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        {formatTimestamp(notification.date)}
+                                    </p>
+                                </div>
+                            </div>
+                            {!notification.isImportant && (
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onClick={() => deleteNotification(notification.id)}
+                                >
+                                    <X className="h-4 w-4 text-destructive" />
+                                </Button>
+                            )}
                         </li>
                     ))}
                     </ul>

@@ -82,6 +82,7 @@ import WorkRateDetails from './work-rate-details';
 import EvaluatorNotifications from './evaluator-dashboard-notifications';
 import { Textarea } from '../ui/textarea';
 import { Separator } from '../ui/separator';
+import { useNotifications } from '@/contexts/notification-context';
 
 
 interface EvaluatorDashboardProps {
@@ -100,7 +101,6 @@ interface EvaluatorDashboardProps {
   attendanceTypes: AttendanceType[];
   onApprovalAction: (approval: Approval) => void;
   notifications: AppNotification[];
-  addNotification: (notification: Omit<AppNotification, 'id' | 'date' | 'isRead'>) => void;
   approvals: Approval[];
 }
 
@@ -832,6 +832,7 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, allEmploye
     members: EvaluationResult[];
   } | null>(null);
 
+  const { addNotification } = useNotifications();
 
   const allCompanies = React.useMemo(() => [...new Set(currentMonthResults.map(e => e.company).filter(Boolean))], [currentMonthResults]);
   const allPositions = React.useMemo(() => [...new Set(currentMonthResults.map(e => e.position).filter(Boolean))].sort((a,b) => getPositionSortValue(a) - getPositionSortValue(b)), [currentMonthResults]);
@@ -907,8 +908,8 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, allEmploye
 
     handleResultsUpdate(updatedResults);
     
-    console.log(`[알림] 관리자에게: ${evaluatorName} 평가자가 ${groupToChange.department} 소속의 담당자가 되었습니다.`);
-    console.log(`[알림] ${evaluatorName} 평가자에게: 이제 ${groupToChange.department} 소속의 평가를 담당합니다.`);
+    addNotification({ recipientId: '1911042', message: `${evaluatorName} 평가자가 ${groupToChange.department} 소속의 담당자가 되었습니다.` });
+    addNotification({ recipientId: evaluatorId, message: `이제 ${groupToChange.department} 소속의 평가를 담당합니다.` });
 
     toast({ title: '변경 완료', description: `'${groupToChange.department}' 소속의 담당자가 성공적으로 변경되었습니다.` });
     
@@ -1054,13 +1055,14 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, allEmploye
 };
 
 
-export default function EvaluatorDashboard({ allResults, currentMonthResults, gradingScale, selectedDate, setSelectedDate, handleResultsUpdate, evaluatorUser, activeView, onClearMyEvaluations, workRateDetails, holidays, allEmployees, attendanceTypes, onApprovalAction, notifications, addNotification, approvals }: EvaluatorDashboardProps) {
+export default function EvaluatorDashboard({ allResults, currentMonthResults, gradingScale, selectedDate, setSelectedDate, handleResultsUpdate, evaluatorUser, activeView, onClearMyEvaluations, workRateDetails, holidays, allEmployees, attendanceTypes, onApprovalAction, notifications, approvals }: EvaluatorDashboardProps) {
   const { user: authUser } = useAuth();
   const { toast } = useToast();
   const [effectiveUser, setEffectiveUser] = React.useState<User | null>(null);
   const [approvalDetailModalOpen, setApprovalDetailModalOpen] = React.useState(false);
   const [selectedApproval, setSelectedApproval] = React.useState<Approval | null>(null);
   const [rejectionReason, setRejectionReason] = React.useState('');
+  const { deleteNotification } = useNotifications();
   
   React.useEffect(() => {
     if (evaluatorUser) { // This is an Employee object from Admin view
@@ -1235,7 +1237,7 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
                  evaluatorName={effectiveUser.name}
                />;
       case 'work-rate-view':
-          return <WorkRateManagement results={myEmployees} workRateDetails={myManagedWorkRateDetails} selectedDate={selectedDate} allEmployees={allEmployees} holidays={holidays} handleResultsUpdate={handleResultsUpdate} addNotification={addNotification} />;
+          return <WorkRateManagement results={myEmployees} workRateDetails={myManagedWorkRateDetails} selectedDate={selectedDate} allEmployees={allEmployees} holidays={holidays} handleResultsUpdate={handleResultsUpdate} />;
       case 'shortened-work-details':
           return <WorkRateDetails type="shortenedWork" data={myManagedWorkRateDetails.shortenedWorkDetails} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} onDataChange={()=>{}} />;
       case 'daily-attendance-details':
@@ -1296,7 +1298,7 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
             )
         }
       case 'notifications':
-          return <EvaluatorNotifications notifications={notifications} />;
+          return <EvaluatorNotifications notifications={notifications} deleteNotification={deleteNotification} />;
       default:
         return <div className="flex flex-col items-center justify-center h-40 text-center">
                   <Inbox className="h-10 w-10 text-muted-foreground mb-4" />
