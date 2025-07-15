@@ -549,7 +549,7 @@ export default function WorkRateManagement({
         </DialogContent>
     </Dialog>
     <Dialog open={isSettingsDialogOpen} onOpenChange={setIsSettingsDialogOpen}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-2xl">
             <DialogHeader>
                 <DialogTitle>근무기준 및 공휴일 관리</DialogTitle>
                 <DialogDescription>

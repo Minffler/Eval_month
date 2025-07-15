@@ -1200,7 +1200,7 @@ export default function AdminDashboard({
         </DialogContent>
       </Dialog>
       <Dialog open={isGradeDialogOpen} onOpenChange={setIsGradeDialogOpen}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>평가등급 관리</DialogTitle>
             <DialogDescription>평가 등급, 점수, 지급률을 관리합니다.</DialogDescription>
