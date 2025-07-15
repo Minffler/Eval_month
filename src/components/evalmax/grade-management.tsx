@@ -25,6 +25,7 @@ import {
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const GRADING_SCALE_LAST_UPDATED_KEY = 'pl_eval_grading_scale_last_updated';
 const ATTENDANCE_LAST_UPDATED_KEY = 'pl_eval_attendance_last_updated';
