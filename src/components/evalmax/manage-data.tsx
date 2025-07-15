@@ -43,6 +43,7 @@ const headerMapping: Record<string, string> = {
     '일자': 'date', '근태사용일': 'date',
     '근태': 'type', '근태종류': 'type',
     '평가자 ID': 'evaluatorId', '평가자사번': 'evaluatorId',
+    '평가자': 'evaluatorName',
 };
 
 const mapRowToSchema = <T extends {}>(row: any): T => {
@@ -188,7 +189,8 @@ export default function ManageData({
                   department: row['department'] ? String(row['department']) : undefined, title: row['직책'] ? String(row['직책']) : undefined,
                   position: row['직책'] ? String(row['직책']) : undefined, growthLevel: row['성장레벨'] ? String(row['성장레벨']) : undefined,
                   workRate: workRateValue !== undefined && workRateValue !== null ? parseFloat(String(workRateValue)) : undefined,
-                  evaluatorId: row['evaluatorId'] ? String(row['evaluatorId']) : undefined, evaluatorName: row['평가자'] ? String(row['평가자']) : undefined,
+                  evaluatorId: row['evaluatorId'] ? String(row['evaluatorId']) : undefined, 
+                  evaluatorName: row['evaluatorName'] ? String(row['evaluatorName']) : undefined,
                   baseAmount: baseAmountValue !== undefined && baseAmountValue !== null ? Number(String(baseAmountValue).replace(/,/g, '')) : undefined,
                   grade: (String(row['등급'] || '') || null) as Grade, memo: row['비고'] !== undefined ? String(row['비고']) : undefined,
               };
