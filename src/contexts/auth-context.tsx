@@ -17,7 +17,7 @@ interface AuthContextType {
 const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
 
 const mockUsers: User[] = [
-  { id: 'user-1', employeeId: 'E1911042', uniqueId: '1911042', name: '김민선', roles: ['admin', 'evaluator', 'employee'], avatar: 'https://placehold.co/100x100.png?text=A', title: '인사부', department: '인사부' },
+  { id: 'user-1', employeeId: 'E1911042', uniqueId: '1911042', name: '김민선', roles: ['admin', 'evaluator', 'employee'], avatar: 'https://placehold.co/100x100.png?text=A', title: '팀원', department: '인사부' },
   { id: 'user-admin', employeeId: 'Eadmin', uniqueId: 'admin', name: '김관리', roles: ['admin', 'evaluator', 'employee'], avatar: 'https://placehold.co/100x100.png?text=A', title: '팀원', department: '인사부' },
 ];
 
