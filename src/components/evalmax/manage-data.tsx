@@ -312,7 +312,7 @@ export default function ManageData({
             <UploadSection
                 id="shortenedWorkPregnancy"
                 title="임신기 단축근로"
-                description="임신기 단축근로 내역이 담긴 파일을 업로드합니다."
+                description=""
                 onUpload={(e) => handleFileUpload(e, 'shortenedWork', '임신')}
                 onDownload={() => handleDownloadTemplate('shortenedWork')}
                 onReset={() => setDialogOpen({type: 'resetWorkData', workDataType: '임신'})}
@@ -322,7 +322,7 @@ export default function ManageData({
             <UploadSection
                 id="shortenedWorkCare"
                 title="육아/돌봄 단축근로"
-                description="육아기, 가족돌봄 등 단축근로 내역이 담긴 파일을 업로드합니다."
+                description=""
                 onUpload={(e) => handleFileUpload(e, 'shortenedWork', '육아/돌봄')}
                 onDownload={() => handleDownloadTemplate('shortenedWork')}
                 onReset={() => setDialogOpen({type: 'resetWorkData', workDataType: '육아/돌봄'})}
@@ -332,7 +332,7 @@ export default function ManageData({
             <UploadSection
                 id="dailyAttendance"
                 title="일근태"
-                description="연차, 반차, 병가 등 일별 근태 사용 내역 파일을 업로드합니다."
+                description=""
                 onUpload={(e) => handleFileUpload(e, 'dailyAttendance')}
                 onDownload={() => handleDownloadTemplate('dailyAttendance')}
                 onReset={() => setDialogOpen({type: 'resetWorkData', workDataType: 'dailyAttendance'})}
