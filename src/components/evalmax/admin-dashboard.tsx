@@ -1008,7 +1008,7 @@ export default function AdminDashboard({
         case 'consistency-check':
             return <ConsistencyValidator results={initialResults} gradingScale={gradingScale} />;
         case 'work-rate-view':
-            return <WorkRateManagement results={initialResults} workRateDetails={workRateDetails} selectedDate={selectedDate} holidays={holidays} setHolidays={setHolidays} attendanceTypes={attendanceTypes} setAttendanceTypes={setAttendanceTypes} handleResultsUpdate={() => {}} />;
+            return <WorkRateManagement results={allUsers} workRateDetails={workRateDetails} selectedDate={selectedDate} holidays={holidays} setHolidays={setHolidays} attendanceTypes={attendanceTypes} setAttendanceTypes={setAttendanceTypes} handleResultsUpdate={() => {}} />;
         case 'shortened-work-details':
             return <WorkRateDetails type="shortenedWork" data={workRateDetails.shortenedWorkDetails} selectedDate={selectedDate} allEmployees={allUsers} attendanceTypes={attendanceTypes} onDataChange={() => {}}/>;
         case 'daily-attendance-details':

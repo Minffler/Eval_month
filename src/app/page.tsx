@@ -31,7 +31,9 @@ import {
   CalendarClock,
   Settings2,
   Inbox,
-  UserCog
+  UserCog,
+  Medal,
+  BarChart3
 } from 'lucide-react';
 import { calculateWorkRateDetails } from '@/lib/work-rate-calculator';
 import { useNotifications } from '@/contexts/notification-context';
@@ -102,7 +104,15 @@ const evaluatorNavItems: NavItem[] = [
 ];
 
 const employeeNavItems: NavItem[] = [
-  { id: 'my-review', label: '내 성과 리뷰', icon: FileCheck },
+  {
+    id: 'evaluation-management',
+    label: '평가 관리',
+    icon: FileCheck,
+    children: [
+        { id: 'my-review', label: '내 성과 리뷰', icon: Medal },
+        { id: 'evaluation-details', label: '평가 상세 조회', icon: BarChart3 },
+    ],
+  },
   {
     id: 'work-rate-management',
     label: '근무율 관리',
@@ -114,6 +124,7 @@ const employeeNavItems: NavItem[] = [
     ],
   },
 ];
+
 
 const getInitialDate = () => {
     const today = new Date();
@@ -178,6 +189,7 @@ export default function Home() {
 
   const [results, setResults] = React.useState<EvaluationResult[]>([]);
   const [selectedDate, setSelectedDate] = React.useState(getInitialDate);
+  const [monthlyEvaluationTargets, setMonthlyEvaluationTargets] = React.useState<EvaluationResult[]>([]);
 
   const workRateDetails = React.useMemo(() => {
       return calculateWorkRateDetails(
@@ -569,7 +581,13 @@ export default function Home() {
         });
     };
     
-    setResults(getFullEvaluationResults());
+    const allResultsForMonth = getFullEvaluationResults();
+    setResults(allResultsForMonth);
+
+    const monthKey = `${selectedDate.year}-${selectedDate.month}`;
+    const monthlyEmployeeIds = new Set((employees[monthKey] || []).map(e => e.uniqueId));
+    setMonthlyEvaluationTargets(allResultsForMonth.filter(r => monthlyEmployeeIds.has(r.uniqueId)));
+
   }, [employees, evaluations, gradingScale, selectedDate, allUsers]);
 
   const renderDashboard = () => {
@@ -580,7 +598,7 @@ export default function Home() {
         }
         const currentMonthStatus = evaluationStatus[`${selectedDate.year}-${selectedDate.month}`] || 'open';
         return <AdminDashboard 
-                  results={results}
+                  results={monthlyEvaluationTargets}
                   allUsers={allUsers}
                   onEmployeeUpload={handleEmployeeUpload}
                   onEvaluationUpload={handleEvaluationUpload}
@@ -616,10 +634,10 @@ export default function Home() {
         if (evaluatorActiveView === 'personal-settings' && user) {
             return <PersonalSettings user={user} onUserUpdate={handleUserUpdate} />;
         }
-        const myManagedEmployees = results.filter(e => e.evaluatorId === user?.uniqueId);
+        const myManagedEmployees = monthlyEvaluationTargets.filter(e => e.evaluatorId === user?.uniqueId);
         
         return <EvaluatorDashboard 
-                  allResults={results}
+                  allResults={monthlyEvaluationTargets}
                   currentMonthResults={myManagedEmployees}
                   gradingScale={gradingScale}
                   selectedDate={selectedDate}
@@ -641,11 +659,11 @@ export default function Home() {
         if (employeeActiveView === 'personal-settings' && user) {
             return <PersonalSettings user={user} onUserUpdate={handleUserUpdate} />;
         }
-        const myEmployeeInfo = results.find(e => e.uniqueId === user?.uniqueId);
+        const myEmployeeInfo = monthlyEvaluationTargets.find(e => e.uniqueId === user?.uniqueId);
         const myApprovals = approvals.filter(a => a.requesterId === user.uniqueId);
         return <EmployeeDashboard 
                   employeeResults={myEmployeeInfo ? [myEmployeeInfo] : []}
-                  allResults={results.filter(e => e.uniqueId === user?.uniqueId)}
+                  allResultsForYear={results.filter(e => e.uniqueId === user?.uniqueId && e.year === selectedDate.year)}
                   gradingScale={gradingScale} 
                   activeView={employeeActiveView}
                   workRateDetails={workRateDetails}

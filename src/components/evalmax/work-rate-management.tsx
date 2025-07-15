@@ -26,7 +26,7 @@ import { Input } from '../ui/input';
 import GradeManagement from './grade-management';
 
 interface WorkRateManagementProps {
-  results: EvaluationResult[];
+  results: (EvaluationResult | User)[];
   workRateDetails: WorkRateDetailsResult;
   selectedDate: { year: number, month: number };
   holidays: Holiday[];
@@ -260,7 +260,7 @@ export default function WorkRateManagement({
       let updatedCount = 0;
       let evaluatorNotifications: Record<string, number> = {};
 
-      const updatedResults = results.map(result => {
+      const updatedResults = (results as EvaluationResult[]).map(result => {
           const newWorkRate = summariesMap.get(result.uniqueId);
           if (newWorkRate !== undefined && newWorkRate !== result.workRate) {
               updatedCount++;
@@ -385,7 +385,7 @@ export default function WorkRateManagement({
                   <Download className="mr-2 h-4 w-4" />
                   엑셀 다운로드
                 </Button>
-                {handleResultsUpdate && (
+                {handleResultsUpdate && (results[0] && 'grade' in results[0]) && (
                   <Button onClick={handleApplyWorkRate} size="sm">근무율 반영</Button>
                 )}
               </div>
