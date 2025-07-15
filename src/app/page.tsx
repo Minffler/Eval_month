@@ -142,7 +142,7 @@ const getFromLocalStorage = (key: string, defaultValue: any) => {
 }
 
 export default function Home() {
-  const { user, users: allUsers, loading, logout, setUsers, setUser, login } = useAuth();
+  const { user, users: allUsers, loading, logout, setUsers } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -210,30 +210,10 @@ export default function Home() {
   
   const role = user ? allUsers.find(u => u.id === user.id)?.roles.find(r => r === (localStorage.getItem('role') || 'employee')) : 'employee';
   
-  const allEmployeesFromState = React.useMemo(() => {
-    return allUsers.map(user => {
-      const empData: Employee = {
-        id: user.employeeId,
-        uniqueId: user.uniqueId,
-        name: user.name,
-        department: user.department,
-        title: user.title,
-        position: user.title,
-        company: 'N/A', // Default, should be updated from monthly data
-        growthLevel: '',
-        workRate: 1.0,
-        evaluatorId: '', // This needs to be managed carefully
-        baseAmount: 0,
-      };
-      return empData;
-    });
-  }, [allUsers]);
-
   const handleUserAdd = (newEmployee: Employee, roles: Role[]) => {
-    setUsers(prev => {
-      if (prev.some(u => u.uniqueId === newEmployee.uniqueId)) {
+      if (allUsers.some(u => u.uniqueId === newEmployee.uniqueId)) {
         toast({ variant: 'destructive', title: '오류', description: '이미 존재하는 ID입니다.' });
-        return prev;
+        return;
       }
       const newUser: User = {
         id: `user-${newEmployee.uniqueId}`,
@@ -246,112 +226,47 @@ export default function Home() {
         department: newEmployee.department,
         password: '1'
       };
-      return [...prev, newUser];
-    });
-
-    // Add to current month's employees state as well for immediate reflection
-    setEmployees(prev => {
-        const newState = { ...prev };
-        const currentMonthKey = `${selectedDate.year}-${selectedDate.month}`;
-        if (!newState[currentMonthKey]) newState[currentMonthKey] = [];
-
-        if (!newState[currentMonthKey].some(e => e.uniqueId === newEmployee.uniqueId)) {
-           newState[currentMonthKey].push(newEmployee);
-        }
-        return newState;
-    });
-  };
-
-  const handleUserUpdate = (userId: string, updatedData: Partial<User & { newUniqueId?: string }>) => {
-      let employeeUpdated = false;
-      let oldUniqueId: string | undefined;
-
-      setUsers(prevUsers => {
-          return prevUsers.map(u => {
-              if (u.id === userId) {
-                  oldUniqueId = u.uniqueId;
-                  const newUniqueId = updatedData.newUniqueId || updatedData.uniqueId;
-                  
-                  if (u.uniqueId !== newUniqueId || u.name !== updatedData.name || u.department !== updatedData.department || u.title !== updatedData.title) {
-                      employeeUpdated = true;
-                  }
-                  
-                  const finalUpdatedData = { ...updatedData };
-                  if(finalUpdatedData.newUniqueId) {
-                      finalUpdatedData.uniqueId = finalUpdatedData.newUniqueId;
-                      delete finalUpdatedData.newUniqueId;
-                  }
-
-                  return { ...u, ...finalUpdatedData };
-              }
-              return u;
-          });
-      });
-
-      if (employeeUpdated && oldUniqueId) {
-          const finalUniqueId = updatedData.newUniqueId || updatedData.uniqueId || oldUniqueId;
-          
-          setEmployees(prevEmployees => {
-              const newEmployeesState = JSON.parse(JSON.stringify(prevEmployees));
-              for (const monthKey in newEmployeesState) {
-                  newEmployeesState[monthKey] = newEmployeesState[monthKey].map((emp: Partial<Employee>) => {
-                      if (emp.uniqueId === oldUniqueId) {
-                          return {
-                              ...emp,
-                              uniqueId: finalUniqueId,
-                              id: `E${finalUniqueId}`,
-                          };
-                      }
-                      if (emp.evaluatorId === oldUniqueId) {
-                          return { ...emp, evaluatorId: finalUniqueId };
-                      }
-                      return emp;
-                  });
-              }
-              return newEmployeesState;
-          });
-      }
+      setUsers(prev => [...prev, newUser]);
   };
   
+  const handleUserUpdate = (userId: string, updatedData: Partial<User & { newUniqueId?: string }>) => {
+    setUsers(prevUsers => {
+        return prevUsers.map(u => {
+            if (u.id === userId) {
+                const finalUpdatedData = { ...updatedData };
+                if (finalUpdatedData.newUniqueId) {
+                    finalUpdatedData.uniqueId = finalUpdatedData.newUniqueId;
+                    delete finalUpdatedData.newUniqueId;
+                }
+                return { ...u, ...finalUpdatedData };
+            }
+            return u;
+        });
+    });
+  };
+
   const handleEmployeeUpload = (year: number, month: number, newEmployees: Employee[]) => {
     const key = `${year}-${month}`;
 
     newEmployees.forEach(emp => {
       const existingUser = allUsers.find(u => u.uniqueId === emp.uniqueId);
-      const employeeDataForUser: Partial<User> = {
-        name: emp.name,
-        department: emp.department,
-        title: emp.title,
-      };
+      const employeeDataForUser: Partial<User> = { name: emp.name, department: emp.department, title: emp.title };
 
       if (!existingUser) {
-        // If user doesn't exist, add them
-        handleUserAdd({
-          ...emp,
-          company: emp.company || 'N/A',
-          position: emp.position || emp.title || '팀원',
-        }, ['employee']);
+        handleUserAdd({ ...emp, company: emp.company || 'N/A', position: emp.position || emp.title || '팀원', }, ['employee']);
       } else {
-        // If user exists, update their info
         handleUserUpdate(existingUser.id, employeeDataForUser);
       }
 
-      // Also handle evaluator if provided
       if (emp.evaluatorId) {
         const evaluatorUser = allUsers.find(u => u.uniqueId === emp.evaluatorId);
         if(!evaluatorUser) {
             handleUserAdd({
                 id: `E${emp.evaluatorId}`,
                 uniqueId: emp.evaluatorId,
-                name: `평가자(${emp.evaluatorId})`, // Placeholder name
-                department: '미지정',
-                title: '평가자',
-                position: '평가자',
-                company: 'N/A',
-                growthLevel: '',
-                workRate: 1.0,
-                evaluatorId: '', // Evaluators might not have one
-                baseAmount: 0,
+                name: `평가자(${emp.evaluatorId})`,
+                department: '미지정', title: '평가자', position: '평가자', company: 'N/A',
+                growthLevel: '', workRate: 1.0, evaluatorId: '', baseAmount: 0,
             }, ['evaluator', 'employee']);
         }
       }
@@ -365,9 +280,7 @@ export default function Home() {
             const existingEval = currentEvalsForMonth.find(e => e.employeeId === emp.id);
             return {
               id: `eval-${emp.id}-${year}-${month}`,
-              employeeId: emp.id,
-              year,
-              month,
+              employeeId: emp.id, year, month,
               grade: existingEval?.grade || null,
               memo: existingEval?.memo || emp.memo || '',
             };
@@ -378,47 +291,31 @@ export default function Home() {
 
   const handleEvaluationUpload = (year: number, month: number, uploadedData: EvaluationUploadData[]) => {
     const key = `${year}-${month}`;
-
+    
     uploadedData.forEach(uploadItem => {
         const { employeeId, evaluatorId, evaluatorName, ...empData } = uploadItem;
         const uniqueId = employeeId.replace('E','');
 
-        // Handle evaluated employee
         const existingUser = allUsers.find(u => u.uniqueId === uniqueId);
         if (!existingUser) {
             handleUserAdd({
-                id: employeeId,
-                uniqueId: uniqueId,
-                name: empData.name || `사용자(${uniqueId})`,
-                department: empData.department || '미지정',
-                title: empData.title || '팀원',
-                position: empData.position || empData.title || '팀원',
-                company: empData.company || 'N/A',
-                growthLevel: empData.growthLevel || '',
-                workRate: empData.workRate || 1.0,
-                evaluatorId: evaluatorId || '',
-                baseAmount: empData.baseAmount || 0,
+                id: employeeId, uniqueId: uniqueId, name: empData.name || `사용자(${uniqueId})`,
+                department: empData.department || '미지정', title: empData.title || '팀원',
+                position: empData.position || empData.title || '팀원', company: empData.company || 'N/A',
+                growthLevel: empData.growthLevel || '', workRate: empData.workRate || 1.0,
+                evaluatorId: evaluatorId || '', baseAmount: empData.baseAmount || 0,
             }, ['employee']);
         } else {
             handleUserUpdate(existingUser.id, { name: empData.name, department: empData.department, title: empData.title });
         }
 
-        // Handle evaluator
         if (evaluatorId) {
             const evaluatorUser = allUsers.find(u => u.uniqueId === evaluatorId);
             if (!evaluatorUser) {
                 handleUserAdd({
-                    id: `E${evaluatorId}`,
-                    uniqueId: evaluatorId,
-                    name: evaluatorName || `평가자(${evaluatorId})`,
-                    department: '미지정',
-                    title: '평가자',
-                    position: '평가자',
-                    company: 'N/A',
-                    growthLevel: '',
-                    workRate: 1.0,
-                    evaluatorId: '',
-                    baseAmount: 0,
+                    id: `E${evaluatorId}`, uniqueId: evaluatorId, name: evaluatorName || `평가자(${evaluatorId})`,
+                    department: '미지정', title: '평가자', position: '평가자', company: 'N/A',
+                    growthLevel: '', workRate: 1.0, evaluatorId: '', baseAmount: 0,
                 }, ['evaluator', 'employee']);
             } else if (evaluatorName && evaluatorUser.name !== evaluatorName) {
                 handleUserUpdate(evaluatorUser.id, { name: evaluatorName });
@@ -433,20 +330,10 @@ export default function Home() {
         uploadedData.forEach(uploadItem => {
             const empIndex = newEmpsForMonth.findIndex((e: Employee) => e.id === uploadItem.employeeId);
             const dataToUpdate = {
-                evaluatorId: uploadItem.evaluatorId,
-                baseAmount: uploadItem.baseAmount,
-                workRate: uploadItem.workRate,
+                evaluatorId: uploadItem.evaluatorId, baseAmount: uploadItem.baseAmount, workRate: uploadItem.workRate,
             };
-            
-            if (empIndex > -1) {
-                Object.assign(newEmpsForMonth[empIndex], dataToUpdate);
-            } else {
-                newEmpsForMonth.push({
-                    uniqueId: uploadItem.employeeId.replace('E',''),
-                    id: uploadItem.employeeId,
-                    ...dataToUpdate
-                });
-            }
+            if (empIndex > -1) Object.assign(newEmpsForMonth[empIndex], dataToUpdate);
+            else newEmpsForMonth.push({ uniqueId: uploadItem.employeeId.replace('E',''), id: uploadItem.employeeId, ...dataToUpdate });
         });
         newState[key] = newEmpsForMonth;
         return newState;
@@ -458,58 +345,33 @@ export default function Home() {
         
         uploadedData.forEach(uploadItem => {
             const evalIndex = newEvalsForMonth.findIndex((e: Evaluation) => e.employeeId === uploadItem.employeeId);
-            const evalData = {
-                grade: uploadItem.grade,
-                memo: uploadItem.memo || '',
-            };
-
-            if (evalIndex > -1) {
-                Object.assign(newEvalsForMonth[evalIndex], evalData);
-            } else {
-                newEvalsForMonth.push({
-                    id: `eval-${uploadItem.employeeId}-${year}-${month}`,
-                    employeeId: uploadItem.employeeId,
-                    year, month,
-                    ...evalData
-                });
-            }
+            const evalData = { grade: uploadItem.grade, memo: uploadItem.memo || '', };
+            if (evalIndex > -1) Object.assign(newEvalsForMonth[evalIndex], evalData);
+            else newEvalsForMonth.push({ id: `eval-${uploadItem.employeeId}-${year}-${month}`, employeeId: uploadItem.employeeId, year, month, ...evalData });
         });
-        
         newState[key] = newEvalsForMonth;
         return newState;
     });
   };
   
   const handleWorkRateDataUpload = (year: number, month: number, type: keyof WorkRateInputs, newData: any[], isApproved: boolean) => {
-      if (!isApproved) {
-        // Just send notifications, don't update state
-        return;
-      }
+      if (!isApproved) return;
       const key = `${year}-${month}`;
       setWorkRateInputs(prev => {
-          const currentMonthInputs = prev[key] || {
-              shortenedWorkHours: [],
-              dailyAttendance: [],
-          };
+          const currentMonthInputs = prev[key] || { shortenedWorkHours: [], dailyAttendance: [], };
   
           let combinedData;
           if (type === 'shortenedWorkHours') {
               const existingKeys = new Set(currentMonthInputs.shortenedWorkHours.map((r: ShortenedWorkHourRecord) => `${r.uniqueId}|${r.startDate}|${r.endDate}`));
               const uniqueNewData = (newData as ShortenedWorkHourRecord[]).filter(r => !existingKeys.has(`${r.uniqueId}|${r.startDate}|${r.endDate}`));
               combinedData = [...currentMonthInputs.shortenedWorkHours, ...uniqueNewData];
-          } else { // dailyAttendance
+          } else {
               const existingKeys = new Set(currentMonthInputs.dailyAttendance.map((r: DailyAttendanceRecord) => `${r.uniqueId}|${r.date}`));
               const uniqueNewData = (newData as DailyAttendanceRecord[]).filter(r => !existingKeys.has(`${r.uniqueId}|${r.date}`));
               combinedData = [...currentMonthInputs.dailyAttendance, ...uniqueNewData];
           }
   
-          return {
-              ...prev,
-              [key]: {
-                  ...currentMonthInputs,
-                  [type]: combinedData,
-              }
-          };
+          return { ...prev, [key]: { ...currentMonthInputs, [type]: combinedData, } };
       });
   
       if (type === 'dailyAttendance') {
@@ -519,9 +381,7 @@ export default function Home() {
               if (newTypesFromData.size === 0) return prevTypes;
               
               const newTypesToAdd: AttendanceType[] = Array.from(newTypesFromData).map(typeName => ({
-                  id: `att-${Date.now()}-${Math.random()}`,
-                  name: typeName as string,
-                  deductionDays: 0, // Default to 0, user needs to set it
+                  id: `att-${Date.now()}-${Math.random()}`, name: typeName as string, deductionDays: 0,
               }));
   
               return [...prevTypes, ...newTypesToAdd];
@@ -534,18 +394,16 @@ export default function Home() {
     setWorkRateInputs(prev => {
         const currentMonthInputs = prev[key];
         if (!currentMonthInputs) return prev;
-
         const updatedMonthInputs = { ...currentMonthInputs };
 
         if (type === '임신' || type === '육아/돌봄') {
             updatedMonthInputs.shortenedWorkHours = (currentMonthInputs.shortenedWorkHours || []).filter(d => d.type !== type);
         } else if (type === 'dailyAttendance') {
             updatedMonthInputs.dailyAttendance = [];
-        } else if (type === 'shortenedWorkHours') { // For backward compatibility if needed
+        } else if (type === 'shortenedWorkHours') {
             updatedMonthInputs.shortenedWorkHours = [];
         }
         
-        // If all work rate data for the month is empty, remove the key
         if (updatedMonthInputs.shortenedWorkHours.length === 0 && updatedMonthInputs.dailyAttendance.length === 0) {
             const newState = { ...prev };
             delete newState[key];
@@ -568,48 +426,29 @@ export default function Home() {
           if (!newEvaluations[key]) newEvaluations[key] = [];
 
           const monthlyEmployeeData: Partial<Employee> = {
-              id: employeeData.id,
-              uniqueId: employeeData.uniqueId,
-              workRate: employeeData.workRate,
-              baseAmount: employeeData.baseAmount,
-              evaluatorId: employeeData.evaluatorId,
-              company: employeeData.company,
-              growthLevel: employeeData.growthLevel,
+              id: employeeData.id, uniqueId: employeeData.uniqueId, workRate: employeeData.workRate,
+              baseAmount: employeeData.baseAmount, evaluatorId: employeeData.evaluatorId,
+              company: employeeData.company, growthLevel: employeeData.growthLevel,
           };
           
-          if (!newEmployees[key].some(e => e.id === employeeData.id)) {
-              newEmployees[key].push(monthlyEmployeeData);
-          } else {
-              const index = newEmployees[key].findIndex(e => e.id === employeeData.id);
-              newEmployees[key][index] = { ...newEmployees[key][index], ...monthlyEmployeeData };
-          }
+          const empIndex = newEmployees[key].findIndex(e => e.id === employeeData.id);
+          if (empIndex > -1) newEmployees[key][empIndex] = { ...newEmployees[key][empIndex], ...monthlyEmployeeData };
+          else newEmployees[key].push(monthlyEmployeeData);
           
           const newEval: Evaluation = {
-              id: `eval-${employeeData.id}-${year}-${month}`,
-              employeeId: employeeData.id,
-              year, month, grade,
-              memo: memo || '',
+              id: `eval-${employeeData.id}-${year}-${month}`, employeeId: employeeData.id,
+              year, month, grade, memo: memo || '',
           };
           
           const evalIndex = newEvaluations[key].findIndex(e => e.employeeId === employeeData.id);
-          if (evalIndex > -1) {
-              newEvaluations[key][evalIndex] = newEval;
-          } else {
-              newEvaluations[key].push(newEval);
-          }
+          if (evalIndex > -1) newEvaluations[key][evalIndex] = newEval;
+          else newEvaluations[key].push(newEval);
       });
       
       setUsers(prevUsers => {
           return prevUsers.map(user => {
               const res = updatedResults.find(r => r.uniqueId === user.uniqueId);
-              if (res) {
-                  return {
-                      ...user,
-                      name: res.name,
-                      department: res.department,
-                      title: res.title,
-                  };
-              }
+              if (res) return { ...user, name: res.name, department: res.department, title: res.title, };
               return user;
           });
       });
@@ -621,13 +460,10 @@ export default function Home() {
   const handleUserDelete = (userId: string) => {
     const userToDelete = allUsers.find(u => u.id === userId);
     if (!userToDelete) return;
-
     setUsers(prev => prev.filter(u => u.id !== userId));
     setEmployees(prev => {
         const newState = { ...prev };
-        for (const key in newState) {
-            newState[key] = newState[key].filter(e => e.uniqueId !== userToDelete.uniqueId);
-        }
+        for (const key in newState) newState[key] = newState[key].filter(e => e.uniqueId !== userToDelete.uniqueId);
         return newState;
     });
   };
@@ -638,27 +474,15 @@ export default function Home() {
 
   const handleClearEmployeeData = (year: number, month: number) => {
     const key = `${year}-${month}`;
-    setEmployees(prev => {
-        const newState = { ...prev };
-        delete newState[key];
-        return newState;
-    });
-    setEvaluations(prev => {
-        const newState = { ...prev };
-        delete newState[key];
-        return newState;
-    });
+    setEmployees(prev => { const newState = { ...prev }; delete newState[key]; return newState; });
+    setEvaluations(prev => { const newState = { ...prev }; delete newState[key]; return newState; });
   };
 
   const handleClearEvaluationData = (year: number, month: number) => {
     const key = `${year}-${month}`;
     setEvaluations(prev => {
         const currentEvalsForMonth = prev[key] || [];
-        const resetEvals = currentEvalsForMonth.map(ev => ({
-            ...ev,
-            grade: null,
-            memo: '', 
-        }));
+        const resetEvals = currentEvalsForMonth.map(ev => ({ ...ev, grade: null, memo: '', }));
         return {...prev, [key]: resetEvals };
     });
   };
@@ -666,17 +490,11 @@ export default function Home() {
   const handleClearMyEvaluations = (year: number, month: number, evaluatorId: string) => {
     const key = `${year}-${month}`;
     if (!evaluatorId) return;
-    
-    const myEmployeeUniqueIds = new Set(
-        Object.values(employees).flat().filter(e => e.evaluatorId === evaluatorId).map(e => e.uniqueId)
-    );
-
+    const myEmployeeUniqueIds = new Set(Object.values(employees).flat().filter(e => e.evaluatorId === evaluatorId).map(e => e.uniqueId));
     setEvaluations(prev => {
         const updatedEvalsForMonth = (prev[key] || []).map(ev => {
             const empUniqueId = ev.employeeId.replace('E', '');
-            if (myEmployeeUniqueIds.has(empUniqueId)) {
-                return { ...ev, grade: null, memo: '' };
-            }
+            if (myEmployeeUniqueIds.has(empUniqueId)) return { ...ev, grade: null, memo: '' };
             return ev;
         });
         return { ...prev, [key]: updatedEvalsForMonth };
@@ -687,24 +505,15 @@ export default function Home() {
     if (approval.status === 'approved' && approval.type === 'workDataChange') {
       const { dataType, action, data } = approval.payload;
       const key = `${selectedDate.year}-${selectedDate.month}`;
-
       setWorkRateInputs(prev => {
         const updatedInputs = JSON.parse(JSON.stringify(prev));
-        if (!updatedInputs[key]) {
-          updatedInputs[key] = { shortenedWorkHours: [], dailyAttendance: [] };
-        }
-        
+        if (!updatedInputs[key]) updatedInputs[key] = { shortenedWorkHours: [], dailyAttendance: [] };
         let targetArray = updatedInputs[key][dataType];
-
-        if (action === 'add') {
-            targetArray.push(data);
-        } else if (action === 'edit') {
+        if (action === 'add') targetArray.push(data);
+        else if (action === 'edit') {
             const index = targetArray.findIndex((item: any) => item.rowId === data.rowId);
-            if (index > -1) {
-                targetArray[index] = data;
-            } else { // Fallback if rowId not found
-                targetArray.push(data);
-            }
+            if (index > -1) targetArray[index] = data;
+            else targetArray.push(data);
         }
         return updatedInputs;
       });
@@ -720,14 +529,11 @@ export default function Home() {
         const monthEmployees = results;
         const evaluatorIds = new Set(monthEmployees.map(e => e.evaluatorId).filter(Boolean));
         const employeeIds = new Set(monthEmployees.map(e => e.uniqueId));
-
         const message = `${year}년 ${month}월 평가가 최종 마감되었습니다.`;
-
         evaluatorIds.forEach(id => addNotification({ recipientId: id, message }));
         employeeIds.forEach(id => addNotification({ recipientId: id, message }));
     }
   };
-
 
   React.useEffect(() => {
     const getFullEvaluationResults = (): EvaluationResult[] => {
@@ -739,30 +545,15 @@ export default function Home() {
         const monthlyEvaluations = evaluations[monthKey] || [];
         const userMap = new Map(allUsers.map(u => [u.uniqueId, u]));
 
-        let targetUsers: User[] = [];
-        if (month === 0) { // all months for the year
-            targetUsers = allUsers; // Show all users
-        } else {
-             // Show users present in that month's employee data
-            const monthUserIds = new Set(monthlyEmployees.map(e => e.uniqueId));
-            targetUsers = allUsers.filter(u => monthUserIds.has(u.uniqueId));
-        }
-
-        return targetUsers.map(user => {
+        return allUsers.map(user => {
             const employeeData = monthlyEmployees.find(e => e.uniqueId === user.uniqueId);
             const evaluation = monthlyEvaluations.find(e => e.employeeId === user.employeeId);
 
             const base: Employee = {
-                id: user.employeeId,
-                uniqueId: user.uniqueId,
-                name: user.name,
-                department: user.department,
-                title: user.title,
-                position: user.title,
-                company: employeeData?.company || 'N/A',
-                growthLevel: employeeData?.growthLevel || '',
-                workRate: employeeData?.workRate ?? 1.0,
-                baseAmount: employeeData?.baseAmount ?? 0,
+                id: user.employeeId, uniqueId: user.uniqueId, name: user.name,
+                department: user.department, title: user.title, position: user.title,
+                company: employeeData?.company || 'N/A', growthLevel: employeeData?.growthLevel || '',
+                workRate: employeeData?.workRate ?? 1.0, baseAmount: employeeData?.baseAmount ?? 0,
                 evaluatorId: employeeData?.evaluatorId || '',
             };
             
@@ -791,8 +582,7 @@ export default function Home() {
             }
             
             return {
-                ...base,
-                year, month, grade, score, payoutRate, gradeAmount, finalAmount,
+                ...base, year, month, grade, score, payoutRate, gradeAmount, finalAmount,
                 evaluatorName: evaluator?.name || (base.evaluatorId ? `미지정 (${base.evaluatorId})` : '미지정'),
                 evaluationGroup: getEvaluationGroup(base.workRate),
                 detailedGroup1: getDetailedGroup1(base.workRate),
@@ -850,11 +640,10 @@ export default function Home() {
             return <PersonalSettings user={user} onUserUpdate={handleUserUpdate} />;
         }
         const myManagedEmployees = results.filter(e => e.evaluatorId === user?.uniqueId);
-        const myResults = results.filter(r => myManagedEmployees.map(e=>e.id).includes(r.id));
         
         return <EvaluatorDashboard 
                   allResults={results}
-                  currentMonthResults={myResults}
+                  currentMonthResults={myManagedEmployees}
                   gradingScale={gradingScale}
                   selectedDate={selectedDate}
                   setSelectedDate={setSelectedDate} 
@@ -864,7 +653,6 @@ export default function Home() {
                   workRateDetails={workRateDetails}
                   holidays={holidays}
                   allUsers={allUsers}
-                  allEmployees={allEmployeesFromState}
                   attendanceTypes={attendanceTypes}
                   onApprovalAction={onApprovalAction}
                   notifications={notifications}
@@ -885,7 +673,7 @@ export default function Home() {
                   activeView={employeeActiveView}
                   workRateDetails={workRateDetails}
                   selectedDate={selectedDate}
-                  allEmployees={allEmployeesFromState}
+                  allEmployees={allUsers}
                   attendanceTypes={attendanceTypes}
                   onApprovalAction={onApprovalAction}
                   notifications={notifications}
@@ -949,11 +737,8 @@ export default function Home() {
   )
 
   if (role === 'admin') {
-      const extendedNavItems = [
-          ...adminNavItems,
-      ];
       return commonLayout(
-        extendedNavItems,
+        adminNavItems,
         adminActiveView,
         setAdminActiveView,
         isAdminSidebarOpen,
@@ -962,11 +747,8 @@ export default function Home() {
   }
 
   if (role === 'evaluator') {
-      const extendedNavItems = [
-          ...evaluatorNavItems,
-      ];
       return commonLayout(
-        extendedNavItems,
+        evaluatorNavItems,
         evaluatorActiveView,
         setEvaluatorActiveView,
         isEvaluatorSidebarOpen,
@@ -975,11 +757,8 @@ export default function Home() {
   }
   
   if (role === 'employee') {
-      const extendedNavItems = [
-          ...employeeNavItems,
-      ];
       return commonLayout(
-        extendedNavItems,
+        employeeNavItems,
         employeeActiveView,
         setEmployeeActiveView,
         isEmployeeSidebarOpen,

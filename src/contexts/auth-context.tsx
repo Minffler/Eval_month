@@ -13,7 +13,6 @@ interface AuthContextType {
   logout: () => void;
   setRole: (role: Role) => void;
   setUsers: React.Dispatch<React.SetStateAction<User[]>>;
-  setUser: React.Dispatch<React.SetStateAction<User | null>>;
   loading: boolean;
 }
 
@@ -85,7 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const value = { user, users, role, setRole: handleSetRole, login, logout, loading, setUsers, setUser };
+  const value = { user, users, role, setRole: handleSetRole, login, logout, loading, setUsers };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
