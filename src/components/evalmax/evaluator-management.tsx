@@ -19,7 +19,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import type { EvaluationResult, Employee, AppNotification } from '@/lib/types';
-import { getPositionSortValue } from '@/lib/data';
+import { getPositionSortValue, mockUsers } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowUpDown, ArrowUp, ArrowDown, ChevronsUpDown, PlusCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -213,7 +213,39 @@ export default function EvaluatorManagement({
   const { toast } = useToast();
 
   const evaluators = React.useMemo(() => {
-    return allEmployees.filter(e => allEmployees.some(emp => emp.evaluatorId === e.uniqueId));
+    const evaluatorMap = new Map<string, Employee>();
+    
+    // 1. Add mock users with 'evaluator' role
+    mockUsers.forEach(user => {
+      if (user.roles.includes('evaluator')) {
+        const emp = allEmployees.find(e => e.uniqueId === user.uniqueId);
+        evaluatorMap.set(user.uniqueId, {
+          id: emp?.id || `E${user.uniqueId}`,
+          uniqueId: user.uniqueId,
+          name: user.name,
+          company: emp?.company || 'N/A',
+          department: emp?.department || user.department,
+          title: emp?.title || user.title,
+          position: emp?.position || user.title,
+          growthLevel: emp?.growthLevel || '',
+          workRate: emp?.workRate ?? 1.0,
+          evaluatorId: emp?.evaluatorId || '',
+          baseAmount: emp?.baseAmount || 0,
+        });
+      }
+    });
+
+    // 2. Add any other employees who are assigned as evaluators
+    const assignedEvaluatorIds = new Set(allEmployees.map(e => e.evaluatorId).filter(Boolean));
+    allEmployees.forEach(emp => {
+      if (assignedEvaluatorIds.has(emp.uniqueId)) {
+        if (!evaluatorMap.has(emp.uniqueId)) {
+          evaluatorMap.set(emp.uniqueId, emp);
+        }
+      }
+    });
+
+    return Array.from(evaluatorMap.values()).sort((a,b) => a.name.localeCompare(b.name));
   }, [allEmployees]);
   
   React.useEffect(() => {

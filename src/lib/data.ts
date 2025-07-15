@@ -1,5 +1,10 @@
 import type { User, Employee, Grade, Evaluation, GradeInfo, AttendanceType } from './types';
 
+export const mockUsers: User[] = [
+  { id: 'user-1', employeeId: 'E1911042', uniqueId: '1911042', name: '김민선', roles: ['admin', 'evaluator', 'employee'], avatar: 'https://placehold.co/100x100.png?text=A', title: '팀원', department: '인사부' },
+  { id: 'user-admin', employeeId: 'Eadmin', uniqueId: 'admin', name: '김관리', roles: ['admin', 'evaluator', 'employee'], avatar: 'https://placehold.co/100x100.png?text=A', title: '팀원', department: '인사부' },
+];
+
 export const gradingScale: Record<NonNullable<Grade>, GradeInfo> = {
   S: { score: 150, payoutRate: 150, description: '최고 성과' },
   'A+': { score: 130, payoutRate: 130, description: '우수 성과' },

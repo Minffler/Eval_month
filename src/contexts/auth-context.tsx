@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import type { User, Role, Employee } from '@/lib/types';
-import { mockEmployees } from '@/lib/data';
+import { mockEmployees, mockUsers } from '@/lib/data';
 
 interface AuthContextType {
   user: User | null;
@@ -15,12 +15,6 @@ interface AuthContextType {
 }
 
 const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
-
-const mockUsers: User[] = [
-  { id: 'user-1', employeeId: 'E1911042', uniqueId: '1911042', name: '김민선', roles: ['admin', 'evaluator', 'employee'], avatar: 'https://placehold.co/100x100.png?text=A', title: '팀원', department: '인사부' },
-  { id: 'user-admin', employeeId: 'Eadmin', uniqueId: 'admin', name: '김관리', roles: ['admin', 'evaluator', 'employee'], avatar: 'https://placehold.co/100x100.png?text=A', title: '팀원', department: '인사부' },
-];
-
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = React.useState<User | null>(null);
