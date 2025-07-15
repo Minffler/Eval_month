@@ -631,26 +631,12 @@ export default function AdminDashboard({
         );
     }
 
-    const currentApproverInfo = React.useMemo(() => {
+    const teamApproverInfo = React.useMemo(() => {
         if (!selectedApproval) return null;
-
-        let approverId: string | undefined;
-        let approverRole: string = '';
-
-        if (selectedApproval.status === '결재중') {
-            approverId = selectedApproval.approverTeamId;
-            approverRole = '현업 결재자';
-        } else if (selectedApproval.status === '현업승인' && selectedApproval.statusHR === '결재중') {
-            approverId = selectedApproval.approverHRId;
-            approverRole = '인사부 결재자';
-        }
-
-        if (approverId) {
-            const approver = allEmployees.find(e => e.uniqueId === approverId);
-            return `${approverRole}: ${approver ? `${approver.name} (${approver.uniqueId})` : `미지정 (${approverId})`}`;
-        }
-        return null;
-    }, [selectedApproval, allEmployees]);
+        
+        const approver = allUsers.find(e => e.uniqueId === selectedApproval.approverTeamId);
+        return approver ? `${approver.name} (${approver.uniqueId})` : `미지정 (${selectedApproval.approverTeamId})`;
+    }, [selectedApproval, allUsers]);
   
   const renderContent = () => {
     const key = `${selectedDate.year}-${selectedDate.month}`;
@@ -1033,7 +1019,7 @@ export default function AdminDashboard({
                       </TableRow></TableHeader>
                       <TableBody>
                         {sortedApprovals.map(approval => {
-                          const teamApprover = allEmployees.find(e => e.uniqueId === approval.approverTeamId);
+                          const teamApprover = allUsers.find(e => e.uniqueId === approval.approverTeamId);
                           return (
                           <TableRow key={approval.id}>
                             <TableCell className="text-center text-muted-foreground">{formatTimestamp(approval.date)}</TableCell>
@@ -1186,7 +1172,7 @@ export default function AdminDashboard({
             )}
             <DialogFooter className="sm:justify-between items-center pt-2">
                  <div className="text-sm text-muted-foreground">
-                    {currentApproverInfo && <p>현재 결재자: <span className="font-semibold text-foreground">{currentApproverInfo}</span></p>}
+                    {teamApproverInfo && <p>현업 결재자: <span className="font-semibold text-foreground">{teamApproverInfo}</span></p>}
                 </div>
                 {selectedApproval && selectedApproval.statusHR === '결재중' ? (
                   <div className="flex gap-2">

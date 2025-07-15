@@ -92,7 +92,7 @@ interface EvaluatorDashboardProps {
   selectedDate: { year: number; month: number };
   setSelectedDate: (date: { year: number; month: number }) => void;
   handleResultsUpdate: (updatedResults: EvaluationResult[]) => void;
-  evaluatorUser?: Employee | null;
+  evaluatorUser?: User | null;
   activeView: EvaluatorView;
   onClearMyEvaluations: (year: number, month: number, evaluatorId: string) => void;
   workRateDetails: WorkRateDetailsResult;
@@ -441,7 +441,7 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, handleRe
 
   const handleDownloadExcel = () => {
     const dataToExport = visibleEmployees.map(r => ({ 'ID': r.uniqueId, '회사': r.company, '소속부서': r.department, '이름': r.name, '근무율': `${(r.workRate * 100).toFixed(1)}%`, '등급': r.grade, '점수': r.score, '비고': r.memo }));
-    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport, { header: dataToExport.length > 0 ? Object.keys(dataToExport[0]) : [] });
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, `평가결과-${activeTab}`);
     const fileName = `${selectedDate.year}.${String(selectedDate.month).padStart(2, '0')}_월성과데이터.xlsx`;
@@ -802,14 +802,14 @@ const AllResultsView = ({ allResults, gradingScale }: {
 interface AssignmentManagementViewProps {
   myEmployees: EvaluationResult[];
   currentMonthResults: EvaluationResult[];
-  allEmployees: Employee[];
+  allUsers: User[];
   handleResultsUpdate: (updatedResults: EvaluationResult[]) => void;
   evaluatorId: string;
   evaluatorName: string;
 }
 
 
-const AssignmentManagementView = ({ myEmployees, currentMonthResults, allEmployees, handleResultsUpdate, evaluatorId, evaluatorName }: AssignmentManagementViewProps) => {
+const AssignmentManagementView = ({ myEmployees, currentMonthResults, allUsers, handleResultsUpdate, evaluatorId, evaluatorName }: AssignmentManagementViewProps) => {
   const { toast } = useToast();
   
   const [company, setCompany] = React.useState('');
@@ -876,7 +876,7 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, allEmploye
     }
     
     const firstMember = targetEmployees[0];
-    const currentEvaluator = allEmployees.find(e => e.uniqueId === firstMember.evaluatorId);
+    const currentEvaluator = allUsers.find(u => u.uniqueId === firstMember.evaluatorId);
     
     setGroupToChange({
       company,
@@ -1065,19 +1065,8 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
   const { deleteNotification } = useNotifications();
   
   React.useEffect(() => {
-    if (evaluatorUser) { // This is an Employee object from Admin view
-        // Construct a User object from the Employee object to use consistently
-        const constructedUser: User = {
-            id: `user-from-${evaluatorUser.id}`,
-            employeeId: evaluatorUser.id,
-            uniqueId: evaluatorUser.uniqueId,
-            name: evaluatorUser.name,
-            roles: ['evaluator', 'employee'], // Assume roles for simplicity in this view
-            avatar: 'https://placehold.co/100x100.png?text=${evaluatorUser.name.charAt(0)}',
-            title: evaluatorUser.title,
-            department: evaluatorUser.department,
-        };
-        setEffectiveUser(constructedUser);
+    if (evaluatorUser) {
+        setEffectiveUser(evaluatorUser);
     } else {
         setEffectiveUser(authUser);
     }
@@ -1190,26 +1179,12 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
         );
     }
 
-    const currentApproverInfo = React.useMemo(() => {
+    const teamApproverInfo = React.useMemo(() => {
         if (!selectedApproval) return null;
-
-        let approverId: string | undefined;
-        let approverRole: string = '';
-
-        if (selectedApproval.status === '결재중') {
-            approverId = selectedApproval.approverTeamId;
-            approverRole = '현업 결재자';
-        } else if (selectedApproval.status === '현업승인' && selectedApproval.statusHR === '결재중') {
-            approverId = selectedApproval.approverHRId;
-            approverRole = '인사부 결재자';
-        }
-
-        if (approverId) {
-            const approver = allEmployees.find(e => e.uniqueId === approverId);
-            return `${approverRole}: ${approver ? `${approver.name} (${approver.uniqueId})` : `미지정 (${approverId})`}`;
-        }
-        return null;
-    }, [selectedApproval, allEmployees]);
+        
+        const approver = allUsers.find(u => u.uniqueId === selectedApproval.approverTeamId);
+        return approver ? `${approver.name} (${approver.uniqueId})` : `미지정 (${selectedApproval.approverTeamId})`;
+    }, [selectedApproval, allUsers]);
 
 
   if (!effectiveUser) return <div className="p-4 md:p-6 lg:p-8">로딩중...</div>;
@@ -1231,7 +1206,7 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
         return <AssignmentManagementView 
                  myEmployees={myEmployees} 
                  currentMonthResults={currentMonthResults}
-                 allEmployees={allEmployees}
+                 allUsers={allUsers}
                  handleResultsUpdate={handleResultsUpdate}
                  evaluatorId={effectiveUser.uniqueId}
                  evaluatorName={effectiveUser.name}
@@ -1266,7 +1241,7 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
                         </TableRow></TableHeader>
                         <TableBody>
                           {myApprovals.map(approval => {
-                              const approver = allEmployees.find(e => e.uniqueId === approval.approverTeamId);
+                              const approver = allUsers.find(u => u.uniqueId === approval.approverTeamId);
                               return (
                                 <TableRow key={approval.id}>
                                   <TableCell className="text-center text-muted-foreground">{formatTimestamp(approval.date)}</TableCell>
@@ -1348,7 +1323,7 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
             )}
             <DialogFooter className="sm:justify-between items-center pt-2">
                  <div className="text-sm text-muted-foreground">
-                    {currentApproverInfo && <p>현재 결재자: <span className="font-semibold text-foreground">{currentApproverInfo}</span></p>}
+                    {teamApproverInfo && <p>현업 결재자: <span className="font-semibold text-foreground">{teamApproverInfo}</span></p>}
                 </div>
                 {selectedApproval && selectedApproval.status === '결재중' ? (
                   <div className="flex gap-2">
