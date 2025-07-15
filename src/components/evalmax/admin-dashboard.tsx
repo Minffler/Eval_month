@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/select';
 import { ConsistencyValidator } from './consistency-validator';
 import ManageData from './manage-data';
-import type { EvaluationResult, Grade, Employee, GradeInfo, EvaluationGroupCategory, User, EvaluationUploadData, WorkRateInputs, AttendanceType, Holiday, Approval, AppNotification, ApprovalStatus } from '@/lib/types';
+import type { EvaluationResult, Grade, Employee, GradeInfo, EvaluationGroupCategory, User, EvaluationUploadData, WorkRateInputs, AttendanceType, Holiday, Approval, AppNotification, ApprovalStatus, ShortenedWorkType } from '@/lib/types';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -69,6 +69,7 @@ import { Label } from '../ui/label';
 interface AdminDashboardProps {
   results: EvaluationResult[];
   allEmployees: Employee[];
+  employeesData: Record<string, Employee[]>;
   onEmployeeUpload: (year: number, month: number, employees: Employee[]) => void;
   onEvaluationUpload: (year: number, month: number, evaluations: EvaluationUploadData[]) => void;
   gradingScale: Record<NonNullable<Grade>, GradeInfo>;
@@ -80,7 +81,7 @@ interface AdminDashboardProps {
   onClearEmployeeData: (year: number, month: number) => void;
   onClearEvaluationData: (year: number, month: number) => void;
   onWorkRateDataUpload: (year: number, month: number, type: keyof WorkRateInputs, data: any[], isApproved: boolean) => void;
-  onClearWorkRateData: (year: number, month: number, type: keyof WorkRateInputs) => void;
+  onClearWorkRateData: (year: number, month: number, type: keyof WorkRateInputs | ShortenedWorkType) => void;
   workRateInputs: Record<string, WorkRateInputs>;
   attendanceTypes: AttendanceType[];
   setAttendanceTypes: React.Dispatch<React.SetStateAction<AttendanceType[]>>;
@@ -117,6 +118,7 @@ const NOTIFICATION_TEMPLATES_STORAGE_KEY = 'pl_eval_notification_templates';
 export default function AdminDashboard({ 
   results: initialResults, 
   allEmployees,
+  employeesData,
   onEmployeeUpload,
   onEvaluationUpload,
   gradingScale, 
@@ -972,7 +974,7 @@ export default function AdminDashboard({
             );
         }
         case 'file-upload':
-            return <ManageData onEmployeeUpload={onEmployeeUpload} onEvaluationUpload={onEvaluationUpload} results={initialResults} selectedDate={selectedDate} setSelectedDate={setSelectedDate} onClearEmployeeData={onClearEmployeeData} onClearEvaluationData={onClearEvaluationData} onWorkRateDataUpload={onWorkRateDataUpload} onClearWorkRateData={onClearWorkRateData} workRateInputs={currentWorkRateInputs} />;
+            return <ManageData onEmployeeUpload={onEmployeeUpload} onEvaluationUpload={onEvaluationUpload} allEmployees={employeesData} results={initialResults} selectedDate={selectedDate} setSelectedDate={setSelectedDate} onClearEmployeeData={onClearEmployeeData} onClearEvaluationData={onClearEvaluationData} onWorkRateDataUpload={onWorkRateDataUpload} onClearWorkRateData={onClearWorkRateData} workRateInputs={currentWorkRateInputs} />;
         case 'evaluator-management':
             return <EvaluatorManagement results={initialResults} allEmployees={allEmployees} handleResultsUpdate={handleResultsUpdate} addNotification={addNotification}/>;
         case 'system-standards':

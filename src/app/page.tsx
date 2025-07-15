@@ -630,6 +630,7 @@ export default function Home() {
         return <AdminDashboard 
                   results={results}
                   allEmployees={allEmployees}
+                  employeesData={employees}
                   onEmployeeUpload={handleEmployeeUpload}
                   onEvaluationUpload={handleEvaluationUpload}
                   gradingScale={gradingScale}

@@ -22,6 +22,7 @@ import { Separator } from '../ui/separator';
 
 interface ManageDataProps {
   results: EvaluationResult[];
+  allEmployees: Record<string, Employee[]>;
   onEmployeeUpload: (year: number, month: number, employees: Employee[]) => void;
   onEvaluationUpload: (year: number, month: number, evaluations: EvaluationUploadData[]) => void;
   selectedDate: { year: number, month: number };
@@ -113,7 +114,8 @@ const UploadSection: React.FC<UploadSectionProps> = ({ title, description, id, o
 export default function ManageData({ 
   onEmployeeUpload, 
   onEvaluationUpload, 
-  results, 
+  results,
+  allEmployees,
   selectedDate, 
   onClearEmployeeData, 
   onClearEvaluationData,
@@ -295,7 +297,7 @@ export default function ManageData({
               onUpload={(e) => handleFileUpload(e, 'employees')}
               onDownload={() => handleDownloadTemplate('employees')}
               onReset={() => setDialogOpen({type: 'deleteEmployees'})}
-              isResetDisabled={results.length === 0}
+              isResetDisabled={Object.keys(allEmployees).length === 0}
            />
            <Separator />
            <UploadSection 
