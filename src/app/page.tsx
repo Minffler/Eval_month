@@ -655,7 +655,6 @@ export default function Home() {
                   results={results}
                   allEmployees={allEmployees}
                   allUsers={users}
-                  employeesData={employees}
                   onEmployeeUpload={handleEmployeeUpload}
                   onEvaluationUpload={handleEvaluationUpload}
                   gradingScale={gradingScale}
@@ -668,7 +667,7 @@ export default function Home() {
                   activeView={adminActiveView}
                   onClearEmployeeData={handleClearEmployeeData}
                   onClearEvaluationData={handleClearEvaluationData}
-                  onWorkRateDataUpload={onWorkRateDataUpload}
+                  onWorkRateDataUpload={handleWorkRateDataUpload}
                   onClearWorkRateData={handleClearWorkRateData}
                   workRateInputs={workRateInputs}
                   attendanceTypes={attendanceTypes}
@@ -681,6 +680,7 @@ export default function Home() {
                   addNotification={addNotification}
                   deleteNotification={deleteNotification}
                   approvals={approvals}
+                  employeesData={employees}
                 />;
       case 'evaluator':
         const myManagedEmployees = results.filter(e => e.evaluatorId === user?.uniqueId);
