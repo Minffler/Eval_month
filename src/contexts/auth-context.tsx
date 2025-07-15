@@ -2,11 +2,12 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import type { User, Role, Employee } from '@/lib/types';
-import { mockEmployees, mockUsers } from '@/lib/data';
+import type { User, Role } from '@/lib/types';
+import { mockUsers } from '@/lib/data';
 
 interface AuthContextType {
   user: User | null;
+  allUsers: User[];
   role: Role;
   login: (id: string, pass:string) => Promise<boolean>;
   logout: () => void;
@@ -18,6 +19,11 @@ const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = React.useState<User | null>(null);
+  const [allUsers, setAllUsers] = React.useState<User[]>(() => {
+    if (typeof window === 'undefined') return mockUsers;
+    const stored = localStorage.getItem('users');
+    return stored ? JSON.parse(stored) : mockUsers;
+  });
   const [role, setRole] = React.useState<Role>(null);
   const [loading, setLoading] = React.useState(true);
   const router = useRouter();
@@ -39,48 +45,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     setLoading(false);
   }, []);
+  
+  React.useEffect(() => {
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === 'users' && event.newValue) {
+        try {
+          const newUsers = JSON.parse(event.newValue);
+          setAllUsers(newUsers);
+        } catch (e) {
+          console.error('Error parsing users from storage event', e);
+        }
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
 
   const login = React.useCallback(
     async (id: string, pass: string): Promise<boolean> => {
       if (pass !== '1') return false;
 
-      let foundUser: User | undefined;
-      
-      // 1. Check in predefined mockUsers
-      foundUser = mockUsers.find(u => u.uniqueId === id);
-
-      // 2. If not found, check in localStorage employees
-      if (!foundUser) {
-        try {
-          const storedEmployeesRaw = localStorage.getItem('employees');
-          if (storedEmployeesRaw) {
-            const storedEmployees: Record<string, Employee[]> = JSON.parse(storedEmployeesRaw);
-            const allEmployees = Object.values(storedEmployees).flat();
-            const foundEmployee = allEmployees.find(e => e.uniqueId === id);
-
-            if (foundEmployee) {
-              const allEvaluatorIds = new Set(allEmployees.map(e => e.evaluatorId));
-              const roles: Role[] = ['employee'];
-              if (allEvaluatorIds.has(foundEmployee.uniqueId)) {
-                roles.push('evaluator');
-              }
-
-              foundUser = {
-                id: `user-from-${foundEmployee.id}`,
-                employeeId: foundEmployee.id,
-                uniqueId: foundEmployee.uniqueId,
-                name: foundEmployee.name,
-                roles,
-                avatar: `https://placehold.co/100x100.png?text=${foundEmployee.name.charAt(0)}`,
-                title: foundEmployee.title,
-                department: foundEmployee.department,
-              };
-            }
-          }
-        } catch (e) {
-          console.error("Error during login from localStorage employees:", e);
-        }
-      }
+      const foundUser = allUsers.find(u => u.uniqueId === id);
 
       if (foundUser) {
         setUser(foundUser);
@@ -92,7 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       return false;
     },
-    []
+    [allUsers]
   );
 
   const logout = React.useCallback(() => {
@@ -110,7 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const value = { user, role, setRole: handleSetRole, login, logout, loading };
+  const value = { user, allUsers, role, setRole: handleSetRole, login, logout, loading };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

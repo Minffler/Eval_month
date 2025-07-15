@@ -6,8 +6,8 @@ import Header from '@/components/evalmax/header';
 import AdminDashboard from '@/components/evalmax/admin-dashboard';
 import EvaluatorDashboard from '@/components/evalmax/evaluator-dashboard';
 import EmployeeDashboard from '@/components/evalmax/employee-dashboard';
-import type { Employee, Evaluation, EvaluationResult, Grade, GradeInfo, User, EvaluatorView, EvaluationUploadData, WorkRateInputs, AttendanceType, Holiday, ShortenedWorkHourRecord, DailyAttendanceRecord, EmployeeView, Approval, AppNotification, ShortenedWorkType } from '@/lib/types';
-import { mockEmployees as initialMockEmployees, gradingScale as initialGradingScale, calculateFinalAmount, mockEvaluations as initialMockEvaluations, getDetailedGroup1, initialAttendanceTypes, mockUsers } from '@/lib/data';
+import type { Employee, Evaluation, EvaluationResult, Grade, GradeInfo, User, EvaluatorView, EvaluationUploadData, WorkRateInputs, AttendanceType, Holiday, ShortenedWorkHourRecord, DailyAttendanceRecord, EmployeeView, Approval, AppNotification, ShortenedWorkType, Role } from '@/lib/types';
+import { mockEmployees as initialMockEmployees, gradingScale as initialGradingScale, calculateFinalAmount, mockEvaluations as initialMockEvaluations, getDetailedGroup1, initialAttendanceTypes, mockUsers as initialMockUsers } from '@/lib/data';
 import { useRouter } from 'next/navigation';
 import { Loader2, Bell } from 'lucide-react';
 import { Sidebar, type NavItem } from '@/components/evalmax/sidebar';
@@ -30,6 +30,7 @@ import {
   CalendarClock,
   Settings2,
   Inbox,
+  UserCog
 } from 'lucide-react';
 import { calculateWorkRateDetails } from '@/lib/work-rate-calculator';
 import { useNotifications } from '@/contexts/notification-context';
@@ -63,7 +64,7 @@ const adminNavItems: NavItem[] = [
     icon: Database,
     children: [
       { id: 'file-upload', label: '파일 업로드', icon: Upload },
-      { id: 'evaluator-management', label: '평가자 관리', icon: Users },
+      { id: 'user-role-management', label: '사용자 및 권한 관리', icon: UserCog },
       { id: 'system-standards', label: '시스템 기준 관리', icon: Settings },
     ],
   },
@@ -140,7 +141,7 @@ const getFromLocalStorage = (key: string, defaultValue: any) => {
 }
 
 export default function Home() {
-  const { user, role, loading, logout } = useAuth();
+  const { user, loading, logout } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -157,6 +158,7 @@ export default function Home() {
       markApprovalsAsRead
   } = useNotifications();
   
+  const [users, setUsers] = React.useState<User[]>(() => getFromLocalStorage('users', initialMockUsers));
   const [employees, setEmployees] = React.useState<Record<string, Employee[]>>(() => getFromLocalStorage('employees', { '2025-7': initialMockEmployees }));
   const [evaluations, setEvaluations] = React.useState<Record<string, Evaluation[]>>(() => getFromLocalStorage('evaluations', { '2025-7': initialMockEvaluations }));
   const [gradingScale, setGradingScale] = React.useState<Record<NonNullable<Grade>, GradeInfo>>(() => getFromLocalStorage('gradingScale', initialGradingScale));
@@ -164,6 +166,7 @@ export default function Home() {
   const [attendanceTypes, setAttendanceTypes] = React.useState<AttendanceType[]>(() => getFromLocalStorage('attendanceTypes', initialAttendanceTypes));
   const [holidays, setHolidays] = React.useState<Holiday[]>(() => getFromLocalStorage('holidays', []));
 
+  React.useEffect(() => { localStorage.setItem('users', JSON.stringify(users)); }, [users]);
   React.useEffect(() => { localStorage.setItem('employees', JSON.stringify(employees)); }, [employees]);
   React.useEffect(() => { localStorage.setItem('evaluations', JSON.stringify(evaluations)); }, [evaluations]);
   React.useEffect(() => { localStorage.setItem('gradingScale', JSON.stringify(gradingScale)); }, [gradingScale]);
@@ -202,6 +205,8 @@ export default function Home() {
       router.push('/login');
     }
   }, [user, loading, router]);
+  
+  const role = user ? users.find(u => u.id === user.id)?.roles.find(r => r === (localStorage.getItem('role') || 'employee')) : 'employee';
   
   const allEmployees = React.useMemo(() => {
     const employeeMap = new Map<string, Employee>();
@@ -457,28 +462,41 @@ export default function Home() {
       setEvaluations(newEvaluations);
   };
   
-  const handleEvaluatorAdd = (newEvaluator: Employee) => {
-    // Add the new evaluator to all existing monthly employee lists
+  const handleUserAdd = (newEmployee: Employee, roles: Role[]) => {
+    // Add to allEmployees state
     setEmployees(prev => {
         const newState = { ...prev };
-        for (const key in newState) {
-            // Avoid adding duplicates if they already exist from a file upload
-            if (!newState[key].some(e => e.uniqueId === newEvaluator.uniqueId)) {
-                newState[key].push(newEvaluator);
-            }
-        }
-        // If no employee data exists for any month, create a placeholder for the current month
         const currentMonthKey = `${selectedDate.year}-${selectedDate.month}`;
-        if (!newState[currentMonthKey]) {
-            newState[currentMonthKey] = [];
-        }
-        if (!newState[currentMonthKey].some(e => e.uniqueId === newEvaluator.uniqueId)) {
-           newState[currentMonthKey].push(newEvaluator);
-        }
+        if (!newState[currentMonthKey]) newState[currentMonthKey] = [];
 
+        if (!newState[currentMonthKey].some(e => e.uniqueId === newEmployee.uniqueId)) {
+           newState[currentMonthKey].push(newEmployee);
+        }
         return newState;
     });
-};
+
+    // Add to users state
+    setUsers(prev => {
+      if (prev.some(u => u.uniqueId === newEmployee.uniqueId)) {
+        return prev;
+      }
+      const newUser: User = {
+        id: `user-${newEmployee.uniqueId}`,
+        employeeId: newEmployee.id,
+        uniqueId: newEmployee.uniqueId,
+        name: newEmployee.name,
+        roles,
+        avatar: `https://placehold.co/100x100.png?text=${newEmployee.name.charAt(0)}`,
+        title: newEmployee.title,
+        department: newEmployee.department,
+      };
+      return [...prev, newUser];
+    });
+  };
+
+  const handleRolesChange = (userId: string, newRoles: Role[]) => {
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, roles: newRoles } : u));
+  };
 
   const handleClearEmployeeData = (year: number, month: number) => {
     const key = `${year}-${month}`;
@@ -636,6 +654,7 @@ export default function Home() {
         return <AdminDashboard 
                   results={results}
                   allEmployees={allEmployees}
+                  allUsers={users}
                   employeesData={employees}
                   onEmployeeUpload={handleEmployeeUpload}
                   onEvaluationUpload={handleEvaluationUpload}
@@ -644,11 +663,12 @@ export default function Home() {
                   selectedDate={selectedDate}
                   setSelectedDate={setSelectedDate}
                   handleResultsUpdate={handleResultsUpdate}
-                  handleEvaluatorAdd={handleEvaluatorAdd}
+                  onUserAdd={handleUserAdd}
+                  onRolesChange={handleRolesChange}
                   activeView={adminActiveView}
                   onClearEmployeeData={handleClearEmployeeData}
                   onClearEvaluationData={handleClearEvaluationData}
-                  onWorkRateDataUpload={handleWorkRateDataUpload}
+                  onWorkRateDataUpload={onWorkRateDataUpload}
                   onClearWorkRateData={handleClearWorkRateData}
                   workRateInputs={workRateInputs}
                   attendanceTypes={attendanceTypes}

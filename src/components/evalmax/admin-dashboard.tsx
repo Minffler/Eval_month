@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, FileCheck, Bot, Upload, LayoutDashboard, Settings, Download, Bell, ArrowUpDown, ArrowUp, ArrowDown, Eye, ClipboardX, ChevronUp, ChevronDown, CheckCircle2, ChevronsUpDown, Save, X, ThumbsUp, ThumbsDown, Inbox, FileText, AlertTriangle } from 'lucide-react';
+import { Users, FileCheck, Bot, Upload, LayoutDashboard, Settings, Download, Bell, ArrowUpDown, ArrowUp, ArrowDown, Eye, ClipboardX, ChevronUp, ChevronDown, CheckCircle2, ChevronsUpDown, Save, X, ThumbsUp, ThumbsDown, Inbox, FileText, AlertTriangle, UserCog } from 'lucide-react';
 import { GradeHistogram } from './grade-histogram';
 import {
   Table,
@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/select';
 import { ConsistencyValidator } from './consistency-validator';
 import ManageData from './manage-data';
-import type { EvaluationResult, Grade, Employee, GradeInfo, EvaluationGroupCategory, User, EvaluationUploadData, WorkRateInputs, AttendanceType, Holiday, Approval, AppNotification, ApprovalStatus, ShortenedWorkType } from '@/lib/types';
+import type { EvaluationResult, Grade, Employee, GradeInfo, EvaluationGroupCategory, User, EvaluationUploadData, WorkRateInputs, AttendanceType, Holiday, Approval, AppNotification, ApprovalStatus, ShortenedWorkType, Role } from '@/lib/types';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -51,7 +51,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Textarea } from '../ui/textarea';
 import EvaluatorDashboard from './evaluator-dashboard';
-import EvaluatorManagement from './evaluator-management';
+import UserRoleManagement from './user-role-management';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
 import { AmountDistributionChart } from './amount-distribution-chart';
 import WorkRateManagement from './work-rate-management';
@@ -69,6 +69,7 @@ import { Label } from '../ui/label';
 interface AdminDashboardProps {
   results: EvaluationResult[];
   allEmployees: Employee[];
+  allUsers: User[];
   employeesData: Record<string, Employee[]>;
   onEmployeeUpload: (year: number, month: number, employees: Employee[]) => void;
   onEvaluationUpload: (year: number, month: number, evaluations: EvaluationUploadData[]) => void;
@@ -77,7 +78,8 @@ interface AdminDashboardProps {
   selectedDate: { year: number; month: number };
   setSelectedDate: (date: { year: number; month: number }) => void;
   handleResultsUpdate: (updatedResults: EvaluationResult[]) => void;
-  handleEvaluatorAdd: (newEvaluator: Employee) => void;
+  onUserAdd: (newEmployee: Employee, roles: Role[]) => void;
+  onRolesChange: (userId: string, newRoles: Role[]) => void;
   activeView: string;
   onClearEmployeeData: (year: number, month: number) => void;
   onClearEvaluationData: (year: number, month: number) => void;
@@ -120,6 +122,7 @@ const NOTIFICATION_TEMPLATES_STORAGE_KEY = 'pl_eval_notification_templates';
 export default function AdminDashboard({ 
   results: initialResults, 
   allEmployees,
+  allUsers,
   employeesData,
   onEmployeeUpload,
   onEvaluationUpload,
@@ -128,7 +131,8 @@ export default function AdminDashboard({
   selectedDate,
   setSelectedDate,
   handleResultsUpdate,
-  handleEvaluatorAdd,
+  onUserAdd,
+  onRolesChange,
   activeView,
   onClearEmployeeData,
   onClearEvaluationData,
@@ -167,9 +171,8 @@ export default function AdminDashboard({
   const { toast } = useToast();
 
   const evaluatorsForView = React.useMemo(() => {
-      const evaluatorIds = new Set(allEmployees.map(e => e.evaluatorId).filter(Boolean));
-      return allEmployees.filter(e => evaluatorIds.has(e.uniqueId));
-  }, [allEmployees]);
+      return allUsers.filter(u => u.roles.includes('evaluator'));
+  }, [allUsers]);
 
 
   React.useEffect(() => {
@@ -248,8 +251,7 @@ export default function AdminDashboard({
 
   const evaluatorStats = React.useMemo(() => {
     const statsByUniqueId: Record<string, { total: number; completed: number; evaluatorName: string; }> = {};
-    const evaluatorIds = new Set(allEmployees.map(e => e.evaluatorId).filter(Boolean));
-    const evaluators = allEmployees.filter(e => evaluatorIds.has(e.uniqueId));
+    const evaluators = allUsers.filter(u => u.roles.includes('evaluator'));
 
     evaluators.forEach(evaluator => {
         statsByUniqueId[evaluator.uniqueId] = { total: 0, completed: 0, evaluatorName: evaluator.name };
@@ -271,7 +273,7 @@ export default function AdminDashboard({
       pending: data.total - data.completed,
       rate: data.total > 0 ? (data.completed / data.total) * 100 : 0,
     }));
-  }, [initialResults, allEmployees]);
+  }, [initialResults, allUsers]);
 
   const sortedEvaluatorStats = React.useMemo(() => {
     let sortableItems: EvaluatorStat[] = [...evaluatorStats];
@@ -297,8 +299,8 @@ export default function AdminDashboard({
 
   const selectedEvaluator = React.useMemo(() => {
     if (!selectedEvaluatorId) return null;
-    return allEmployees.find(u => u.uniqueId === selectedEvaluatorId) || null;
-  }, [selectedEvaluatorId, allEmployees]);
+    return allUsers.find(u => u.uniqueId === selectedEvaluatorId) || null;
+  }, [selectedEvaluatorId, allUsers]);
 
   const sortedVisibleResults = React.useMemo(() => {
     let sortableItems = [...visibleResults];
@@ -985,8 +987,8 @@ export default function AdminDashboard({
         }
         case 'file-upload':
             return <ManageData onEmployeeUpload={onEmployeeUpload} onEvaluationUpload={onEvaluationUpload} allEmployees={employeesData} results={initialResults} selectedDate={selectedDate} setSelectedDate={setSelectedDate} onClearEmployeeData={onClearEmployeeData} onClearEvaluationData={onClearEvaluationData} onWorkRateDataUpload={onWorkRateDataUpload} onClearWorkRateData={onClearWorkRateData} workRateInputs={currentWorkRateInputs} />;
-        case 'evaluator-management':
-            return <EvaluatorManagement results={initialResults} allEmployees={allEmployees} handleResultsUpdate={handleResultsUpdate} onEvaluatorAdd={handleEvaluatorAdd} />;
+        case 'user-role-management':
+            return <UserRoleManagement allUsers={allUsers} allEmployees={allEmployees} onUserAdd={onUserAdd} onRolesChange={onRolesChange} />;
         case 'system-standards':
             return <SystemStandardsManagement gradingScale={gradingScale} setGradingScale={setGradingScale} attendanceTypes={attendanceTypes} setAttendanceTypes={setAttendanceTypes} holidays={holidays} setHolidays={setHolidays} />;
         case 'consistency-check':

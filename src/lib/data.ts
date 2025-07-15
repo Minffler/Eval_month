@@ -28,7 +28,8 @@ export const initialAttendanceTypes: AttendanceType[] = [
 ];
 
 export const mockEmployees: Employee[] = [
-  { id: '1911042', uniqueId: '1911042', name: '김민선', company: 'OKH', department: '인사부', title: '팀원', position: '팀원', growthLevel: 'Lv.5', workRate: 1.0, evaluatorId: '1911042', baseAmount: 8000000, memo: '' },
+  { id: 'E1911042', uniqueId: '1911042', name: '김민선', company: 'OKH', department: '인사부', title: '팀원', position: '팀원', growthLevel: 'Lv.5', workRate: 1.0, evaluatorId: '1911042', baseAmount: 8000000, memo: '' },
+  { id: 'Eadmin', uniqueId: 'admin', name: '김관리', company: 'OKH', department: '인사부', title: '팀원', position: '팀원', growthLevel: 'Lv.5', workRate: 1.0, evaluatorId: 'admin', baseAmount: 8000000, memo: '' },
 ];
 
 export const mockEvaluations: Evaluation[] = [
