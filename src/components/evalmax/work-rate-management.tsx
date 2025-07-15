@@ -4,7 +4,7 @@
 import * as React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import type { Employee, EvaluationResult, Holiday, ShortenedWorkType, AppNotification, AttendanceType } from '@/lib/types';
+import type { Employee, EvaluationResult, Holiday, ShortenedWorkType, AppNotification, AttendanceType, User } from '@/lib/types';
 import type { WorkRateDetailsResult, ShortenedWorkDetail, DailyAttendanceDetail } from '@/lib/work-rate-calculator';
 import { Button } from '../ui/button';
 import { ArrowUpDown, Download, ArrowUp, ArrowDown, Settings2, Search } from 'lucide-react';
@@ -27,7 +27,6 @@ import GradeManagement from './grade-management';
 
 interface WorkRateManagementProps {
   results: EvaluationResult[];
-  allEmployees: Employee[];
   workRateDetails: WorkRateDetailsResult;
   selectedDate: { year: number, month: number };
   holidays: Holiday[];
@@ -81,7 +80,6 @@ function countBusinessDaysForMonth(year: number, month: number, holidays: Set<st
 
 export default function WorkRateManagement({ 
   results, 
-  allEmployees, 
   workRateDetails, 
   selectedDate, 
   holidays, 

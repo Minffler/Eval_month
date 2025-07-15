@@ -370,7 +370,7 @@ export default function EvaluatorManagement({
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle>평가자 관리</CardTitle>
+          <CardTitle>평가자 배정</CardTitle>
           <CardDescription>
             회사, 소속부서, 직책별로 직원의 평가자를 매칭하고 관리합니다.
           </CardDescription>

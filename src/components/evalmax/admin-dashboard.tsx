@@ -69,9 +69,7 @@ import GradeManagement from './grade-management';
 
 interface AdminDashboardProps {
   results: EvaluationResult[];
-  allEmployees: Employee[];
   allUsers: User[];
-  employeesData: Record<string, Employee[]>;
   onEmployeeUpload: (year: number, month: number, employees: Employee[]) => void;
   onEvaluationUpload: (year: number, month: number, evaluations: EvaluationUploadData[]) => void;
   gradingScale: Record<NonNullable<Grade>, GradeInfo>;
@@ -126,9 +124,7 @@ const NOTIFICATION_TEMPLATES_STORAGE_KEY = 'pl_eval_notification_templates';
 
 export default function AdminDashboard({ 
   results: initialResults, 
-  allEmployees,
   allUsers,
-  employeesData,
   onEmployeeUpload,
   onEvaluationUpload,
   gradingScale, 
@@ -982,7 +978,6 @@ export default function AdminDashboard({
                             workRateDetails={workRateDetails}
                             holidays={holidays}
                             allUsers={allUsers}
-                            allEmployees={allEmployees}
                             attendanceTypes={attendanceTypes}
                             onApprovalAction={onApprovalAction}
                             notifications={notifications}
@@ -1001,7 +996,7 @@ export default function AdminDashboard({
             );
         }
         case 'file-upload':
-            return <ManageData onEmployeeUpload={onEmployeeUpload} onEvaluationUpload={onEvaluationUpload} allEmployees={employeesData} results={initialResults} selectedDate={selectedDate} setSelectedDate={setSelectedDate} onClearEmployeeData={onClearEmployeeData} onClearEvaluationData={onClearEvaluationData} onWorkRateDataUpload={onWorkRateDataUpload} onClearWorkRateData={onClearWorkRateData} workRateInputs={currentWorkRateInputs} />;
+            return <ManageData onEmployeeUpload={onEmployeeUpload} onEvaluationUpload={onEvaluationUpload} results={initialResults} selectedDate={selectedDate} setSelectedDate={setSelectedDate} onClearEmployeeData={onClearEmployeeData} onClearEvaluationData={onClearEvaluationData} onWorkRateDataUpload={onWorkRateDataUpload} onClearWorkRateData={onClearWorkRateData} workRateInputs={currentWorkRateInputs} />;
         case 'evaluator-management':
             return <EvaluatorManagement results={initialResults} allUsers={allUsers} handleResultsUpdate={handleResultsUpdate} />;
         case 'user-role-management':
@@ -1009,11 +1004,11 @@ export default function AdminDashboard({
         case 'consistency-check':
             return <ConsistencyValidator results={initialResults} gradingScale={gradingScale} />;
         case 'work-rate-view':
-            return <WorkRateManagement results={initialResults} workRateDetails={workRateDetails} selectedDate={selectedDate} holidays={holidays} setHolidays={setHolidays} attendanceTypes={attendanceTypes} setAttendanceTypes={setAttendanceTypes} handleResultsUpdate={handleResultsUpdate} allEmployees={allEmployees} addNotification={addNotification} />;
+            return <WorkRateManagement results={initialResults} workRateDetails={workRateDetails} selectedDate={selectedDate} holidays={holidays} setHolidays={setHolidays} attendanceTypes={attendanceTypes} setAttendanceTypes={setAttendanceTypes} handleResultsUpdate={handleResultsUpdate} />;
         case 'shortened-work-details':
-            return <WorkRateDetails type="shortenedWork" data={workRateDetails.shortenedWorkDetails} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} onDataChange={() => {}}/>;
+            return <WorkRateDetails type="shortenedWork" data={workRateDetails.shortenedWorkDetails} selectedDate={selectedDate} allEmployees={allUsers} attendanceTypes={attendanceTypes} onDataChange={() => {}}/>;
         case 'daily-attendance-details':
-            return <WorkRateDetails type="dailyAttendance" data={workRateDetails.dailyAttendanceDetails} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} onDataChange={() => {}}/>;
+            return <WorkRateDetails type="dailyAttendance" data={workRateDetails.dailyAttendanceDetails} selectedDate={selectedDate} allEmployees={allUsers} attendanceTypes={attendanceTypes} onDataChange={() => {}}/>;
         case 'approvals': {
             const sortedApprovals = [...approvals].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
             return (

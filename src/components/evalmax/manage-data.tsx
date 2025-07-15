@@ -22,7 +22,6 @@ import { Separator } from '../ui/separator';
 
 interface ManageDataProps {
   results: EvaluationResult[];
-  allEmployees: Record<string, Employee[]>;
   onEmployeeUpload: (year: number, month: number, employees: Employee[]) => void;
   onEvaluationUpload: (year: number, month: number, evaluations: EvaluationUploadData[]) => void;
   selectedDate: { year: number, month: number };
@@ -104,7 +103,6 @@ export default function ManageData({
   onEmployeeUpload, 
   onEvaluationUpload, 
   results,
-  allEmployees,
   selectedDate, 
   onClearEmployeeData, 
   onClearEvaluationData,
@@ -171,8 +169,8 @@ export default function ManageData({
                 id: `E${uniqueId}`, uniqueId, name: String(row['name'] || ''),
                 company: String(row['회사'] || ''), department: String(row['department'] || ''),
                 title: String(row['직책'] || '팀원'), position: String(row['직책'] || '팀원'),
-                growthLevel: String(row['성장레벨'] || ''), workRate: parseFloat(String(row['실근무율'] || '0')) || 0,
-                evaluatorId: String(row['evaluatorId'] || ''), baseAmount: Number(String(row['개인별 기준금액'] || '0').replace(/,/g, '')) || 0,
+                growthLevel: String(row['성장레벨'] || ''), workRate: parseFloat(String(row['실근무율'] || '1')),
+                evaluatorId: String(row['evaluatorId'] || ''), baseAmount: Number(String(row['개인별 기준금액'] || '0').replace(/,/g, '')),
                 memo: String(row['비고'] || ''),
               };
             }));
@@ -286,7 +284,7 @@ export default function ManageData({
               onUpload={(e) => handleFileUpload(e, 'employees')}
               onDownload={() => handleDownloadTemplate('employees')}
               onReset={() => setDialogOpen({type: 'deleteEmployees'})}
-              isResetDisabled={Object.keys(allEmployees).length === 0}
+              isResetDisabled={results.length === 0}
            />
            <Separator />
            <UploadSection 

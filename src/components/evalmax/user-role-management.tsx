@@ -46,7 +46,7 @@ interface UserRoleManagementProps {
   allUsers: User[];
   onUserAdd: (newEmployee: Employee, roles: Role[]) => void;
   onRolesChange: (userId: string, newRoles: Role[]) => void;
-  onUserUpdate: (userId: string, updatedData: Partial<User>) => void;
+  onUserUpdate: (userId: string, updatedData: Partial<User & { newUniqueId?: string }>) => void;
   onUserDelete: (userId: string) => void;
 }
 
@@ -151,7 +151,7 @@ export default function UserRoleManagement({
   const handleEditUser = () => {
     if(!selectedUser) return;
     onUserUpdate(selectedUser.id, {
-        uniqueId: editUserId,
+        newUniqueId: editUserId,
         name: editUserName,
         department: editUserDepartment,
         title: editUserTitle

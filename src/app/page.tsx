@@ -159,7 +159,7 @@ export default function Home() {
       markApprovalsAsRead
   } = useNotifications();
   
-  const [employees, setEmployees] = React.useState<Record<string, Employee[]>>(() => getFromLocalStorage('employees', { '2025-7': initialMockEmployees }));
+  const [employees, setEmployees] = React.useState<Record<string, Partial<Employee>[]>>(() => getFromLocalStorage('employees', { '2025-7': initialMockEmployees }));
   const [evaluations, setEvaluations] = React.useState<Record<string, Evaluation[]>>(() => getFromLocalStorage('evaluations', { '2025-7': initialMockEvaluations }));
   const [gradingScale, setGradingScale] = React.useState<Record<NonNullable<Grade>, GradeInfo>>(() => getFromLocalStorage('gradingScale', initialGradingScale));
   const [workRateInputs, setWorkRateInputs] = React.useState<Record<string, WorkRateInputs>>(() => getFromLocalStorage('workRateInputs', {}));
@@ -211,40 +211,166 @@ export default function Home() {
   const role = user ? allUsers.find(u => u.id === user.id)?.roles.find(r => r === (localStorage.getItem('role') || 'employee')) : 'employee';
   
   const allEmployeesFromState = React.useMemo(() => {
-    const employeeMap = new Map<string, Employee>();
-    Object.values(employees).flat().forEach(employee => {
-        if (!employeeMap.has(employee.uniqueId)) {
-            employeeMap.set(employee.uniqueId, employee);
-        }
+    return allUsers.map(user => {
+      const empData: Employee = {
+        id: user.employeeId,
+        uniqueId: user.uniqueId,
+        name: user.name,
+        department: user.department,
+        title: user.title,
+        position: user.title,
+        company: 'N/A', // Default, should be updated from monthly data
+        growthLevel: '',
+        workRate: 1.0,
+        evaluatorId: '', // This needs to be managed carefully
+        baseAmount: 0,
+      };
+      return empData;
     });
-    return Array.from(employeeMap.values());
-  }, [employees]);
+  }, [allUsers]);
 
+  const handleUserAdd = (newEmployee: Employee, roles: Role[]) => {
+    setUsers(prev => {
+      if (prev.some(u => u.uniqueId === newEmployee.uniqueId)) {
+        toast({ variant: 'destructive', title: '오류', description: '이미 존재하는 ID입니다.' });
+        return prev;
+      }
+      const newUser: User = {
+        id: `user-${newEmployee.uniqueId}`,
+        employeeId: newEmployee.id,
+        uniqueId: newEmployee.uniqueId,
+        name: newEmployee.name,
+        roles,
+        avatar: `https://placehold.co/100x100.png?text=${newEmployee.name.charAt(0)}`,
+        title: newEmployee.title,
+        department: newEmployee.department,
+        password: '1'
+      };
+      return [...prev, newUser];
+    });
+
+    // Add to current month's employees state as well for immediate reflection
+    setEmployees(prev => {
+        const newState = { ...prev };
+        const currentMonthKey = `${selectedDate.year}-${selectedDate.month}`;
+        if (!newState[currentMonthKey]) newState[currentMonthKey] = [];
+
+        if (!newState[currentMonthKey].some(e => e.uniqueId === newEmployee.uniqueId)) {
+           newState[currentMonthKey].push(newEmployee);
+        }
+        return newState;
+    });
+  };
+
+  const handleUserUpdate = (userId: string, updatedData: Partial<User & { newUniqueId?: string }>) => {
+      let employeeUpdated = false;
+      let oldUniqueId: string | undefined;
+
+      setUsers(prevUsers => {
+          return prevUsers.map(u => {
+              if (u.id === userId) {
+                  oldUniqueId = u.uniqueId;
+                  const newUniqueId = updatedData.newUniqueId || updatedData.uniqueId;
+                  
+                  if (u.uniqueId !== newUniqueId || u.name !== updatedData.name || u.department !== updatedData.department || u.title !== updatedData.title) {
+                      employeeUpdated = true;
+                  }
+                  
+                  const finalUpdatedData = { ...updatedData };
+                  if(finalUpdatedData.newUniqueId) {
+                      finalUpdatedData.uniqueId = finalUpdatedData.newUniqueId;
+                      delete finalUpdatedData.newUniqueId;
+                  }
+
+                  return { ...u, ...finalUpdatedData };
+              }
+              return u;
+          });
+      });
+
+      if (employeeUpdated && oldUniqueId) {
+          const finalUniqueId = updatedData.newUniqueId || updatedData.uniqueId || oldUniqueId;
+          
+          setEmployees(prevEmployees => {
+              const newEmployeesState = JSON.parse(JSON.stringify(prevEmployees));
+              for (const monthKey in newEmployeesState) {
+                  newEmployeesState[monthKey] = newEmployeesState[monthKey].map((emp: Partial<Employee>) => {
+                      if (emp.uniqueId === oldUniqueId) {
+                          return {
+                              ...emp,
+                              uniqueId: finalUniqueId,
+                              id: `E${finalUniqueId}`,
+                          };
+                      }
+                      if (emp.evaluatorId === oldUniqueId) {
+                          return { ...emp, evaluatorId: finalUniqueId };
+                      }
+                      return emp;
+                  });
+              }
+              return newEmployeesState;
+          });
+      }
+  };
+  
   const handleEmployeeUpload = (year: number, month: number, newEmployees: Employee[]) => {
     const key = `${year}-${month}`;
+
+    newEmployees.forEach(emp => {
+      const existingUser = allUsers.find(u => u.uniqueId === emp.uniqueId);
+      const employeeDataForUser: Partial<User> = {
+        name: emp.name,
+        department: emp.department,
+        title: emp.title,
+      };
+
+      if (!existingUser) {
+        // If user doesn't exist, add them
+        handleUserAdd({
+          ...emp,
+          company: emp.company || 'N/A',
+          position: emp.position || emp.title || '팀원',
+        }, ['employee']);
+      } else {
+        // If user exists, update their info
+        handleUserUpdate(existingUser.id, employeeDataForUser);
+      }
+
+      // Also handle evaluator if provided
+      if (emp.evaluatorId) {
+        const evaluatorUser = allUsers.find(u => u.uniqueId === emp.evaluatorId);
+        if(!evaluatorUser) {
+            handleUserAdd({
+                id: `E${emp.evaluatorId}`,
+                uniqueId: emp.evaluatorId,
+                name: `평가자(${emp.evaluatorId})`, // Placeholder name
+                department: '미지정',
+                title: '평가자',
+                position: '평가자',
+                company: 'N/A',
+                growthLevel: '',
+                workRate: 1.0,
+                evaluatorId: '', // Evaluators might not have one
+                baseAmount: 0,
+            }, ['evaluator', 'employee']);
+        }
+      }
+    });
+
     setEmployees(prev => ({...prev, [key]: newEmployees}));
 
     setEvaluations(prev => {
         const currentEvalsForMonth = prev[key] || [];
         const finalEvals = newEmployees.map(emp => {
             const existingEval = currentEvalsForMonth.find(e => e.employeeId === emp.id);
-            if (existingEval) {
-                // Preserve existing grade, but update memo if provided.
-                return {
-                    ...existingEval,
-                    memo: emp.memo || existingEval.memo,
-                };
-            } else {
-                // Create new evaluation for new employee.
-                return {
-                    id: `eval-${emp.id}-${year}-${month}`,
-                    employeeId: emp.id,
-                    year,
-                    month,
-                    grade: null,
-                    memo: emp.memo || '',
-                };
-            }
+            return {
+              id: `eval-${emp.id}-${year}-${month}`,
+              employeeId: emp.id,
+              year,
+              month,
+              grade: existingEval?.grade || null,
+              memo: existingEval?.memo || emp.memo || '',
+            };
         });
         return {...prev, [key]: finalEvals};
     });
@@ -253,91 +379,76 @@ export default function Home() {
   const handleEvaluationUpload = (year: number, month: number, uploadedData: EvaluationUploadData[]) => {
     const key = `${year}-${month}`;
 
-    // Add new evaluators from the upload to the main user list
-    const evaluatorsInUpload = new Map<string, string>();
-    uploadedData.forEach(item => {
-        if (item.evaluatorId && item.evaluatorName) {
-            evaluatorsInUpload.set(item.evaluatorId, item.evaluatorName);
+    uploadedData.forEach(uploadItem => {
+        const { employeeId, evaluatorId, evaluatorName, ...empData } = uploadItem;
+        const uniqueId = employeeId.replace('E','');
+
+        // Handle evaluated employee
+        const existingUser = allUsers.find(u => u.uniqueId === uniqueId);
+        if (!existingUser) {
+            handleUserAdd({
+                id: employeeId,
+                uniqueId: uniqueId,
+                name: empData.name || `사용자(${uniqueId})`,
+                department: empData.department || '미지정',
+                title: empData.title || '팀원',
+                position: empData.position || empData.title || '팀원',
+                company: empData.company || 'N/A',
+                growthLevel: empData.growthLevel || '',
+                workRate: empData.workRate || 1.0,
+                evaluatorId: evaluatorId || '',
+                baseAmount: empData.baseAmount || 0,
+            }, ['employee']);
+        } else {
+            handleUserUpdate(existingUser.id, { name: empData.name, department: empData.department, title: empData.title });
+        }
+
+        // Handle evaluator
+        if (evaluatorId) {
+            const evaluatorUser = allUsers.find(u => u.uniqueId === evaluatorId);
+            if (!evaluatorUser) {
+                handleUserAdd({
+                    id: `E${evaluatorId}`,
+                    uniqueId: evaluatorId,
+                    name: evaluatorName || `평가자(${evaluatorId})`,
+                    department: '미지정',
+                    title: '평가자',
+                    position: '평가자',
+                    company: 'N/A',
+                    growthLevel: '',
+                    workRate: 1.0,
+                    evaluatorId: '',
+                    baseAmount: 0,
+                }, ['evaluator', 'employee']);
+            } else if (evaluatorName && evaluatorUser.name !== evaluatorName) {
+                handleUserUpdate(evaluatorUser.id, { name: evaluatorName });
+            }
         }
     });
 
-    if (evaluatorsInUpload.size > 0) {
-        setUsers(prevUsers => {
-            const newUsersToAdd: User[] = [];
-            evaluatorsInUpload.forEach((name, id) => {
-                const evaluatorExists = prevUsers.some(u => u.uniqueId === id);
-                if (!evaluatorExists) {
-                    newUsersToAdd.push({
-                        id: `user-${id}`,
-                        employeeId: `E${id}`,
-                        uniqueId: id,
-                        name: name,
-                        roles: ['evaluator', 'employee'], // Default roles for new evaluators
-                        avatar: `https://placehold.co/100x100.png?text=${name.charAt(0)}`,
-                        title: '평가자', // Default title
-                        department: '미지정', // Default department
-                        password: '1',
-                    });
-                }
-            });
-            return [...prevUsers, ...newUsersToAdd];
-        });
-    }
-
     setEmployees(prevEmps => {
         const newState = JSON.parse(JSON.stringify(prevEmps));
-        
-        // Ensure all evaluators from the upload exist as employees. If not, create a stub record.
-        evaluatorsInUpload.forEach((name, id) => {
-            const evaluatorExists = Object.values(newState).flat().some((emp: Employee) => emp.uniqueId === id);
-            if (!evaluatorExists) {
-                const newEvaluatorStub: Employee = {
-                    id: `E${id}`,
-                    uniqueId: id,
-                    name: name,
-                    company: '', department: '', title: '평가자', position: '평가자',
-                    growthLevel: '', workRate: 1.0, evaluatorId: '', baseAmount: 0, memo: ''
-                };
-                if (!newState[key]) newState[key] = [];
-                newState[key].push(newEvaluatorStub);
-            }
-        });
-
-        // Part A: Update evaluator names globally.
-        if (evaluatorsInUpload.size > 0) {
-            for (const monthKey in newState) {
-                newState[monthKey] = newState[monthKey].map((emp: Employee) => {
-                    if (evaluatorsInUpload.has(emp.uniqueId)) {
-                        return { ...emp, name: evaluatorsInUpload.get(emp.uniqueId)! };
-                    }
-                    return emp;
-                });
-            }
-        }
-
-        // Part B: Update data for the employees evaluated in this month's upload.
         const newEmpsForMonth = newState[key] ? [...newState[key]] : [];
+        
         uploadedData.forEach(uploadItem => {
-            const empIndex = newEmpsForMonth.findIndex(e => e.employeeId === uploadItem.employeeId);
+            const empIndex = newEmpsForMonth.findIndex((e: Employee) => e.id === uploadItem.employeeId);
+            const dataToUpdate = {
+                evaluatorId: uploadItem.evaluatorId,
+                baseAmount: uploadItem.baseAmount,
+                workRate: uploadItem.workRate,
+            };
+            
             if (empIndex > -1) {
-                const existingEmp = newEmpsForMonth[empIndex];
-                newEmpsForMonth[empIndex] = {
-                    ...existingEmp,
-                    name: uploadItem.name ?? existingEmp.name,
-                    company: uploadItem.company ?? existingEmp.company,
-                    department: uploadItem.department ?? existingEmp.department,
-                    title: uploadItem.title ?? existingEmp.title,
-                    position: uploadItem.position ?? existingEmp.position,
-                    growthLevel: uploadItem.growthLevel ?? existingEmp.growthLevel,
-                    workRate: uploadItem.workRate ?? existingEmp.workRate,
-                    evaluatorId: uploadItem.evaluatorId ?? existingEmp.evaluatorId,
-                    baseAmount: uploadItem.baseAmount ?? existingEmp.baseAmount,
-                    memo: uploadItem.memo ?? existingEmp.memo,
-                };
+                Object.assign(newEmpsForMonth[empIndex], dataToUpdate);
+            } else {
+                newEmpsForMonth.push({
+                    uniqueId: uploadItem.employeeId.replace('E',''),
+                    id: uploadItem.employeeId,
+                    ...dataToUpdate
+                });
             }
         });
         newState[key] = newEmpsForMonth;
-
         return newState;
     });
 
@@ -346,22 +457,20 @@ export default function Home() {
         const newEvalsForMonth = newState[key] ? [...newState[key]] : [];
         
         uploadedData.forEach(uploadItem => {
-            const evalIndex = newEvalsForMonth.findIndex(e => e.employeeId === uploadItem.employeeId);
+            const evalIndex = newEvalsForMonth.findIndex((e: Evaluation) => e.employeeId === uploadItem.employeeId);
+            const evalData = {
+                grade: uploadItem.grade,
+                memo: uploadItem.memo || '',
+            };
+
             if (evalIndex > -1) {
-                const existingEval = newEvalsForMonth[evalIndex];
-                newEvalsForMonth[evalIndex] = {
-                    ...existingEval,
-                    grade: uploadItem.grade !== undefined ? uploadItem.grade : existingEval.grade,
-                    memo: uploadItem.memo !== undefined ? uploadItem.memo : existingEval.memo,
-                };
+                Object.assign(newEvalsForMonth[evalIndex], evalData);
             } else {
                 newEvalsForMonth.push({
                     id: `eval-${uploadItem.employeeId}-${year}-${month}`,
                     employeeId: uploadItem.employeeId,
-                    year,
-                    month,
-                    grade: uploadItem.grade,
-                    memo: uploadItem.memo || '',
+                    year, month,
+                    ...evalData
                 });
             }
         });
@@ -448,32 +557,38 @@ export default function Home() {
   };
 
   const handleResultsUpdate = (updatedResults: EvaluationResult[]) => {
-      // This is a comprehensive update function that trusts the incoming `updatedResults`
-      // and reverse-engineers the `employees` and `evaluations` state from it.
-      
-      const newEmployees: Record<string, Employee[]> = {};
+      const newEmployees: Record<string, Partial<Employee>[]> = {};
       const newEvaluations: Record<string, Evaluation[]> = {};
-      
+
       updatedResults.forEach(res => {
-          const { year, month, grade, score, payoutRate, gradeAmount, finalAmount, evaluatorName, evaluationGroup, detailedGroup1, detailedGroup2, ...employeeData } = res;
+          const { year, month, grade, score, payoutRate, gradeAmount, finalAmount, evaluatorName, evaluationGroup, detailedGroup1, detailedGroup2, memo, ...employeeData } = res;
           const key = `${year}-${month}`;
 
           if (!newEmployees[key]) newEmployees[key] = [];
           if (!newEvaluations[key]) newEvaluations[key] = [];
 
-          // Add employee data if not already present for that month
+          const monthlyEmployeeData: Partial<Employee> = {
+              id: employeeData.id,
+              uniqueId: employeeData.uniqueId,
+              workRate: employeeData.workRate,
+              baseAmount: employeeData.baseAmount,
+              evaluatorId: employeeData.evaluatorId,
+              company: employeeData.company,
+              growthLevel: employeeData.growthLevel,
+          };
+          
           if (!newEmployees[key].some(e => e.id === employeeData.id)) {
-              newEmployees[key].push(employeeData);
+              newEmployees[key].push(monthlyEmployeeData);
+          } else {
+              const index = newEmployees[key].findIndex(e => e.id === employeeData.id);
+              newEmployees[key][index] = { ...newEmployees[key][index], ...monthlyEmployeeData };
           }
           
-          // Add evaluation data
           const newEval: Evaluation = {
               id: `eval-${employeeData.id}-${year}-${month}`,
               employeeId: employeeData.id,
-              year,
-              month,
-              grade,
-              memo: res.memo || employeeData.memo || '',
+              year, month, grade,
+              memo: memo || '',
           };
           
           const evalIndex = newEvaluations[key].findIndex(e => e.employeeId === employeeData.id);
@@ -483,94 +598,24 @@ export default function Home() {
               newEvaluations[key].push(newEval);
           }
       });
+      
+      setUsers(prevUsers => {
+          return prevUsers.map(user => {
+              const res = updatedResults.find(r => r.uniqueId === user.uniqueId);
+              if (res) {
+                  return {
+                      ...user,
+                      name: res.name,
+                      department: res.department,
+                      title: res.title,
+                  };
+              }
+              return user;
+          });
+      });
 
-      setEmployees(newEmployees);
-      setEvaluations(newEvaluations);
-  };
-  
-  const handleUserAdd = (newEmployee: Employee, roles: Role[]) => {
-    // Add to allEmployees state
-    setEmployees(prev => {
-        const newState = { ...prev };
-        const currentMonthKey = `${selectedDate.year}-${selectedDate.month}`;
-        if (!newState[currentMonthKey]) newState[currentMonthKey] = [];
-
-        if (!newState[currentMonthKey].some(e => e.uniqueId === newEmployee.uniqueId)) {
-           newState[currentMonthKey].push(newEmployee);
-        }
-        return newState;
-    });
-
-    // Add to users state
-    setUsers(prev => {
-      if (prev.some(u => u.uniqueId === newEmployee.uniqueId)) {
-        return prev;
-      }
-      const newUser: User = {
-        id: `user-${newEmployee.uniqueId}`,
-        employeeId: newEmployee.id,
-        uniqueId: newEmployee.uniqueId,
-        name: newEmployee.name,
-        roles,
-        avatar: `https://placehold.co/100x100.png?text=${newEmployee.name.charAt(0)}`,
-        title: newEmployee.title,
-        department: newEmployee.department,
-        password: '1'
-      };
-      return [...prev, newUser];
-    });
-  };
-
-  const handleUserUpdate = (userId: string, updatedData: Partial<User>) => {
-    let employeeUpdated = false;
-    let oldUniqueId = '';
-    
-    setUsers(prevUsers => {
-        return prevUsers.map(u => {
-            if (u.id === userId) {
-                oldUniqueId = u.uniqueId;
-                if (u.uniqueId !== updatedData.uniqueId || u.name !== updatedData.name || u.department !== updatedData.department || u.title !== updatedData.title) {
-                    employeeUpdated = true;
-                }
-                const newPass = updatedData.password;
-                if(newPass && newPass.trim() !== '') {
-                    login(u.uniqueId, '1'); //This is a hack to make sure the user object is updated
-                }
-
-                return { ...u, ...updatedData };
-            }
-            return u;
-        });
-    });
-
-    if (employeeUpdated) {
-        setEmployees(prevEmployees => {
-            const newEmployees = { ...prevEmployees };
-            const userToUpdate = allUsers.find(u => u.id === userId);
-            if (!userToUpdate) return prevEmployees;
-
-            for (const monthKey in newEmployees) {
-                newEmployees[monthKey] = newEmployees[monthKey].map(emp => {
-                    if (emp.uniqueId === oldUniqueId) {
-                        return { 
-                            ...emp, 
-                            uniqueId: updatedData.uniqueId ?? emp.uniqueId,
-                            id: updatedData.uniqueId ? `E${updatedData.uniqueId}` : emp.id,
-                            name: updatedData.name ?? emp.name,
-                            department: updatedData.department ?? emp.department,
-                            title: updatedData.title ?? emp.title,
-                            position: updatedData.title ?? emp.position,
-                        };
-                    }
-                    if(emp.evaluatorId === oldUniqueId) {
-                        return { ...emp, evaluatorId: updatedData.uniqueId ?? emp.evaluatorId };
-                    }
-                    return emp;
-                });
-            }
-            return newEmployees;
-        });
-    }
+      setEmployees(prev => ({ ...prev, ...newEmployees }));
+      setEvaluations(prev => ({ ...prev, ...newEvaluations }));
   };
 
   const handleUserDelete = (userId: string) => {
@@ -621,12 +666,15 @@ export default function Home() {
   const handleClearMyEvaluations = (year: number, month: number, evaluatorId: string) => {
     const key = `${year}-${month}`;
     if (!evaluatorId) return;
-
-    const myEmployeeIds = new Set((employees[key] || []).filter(e => e.evaluatorId === evaluatorId).map(e => e.id));
+    
+    const myEmployeeUniqueIds = new Set(
+        Object.values(employees).flat().filter(e => e.evaluatorId === evaluatorId).map(e => e.uniqueId)
+    );
 
     setEvaluations(prev => {
         const updatedEvalsForMonth = (prev[key] || []).map(ev => {
-            if (myEmployeeIds.has(ev.employeeId)) {
+            const empUniqueId = ev.employeeId.replace('E', '');
+            if (myEmployeeUniqueIds.has(empUniqueId)) {
                 return { ...ev, grade: null, memo: '' };
             }
             return ev;
@@ -682,80 +730,79 @@ export default function Home() {
 
 
   React.useEffect(() => {
-    type MonthlyEmployee = Employee & { year: number; month: number };
-    
-    const getFullEvaluationResults = (
-        monthlyEmployees: MonthlyEmployee[],
-        allEvaluations: Record<string, Evaluation[]>,
-        currentGradingScale: Record<NonNullable<Grade>, GradeInfo>,
-        users: User[]
-    ): EvaluationResult[] => {
-      if (!monthlyEmployees) return [];
-      
-      return monthlyEmployees.map(employee => {
-        const monthEvaluations = allEvaluations[`${employee.year}-${employee.month}`] || [];
-        const evaluation = monthEvaluations.find(e => e.employeeId === employee.id);
+    const getFullEvaluationResults = (): EvaluationResult[] => {
+        const year = selectedDate.year;
+        const month = selectedDate.month;
+        const monthKey = `${year}-${month}`;
         
-        const grade = evaluation?.grade || null;
-        const gradeInfo = grade ? currentGradingScale[grade] : null;
-        const score = gradeInfo ? gradeInfo.score : 0;
-        const payoutRate = gradeInfo ? gradeInfo.payoutRate / 100 : 0;
-        
-        const gradeAmount = (employee.baseAmount || 0) * payoutRate;
-        const finalAmount = calculateFinalAmount(gradeAmount, employee.workRate);
-        const evaluator = users.find(u => u.uniqueId === employee.evaluatorId);
+        const monthlyEmployees = employees[monthKey] || [];
+        const monthlyEvaluations = evaluations[monthKey] || [];
+        const userMap = new Map(allUsers.map(u => [u.uniqueId, u]));
 
-        const getEvaluationGroup = (workRate: number): string => {
-            if (workRate >= 0.7) return 'A. 정규평가';
-            if (workRate >= 0.25) return 'B. 별도평가';
-            return 'C. 미평가';
-        };
-
-        const getDetailedGroup2 = (employee: Employee): string => {
-            const { position, growthLevel } = employee;
-            if (position === '팀장' || position === '지점장') return '팀장/지점장';
-            if (position === '지부장' || position === '센터장') return '지부장/센터장';
-            if (growthLevel === 'Lv.1') return 'Lv.1';
-            if (growthLevel === 'Lv.2' || growthLevel === 'Lv.3') return 'Lv.2~3';
-            return '기타';
+        let targetUsers: User[] = [];
+        if (month === 0) { // all months for the year
+            targetUsers = allUsers; // Show all users
+        } else {
+             // Show users present in that month's employee data
+            const monthUserIds = new Set(monthlyEmployees.map(e => e.uniqueId));
+            targetUsers = allUsers.filter(u => monthUserIds.has(u.uniqueId));
         }
 
-        return {
-          ...employee,
-          year: employee.year,
-          month: employee.month,
-          grade,
-          score,
-          payoutRate,
-          gradeAmount,
-          finalAmount,
-          evaluatorName: evaluator?.name || (employee.evaluatorId ? `미지정 (${employee.evaluatorId})` : '미지정'),
-          evaluationGroup: getEvaluationGroup(employee.workRate),
-          detailedGroup1: getDetailedGroup1(employee.workRate),
-          detailedGroup2: getDetailedGroup2(employee),
-          memo: evaluation?.memo || employee.memo || ''
-        };
-      });
+        return targetUsers.map(user => {
+            const employeeData = monthlyEmployees.find(e => e.uniqueId === user.uniqueId);
+            const evaluation = monthlyEvaluations.find(e => e.employeeId === user.employeeId);
+
+            const base: Employee = {
+                id: user.employeeId,
+                uniqueId: user.uniqueId,
+                name: user.name,
+                department: user.department,
+                title: user.title,
+                position: user.title,
+                company: employeeData?.company || 'N/A',
+                growthLevel: employeeData?.growthLevel || '',
+                workRate: employeeData?.workRate ?? 1.0,
+                baseAmount: employeeData?.baseAmount ?? 0,
+                evaluatorId: employeeData?.evaluatorId || '',
+            };
+            
+            const grade = evaluation?.grade || null;
+            const gradeInfo = grade ? gradingScale[grade] : null;
+            const score = gradeInfo?.score || 0;
+            const payoutRate = gradeInfo ? gradeInfo.payoutRate / 100 : 0;
+            const gradeAmount = (base.baseAmount || 0) * payoutRate;
+            const finalAmount = calculateFinalAmount(gradeAmount, base.workRate);
+            
+            const evaluator = userMap.get(base.evaluatorId);
+            
+            const getEvaluationGroup = (workRate: number): string => {
+                if (workRate >= 0.7) return 'A. 정규평가';
+                if (workRate >= 0.25) return 'B. 별도평가';
+                return 'C. 미평가';
+            };
+
+            const getDetailedGroup2 = (employee: Employee): string => {
+                const { position, growthLevel } = employee;
+                if (position === '팀장' || position === '지점장') return '팀장/지점장';
+                if (position === '지부장' || position === '센터장') return '지부장/센터장';
+                if (growthLevel === 'Lv.1') return 'Lv.1';
+                if (growthLevel === 'Lv.2' || growthLevel === 'Lv.3') return 'Lv.2~3';
+                return '기타';
+            }
+            
+            return {
+                ...base,
+                year, month, grade, score, payoutRate, gradeAmount, finalAmount,
+                evaluatorName: evaluator?.name || (base.evaluatorId ? `미지정 (${base.evaluatorId})` : '미지정'),
+                evaluationGroup: getEvaluationGroup(base.workRate),
+                detailedGroup1: getDetailedGroup1(base.workRate),
+                detailedGroup2: getDetailedGroup2(base),
+                memo: evaluation?.memo || base.memo || ''
+            };
+        });
     };
-
-    const year = selectedDate.year;
-    const month = selectedDate.month;
-    let monthlyEmployees: MonthlyEmployee[] = [];
-
-    if (month === 0) { // All months selected
-        monthlyEmployees = Object.entries(employees)
-            .filter(([key]) => key.startsWith(`${year}-`))
-            .flatMap(([key, emps]) => {
-                const [, monthStr] = key.split('-');
-                const monthNum = parseInt(monthStr, 10);
-                return emps.map(e => ({ ...e, year, month: monthNum }));
-            });
-    } else { // Single month selected
-        const dateKey = `${year}-${month}`;
-        monthlyEmployees = (employees[dateKey] || []).map(e => ({ ...e, year, month }));
-    }
     
-    setResults(getFullEvaluationResults(monthlyEmployees, evaluations, gradingScale, allUsers));
+    setResults(getFullEvaluationResults());
   }, [employees, evaluations, gradingScale, selectedDate, allUsers]);
 
   const renderDashboard = () => {
@@ -767,9 +814,7 @@ export default function Home() {
         const currentMonthStatus = evaluationStatus[`${selectedDate.year}-${selectedDate.month}`] || 'open';
         return <AdminDashboard 
                   results={results}
-                  allEmployees={allEmployeesFromState}
                   allUsers={allUsers}
-                  employeesData={employees}
                   onEmployeeUpload={handleEmployeeUpload}
                   onEvaluationUpload={handleEvaluationUpload}
                   gradingScale={gradingScale}
