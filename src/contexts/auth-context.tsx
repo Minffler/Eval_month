@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import type { User, Role } from '@/lib/types';
+import type { User, Role, Employee } from '@/lib/types';
 import { mockEmployees } from '@/lib/data';
 
 interface AuthContextType {
@@ -48,19 +48,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = React.useCallback(
     async (id: string, pass: string): Promise<boolean> => {
+      if (pass !== '1') return false;
+
       let foundUser: User | undefined;
       
-      // Simple mock auth logic, can be replaced with real auth
-      if (id === 'admin' && pass === '1') {
-        foundUser = mockUsers.find(u => u.uniqueId === 'admin');
-      } else if (id === 'evaluator' && pass === '1') {
-        foundUser = mockUsers.find(u => u.roles.includes('evaluator') && !u.roles.includes('admin'));
-      } else if (id === 'employee' && pass === '1') {
-        foundUser = mockUsers.find(u => u.roles.length === 1 && u.roles[0] === 'employee');
-      } else {
-        foundUser = mockUsers.find(u => u.uniqueId === id && pass === '1');
+      // 1. Check in predefined mockUsers
+      foundUser = mockUsers.find(u => u.uniqueId === id);
+
+      // 2. If not found, check in localStorage employees
+      if (!foundUser) {
+        try {
+          const storedEmployeesRaw = localStorage.getItem('employees');
+          if (storedEmployeesRaw) {
+            const storedEmployees: Record<string, Employee[]> = JSON.parse(storedEmployeesRaw);
+            const allEmployees = Object.values(storedEmployees).flat();
+            const foundEmployee = allEmployees.find(e => e.uniqueId === id);
+
+            if (foundEmployee) {
+              const allEvaluatorIds = new Set(allEmployees.map(e => e.evaluatorId));
+              const roles: Role[] = ['employee'];
+              if (allEvaluatorIds.has(foundEmployee.uniqueId)) {
+                roles.push('evaluator');
+              }
+
+              foundUser = {
+                id: `user-from-${foundEmployee.id}`,
+                employeeId: foundEmployee.id,
+                uniqueId: foundEmployee.uniqueId,
+                name: foundEmployee.name,
+                roles,
+                avatar: `https://placehold.co/100x100.png?text=${foundEmployee.name.charAt(0)}`,
+                title: foundEmployee.title,
+                department: foundEmployee.department,
+              };
+            }
+          }
+        } catch (e) {
+          console.error("Error during login from localStorage employees:", e);
+        }
       }
-      
+
       if (foundUser) {
         setUser(foundUser);
         const preferredRole = foundUser.roles.includes('admin') ? 'admin' : foundUser.roles.includes('evaluator') ? 'evaluator' : 'employee';

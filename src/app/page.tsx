@@ -7,7 +7,7 @@ import AdminDashboard from '@/components/evalmax/admin-dashboard';
 import EvaluatorDashboard from '@/components/evalmax/evaluator-dashboard';
 import EmployeeDashboard from '@/components/evalmax/employee-dashboard';
 import type { Employee, Evaluation, EvaluationResult, Grade, GradeInfo, User, EvaluatorView, EvaluationUploadData, WorkRateInputs, AttendanceType, Holiday, ShortenedWorkHourRecord, DailyAttendanceRecord, EmployeeView, Approval, AppNotification, ShortenedWorkType } from '@/lib/types';
-import { mockEmployees, gradingScale as initialGradingScale, calculateFinalAmount, mockEvaluations as initialMockEvaluations, getDetailedGroup1, initialAttendanceTypes } from '@/lib/data';
+import { mockEmployees as initialMockEmployees, gradingScale as initialGradingScale, calculateFinalAmount, mockEvaluations as initialMockEvaluations, getDetailedGroup1, initialAttendanceTypes } from '@/lib/data';
 import { useRouter } from 'next/navigation';
 import { Loader2, Bell } from 'lucide-react';
 import { Sidebar, type NavItem } from '@/components/evalmax/sidebar';
@@ -148,9 +148,11 @@ export default function Home() {
       notifications,
       unreadNotificationCount,
       addNotification,
+      deleteNotification,
       markNotificationsAsRead,
       approvals,
       unreadApprovalCount,
+      addApproval,
       handleApprovalAction,
       markApprovalsAsRead
   } = useNotifications();
@@ -437,42 +439,68 @@ export default function Home() {
   };
 
   const handleResultsUpdate = (updatedResults: EvaluationResult[]) => {
-      // Create maps for faster lookups
-      const updatedEmployeesMap = new Map(updatedResults.map(r => [r.id, r]));
-
-      setEmployees(prev => {
-          const newState = JSON.parse(JSON.stringify(prev));
-          for (const key in newState) {
-              newState[key] = newState[key].map((emp: Employee) => {
-                  const updatedEmp = updatedEmployeesMap.get(emp.id);
-                  if (updatedEmp) {
-                      const { year, month, grade, score, payoutRate, gradeAmount, finalAmount, evaluatorName, evaluationGroup, detailedGroup1, detailedGroup2, ...employeeData } = updatedEmp;
-                      return employeeData;
-                  }
-                  return emp;
-              });
-          }
-          return newState;
-      });
+      // This is a comprehensive update function that trusts the incoming `updatedResults`
+      // and reverse-engineers the `employees` and `evaluations` state from it.
       
-      setEvaluations(prev => {
-          const newState = JSON.parse(JSON.stringify(prev));
-           for (const key in newState) {
-              newState[key] = newState[key].map((ev: Evaluation) => {
-                  const updatedRes = updatedEmployeesMap.get(ev.employeeId);
-                  if (updatedRes) {
-                      return {
-                          ...ev,
-                          grade: updatedRes.grade,
-                          memo: updatedRes.memo,
-                      };
-                  }
-                  return ev;
-              });
+      const newEmployees: Record<string, Employee[]> = {};
+      const newEvaluations: Record<string, Evaluation[]> = {};
+      
+      updatedResults.forEach(res => {
+          const { year, month, grade, score, payoutRate, gradeAmount, finalAmount, evaluatorName, evaluationGroup, detailedGroup1, detailedGroup2, ...employeeData } = res;
+          const key = `${year}-${month}`;
+
+          if (!newEmployees[key]) newEmployees[key] = [];
+          if (!newEvaluations[key]) newEvaluations[key] = [];
+
+          // Add employee data if not already present for that month
+          if (!newEmployees[key].some(e => e.id === employeeData.id)) {
+              newEmployees[key].push(employeeData);
           }
-          return newState;
+          
+          // Add evaluation data
+          const newEval: Evaluation = {
+              id: `eval-${employeeData.id}-${year}-${month}`,
+              employeeId: employeeData.id,
+              year,
+              month,
+              grade,
+              memo: res.memo || employeeData.memo || '',
+          };
+          
+          const evalIndex = newEvaluations[key].findIndex(e => e.employeeId === employeeData.id);
+          if (evalIndex > -1) {
+              newEvaluations[key][evalIndex] = newEval;
+          } else {
+              newEvaluations[key].push(newEval);
+          }
       });
+
+      setEmployees(newEmployees);
+      setEvaluations(newEvaluations);
   };
+  
+  const handleEvaluatorAdd = (newEvaluator: Employee) => {
+    // Add the new evaluator to all existing monthly employee lists
+    setEmployees(prev => {
+        const newState = { ...prev };
+        for (const key in newState) {
+            // Avoid adding duplicates if they already exist from a file upload
+            if (!newState[key].some(e => e.uniqueId === newEvaluator.uniqueId)) {
+                newState[key].push(newEvaluator);
+            }
+        }
+        // If no employee data exists for any month, create a placeholder for the current month
+        const currentMonthKey = `${selectedDate.year}-${selectedDate.month}`;
+        if (!newState[currentMonthKey]) {
+            newState[currentMonthKey] = [];
+        }
+        if (!newState[currentMonthKey].some(e => e.uniqueId === newEvaluator.uniqueId)) {
+           newState[currentMonthKey].push(newEvaluator);
+        }
+
+        return newState;
+    });
+};
 
   const handleClearEmployeeData = (year: number, month: number) => {
     const key = `${year}-${month}`;
@@ -638,6 +666,7 @@ export default function Home() {
                   selectedDate={selectedDate}
                   setSelectedDate={setSelectedDate}
                   handleResultsUpdate={handleResultsUpdate}
+                  handleEvaluatorAdd={handleEvaluatorAdd}
                   activeView={adminActiveView}
                   onClearEmployeeData={handleClearEmployeeData}
                   onClearEvaluationData={handleClearEvaluationData}
@@ -652,6 +681,7 @@ export default function Home() {
                   onApprovalAction={onApprovalAction}
                   notifications={notifications}
                   addNotification={addNotification}
+                  deleteNotification={deleteNotification}
                   approvals={approvals}
                 />;
       case 'evaluator':
@@ -675,6 +705,7 @@ export default function Home() {
                   onApprovalAction={onApprovalAction}
                   notifications={notifications}
                   addNotification={addNotification}
+                  deleteNotification={deleteNotification}
                   approvals={approvals}
                 />;
       case 'employee':
@@ -691,6 +722,7 @@ export default function Home() {
                   attendanceTypes={attendanceTypes}
                   onApprovalAction={onApprovalAction}
                   notifications={notifications}
+                  deleteNotification={deleteNotification}
                   approvals={myApprovals}
                 />;
       default:

@@ -65,7 +65,6 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Separator } from '../ui/separator';
 import AdminNotifications from './admin-dashboard-notifications';
 import { Label } from '../ui/label';
-import { useNotifications } from '@/contexts/notification-context';
 
 interface AdminDashboardProps {
   results: EvaluationResult[];
@@ -78,6 +77,7 @@ interface AdminDashboardProps {
   selectedDate: { year: number; month: number };
   setSelectedDate: (date: { year: number; month: number }) => void;
   handleResultsUpdate: (updatedResults: EvaluationResult[]) => void;
+  handleEvaluatorAdd: (newEvaluator: Employee) => void;
   activeView: string;
   onClearEmployeeData: (year: number, month: number) => void;
   onClearEvaluationData: (year: number, month: number) => void;
@@ -91,6 +91,8 @@ interface AdminDashboardProps {
   workRateDetails: WorkRateDetailsResult;
   onApprovalAction: (approval: Approval) => void;
   notifications: AppNotification[];
+  addNotification: (notification: Omit<AppNotification, 'id' | 'date' | 'isRead'>) => void;
+  deleteNotification: (notificationId: string) => void;
   approvals: Approval[];
 }
 
@@ -126,6 +128,7 @@ export default function AdminDashboard({
   selectedDate,
   setSelectedDate,
   handleResultsUpdate,
+  handleEvaluatorAdd,
   activeView,
   onClearEmployeeData,
   onClearEvaluationData,
@@ -139,6 +142,8 @@ export default function AdminDashboard({
   workRateDetails,
   onApprovalAction,
   notifications,
+  addNotification,
+  deleteNotification,
   approvals
 }: AdminDashboardProps) {
   const [results, setResults] = React.useState<EvaluationResult[]>(initialResults);
@@ -159,7 +164,6 @@ export default function AdminDashboard({
   const [selectedApproval, setSelectedApproval] = React.useState<Approval | null>(null);
   const [rejectionReason, setRejectionReason] = React.useState('');
 
-  const { addNotification, deleteNotification } = useNotifications();
   const { toast } = useToast();
 
   const evaluatorsForView = React.useMemo(() => {
@@ -965,6 +969,8 @@ export default function AdminDashboard({
                             attendanceTypes={attendanceTypes}
                             onApprovalAction={onApprovalAction}
                             notifications={notifications}
+                            addNotification={addNotification}
+                            deleteNotification={deleteNotification}
                             approvals={approvals}
                         />
                     ) : (
@@ -980,7 +986,7 @@ export default function AdminDashboard({
         case 'file-upload':
             return <ManageData onEmployeeUpload={onEmployeeUpload} onEvaluationUpload={onEvaluationUpload} allEmployees={employeesData} results={initialResults} selectedDate={selectedDate} setSelectedDate={setSelectedDate} onClearEmployeeData={onClearEmployeeData} onClearEvaluationData={onClearEvaluationData} onWorkRateDataUpload={onWorkRateDataUpload} onClearWorkRateData={onClearWorkRateData} workRateInputs={currentWorkRateInputs} />;
         case 'evaluator-management':
-            return <EvaluatorManagement results={initialResults} allEmployees={allEmployees} handleResultsUpdate={handleResultsUpdate} />;
+            return <EvaluatorManagement results={initialResults} allEmployees={allEmployees} handleResultsUpdate={handleResultsUpdate} onEvaluatorAdd={handleEvaluatorAdd} />;
         case 'system-standards':
             return <SystemStandardsManagement gradingScale={gradingScale} setGradingScale={setGradingScale} attendanceTypes={attendanceTypes} setAttendanceTypes={setAttendanceTypes} holidays={holidays} setHolidays={setHolidays} />;
         case 'consistency-check':

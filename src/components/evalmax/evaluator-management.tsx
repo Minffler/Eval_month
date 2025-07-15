@@ -48,7 +48,7 @@ interface EvaluatorManagementProps {
   results: EvaluationResult[];
   allEmployees: Employee[];
   handleResultsUpdate: (updatedResults: EvaluationResult[]) => void;
-  addNotification: (notification: Omit<AppNotification, 'id' | 'date' | 'isRead'>) => void;
+  onEvaluatorAdd: (newEvaluator: Employee) => void;
 }
 
 type SortConfig = {
@@ -197,7 +197,7 @@ export default function EvaluatorManagement({
   results,
   allEmployees,
   handleResultsUpdate,
-  addNotification
+  onEvaluatorAdd
 }: EvaluatorManagementProps) {
   const [filteredResults, setFilteredResults] = React.useState(results);
   const [companyFilter, setCompanyFilter] = React.useState<Set<string>>(new Set());
@@ -337,22 +337,9 @@ export default function EvaluatorManagement({
 
   const handleEvaluatorChange = (employeeId: string, newEvaluatorId: string) => {
     const finalEvaluatorId = newEvaluatorId === 'unassigned' ? '' : newEvaluatorId;
-    const employee = results.find(r => r.id === employeeId);
-    const newEvaluator = allEmployees.find(u => u.uniqueId === finalEvaluatorId);
-
-    if (employee) {
-        if (newEvaluator) {
-             addNotification({ recipientId: '1911042', message: `${employee.name}의 평가자가 ${newEvaluator.name}(으)로 변경되었습니다.` });
-             addNotification({ recipientId: newEvaluator.uniqueId, message: `${employee.name}의 평가를 새로 담당하게 되었습니다.` });
-             addNotification({ recipientId: employee.uniqueId, message: `담당 평가자가 ${newEvaluator.name}님으로 변경되었습니다.` });
-        } else if (!finalEvaluatorId) { // unassigned
-            addNotification({ recipientId: '1911042', message: `${employee.name}의 평가자가 미지정으로 변경되었습니다.` });
-            addNotification({ recipientId: employee.uniqueId, message: `담당 평가자가 지정되지 않았습니다. 관리자에게 문의하세요.` });
-        }
-    }
-
     const updatedResults = results.map((r) => {
       if (r.id === employeeId) {
+        const newEvaluator = allEmployees.find(u => u.uniqueId === finalEvaluatorId);
         return { ...r, evaluatorId: finalEvaluatorId, evaluatorName: finalEvaluatorId ? (newEvaluator?.name || `ID: ${finalEvaluatorId}`) : '미지정' };
       }
       return r;
@@ -374,17 +361,6 @@ export default function EvaluatorManagement({
 
     const updatedResults = results.map(r => {
       if (selectedIds.has(r.id)) {
-        // Send notification only if evaluator changes
-        if (r.evaluatorId !== finalEvaluatorId) {
-            if (newEvaluator) {
-                 addNotification({ recipientId: '1911042', message: `${r.name}의 평가자가 ${newEvaluator.name}(으)로 변경되었습니다.` });
-                 addNotification({ recipientId: newEvaluator.uniqueId, message: `${r.name}의 평가를 새로 담당하게 되었습니다.` });
-                 addNotification({ recipientId: r.uniqueId, message: `담당 평가자가 ${newEvaluator.name}님으로 변경되었습니다.` });
-            } else if (!finalEvaluatorId) {
-                addNotification({ recipientId: '1911042', message: `${r.name}의 평가자가 미지정으로 변경되었습니다.` });
-                addNotification({ recipientId: r.uniqueId, message: `담당 평가자가 지정되지 않았습니다. 관리자에게 문의하세요.` });
-            }
-        }
         return { ...r, evaluatorId: finalEvaluatorId, evaluatorName: finalEvaluatorId ? (newEvaluator?.name || `ID: ${finalEvaluatorId}`) : '미지정' };
       }
       return r;
@@ -421,25 +397,10 @@ export default function EvaluatorManagement({
         workRate: 1.0,
         evaluatorId: '',
         baseAmount: 0,
+        memo: ''
     };
     
-    // We create a dummy result to pass to handleResultsUpdate
-    const dummyResult: EvaluationResult = {
-        ...newEvaluator,
-        year: results[0]?.year || new Date().getFullYear(),
-        month: results[0]?.month || new Date().getMonth() + 1,
-        grade: null,
-        score: 0,
-        payoutRate: 0,
-        gradeAmount: 0,
-        finalAmount: 0,
-        evaluatorName: '',
-        evaluationGroup: '',
-        detailedGroup1: '',
-        detailedGroup2: '',
-    };
-    
-    handleResultsUpdate([...results, dummyResult]);
+    onEvaluatorAdd(newEvaluator);
 
     toast({ title: '성공', description: `평가자 '${newEvaluatorName}'님이 추가되었습니다.` });
     setIsAddEvaluatorDialogOpen(false);
@@ -531,7 +492,7 @@ export default function EvaluatorManagement({
             <DialogHeader>
                 <DialogTitle>새 평가자 추가</DialogTitle>
                 <DialogDescription>
-                    시스템에 존재하지 않는 평가자를 직접 추가합니다. 추가된 평가자는 평가자 목록에 즉시 반영됩니다.
+                    시스템에 존재하지 않는 평가자를 직접 추가합니다. 추가된 평가자는 평가자 목록 및 로그인 계정에 즉시 반영됩니다. (초기 비밀번호: 1)
                 </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
