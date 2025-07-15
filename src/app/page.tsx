@@ -113,7 +113,6 @@ const employeeNavItems: NavItem[] = [
       { id: 'my-daily-attendance', label: '일근태 상세', icon: CalendarDays },
     ],
   },
-  { id: 'personal-settings', label: '개인정보 설정', icon: Settings2, isBottom: true },
 ];
 
 const getInitialDate = () => {
@@ -166,6 +165,7 @@ export default function Home() {
   const [workRateInputs, setWorkRateInputs] = React.useState<Record<string, WorkRateInputs>>(() => getFromLocalStorage('workRateInputs', {}));
   const [attendanceTypes, setAttendanceTypes] = React.useState<AttendanceType[]>(() => getFromLocalStorage('attendanceTypes', initialAttendanceTypes));
   const [holidays, setHolidays] = React.useState<Holiday[]>(() => getFromLocalStorage('holidays', []));
+  const [evaluationStatus, setEvaluationStatus] = React.useState<Record<string, 'open' | 'closed'>>(() => getFromLocalStorage('evaluationStatus', {}));
 
   React.useEffect(() => { localStorage.setItem('employees', JSON.stringify(employees)); }, [employees]);
   React.useEffect(() => { localStorage.setItem('evaluations', JSON.stringify(evaluations)); }, [evaluations]);
@@ -173,6 +173,8 @@ export default function Home() {
   React.useEffect(() => { localStorage.setItem('workRateInputs', JSON.stringify(workRateInputs)); }, [workRateInputs]);
   React.useEffect(() => { localStorage.setItem('attendanceTypes', JSON.stringify(attendanceTypes)); }, [attendanceTypes]);
   React.useEffect(() => { localStorage.setItem('holidays', JSON.stringify(holidays)); }, [holidays]);
+  React.useEffect(() => { localStorage.setItem('evaluationStatus', JSON.stringify(evaluationStatus)); }, [evaluationStatus]);
+
 
   const [results, setResults] = React.useState<EvaluationResult[]>([]);
   const [selectedDate, setSelectedDate] = React.useState(getInitialDate);
@@ -638,6 +640,23 @@ export default function Home() {
     handleApprovalAction(approval);
   };
 
+  const handleEvaluationStatusChange = (year: number, month: number, status: 'open' | 'closed') => {
+    const key = `${year}-${month}`;
+    setEvaluationStatus(prev => ({ ...prev, [key]: status }));
+
+    if (status === 'closed') {
+        const monthEmployees = results;
+        const evaluatorIds = new Set(monthEmployees.map(e => e.evaluatorId).filter(Boolean));
+        const employeeIds = new Set(monthEmployees.map(e => e.uniqueId));
+
+        const message = `${year}년 ${month}월 평가가 최종 마감되었습니다.`;
+
+        evaluatorIds.forEach(id => addNotification({ recipientId: id, message }));
+        employeeIds.forEach(id => addNotification({ recipientId: id, message }));
+    }
+  };
+
+
   React.useEffect(() => {
     type MonthlyEmployee = Employee & { year: number; month: number };
     
@@ -721,6 +740,7 @@ export default function Home() {
         if (adminActiveView === 'personal-settings' && user) {
             return <PersonalSettings user={user} onUserUpdate={handleUserUpdate} />;
         }
+        const currentMonthStatus = evaluationStatus[`${selectedDate.year}-${selectedDate.month}`] || 'open';
         return <AdminDashboard 
                   results={results}
                   allEmployees={allEmployeesFromState}
@@ -753,6 +773,8 @@ export default function Home() {
                   addNotification={addNotification}
                   deleteNotification={deleteNotification}
                   approvals={approvals}
+                  evaluationStatus={currentMonthStatus}
+                  onEvaluationStatusChange={handleEvaluationStatusChange}
                 />;
       case 'evaluator':
         if (evaluatorActiveView === 'personal-settings' && user) {
@@ -763,7 +785,7 @@ export default function Home() {
         const myResults = results.filter(r => myManagedEmployeeIds.has(r.id));
         
         return <EvaluatorDashboard 
-                  allResults={allEmployeesFromState.filter(r => r.evaluatorId === user?.uniqueId)}
+                  allResults={allResults}
                   currentMonthResults={myResults}
                   gradingScale={gradingScale}
                   selectedDate={selectedDate}
@@ -861,7 +883,6 @@ export default function Home() {
   if (role === 'admin') {
       const extendedNavItems = [
           ...adminNavItems,
-          { id: 'personal-settings', label: '개인정보 설정', icon: Settings2, isBottom: true },
       ];
       return commonLayout(
         extendedNavItems,
@@ -875,7 +896,6 @@ export default function Home() {
   if (role === 'evaluator') {
       const extendedNavItems = [
           ...evaluatorNavItems,
-          { id: 'personal-settings', label: '개인정보 설정', icon: Settings2, isBottom: true },
       ];
       return commonLayout(
         extendedNavItems,
@@ -887,8 +907,11 @@ export default function Home() {
   }
   
   if (role === 'employee') {
+      const extendedNavItems = [
+          ...employeeNavItems,
+      ];
       return commonLayout(
-        employeeNavItems,
+        extendedNavItems,
         employeeActiveView,
         setEmployeeActiveView,
         isEmployeeSidebarOpen,

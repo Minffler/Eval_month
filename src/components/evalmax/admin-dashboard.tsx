@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, FileCheck, Bot, Upload, LayoutDashboard, Settings, Download, Bell, ArrowUpDown, ArrowUp, ArrowDown, Eye, ClipboardX, ChevronUp, ChevronDown, CheckCircle2, ChevronsUpDown, Save, X, ThumbsUp, ThumbsDown, Inbox, FileText, AlertTriangle, UserCog, Settings2 } from 'lucide-react';
+import { Users, FileCheck, Bot, Upload, LayoutDashboard, Settings, Download, Bell, ArrowUpDown, ArrowUp, ArrowDown, Eye, ClipboardX, ChevronUp, ChevronDown, CheckCircle2, ChevronsUpDown, Save, X, ThumbsUp, ThumbsDown, Inbox, FileText, AlertTriangle, UserCog, Settings2, Lock, Unlock } from 'lucide-react';
 import { GradeHistogram } from './grade-histogram';
 import {
   Table,
@@ -27,7 +27,7 @@ import { Button } from '../ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { calculateFinalAmount, getPositionSortValue } from '@/lib/data';
 import * as XLSX from 'xlsx';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '../ui/card';
 import { Progress } from '../ui/progress';
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -99,6 +99,8 @@ interface AdminDashboardProps {
   addNotification: (notification: Omit<AppNotification, 'id' | 'date' | 'isRead'>) => void;
   deleteNotification: (notificationId: string) => void;
   approvals: Approval[];
+  evaluationStatus: 'open' | 'closed';
+  onEvaluationStatusChange: (year: number, month: number, status: 'open' | 'closed') => void;
 }
 
 type SortConfig = {
@@ -153,7 +155,9 @@ export default function AdminDashboard({
   notifications,
   addNotification,
   deleteNotification,
-  approvals
+  approvals,
+  evaluationStatus,
+  onEvaluationStatusChange
 }: AdminDashboardProps) {
   const [results, setResults] = React.useState<EvaluationResult[]>(initialResults);
   const [activeResultsTab, setActiveResultsTab] = React.useState<EvaluationGroupCategory>('전체');
@@ -761,6 +765,19 @@ export default function AdminDashboard({
                         </Table>
                       </div>
                     </CardContent>
+                    <CardFooter className="justify-end gap-2">
+                        {evaluationStatus === 'open' ? (
+                            <Button onClick={() => onEvaluationStatusChange(selectedDate.year, selectedDate.month, 'closed')}>
+                                <Lock className="mr-2 h-4 w-4" />
+                                평가 마감
+                            </Button>
+                        ) : (
+                            <Button variant="outline" onClick={() => onEvaluationStatusChange(selectedDate.year, selectedDate.month, 'open')}>
+                                <Unlock className="mr-2 h-4 w-4" />
+                                평가 마감 취소
+                            </Button>
+                        )}
+                    </CardFooter>
                   </Card>
                 </div>
             );
@@ -862,7 +879,7 @@ export default function AdminDashboard({
                                 <TableCell className="py-1 px-2 whitespace-nowrap text-center">{(r.workRate * 100).toFixed(1)}%</TableCell>
                                 <TableCell className="py-1 px-2 whitespace-nowrap text-center">{r.score}</TableCell>
                                 <TableCell className="py-1 px-2 whitespace-nowrap text-center">
-                                    <Select value={r.grade || ''} onValueChange={(g) => handleGradeChange(r.id, g)}>
+                                    <Select value={r.grade || ''} onValueChange={(g) => handleGradeChange(r.id, g)} disabled={evaluationStatus === 'closed'}>
                                         <SelectTrigger className="w-[80px] h-8 mx-auto">
                                             <SelectValue placeholder="선택" />
                                         </SelectTrigger>
@@ -879,6 +896,7 @@ export default function AdminDashboard({
                                     defaultValue={formatCurrency(r.baseAmount)}
                                     onBlur={(e) => handleBaseAmountChange(r.id, e.target.value)}
                                     className="w-28 text-right h-8 mx-auto"
+                                    disabled={evaluationStatus === 'closed'}
                                     />
                                 </TableCell>
                                 <TableCell className="py-1 px-2 whitespace-nowrap text-right">{formatCurrency(r.finalAmount)}</TableCell>
