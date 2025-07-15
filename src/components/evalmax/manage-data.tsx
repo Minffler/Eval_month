@@ -138,22 +138,17 @@ export default function ManageData({
   
   const handleResetWorkData = () => {
     if (!dialogOpen?.workDataType) return;
-    
-    let typeToClear: keyof WorkRateInputs;
-    let typeName: string;
 
     if (dialogOpen.workDataType === '임신' || dialogOpen.workDataType === '육아/돌봄') {
-        typeToClear = 'shortenedWorkHours';
-        typeName = dialogOpen.workDataType;
-        const filteredData = (workRateInputs[typeToClear] || []).filter(d => d.type !== dialogOpen.workDataType);
-        onWorkRateDataUpload(selectedDate.year, selectedDate.month, 'shortenedWorkHours', filteredData, true);
-    } else {
-        typeToClear = dialogOpen.workDataType as keyof WorkRateInputs;
-        typeName = typeToClear === 'dailyAttendance' ? '일근태' : '단축근로';
-        onClearWorkRateData(selectedDate.year, selectedDate.month, typeToClear);
+        const typeToClear: ShortenedWorkType = dialogOpen.workDataType;
+        const remainingData = (workRateInputs.shortenedWorkHours || []).filter(d => d.type !== typeToClear);
+        onWorkRateDataUpload(selectedDate.year, selectedDate.month, 'shortenedWorkHours', remainingData, true);
+        toast({ title: '초기화 완료', description: `해당 월의 '${typeToClear}' 단축근로 데이터가 초기화되었습니다.` });
+    } else if (dialogOpen.workDataType === 'dailyAttendance') {
+        onClearWorkRateData(selectedDate.year, selectedDate.month, 'dailyAttendance');
+        toast({ title: '초기화 완료', description: '해당 월의 일근태 데이터가 초기화되었습니다.' });
     }
-
-    toast({ title: '초기화 완료', description: `해당 월의 ${typeName} 데이터가 초기화되었습니다.` });
+    
     setDialogOpen(null);
   }
 
@@ -292,7 +287,7 @@ export default function ManageData({
       default:
         return;
     }
-    const worksheet = XLSX.utils.json_to_sheet(dataForSheet, { header: headers });
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport, { header: headers });
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Data');
     XLSX.writeFile(workbook, fileName);
