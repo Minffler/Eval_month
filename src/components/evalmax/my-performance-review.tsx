@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '../ui/button';
-import { ChevronDown, ChevronUp, Medal, Trophy, PiggyBank, Sparkles, Award } from 'lucide-react';
+import { ChevronDown, ChevronUp, Medal, Trophy, PiggyBank, Sparkles, Award, Banknote } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
 import type { EvaluationResult, Grade, GradeInfo } from '@/lib/types';
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
@@ -28,14 +28,6 @@ const badgeInfo: Record<string, {label: string, icon: React.ElementType, color: 
     'A': { label: 'Silver', icon: Award, color: 'text-slate-400' },
     'B+': { label: 'Bronze', icon: Award, color: 'text-orange-600' },
 };
-
-const TransparentPiggyBank = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
-        <path
-            d="M19.473 10.7523C19.8861 10.155 20.104 9.46487 20.104 8.7368C20.104 6.07951 18.006 4 15.3487 4C13.511 4 11.9113 4.91571 11.0594 6.30237M19.473 10.7523C19.9234 11.3789 20.1786 12.1157 20.1786 12.8947C20.1786 15.1587 18.3372 17 16.0732 17H8C5.79086 17 4 15.2091 4 13V11C4 8.23858 6.23858 6 9 6H11.0594M19.473 10.7523H11.0594M15 17V19C15 20.1046 14.1046 21 13 21H12M8 17V19C8 20.1046 8.89543 21 10 21H11M14 8H10"
-            stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-);
 
 const ConfettiPiece = (props: React.ComponentProps<typeof motion.div>) => (
     <motion.div
@@ -72,7 +64,7 @@ export default function MyPerformanceReview({ allResultsForYear, gradingScale }:
         allResultsForYear.reduce((acc, curr) => acc + curr.finalAmount, 0)
     , [allResultsForYear]);
     
-    const billsCount = Math.min(Math.floor(annualCumulativeBonus / 50000), 100);
+    const billsCount = Math.min(Math.floor(annualCumulativeBonus / 200000), 50);
 
     const acquiredBadges = React.useMemo(() => 
         allResultsForYear
@@ -84,7 +76,6 @@ export default function MyPerformanceReview({ allResultsForYear, gradingScale }:
     const latestResult = allResultsForYear.length > 0 ? allResultsForYear.sort((a,b) => b.month - a.month)[0] : null;
     const isTopTier = latestResult?.grade && ['S', 'A+', 'A'].includes(latestResult.grade);
     const isLowTier = latestResult?.grade && ['C', 'C-', 'D'].includes(latestResult.grade);
-
 
     const trophy = null;
 
@@ -168,32 +159,24 @@ export default function MyPerformanceReview({ allResultsForYear, gradingScale }:
                     </CollapsibleTrigger>
                     <CollapsibleContent>
                         <CardContent className="flex flex-col md:flex-row items-center justify-center gap-8 p-6">
-                             <div className="relative w-48 h-48 text-primary">
-                                <TransparentPiggyBank className="w-full h-full opacity-30" strokeWidth={1.5} />
-                                <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
-                                    <div className="relative w-2/3 h-2/3">
-                                        <AnimatePresence>
-                                            {Array.from({ length: billsCount }).map((_, i) => (
-                                                <motion.div
-                                                    key={i}
-                                                    layout
-                                                    initial={{ opacity: 0, y: -100 }}
-                                                    animate={{
-                                                        opacity: 1,
-                                                        y: 0,
-                                                        transition: { delay: i * 0.02, duration: 0.5, ease: 'easeOut' },
-                                                    }}
-                                                    className="absolute bottom-0 w-10 h-5 bg-yellow-400 border border-yellow-500 rounded-sm"
-                                                    style={{
-                                                        left: `${Math.random() * 60 + 10}%`,
-                                                        transform: `rotate(${Math.random() * 30 - 15}deg)`,
-                                                        bottom: `${i * 1.5}%`,
-                                                    }}
-                                                />
-                                            ))}
-                                        </AnimatePresence>
-                                    </div>
-                                </div>
+                            <div className="relative w-48 h-48">
+                                <PiggyBank className="w-full h-full text-primary opacity-80" strokeWidth={1.5} />
+                                <AnimatePresence>
+                                    {Array.from({ length: billsCount }).map((_, i) => (
+                                        <motion.div
+                                            key={i}
+                                            initial={{ opacity: 0, y: -20, x: Math.random() * 80 - 40 }}
+                                            animate={{ 
+                                                opacity: 1, 
+                                                y: 10 + Math.random() * 20,
+                                                transition: { delay: i * 0.05, duration: 0.5, ease: 'easeOut' }
+                                            }}
+                                            className="absolute top-1/2 left-1/2"
+                                        >
+                                            <Banknote className="w-8 h-8 text-green-500" style={{ transform: `rotate(${Math.random() * 30 - 15}deg)`}}/>
+                                        </motion.div>
+                                    ))}
+                                </AnimatePresence>
                             </div>
                             <div className="text-center md:text-left">
                                 <p className="text-sm text-muted-foreground">누적 성과급</p>
