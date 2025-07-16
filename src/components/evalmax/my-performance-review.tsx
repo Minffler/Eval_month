@@ -30,9 +30,10 @@ const badgeInfo: Record<string, {label: string, icon: React.ElementType, color: 
 };
 
 const TransparentPiggyBank = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
-        <path d="M50.5 20C38.6258 20 29 29.5833 29 41.5V43.5C29 44.5 28.5 45 27.5 45H20C17.2386 45 15 47.2386 15 50V68C15 70.7614 17.2386 73 20 73H22.5M50.5 20C62.3742 20 72 29.5833 72 41.5V43.5C72 44.5 72.5 45 73.5 45H81C83.7614 45 86 47.2386 86 50V68C86 70.7614 83.7614 73 81 73H78.5M50.5 20C52.5 20 54 18.5 54 17C54 15.5 52.5 14 50.5 14C48.5 14 47 15.5 47 17C47 18.5 48.5 20 50.5 20ZM78.5 73V81.5C78.5 83.1569 77.1569 84.5 75.5 84.5H72.5M22.5 73V81.5C22.5 83.1569 23.8431 84.5 25.5 84.5H28.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M54.5 32H46.5C45.3954 32 44.5 32.8954 44.5 34V37C44.5 38.1046 45.3954 39 46.5 39H54.5C55.6046 39 56.5 38.1046 56.5 37V34C56.5 32.8954 55.6046 32 54.5 32Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+        <path
+            d="M19.473 10.7523C19.8861 10.155 20.104 9.46487 20.104 8.7368C20.104 6.07951 18.006 4 15.3487 4C13.511 4 11.9113 4.91571 11.0594 6.30237M19.473 10.7523C19.9234 11.3789 20.1786 12.1157 20.1786 12.8947C20.1786 15.1587 18.3372 17 16.0732 17H8C5.79086 17 4 15.2091 4 13V11C4 8.23858 6.23858 6 9 6H11.0594M19.473 10.7523H11.0594M15 17V19C15 20.1046 14.1046 21 13 21H12M8 17V19C8 20.1046 8.89543 21 10 21H11M14 8H10"
+            stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
 );
 
@@ -169,7 +170,7 @@ export default function MyPerformanceReview({ allResultsForYear, gradingScale }:
                         <CardContent className="flex flex-col md:flex-row items-center justify-center gap-8 p-6">
                              <div className="relative w-48 h-48 text-primary">
                                 <TransparentPiggyBank className="w-full h-full opacity-30" strokeWidth={1.5} />
-                                <div className="absolute inset-0 flex items-end justify-center">
+                                <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
                                     <div className="relative w-2/3 h-2/3">
                                         <AnimatePresence>
                                             {Array.from({ length: billsCount }).map((_, i) => (
