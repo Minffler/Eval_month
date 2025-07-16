@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '../ui/button';
-import { ChevronDown, ChevronUp, Medal, Trophy, PiggyBank, Sparkles } from 'lucide-react';
+import { ChevronDown, ChevronUp, Medal, Trophy, PiggyBank, Sparkles, Award } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
 import type { EvaluationResult, Grade, GradeInfo } from '@/lib/types';
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
@@ -22,11 +22,11 @@ const gradeToColor: Record<string, string> = {
     'C': 'text-orange-500', 'C-': 'text-red-500', 'D': 'text-gray-500'
 };
 
-const badgeInfo: Record<string, {label: string, icon: string, color: string}> = {
-    'S': { label: 'Platinum', icon: '/badges/platinum.svg', color: 'from-gray-400 to-gray-200' },
-    'A+': { label: 'Gold', icon: '/badges/gold.svg', color: 'from-yellow-400 to-yellow-200' },
-    'A': { label: 'Silver', icon: '/badges/silver.svg', color: 'from-slate-400 to-slate-200' },
-    'B+': { label: 'Bronze', icon: '/badges/bronze.svg', color: 'from-orange-400 to-orange-200' },
+const badgeInfo: Record<string, {label: string, icon: React.ElementType, color: string}> = {
+    'S': { label: 'Platinum', icon: Award, color: 'text-slate-500' },
+    'A+': { label: 'Gold', icon: Award, color: 'text-yellow-500' },
+    'A': { label: 'Silver', icon: Award, color: 'text-slate-400' },
+    'B+': { label: 'Bronze', icon: Award, color: 'text-orange-600' },
 };
 
 
@@ -111,19 +111,19 @@ export default function MyPerformanceReview({ allResultsForYear, gradingScale }:
                         </CardHeader>
                     </CollapsibleTrigger>
                     <CollapsibleContent>
-                        <CardContent className="flex flex-col md:flex-row items-center justify-center gap-8">
-                            <div className="relative w-48 h-48">
-                                <Image src="/piggy-bank.svg" alt="Piggy Bank" width={192} height={192} className="absolute inset-0 z-10"/>
-                                <div className="absolute inset-0 flex items-center justify-center">
+                        <CardContent className="flex flex-col md:flex-row items-center justify-center gap-8 p-6">
+                             <div className="relative w-48 h-48 text-primary">
+                                <PiggyBank className="w-full h-full opacity-20" strokeWidth={1} />
+                                <div className="absolute inset-0 flex items-center justify-center -translate-y-4">
                                     <div className="relative w-2/3 h-2/3">
                                         {Array.from({ length: billsCount }).map((_, i) => (
-                                            <Image key={i} src="/money-bill.svg" alt="Money Bill" width={60} height={30}
-                                                className="absolute"
+                                            <Sparkles key={i} size={20}
+                                                className="absolute text-green-400"
                                                 style={{
-                                                    bottom: `${i * 3}%`,
-                                                    left: `${(i % 2) * 20}%`,
-                                                    transform: `rotate(${i * 5}deg)`,
-                                                    opacity: 0.8
+                                                    bottom: `${i * 4}%`,
+                                                    left: `${(i % 5) * 20}%`,
+                                                    transform: `rotate(${i * 18}deg)`,
+                                                    opacity: 0.5 + (i * 0.025)
                                                 }}
                                             />
                                         ))}
@@ -156,17 +156,21 @@ export default function MyPerformanceReview({ allResultsForYear, gradingScale }:
                                 <div className="p-4 border rounded-lg h-48 overflow-y-auto">
                                     {acquiredBadges.length > 0 ? (
                                         <ul className="space-y-3">
-                                            {acquiredBadges.map(({ month, grade }) => (
+                                            {acquiredBadges.map(({ month, grade }) => {
+                                                const badge = badgeInfo[grade];
+                                                if (!badge) return null;
+                                                const BadgeIcon = badge.icon;
+                                                return (
                                                 <li key={month} className="flex items-center gap-4">
-                                                    <div className={cn("w-12 h-12 flex-shrink-0 rounded-full flex items-center justify-center bg-gradient-to-br", badgeInfo[grade].color)}>
-                                                        <Image src={badgeInfo[grade].icon} alt={`${badgeInfo[grade].label} Badge`} width={36} height={36} />
+                                                    <div className={cn("w-12 h-12 flex-shrink-0 rounded-full flex items-center justify-center bg-muted")}>
+                                                         <BadgeIcon className={cn("w-8 h-8", badge.color)} />
                                                     </div>
                                                     <div>
-                                                        <p className="font-semibold">{badgeInfo[grade].label} 뱃지 획득!</p>
+                                                        <p className="font-semibold">{badge.label} 뱃지 획득!</p>
                                                         <p className="text-sm text-muted-foreground">{month}월 평가: {grade} 등급</p>
                                                     </div>
                                                 </li>
-                                            ))}
+                                            )})}
                                         </ul>
                                     ) : <p className="text-center text-muted-foreground pt-12">아직 획득한 뱃지가 없습니다.</p>}
                                 </div>
