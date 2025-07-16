@@ -87,13 +87,15 @@ export default function UserRoleManagement({
   const { toast } = useToast();
   
   const handleToggleRoleFilter = (role: Role) => {
-    const newFilter = new Set(roleFilter);
-    if (newFilter.has(role)) {
-      newFilter.delete(role);
-    } else {
-      newFilter.add(role);
-    }
-    setRoleFilter(newFilter);
+    setRoleFilter(prev => {
+      const newFilter = new Set(prev);
+      if (newFilter.has(role)) {
+        newFilter.delete(role);
+      } else {
+        newFilter.add(role);
+      }
+      return newFilter;
+    });
   };
   
   const filteredUsers = React.useMemo(() => {
@@ -102,7 +104,10 @@ export default function UserRoleManagement({
     // Role filter
     if (roleFilter.size > 0) {
       users = users.filter(user => {
-        return Array.from(roleFilter).every(role => user.roles.includes(role));
+        // If no roles match, filter out.
+        if (!user.roles || user.roles.length === 0) return false;
+        // Check if any of the user's roles are in the filter set.
+        return user.roles.some(role => role && roleFilter.has(role));
       });
     }
 
@@ -213,8 +218,8 @@ export default function UserRoleManagement({
         setSelectedIds(new Set());
     } else if (selectedUser) {
         if(actionType === 'resetPassword') {
-            onUserUpdate(selectedUser.id, { password: selectedUser.uniqueId });
-            toast({ title: '초기화 완료', description: `사용자 '${selectedUser.name}'의 비밀번호가 ID와 동일하게 초기화되었습니다.`});
+            onUserUpdate(selectedUser.id, { password: '1' });
+            toast({ title: '초기화 완료', description: `사용자 '${selectedUser.name}'의 비밀번호가 '1'로 초기화되었습니다.`});
         } else if (actionType === 'delete') {
             onUserDelete(selectedUser.id);
             toast({ title: '삭제 완료', description: `사용자 '${selectedUser.name}'이(가) 삭제되었습니다.` });
@@ -256,7 +261,7 @@ export default function UserRoleManagement({
     if (actionType === 'resetPassword') {
         return {
             title: '비밀번호 초기화',
-            description: `정말로 '${selectedUser.name}' 사용자의 비밀번호를 ID(${selectedUser.uniqueId})와 동일하게 초기화하시겠습니까?`
+            description: `정말로 '${selectedUser.name}' 사용자의 비밀번호를 '1'로 초기화하시겠습니까?`
         }
     }
     if (actionType === 'delete') {
@@ -289,7 +294,7 @@ export default function UserRoleManagement({
               />
             </div>
             <div className="flex items-center gap-2">
-                <Button variant={roleFilter.size === 0 ? 'secondary': 'outline'} size="sm" onClick={() => setRoleFilter(new Set())}>전체 보기</Button>
+                <Button variant={roleFilter.has('employee') ? 'secondary': 'outline'} size="sm" onClick={() => handleToggleRoleFilter('employee')}>피평가자</Button>
                 <Button variant={roleFilter.has('evaluator') ? 'secondary': 'outline'} size="sm" onClick={() => handleToggleRoleFilter('evaluator')}>평가자</Button>
                 <Button variant={roleFilter.has('admin') ? 'secondary': 'outline'} size="sm" onClick={() => handleToggleRoleFilter('admin')}>관리자</Button>
                 <Button onClick={() => setIsAddUserDialogOpen(true)}>
