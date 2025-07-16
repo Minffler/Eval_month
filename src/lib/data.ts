@@ -35,13 +35,36 @@ export const mockEmployees: Employee[] = [
 export const mockEvaluations: Evaluation[] = [
 ];
 
-export const excelHeaderMapping: Record<string, string> = {
-    'uniqueId': 'ID', 'name': '이름', 'company': '회사',
-    'department': '소속부서', 'title': '직책', 'growthLevel': '성장레벨',
-    'workRate': '근무율', 'baseAmount': '기준금액', 'evaluatorId': '평가자 ID',
-    'evaluatorName': '평가자', 'grade': '등급', 'memo': '비고',
-    'startDate': '시작일', 'endDate': '종료일', 'startTime': '출근시각',
-    'endTime': '퇴근시각', 'date': '일자', 'type': '근태종류',
+export const excelHeaderMapping: { [key: string]: string } = {
+    // 키: 엑셀에서 사용될 수 있는 헤더 이름 (소문자, 공백제거)
+    // 값: 시스템 내부에서 사용하는 필드 이름
+    'id': 'uniqueId',
+    '고유id': 'uniqueId',
+    '고유사번': 'uniqueId',
+    '사번': 'uniqueId',
+    '이름': 'name',
+    '성명': 'name',
+    '회사': 'company',
+    '소속부서': 'department',
+    '부서': 'department',
+    '직책': 'title',
+    '성장레벨': 'growthLevel',
+    '레벨': 'growthLevel',
+    '근무율': 'workRate',
+    '실근무율': 'workRate',
+    '기준금액': 'baseAmount',
+    '평가자id': 'evaluatorId',
+    '평가자': 'evaluatorName',
+    '등급': 'grade',
+    '비고': 'memo',
+    '메모': 'memo',
+    '시작일': 'startDate',
+    '종료일': 'endDate',
+    '출근시각': 'startTime',
+    '퇴근시각': 'endTime',
+    '일자': 'date',
+    '근태사용일': 'date',
+    '근태종류': 'type',
 };
 
 export const excelHeaderTargetScreens: Record<string, string> = {
