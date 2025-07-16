@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Download, Trash2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import type { Employee, EvaluationResult, Grade, EvaluationUploadData, WorkRateInputs, ShortenedWorkHourRecord, DailyAttendanceRecord, ShortenedWorkType } from '@/lib/types';
+import { excelHeaderMapping } from '@/lib/data';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,24 +34,10 @@ interface ManageDataProps {
   workRateInputs: WorkRateInputs;
 }
 
-const headerMapping: Record<string, string> = {
-    '고유사번': 'uniqueId', '사번': 'uniqueId', 'ID': 'uniqueId',
-    '성명': 'name', '이름': 'name', '피평가자': 'name',
-    '부서': 'department', '소속부서': 'department',
-    '시작일': 'startDate', '시작일자': 'startDate',
-    '종료일': 'endDate', '종료일자': 'endDate',
-    '출근시각': 'startTime', '퇴근시각': 'endTime',
-    '일자': 'date', '근태사용일': 'date',
-    '근태': 'type', '근태종류': 'type',
-    '평가자 ID': 'evaluatorId', '평가자사번': 'evaluatorId',
-    '평가자': 'evaluatorName',
-    '기준금액': 'baseAmount', '개인별 기준금액': 'baseAmount',
-};
-
 const mapRowToSchema = <T extends {}>(row: any): T => {
     const newRow: any = {};
     for (const key in row) {
-        const mappedKey = headerMapping[key.trim()] || key.trim();
+        const mappedKey = excelHeaderMapping[key.trim()] || key.trim();
         newRow[mappedKey] = row[key];
     }
     return newRow as T;
@@ -169,11 +156,11 @@ export default function ManageData({
               if (!uniqueId) throw new Error(`${index + 2}번째 행에 ID가 없습니다.`);
               return {
                 id: `E${uniqueId}`, uniqueId, name: String(row['name'] || ''),
-                company: String(row['회사'] || ''), department: String(row['department'] || ''),
-                title: String(row['직책'] || '팀원'), position: String(row['직책'] || '팀원'),
-                growthLevel: String(row['성장레벨'] || ''), workRate: parseFloat(String(row['실근무율'] || '1')),
+                company: String(row['company'] || ''), department: String(row['department'] || ''),
+                title: String(row['title'] || '팀원'), position: String(row['title'] || '팀원'),
+                growthLevel: String(row['growthLevel'] || ''), workRate: parseFloat(String(row['workRate'] || '1')),
                 evaluatorId: String(row['evaluatorId'] || ''), baseAmount: Number(String(row['baseAmount'] || '0').replace(/,/g, '')),
-                memo: String(row['비고'] || ''),
+                memo: String(row['memo'] || ''),
               };
             }));
             uploadCount = newEmployees.length;
@@ -183,18 +170,18 @@ export default function ManageData({
             const newEvals = await parseExcelFile<EvaluationUploadData>(file, json => json.map((row, index) => {
               const uniqueId = String(row['uniqueId'] || '');
               if (!uniqueId) throw new Error(`${index + 2}번째 행에 ID가 없습니다.`);
-              const workRateValue = row['실근무율'];
+              const workRateValue = row['workRate'];
               const baseAmountValue = row['baseAmount'];
               return {
                   employeeId: `E${uniqueId}`,
-                  name: row['name'] ? String(row['name']) : undefined, company: row['회사'] ? String(row['회사']) : undefined,
-                  department: row['department'] ? String(row['department']) : undefined, title: row['직책'] ? String(row['직책']) : undefined,
-                  position: row['직책'] ? String(row['직책']) : undefined, growthLevel: row['성장레벨'] ? String(row['성장레벨']) : undefined,
+                  name: row['name'] ? String(row['name']) : undefined, company: row['company'] ? String(row['company']) : undefined,
+                  department: row['department'] ? String(row['department']) : undefined, title: row['title'] ? String(row['title']) : undefined,
+                  position: row['position'] ? String(row['position']) : undefined, growthLevel: row['growthLevel'] ? String(row['growthLevel']) : undefined,
                   workRate: workRateValue !== undefined && workRateValue !== null ? parseFloat(String(workRateValue)) : undefined,
                   evaluatorId: row['evaluatorId'] ? String(row['evaluatorId']) : undefined, 
                   evaluatorName: row['evaluatorName'] ? String(row['evaluatorName']) : undefined,
                   baseAmount: baseAmountValue !== undefined && baseAmountValue !== null ? Number(String(baseAmountValue).replace(/,/g, '')) : undefined,
-                  grade: (String(row['등급'] || '') || null) as Grade, memo: row['비고'] !== undefined ? String(row['비고']) : undefined,
+                  grade: (String(row['grade'] || '') || null) as Grade, memo: row['memo'] !== undefined ? String(row['memo']) : undefined,
               };
             }));
             uploadCount = newEvals.length;
