@@ -317,9 +317,9 @@ export default function UserRoleManagement({
               />
             </div>
             <div className="flex items-center gap-2">
-                <Button variant={roleFilter.has('employee') ? 'secondary': 'outline'} size="sm" onClick={() => handleToggleRoleFilter('employee')}>피평가자</Button>
-                <Button variant={roleFilter.has('evaluator') ? 'secondary': 'outline'} size="sm" onClick={() => handleToggleRoleFilter('evaluator')}>평가자</Button>
-                <Button variant={roleFilter.has('admin') ? 'secondary': 'outline'} size="sm" onClick={() => handleToggleRoleFilter('admin')}>관리자</Button>
+                <Button variant={roleFilter.has('employee') ? 'default': 'outline'} size="sm" onClick={() => handleToggleRoleFilter('employee')}>피평가자</Button>
+                <Button variant={roleFilter.has('evaluator') ? 'default': 'outline'} size="sm" onClick={() => handleToggleRoleFilter('evaluator')}>평가자</Button>
+                <Button variant={roleFilter.has('admin') ? 'default': 'outline'} size="sm" onClick={() => handleToggleRoleFilter('admin')}>관리자</Button>
                 <Button onClick={() => setIsAddUserDialogOpen(true)}>
                   <PlusCircle className="mr-2 h-4 w-4" />
                   사용자 추가
