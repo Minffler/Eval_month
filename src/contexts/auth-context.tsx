@@ -18,6 +18,18 @@ interface AuthContextType {
 
 const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
 
+// Helper to remove duplicates from an array of objects based on a key
+const uniqueById = <T extends { id: string }>(items: T[]): T[] => {
+    const seen = new Map<string, T>();
+    items.forEach(item => {
+        if (!seen.has(item.id)) {
+            seen.set(item.id, item);
+        }
+    });
+    return Array.from(seen.values());
+};
+
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [users, setUsers] = React.useState<User[]>(() => {
     if (typeof window === 'undefined') return initialMockUsers;
@@ -30,7 +42,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   React.useEffect(() => {
-    localStorage.setItem('users', JSON.stringify(users));
+    // Ensure users are always unique by id before saving to localStorage
+    const uniqueUsers = uniqueById(users);
+    localStorage.setItem('users', JSON.stringify(uniqueUsers));
+    
+    // If the user list was modified, we may need to re-validate the current user
+    if (users.length !== uniqueUsers.length) {
+      setUsers(uniqueUsers);
+    }
   }, [users]);
 
   React.useEffect(() => {
@@ -39,9 +58,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const storedRole = localStorage.getItem('role') as Role;
       if (storedUser) {
         const parsedUser = JSON.parse(storedUser);
-        if (users.some(u => u.id === parsedUser.id)) {
+        const uniqueUsers = uniqueById(users);
+        if (uniqueUsers.some(u => u.id === parsedUser.id)) {
             setUser(parsedUser);
             setRole(storedRole || (parsedUser.roles.includes('admin') ? 'admin' : parsedUser.roles.includes('evaluator') ? 'evaluator' : 'employee'));
+        } else {
+            // The stored user is no longer valid, log them out.
+            logout();
         }
       }
     } catch (error) {
@@ -50,7 +73,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         localStorage.removeItem('role');
     }
     setLoading(false);
-  }, [users]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   
   const login = React.useCallback(
     async (id: string, pass: string): Promise<boolean> => {

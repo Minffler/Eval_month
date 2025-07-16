@@ -223,10 +223,15 @@ export default function Home() {
   const role = user ? allUsers.find(u => u.id === user.id)?.roles.find(r => r === (localStorage.getItem('role') || 'employee')) : 'employee';
   
   const handleUserAdd = (newEmployeeData: Partial<Employee>, roles: Role[]) => {
-      if (!newEmployeeData.uniqueId || allUsers.some(u => u.uniqueId === newEmployeeData.uniqueId)) {
-        toast({ variant: 'destructive', title: '오류', description: 'ID가 없거나 이미 존재하는 ID입니다.' });
+      if (!newEmployeeData.uniqueId) {
+        toast({ variant: 'destructive', title: '오류', description: 'ID가 없습니다.' });
         return;
       }
+      if (allUsers.some(u => u.uniqueId === newEmployeeData.uniqueId)) {
+        toast({ variant: 'destructive', title: '오류', description: '이미 존재하는 ID입니다.' });
+        return;
+      }
+
       const newUser: User = {
         id: `user-${newEmployeeData.uniqueId}`,
         employeeId: `E${newEmployeeData.uniqueId}`,
