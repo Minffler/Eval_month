@@ -8,7 +8,7 @@ import EvaluatorDashboard from '@/components/evalmax/evaluator-dashboard';
 import EmployeeDashboard from '@/components/evalmax/employee-dashboard';
 import PersonalSettings from '@/components/evalmax/personal-settings';
 import type { Employee, Evaluation, EvaluationResult, Grade, GradeInfo, User, EvaluatorView, EvaluationUploadData, WorkRateInputs, AttendanceType, Holiday, ShortenedWorkHourRecord, DailyAttendanceRecord, EmployeeView, Approval, AppNotification, ShortenedWorkType, Role } from '@/lib/types';
-import { mockEmployees as initialMockEmployees, gradingScale as initialGradingScale, calculateFinalAmount, mockEvaluations as initialMockEvaluations, getDetailedGroup1, initialAttendanceTypes, mockUsers as initialMockUsers } from '@/lib/data';
+import { mockEmployees as initialMockEmployees, gradingScale as initialGradingScale, calculateFinalAmount, mockEvaluations as initialMockEvaluations, getDetailedGroup1, initialAttendanceTypes, mockUsers as initialMockUsers, initialHolidays } from '@/lib/data';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { Sidebar, type NavItem } from '@/components/evalmax/sidebar';
@@ -175,7 +175,7 @@ export default function Home() {
   const [gradingScale, setGradingScale] = React.useState<Record<NonNullable<Grade>, GradeInfo>>(() => getFromLocalStorage('gradingScale', initialGradingScale));
   const [workRateInputs, setWorkRateInputs] = React.useState<Record<string, WorkRateInputs>>(() => getFromLocalStorage('workRateInputs', {}));
   const [attendanceTypes, setAttendanceTypes] = React.useState<AttendanceType[]>(() => getFromLocalStorage('attendanceTypes', initialAttendanceTypes));
-  const [holidays, setHolidays] = React.useState<Holiday[]>(() => getFromLocalStorage('holidays', []));
+  const [holidays, setHolidays] = React.useState<Holiday[]>(() => getFromLocalStorage('holidays', initialHolidays));
   const [evaluationStatus, setEvaluationStatus] = React.useState<Record<string, 'open' | 'closed'>>(() => getFromLocalStorage('evaluationStatus', {}));
 
   React.useEffect(() => { localStorage.setItem('employees', JSON.stringify(employees)); }, [employees]);
@@ -280,11 +280,16 @@ export default function Home() {
         const evaluatorUser = allUsers.find(u => u.uniqueId === emp.evaluatorId);
         if(!evaluatorUser) {
             handleUserAdd({
-                id: `user-${emp.evaluatorId}`,
                 uniqueId: emp.evaluatorId,
                 name: `평가자(${emp.evaluatorId})`,
-                department: '미지정', title: '평가자', position: '평가자', company: 'N/A',
-                growthLevel: '', workRate: 1.0, evaluatorId: '', baseAmount: 0,
+                department: '미지정',
+                title: '평가자',
+                position: '평가자',
+                company: 'N/A',
+                growthLevel: '',
+                workRate: 1.0,
+                evaluatorId: '',
+                baseAmount: 0,
             }, ['evaluator', 'employee']);
         }
       }
