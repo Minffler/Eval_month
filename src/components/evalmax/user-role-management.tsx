@@ -43,6 +43,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '../ui/checkbox';
+import { Tabs, TabsList, TabsTrigger } from '../ui/tabs';
 
 interface UserRoleManagementProps {
   allUsers: User[];
@@ -332,11 +333,13 @@ export default function UserRoleManagement({
                 </Button>
                 </div>
             </div>
-            <div className="flex items-center gap-2">
-                <Button variant={roleFilter.has('employee') ? 'default': 'outline'} size="sm" onClick={() => handleToggleRoleFilter('employee')}>피평가자</Button>
-                <Button variant={roleFilter.has('evaluator') ? 'default': 'outline'} size="sm" onClick={() => handleToggleRoleFilter('evaluator')}>평가자</Button>
-                <Button variant={roleFilter.has('admin') ? 'default': 'outline'} size="sm" onClick={() => handleToggleRoleFilter('admin')}>관리자</Button>
-            </div>
+             <Tabs defaultValue="all">
+                <TabsList>
+                    <TabsTrigger value="employee" data-state={roleFilter.has('employee') ? 'active' : 'inactive'} onClick={() => handleToggleRoleFilter('employee')}>피평가자</TabsTrigger>
+                    <TabsTrigger value="evaluator" data-state={roleFilter.has('evaluator') ? 'active' : 'inactive'} onClick={() => handleToggleRoleFilter('evaluator')}>평가자</TabsTrigger>
+                    <TabsTrigger value="admin" data-state={roleFilter.has('admin') ? 'active' : 'inactive'} onClick={() => handleToggleRoleFilter('admin')}>관리자</TabsTrigger>
+                </TabsList>
+            </Tabs>
           </div>
           
           <div className="border rounded-lg overflow-x-auto">
