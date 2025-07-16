@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -9,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Download, Trash2, UploadCloud, CheckCircle2, AlertCircle } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import type { Employee, EvaluationResult, Grade, EvaluationUploadData, WorkRateInputs, ShortenedWorkHourRecord, DailyAttendanceRecord, ShortenedWorkType, HeaderMapping } from '@/lib/types';
-import { excelHeaderMapping } from '@/lib/data';
+import { excelHeaderMapping, excelHeaderTargetScreens } from '@/lib/data';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,6 +40,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { ScrollArea } from '../ui/scroll-area';
 import { Label } from '../ui/label';
+import { cn } from '@/lib/utils';
 
 interface ManageDataProps {
   results: EvaluationResult[];
@@ -504,9 +506,9 @@ export default function ManageData({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-1/2">엑셀 헤더</TableHead>
-                  <TableHead className="w-1/2">시스템 데이터</TableHead>
-                  <TableHead className="w-[50px]">상태</TableHead>
+                  <TableHead className="w-1/3">엑셀 헤더</TableHead>
+                  <TableHead>시스템 데이터</TableHead>
+                  <TableHead className="w-[120px]">연결된 화면</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -524,22 +526,20 @@ export default function ManageData({
                         <SelectContent>
                           <SelectItem value="ignore">매핑 안함</SelectItem>
                           <Separator />
-                          {systemFields.map(field => (
-                            <SelectItem key={field} value={field} disabled={Object.values(currentMapping).includes(field)}>
-                              {requiredFields.includes(field as any) && <span className="text-destructive">* </span>}
-                              {excelHeaderMapping[field as keyof typeof excelHeaderMapping]} ({field})
-                            </SelectItem>
-                          ))}
+                          {systemFields.map(field => {
+                            const selectedByOtherHeader = Object.values(currentMapping).includes(field) && currentMapping[header] !== field;
+                            return (
+                                <SelectItem key={field} value={field} disabled={selectedByOtherHeader}>
+                                {requiredFields.includes(field as any) && <span className="text-destructive">* </span>}
+                                {excelHeaderMapping[field as keyof typeof excelHeaderMapping]} ({field})
+                                </SelectItem>
+                            )
+                           })}
                         </SelectContent>
                       </Select>
                     </TableCell>
-                    <TableCell className="text-center">
-                        {requiredFields.includes(currentMapping[header] as any)
-                            ? <CheckCircle2 className="h-5 w-5 text-green-500" />
-                            : currentMapping[header] && currentMapping[header] !== 'ignore' 
-                            ? <CheckCircle2 className="h-5 w-5 text-muted-foreground" />
-                            : null
-                        }
+                    <TableCell className="text-center text-xs text-muted-foreground">
+                        {excelHeaderTargetScreens[currentMapping[header] as keyof typeof excelHeaderTargetScreens] || ''}
                     </TableCell>
                   </TableRow>
                 ))}

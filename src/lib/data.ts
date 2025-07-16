@@ -36,25 +36,26 @@ export const mockEvaluations: Evaluation[] = [
 ];
 
 export const excelHeaderMapping: Record<string, string> = {
-    '고유사번': 'uniqueId', '사번': 'uniqueId', 'ID': 'uniqueId',
-    '성명': 'name', '이름': 'name', '피평가자': 'name',
-    '회사': 'company',
-    '부서': 'department', '소속부서': 'department',
-    '직책': 'title',
-    '성장레벨': 'growthLevel',
-    '근무율': 'workRate', '실근무율': 'workRate',
-    '기준금액': 'baseAmount', '개인별 기준금액': 'baseAmount',
-    '평가자 ID': 'evaluatorId', '평가자사번': 'evaluatorId',
-    '평가자': 'evaluatorName',
-    '등급': 'grade',
-    '비고': 'memo',
-    '시작일': 'startDate', '시작일자': 'startDate',
-    '종료일': 'endDate', '종료일자': 'endDate',
-    '출근시각': 'startTime',
-    '퇴근시각': 'endTime',
-    '일자': 'date', '근태사용일': 'date',
-    '근태': 'type', '근태종류': 'type',
+    'uniqueId': 'ID', 'name': '이름', 'company': '회사',
+    'department': '소속부서', 'title': '직책', 'growthLevel': '성장레벨',
+    'workRate': '근무율', 'baseAmount': '기준금액', 'evaluatorId': '평가자 ID',
+    'evaluatorName': '평가자', 'grade': '등급', 'memo': '비고',
+    'startDate': '시작일', 'endDate': '종료일', 'startTime': '출근시각',
+    'endTime': '퇴근시각', 'date': '일자', 'type': '근태종류',
 };
+
+export const excelHeaderTargetScreens: Record<string, string> = {
+    uniqueId: '공통', name: '공통',
+    company: '대상자 관리', department: '대상자 관리',
+    title: '대상자 관리', growthLevel: '대상자 관리',
+    workRate: '대상자 관리', baseAmount: '대상자 관리',
+    evaluatorId: '대상자/평가 결과', evaluatorName: '평가 결과',
+    grade: '평가 결과', memo: '평가 결과',
+    startDate: '근무 데이터', endDate: '근무 데이터',
+    startTime: '근무 데이터', endTime: '근무 데이터',
+    date: '근무 데이터', type: '근무 데이터',
+};
+
 
 export const calculateFinalAmount = (gradeAmount: number, workRate: number): number => {
   let calculatedAmount = 0;

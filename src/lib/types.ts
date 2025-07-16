@@ -1,4 +1,5 @@
 
+
 export type Role = 'admin' | 'evaluator' | 'employee' | null;
 
 export type User = {
