@@ -371,38 +371,35 @@ export default function Home() {
       Object.values(usersToAdd).forEach(({ data, roles }) => handleUserAdd(data, roles));
       Object.entries(usersToUpdate).forEach(([userId, data]) => handleUserUpdate(userId, data));
       
-      // 상태 업데이트가 반영될 시간을 잠시 기다린 후, 다음 단계 진행
-      React.startTransition(() => {
-          // 2단계: 직원 및 평가 데이터 설정
-          setEmployees(prevEmps => {
-              const newState = JSON.parse(JSON.stringify(prevEmps));
-              const newEmpsForMonth = newState[key] ? [...newState[key]] : [];
-              
-              uploadedData.forEach(uploadItem => {
-                  const empIndex = newEmpsForMonth.findIndex((e: Employee) => e.id === uploadItem.employeeId);
-                  const { grade, memo, evaluatorName, employeeId, ...empDetails } = uploadItem;
-                  const dataToUpdate = { ...empDetails };
+      // 2단계: 직원 및 평가 데이터 설정
+      setEmployees(prevEmps => {
+          const newState = JSON.parse(JSON.stringify(prevEmps));
+          const newEmpsForMonth = newState[key] ? [...newState[key]] : [];
+          
+          uploadedData.forEach(uploadItem => {
+              const empIndex = newEmpsForMonth.findIndex((e: Employee) => e.id === uploadItem.employeeId);
+              const { grade, memo, evaluatorName, employeeId, ...empDetails } = uploadItem;
+              const dataToUpdate = { ...empDetails };
 
-                  if (empIndex > -1) Object.assign(newEmpsForMonth[empIndex], dataToUpdate);
-                  else newEmpsForMonth.push({ uniqueId: uploadItem.employeeId.replace('E',''), id: uploadItem.employeeId, ...dataToUpdate });
-              });
-              newState[key] = newEmpsForMonth;
-              return newState;
+              if (empIndex > -1) Object.assign(newEmpsForMonth[empIndex], dataToUpdate);
+              else newEmpsForMonth.push({ uniqueId: uploadItem.employeeId.replace('E',''), id: uploadItem.employeeId, ...dataToUpdate });
           });
+          newState[key] = newEmpsForMonth;
+          return newState;
+      });
 
-          setEvaluations(prevEvals => {
-              const newState = JSON.parse(JSON.stringify(prevEvals));
-              const newEvalsForMonth = newState[key] ? [...newState[key]] : [];
-              
-              uploadedData.forEach(uploadItem => {
-                  const evalIndex = newEvalsForMonth.findIndex((e: Evaluation) => e.employeeId === uploadItem.employeeId);
-                  const evalData = { grade: uploadItem.grade, memo: uploadItem.memo || '', };
-                  if (evalIndex > -1) Object.assign(newEvalsForMonth[evalIndex], evalData);
-                  else newEvalsForMonth.push({ id: `eval-${uploadItem.employeeId}-${year}-${month}`, employeeId: uploadItem.employeeId, year, month, ...evalData });
-              });
-              newState[key] = newEvalsForMonth;
-              return newState;
+      setEvaluations(prevEvals => {
+          const newState = JSON.parse(JSON.stringify(prevEvals));
+          const newEvalsForMonth = newState[key] ? [...newState[key]] : [];
+          
+          uploadedData.forEach(uploadItem => {
+              const evalIndex = newEvalsForMonth.findIndex((e: Evaluation) => e.employeeId === uploadItem.employeeId);
+              const evalData = { grade: uploadItem.grade, memo: uploadItem.memo || '', };
+              if (evalIndex > -1) Object.assign(newEvalsForMonth[evalIndex], evalData);
+              else newEvalsForMonth.push({ id: `eval-${uploadItem.employeeId}-${year}-${month}`, employeeId: uploadItem.employeeId, year, month, ...evalData });
           });
+          newState[key] = newEvalsForMonth;
+          return newState;
       });
   };
   
