@@ -9,7 +9,7 @@ import type { EvaluationResult, Grade, GradeInfo } from '@/lib/types';
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { ChartTooltipContent } from '../ui/chart';
 import { cn } from '@/lib/utils';
-import Image from 'next/image';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface MyPerformanceReviewProps {
   allResultsForYear: EvaluationResult[];
@@ -29,6 +29,26 @@ const badgeInfo: Record<string, {label: string, icon: React.ElementType, color: 
     'B+': { label: 'Bronze', icon: Award, color: 'text-orange-600' },
 };
 
+const TransparentPiggyBank = (props: React.SVGProps<SVGSVGElement>) => (
+    <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" {...props}>
+        <path d="M50.5 20C38.6258 20 29 29.5833 29 41.5V43.5C29 44.5 28.5 45 27.5 45H20C17.2386 45 15 47.2386 15 50V68C15 70.7614 17.2386 73 20 73H22.5M50.5 20C62.3742 20 72 29.5833 72 41.5V43.5C72 44.5 72.5 45 73.5 45H81C83.7614 45 86 47.2386 86 50V68C86 70.7614 83.7614 73 81 73H78.5M50.5 20C52.5 20 54 18.5 54 17C54 15.5 52.5 14 50.5 14C48.5 14 47 15.5 47 17C47 18.5 48.5 20 50.5 20ZM78.5 73V81.5C78.5 83.1569 77.1569 84.5 75.5 84.5H72.5M22.5 73V81.5C22.5 83.1569 23.8431 84.5 25.5 84.5H28.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M54.5 32H46.5C45.3954 32 44.5 32.8954 44.5 34V37C44.5 38.1046 45.3954 39 46.5 39H54.5C55.6046 39 56.5 38.1046 56.5 37V34C56.5 32.8954 55.6046 32 54.5 32Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+);
+
+const ConfettiPiece = (props: React.ComponentProps<typeof motion.div>) => (
+    <motion.div
+        className="absolute w-2 h-4 rounded-full"
+        initial={{ y: 0, opacity: 1 }}
+        animate={{
+            y: 150,
+            rotate: Math.random() * 360,
+            opacity: [1, 1, 0],
+        }}
+        transition={{ duration: 1.5 + Math.random(), ease: 'linear' }}
+        {...props}
+    />
+);
 
 export default function MyPerformanceReview({ allResultsForYear, gradingScale }: MyPerformanceReviewProps) {
     const [isHistoryOpen, setIsHistoryOpen] = React.useState(true);
@@ -51,7 +71,7 @@ export default function MyPerformanceReview({ allResultsForYear, gradingScale }:
         allResultsForYear.reduce((acc, curr) => acc + curr.finalAmount, 0)
     , [allResultsForYear]);
     
-    const billsCount = Math.min(Math.floor(annualCumulativeBonus / 50000), 20);
+    const billsCount = Math.min(Math.floor(annualCumulativeBonus / 50000), 100);
 
     const acquiredBadges = React.useMemo(() => 
         allResultsForYear
@@ -60,13 +80,17 @@ export default function MyPerformanceReview({ allResultsForYear, gradingScale }:
             .sort((a,b) => b.month - a.month)
     , [allResultsForYear]);
 
-    // This is a placeholder for a real ranking calculation
-    const trophy = null; // { rank: 1, type: 'Gold' }
+    const latestResult = allResultsForYear.length > 0 ? allResultsForYear.sort((a,b) => b.month - a.month)[0] : null;
+    const isTopTier = latestResult?.grade && ['S', 'A+', 'A'].includes(latestResult.grade);
+    const isLowTier = latestResult?.grade && ['C', 'C-', 'D'].includes(latestResult.grade);
+
+
+    const trophy = null;
 
     return (
         <div className="space-y-6">
             <Collapsible open={isHistoryOpen} onOpenChange={setIsHistoryOpen} asChild>
-                <Card>
+                <Card className="overflow-hidden">
                     <CollapsibleTrigger asChild>
                         <CardHeader className="flex flex-row items-center justify-between cursor-pointer">
                             <div><CardTitle>연간 성과 히스토리</CardTitle><CardDescription>지난 1년간의 월별 성과 추이입니다.</CardDescription></div>
@@ -74,29 +98,60 @@ export default function MyPerformanceReview({ allResultsForYear, gradingScale }:
                         </CardHeader>
                     </CollapsibleTrigger>
                     <CollapsibleContent>
-                        <CardContent className="h-64">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <LineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="month" fontSize={12} />
-                                    <YAxis domain={[0, 150]} fontSize={12} />
-                                    <Tooltip content={({ active, payload }) => {
-                                        if (active && payload && payload.length) {
-                                            const data = payload[0].payload;
-                                            return (
-                                                <div className="rounded-lg border bg-background p-2 shadow-sm">
-                                                    <div className="grid grid-cols-2 gap-2">
-                                                        <div className="flex flex-col"><span className="text-[0.70rem] uppercase text-muted-foreground">월</span><span className="font-bold text-muted-foreground">{data.month}</span></div>
-                                                        <div className="flex flex-col"><span className="text-[0.70rem] uppercase text-muted-foreground">등급/점수</span><span className={cn("font-bold", gradeToColor[data.grade] || 'text-foreground')}>{data.grade ? `${data.grade} (${data.score})` : '-'}</span></div>
+                        <CardContent>
+                             <AnimatePresence>
+                                {latestResult && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -10 }}
+                                        className="relative mb-4 p-4 rounded-lg bg-muted/50 overflow-hidden"
+                                    >
+                                        {isTopTier && Array.from({ length: 30 }).map((_, i) => (
+                                            <ConfettiPiece
+                                                key={i}
+                                                style={{
+                                                    left: `${Math.random() * 100}%`,
+                                                    top: `${Math.random() * -50}%`,
+                                                    backgroundColor: ['#fde68a', '#fca5a5', '#818cf8', '#67e8f9'][i % 4],
+                                                }}
+                                            />
+                                        ))}
+                                        <div className="text-center">
+                                            <p className="text-sm text-muted-foreground">{latestResult.month}월 평가 결과</p>
+                                            <p className={cn("text-5xl font-bold", gradeToColor[latestResult.grade!] || 'text-foreground')}>
+                                                {latestResult.grade}
+                                            </p>
+                                            {isTopTier && <p className="mt-1 font-semibold text-primary">훌륭해요! 최고의 성과입니다!</p>}
+                                            {isLowTier && <p className="mt-1 font-semibold text-muted-foreground">다음 달엔 더 잘할 수 있어요!</p>}
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                            <div className="h-64">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <LineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                                        <CartesianGrid strokeDasharray="3 3" />
+                                        <XAxis dataKey="month" fontSize={12} />
+                                        <YAxis domain={[0, 150]} fontSize={12} />
+                                        <Tooltip content={({ active, payload }) => {
+                                            if (active && payload && payload.length) {
+                                                const data = payload[0].payload;
+                                                return (
+                                                    <div className="rounded-lg border bg-background p-2 shadow-sm">
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            <div className="flex flex-col"><span className="text-[0.70rem] uppercase text-muted-foreground">월</span><span className="font-bold text-muted-foreground">{data.month}</span></div>
+                                                            <div className="flex flex-col"><span className="text-[0.70rem] uppercase text-muted-foreground">등급/점수</span><span className={cn("font-bold", gradeToColor[data.grade] || 'text-foreground')}>{data.grade ? `${data.grade} (${data.score})` : '-'}</span></div>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            );
-                                        }
-                                        return null;
-                                    }}/>
-                                    <Line type="monotone" dataKey="score" stroke="hsl(var(--primary))" strokeWidth={2} connectNulls />
-                                </LineChart>
-                            </ResponsiveContainer>
+                                                );
+                                            }
+                                            return null;
+                                        }}/>
+                                        <Line type="monotone" dataKey="score" stroke="hsl(var(--primary))" strokeWidth={2} connectNulls />
+                                    </LineChart>
+                                </ResponsiveContainer>
+                            </div>
                         </CardContent>
                     </CollapsibleContent>
                 </Card>
@@ -113,20 +168,29 @@ export default function MyPerformanceReview({ allResultsForYear, gradingScale }:
                     <CollapsibleContent>
                         <CardContent className="flex flex-col md:flex-row items-center justify-center gap-8 p-6">
                              <div className="relative w-48 h-48 text-primary">
-                                <PiggyBank className="w-full h-full opacity-20" strokeWidth={1} />
-                                <div className="absolute inset-0 flex items-center justify-center -translate-y-4">
+                                <TransparentPiggyBank className="w-full h-full opacity-30" strokeWidth={1.5} />
+                                <div className="absolute inset-0 flex items-end justify-center">
                                     <div className="relative w-2/3 h-2/3">
-                                        {Array.from({ length: billsCount }).map((_, i) => (
-                                            <Sparkles key={i} size={20}
-                                                className="absolute text-green-400"
-                                                style={{
-                                                    bottom: `${i * 4}%`,
-                                                    left: `${(i % 5) * 20}%`,
-                                                    transform: `rotate(${i * 18}deg)`,
-                                                    opacity: 0.5 + (i * 0.025)
-                                                }}
-                                            />
-                                        ))}
+                                        <AnimatePresence>
+                                            {Array.from({ length: billsCount }).map((_, i) => (
+                                                <motion.div
+                                                    key={i}
+                                                    layout
+                                                    initial={{ opacity: 0, y: -100 }}
+                                                    animate={{
+                                                        opacity: 1,
+                                                        y: 0,
+                                                        transition: { delay: i * 0.02, duration: 0.5, ease: 'easeOut' },
+                                                    }}
+                                                    className="absolute bottom-0 w-10 h-5 bg-yellow-400 border border-yellow-500 rounded-sm"
+                                                    style={{
+                                                        left: `${Math.random() * 60 + 10}%`,
+                                                        transform: `rotate(${Math.random() * 30 - 15}deg)`,
+                                                        bottom: `${i * 1.5}%`,
+                                                    }}
+                                                />
+                                            ))}
+                                        </AnimatePresence>
                                     </div>
                                 </div>
                             </div>

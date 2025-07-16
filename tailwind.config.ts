@@ -95,10 +95,15 @@ export default {
             height: '0',
           },
         },
+        'confetti-fall': {
+          '0%': { transform: 'translateY(-100%)', opacity: '1' },
+          '100%': { transform: 'translateY(100vh)', opacity: '0' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
+        'confetti-fall': 'confetti-fall 3s linear infinite',
       },
     },
   },
