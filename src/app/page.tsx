@@ -275,7 +275,7 @@ export default function Home() {
         const evaluatorUser = allUsers.find(u => u.uniqueId === emp.evaluatorId);
         if(!evaluatorUser) {
             handleUserAdd({
-                id: `E${emp.evaluatorId}`,
+                id: `user-${emp.evaluatorId}`,
                 uniqueId: emp.evaluatorId,
                 name: `평가자(${emp.evaluatorId})`,
                 department: '미지정', title: '평가자', position: '평가자', company: 'N/A',
@@ -317,7 +317,7 @@ export default function Home() {
 
         if (!existingUser) {
             handleUserAdd({
-                id: employeeId, uniqueId: uniqueId, name: empData.name || `사용자(${uniqueId})`,
+                uniqueId: uniqueId, name: empData.name || `사용자(${uniqueId})`,
                 department: empData.department || '미지정', title: empData.title || '팀원',
                 position: empData.position || empData.title || '팀원', company: empData.company || 'N/A',
                 growthLevel: empData.growthLevel || '', workRate: empData.workRate || 1.0,
@@ -331,7 +331,7 @@ export default function Home() {
             const evaluatorUser = allUsers.find(u => u.uniqueId === evaluatorId);
             if (!evaluatorUser) {
                 handleUserAdd({
-                    id: `E${evaluatorId}`, uniqueId: evaluatorId, name: evaluatorName || `평가자(${evaluatorId})`,
+                    uniqueId: evaluatorId, name: evaluatorName || `평가자(${evaluatorId})`,
                     department: '미지정', title: '평가자', position: '평가자', company: 'N/A',
                     growthLevel: '', workRate: 1.0, evaluatorId: '', baseAmount: 0,
                 }, ['evaluator', 'employee']);
@@ -544,7 +544,7 @@ export default function Home() {
         const monthlyEmployees = employees[monthKey] || [];
         const monthlyEvaluations = evaluations[monthKey] || [];
         
-        // Use a Map to ensure unique users based on uniqueId
+        // Use a Map to ensure unique users based on uniqueId, preventing duplicates.
         const combinedUserMap = new Map<string, Partial<User & Employee>>();
         
         // Prioritize data from the main `allUsers` list
@@ -565,6 +565,7 @@ export default function Home() {
         const uniqueUsers = Array.from(combinedUserMap.values());
 
         return uniqueUsers.map(user => {
+            // Find corresponding data from original sources if needed
             const employeeData = monthlyEmployees.find(e => e.uniqueId === user.uniqueId);
             const evaluation = monthlyEvaluations.find(e => e.employeeId === user.employeeId);
 
@@ -576,9 +577,9 @@ export default function Home() {
                 title: user.title || '팀원',
                 position: user.position || user.title || '팀원',
                 company: employeeData?.company || user.company || 'N/A',
-                growthLevel: employeeData?.growthLevel || user.growthLevel || '',
-                workRate: employeeData?.workRate ?? user.workRate ?? 1.0,
-                baseAmount: employeeData?.baseAmount ?? user.baseAmount ?? 0,
+                growthLevel: employeeData?.growthLevel || '',
+                workRate: employeeData?.workRate ?? 1.0,
+                baseAmount: employeeData?.baseAmount ?? 0,
                 evaluatorId: user.evaluatorId || '',
             };
             
