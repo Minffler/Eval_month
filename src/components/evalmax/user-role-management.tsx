@@ -46,7 +46,7 @@ import { Checkbox } from '../ui/checkbox';
 
 interface UserRoleManagementProps {
   allUsers: User[];
-  onUserAdd: (newEmployee: Employee, roles: Role[]) => void;
+  onUserAdd: (newEmployee: Partial<Employee>, roles: Role[]) => void;
   onRolesChange: (userId: string, newRoles: Role[]) => void;
   onUserUpdate: (userId: string, updatedData: Partial<User & { newUniqueId?: string }>) => void;
   onUserDelete: (userId: string) => void;
@@ -147,19 +147,12 @@ export default function UserRoleManagement({
       return;
     }
 
-    const newUserAsEmployee: Employee = {
-      id: `E${newUserId}`,
+    const newUserAsEmployee: Partial<Employee> = {
       uniqueId: newUserId,
       name: newUserName,
-      company: 'N/A',
       department: newUserDepartment,
       title: newUserTitle,
       position: newUserTitle,
-      growthLevel: '',
-      workRate: 1.0,
-      evaluatorId: '',
-      baseAmount: 0,
-      memo: '신규 추가된 사용자'
     };
     
     onUserAdd(newUserAsEmployee, newUserRoles);
@@ -206,6 +199,18 @@ export default function UserRoleManagement({
   }
 
   const openConfirmDialog = (user: User | null, type: 'resetPassword' | 'delete' | 'bulkDelete') => {
+    if (type === 'bulkDelete') {
+        const adminUser = allUsers.find(u => u.uniqueId === 'admin');
+        if (adminUser && selectedIds.has(adminUser.id)) {
+            const newSelection = new Set(selectedIds);
+            newSelection.delete(adminUser.id);
+            setSelectedIds(newSelection);
+            if (newSelection.size === 0) {
+                 toast({ title: '정보', description: '관리자 계정은 삭제할 수 없습니다.' });
+                 return;
+            }
+        }
+    }
     setSelectedUser(user);
     setActionType(type);
     setIsConfirmDialogOpen(true);
@@ -213,8 +218,9 @@ export default function UserRoleManagement({
   
   const handleConfirmAction = () => {
     if(actionType === 'bulkDelete') {
-        onUsersDelete(Array.from(selectedIds));
-        toast({ title: '삭제 완료', description: `${selectedIds.size}명의 사용자가 삭제되었습니다.` });
+        const idsToDelete = Array.from(selectedIds);
+        onUsersDelete(idsToDelete);
+        toast({ title: '삭제 완료', description: `${idsToDelete.length}명의 사용자가 삭제되었습니다.` });
         setSelectedIds(new Set());
     } else if (selectedUser) {
         if(actionType === 'resetPassword') {
@@ -232,7 +238,10 @@ export default function UserRoleManagement({
   
   const handleToggleAll = (checked: boolean) => {
     if (checked) {
-      setSelectedIds(new Set(filteredUsers.map(u => u.id)));
+      const allSelectableIds = filteredUsers
+        .filter(u => u.uniqueId !== 'admin')
+        .map(u => u.id);
+      setSelectedIds(new Set(allSelectableIds));
     } else {
       setSelectedIds(new Set());
     }
@@ -272,6 +281,13 @@ export default function UserRoleManagement({
     }
     return { title: '', description: '' };
   }, [selectedUser, actionType, selectedIds]);
+
+  const isAllSelected = React.useMemo(() => {
+    const selectableUsers = filteredUsers.filter(u => u.uniqueId !== 'admin');
+    if (selectableUsers.length === 0) return false;
+    return selectableUsers.every(u => selectedIds.has(u.id));
+  }, [filteredUsers, selectedIds]);
+  
 
   return (
     <div className="space-y-4">
@@ -318,7 +334,7 @@ export default function UserRoleManagement({
                 <TableRow>
                   <TableHead className="w-[50px] text-center">
                     <Checkbox
-                        checked={selectedIds.size === filteredUsers.length && filteredUsers.length > 0}
+                        checked={isAllSelected}
                         onCheckedChange={(checked) => handleToggleAll(Boolean(checked))}
                         aria-label="모두 선택"
                     />
@@ -340,6 +356,7 @@ export default function UserRoleManagement({
                             checked={selectedIds.has(user.id)}
                             onCheckedChange={(checked) => handleToggleRow(user.id, Boolean(checked))}
                             aria-label={`${user.name} 선택`}
+                            disabled={user.uniqueId === 'admin'}
                         />
                     </TableCell>
                     <TableCell className="text-center font-mono">{user.uniqueId}</TableCell>
@@ -356,6 +373,7 @@ export default function UserRoleManagement({
                       <Switch
                         checked={user.roles.includes('admin')}
                         onCheckedChange={() => handleToggleRole(user.id, 'admin')}
+                        disabled={user.uniqueId === 'admin'}
                       />
                     </TableCell>
                     <TableCell className="text-center space-x-1">
@@ -365,9 +383,11 @@ export default function UserRoleManagement({
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditDialog(user)}>
                             <Edit className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openConfirmDialog(user, 'delete')}>
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+                        {user.uniqueId !== 'admin' && (
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openConfirmDialog(user, 'delete')}>
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                        )}
                     </TableCell>
                   </TableRow>
                 ))}
