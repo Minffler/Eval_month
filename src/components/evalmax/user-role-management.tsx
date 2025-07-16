@@ -306,23 +306,21 @@ export default function UserRoleManagement({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
-            <div className="relative w-full sm:max-w-sm">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="이름, ID, 부서로 검색..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-                <Button variant={roleFilter.has('employee') ? 'default': 'outline'} size="sm" onClick={() => handleToggleRoleFilter('employee')}>피평가자</Button>
-                <Button variant={roleFilter.has('evaluator') ? 'default': 'outline'} size="sm" onClick={() => handleToggleRoleFilter('evaluator')}>평가자</Button>
-                <Button variant={roleFilter.has('admin') ? 'default': 'outline'} size="sm" onClick={() => handleToggleRoleFilter('admin')}>관리자</Button>
+          <div className="mb-4 space-y-4">
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div className="relative w-full sm:max-w-sm">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                    placeholder="이름, ID, 부서로 검색..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-8"
+                />
+                </div>
+                <div className="flex items-center gap-2">
                 <Button onClick={() => setIsAddUserDialogOpen(true)}>
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  사용자 추가
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    사용자 추가
                 </Button>
                 <Button
                     variant="destructive"
@@ -332,6 +330,12 @@ export default function UserRoleManagement({
                     <Trash2 className="mr-2 h-4 w-4" />
                     선택 항목 삭제 ({selectedIds.size})
                 </Button>
+                </div>
+            </div>
+            <div className="flex items-center gap-2">
+                <Button variant={roleFilter.has('employee') ? 'default': 'outline'} size="sm" onClick={() => handleToggleRoleFilter('employee')}>피평가자</Button>
+                <Button variant={roleFilter.has('evaluator') ? 'default': 'outline'} size="sm" onClick={() => handleToggleRoleFilter('evaluator')}>평가자</Button>
+                <Button variant={roleFilter.has('admin') ? 'default': 'outline'} size="sm" onClick={() => handleToggleRoleFilter('admin')}>관리자</Button>
             </div>
           </div>
           
