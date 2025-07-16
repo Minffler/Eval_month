@@ -455,6 +455,17 @@ export default function Home() {
     });
   };
 
+  const handleUsersDelete = (userIds: string[]) => {
+    const usersToDelete = new Set(allUsers.filter(u => userIds.includes(u.id)).map(u => u.uniqueId));
+    if (usersToDelete.size === 0) return;
+    setUsers(prev => prev.filter(u => !userIds.includes(u.id)));
+    setEmployees(prev => {
+        const newState = { ...prev };
+        for (const key in newState) newState[key] = newState[key].filter(e => e.uniqueId && !usersToDelete.has(e.uniqueId));
+        return newState;
+    });
+  };
+
   const handleRolesChange = (userId: string, newRoles: Role[]) => {
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, roles: newRoles } : u));
   };
@@ -636,6 +647,7 @@ export default function Home() {
                   onRolesChange={handleRolesChange}
                   onUserUpdate={handleUserUpdate}
                   onUserDelete={handleUserDelete}
+                  onUsersDelete={handleUsersDelete}
                   activeView={adminActiveView}
                   onClearEmployeeData={handleClearEmployeeData}
                   onClearEvaluationData={handleClearEvaluationData}

@@ -42,6 +42,7 @@ import {
   AlertDialogTitle as AlertDialogTitle2,
 } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
+import { Checkbox } from '../ui/checkbox';
 
 interface UserRoleManagementProps {
   allUsers: User[];
@@ -49,6 +50,7 @@ interface UserRoleManagementProps {
   onRolesChange: (userId: string, newRoles: Role[]) => void;
   onUserUpdate: (userId: string, updatedData: Partial<User & { newUniqueId?: string }>) => void;
   onUserDelete: (userId: string) => void;
+  onUsersDelete: (userIds: string[]) => void;
 }
 
 export default function UserRoleManagement({
@@ -57,6 +59,7 @@ export default function UserRoleManagement({
   onRolesChange,
   onUserUpdate,
   onUserDelete,
+  onUsersDelete,
 }: UserRoleManagementProps) {
   const [searchTerm, setSearchTerm] = React.useState('');
   const [roleFilter, setRoleFilter] = React.useState<Set<Role>>(new Set());
@@ -64,7 +67,9 @@ export default function UserRoleManagement({
   const [isEditUserDialogOpen, setIsEditUserDialogOpen] = React.useState(false);
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = React.useState(false);
   const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
-  const [actionType, setActionType] = React.useState<'resetPassword' | 'delete' | null>(null);
+  const [actionType, setActionType] = React.useState<'resetPassword' | 'delete' | 'bulkDelete' | null>(null);
+  const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
+
 
   // State for adding a new user
   const [newUserName, setNewUserName] = React.useState('');
@@ -195,27 +200,58 @@ export default function UserRoleManagement({
     setSelectedUser(null);
   }
 
-  const openConfirmDialog = (user: User, type: 'resetPassword' | 'delete') => {
+  const openConfirmDialog = (user: User | null, type: 'resetPassword' | 'delete' | 'bulkDelete') => {
     setSelectedUser(user);
     setActionType(type);
     setIsConfirmDialogOpen(true);
   }
   
   const handleConfirmAction = () => {
-    if (!selectedUser || !actionType) return;
-    if(actionType === 'resetPassword') {
-        onUserUpdate(selectedUser.id, { password: selectedUser.uniqueId });
-        toast({ title: '초기화 완료', description: `사용자 '${selectedUser.name}'의 비밀번호가 ID와 동일하게 초기화되었습니다.`});
-    } else if (actionType === 'delete') {
-        onUserDelete(selectedUser.id);
-        toast({ title: '삭제 완료', description: `사용자 '${selectedUser.name}'이(가) 삭제되었습니다.` });
+    if(actionType === 'bulkDelete') {
+        onUsersDelete(Array.from(selectedIds));
+        toast({ title: '삭제 완료', description: `${selectedIds.size}명의 사용자가 삭제되었습니다.` });
+        setSelectedIds(new Set());
+    } else if (selectedUser) {
+        if(actionType === 'resetPassword') {
+            onUserUpdate(selectedUser.id, { password: selectedUser.uniqueId });
+            toast({ title: '초기화 완료', description: `사용자 '${selectedUser.name}'의 비밀번호가 ID와 동일하게 초기화되었습니다.`});
+        } else if (actionType === 'delete') {
+            onUserDelete(selectedUser.id);
+            toast({ title: '삭제 완료', description: `사용자 '${selectedUser.name}'이(가) 삭제되었습니다.` });
+        }
     }
     setIsConfirmDialogOpen(false);
     setSelectedUser(null);
     setActionType(null);
   }
+  
+  const handleToggleAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedIds(new Set(filteredUsers.map(u => u.id)));
+    } else {
+      setSelectedIds(new Set());
+    }
+  };
+  
+  const handleToggleRow = (id: string, checked: boolean) => {
+    setSelectedIds(prev => {
+      const newSelection = new Set(prev);
+      if (checked) {
+        newSelection.add(id);
+      } else {
+        newSelection.delete(id);
+      }
+      return newSelection;
+    });
+  };
 
   const confirmDialogContent = React.useMemo(() => {
+    if (actionType === 'bulkDelete') {
+      return {
+        title: '선택 항목 삭제',
+        description: `정말로 선택한 ${selectedIds.size}명의 사용자를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`,
+      };
+    }
     if (!selectedUser) return { title: '', description: '' };
     if (actionType === 'resetPassword') {
         return {
@@ -230,7 +266,7 @@ export default function UserRoleManagement({
         }
     }
     return { title: '', description: '' };
-  }, [selectedUser, actionType]);
+  }, [selectedUser, actionType, selectedIds]);
 
   return (
     <div className="space-y-4">
@@ -256,17 +292,32 @@ export default function UserRoleManagement({
                 <Button variant={roleFilter.size === 0 ? 'secondary': 'outline'} size="sm" onClick={() => setRoleFilter(new Set())}>전체 보기</Button>
                 <Button variant={roleFilter.has('evaluator') ? 'secondary': 'outline'} size="sm" onClick={() => handleToggleRoleFilter('evaluator')}>평가자</Button>
                 <Button variant={roleFilter.has('admin') ? 'secondary': 'outline'} size="sm" onClick={() => handleToggleRoleFilter('admin')}>관리자</Button>
+                <Button onClick={() => setIsAddUserDialogOpen(true)}>
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  사용자 추가
+                </Button>
+                <Button
+                    variant="destructive"
+                    onClick={() => openConfirmDialog(null, 'bulkDelete')}
+                    disabled={selectedIds.size === 0}
+                >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    선택 항목 삭제 ({selectedIds.size})
+                </Button>
             </div>
-            <Button onClick={() => setIsAddUserDialogOpen(true)}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              사용자 추가
-            </Button>
           </div>
           
           <div className="border rounded-lg overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[50px] text-center">
+                    <Checkbox
+                        checked={selectedIds.size === filteredUsers.length && filteredUsers.length > 0}
+                        onCheckedChange={(checked) => handleToggleAll(Boolean(checked))}
+                        aria-label="모두 선택"
+                    />
+                  </TableHead>
                   <TableHead className="text-center">ID (고유사번)</TableHead>
                   <TableHead className="text-center">이름</TableHead>
                   <TableHead className="text-center">부서</TableHead>
@@ -278,7 +329,14 @@ export default function UserRoleManagement({
               </TableHeader>
               <TableBody>
                 {filteredUsers.map((user) => (
-                  <TableRow key={user.id}>
+                  <TableRow key={user.id} data-state={selectedIds.has(user.id) ? "selected" : undefined}>
+                    <TableCell className="text-center">
+                        <Checkbox
+                            checked={selectedIds.has(user.id)}
+                            onCheckedChange={(checked) => handleToggleRow(user.id, Boolean(checked))}
+                            aria-label={`${user.name} 선택`}
+                        />
+                    </TableCell>
                     <TableCell className="text-center font-mono">{user.uniqueId}</TableCell>
                     <TableCell className="text-center font-semibold">{user.name}</TableCell>
                     <TableCell className="text-center">{user.department}</TableCell>

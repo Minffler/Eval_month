@@ -81,6 +81,7 @@ interface AdminDashboardProps {
   onRolesChange: (userId: string, newRoles: Role[]) => void;
   onUserUpdate: (userId: string, updatedData: Partial<User>) => void;
   onUserDelete: (userId: string) => void;
+  onUsersDelete: (userIds: string[]) => void;
   activeView: string;
   onClearEmployeeData: (year: number, month: number) => void;
   onClearEvaluationData: (year: number, month: number) => void;
@@ -136,6 +137,7 @@ export default function AdminDashboard({
   onRolesChange,
   onUserUpdate,
   onUserDelete,
+  onUsersDelete,
   activeView,
   onClearEmployeeData,
   onClearEvaluationData,
@@ -1009,7 +1011,7 @@ export default function AdminDashboard({
         case 'evaluator-management':
             return <EvaluatorManagement results={initialResults} allUsers={allUsers} onEvaluatorAssignmentChange={onEvaluatorAssignmentChange} />;
         case 'user-role-management':
-            return <UserRoleManagement allUsers={allUsers} onUserAdd={onUserAdd} onRolesChange={onRolesChange} onUserUpdate={onUserUpdate} onUserDelete={onUserDelete} />;
+            return <UserRoleManagement allUsers={allUsers} onUserAdd={onUserAdd} onRolesChange={onRolesChange} onUserUpdate={onUserUpdate} onUserDelete={onUserDelete} onUsersDelete={onUsersDelete} />;
         case 'consistency-check':
             return <ConsistencyValidator results={initialResults} gradingScale={gradingScale} />;
         case 'work-rate-view':
