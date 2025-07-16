@@ -42,8 +42,8 @@ import { Label } from '../ui/label';
 
 interface ManageDataProps {
   results: EvaluationResult[];
-  onEmployeeUpload: (year: number, month: number, employees: Employee[], mapping: HeaderMapping) => void;
-  onEvaluationUpload: (year: number, month: number, evaluations: EvaluationUploadData[], mapping: HeaderMapping) => void;
+  onEmployeeUpload: (year: number, month: number, employees: Employee[]) => void;
+  onEvaluationUpload: (year: number, month: number, evaluations: EvaluationUploadData[]) => void;
   selectedDate: { year: number, month: number };
   setSelectedDate: (date: { year: number, month: number }) => void;
   onClearEmployeeData: (year: number, month: number) => void;
@@ -211,15 +211,26 @@ export default function ManageData({
             setUploadType(type);
 
             const initialMapping: HeaderMapping = {};
-            const reverseMapping = Object.fromEntries(Object.entries(excelHeaderMapping).map(([k, v]) => [v, k]));
-            headers.forEach(header => {
-                const systemField = reverseMapping[header];
-                if(systemField) {
-                    initialMapping[header] = systemField;
+            // Create a reverse mapping from system field to Excel header patterns
+            const systemFieldToExcelHeaders: { [key: string]: string[] } = {};
+            for (const excelHeader in excelHeaderMapping) {
+                const systemField = excelHeaderMapping[excelHeader as keyof typeof excelHeaderMapping];
+                if (!systemFieldToExcelHeaders[systemField]) {
+                    systemFieldToExcelHeaders[systemField] = [];
                 }
+                systemFieldToExcelHeaders[systemField].push(excelHeader);
+            }
+
+            headers.forEach(header => {
+              for(const systemField in systemFieldToExcelHeaders) {
+                if(systemFieldToExcelHeaders[systemField].includes(header)) {
+                  initialMapping[header] = systemField;
+                  break;
+                }
+              }
             });
-            setCurrentMapping(initialMapping);
             
+            setCurrentMapping(initialMapping);
             setIsMappingDialogOpen(true);
         } catch (error) {
             toast({ variant: 'destructive', title: '파일 오류', description: '엑셀 파일 헤더를 읽는 중 오류가 발생했습니다.' });
@@ -246,7 +257,7 @@ export default function ManageData({
               };
             }));
             uploadCount = newEmployees.length;
-            onEmployeeUpload(selectedDate.year, selectedDate.month, newEmployees, currentMapping);
+            onEmployeeUpload(selectedDate.year, selectedDate.month, newEmployees);
         } else if (uploadType === 'evaluations') {
              const newEvals = await parseExcelFile<EvaluationUploadData>(fileToProcess, json => json.map((row, index) => {
               const uniqueId = String(row['uniqueId'] || '');
@@ -266,7 +277,7 @@ export default function ManageData({
               };
             }));
             uploadCount = newEvals.length;
-            onEvaluationUpload(selectedDate.year, selectedDate.month, newEvals, currentMapping);
+            onEvaluationUpload(selectedDate.year, selectedDate.month, newEvals);
         }
 
         toast({ title: '업로드 성공', description: `${uploadCount}명의 데이터가 처리되었습니다.` });
