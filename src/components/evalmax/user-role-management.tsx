@@ -43,7 +43,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import { Checkbox } from '../ui/checkbox';
-import { Tabs, TabsList, TabsTrigger } from '../ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface UserRoleManagementProps {
   allUsers: User[];
@@ -105,11 +105,12 @@ export default function UserRoleManagement({
     // Role filter
     if (roleFilter.size > 0) {
       users = users.filter(user => {
-        // If user has no roles, filter out
         if (!user.roles || user.roles.length === 0) return false;
-        // Check if any of the user's roles are in the filter set.
         return user.roles.some(role => role && roleFilter.has(role));
       });
+    } else {
+      // If no filters are selected, show an empty list
+      return [];
     }
 
     // Search term filter
@@ -309,7 +310,7 @@ export default function UserRoleManagement({
         <CardContent>
           <div className="mb-4 space-y-4">
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-                <div className="relative w-full sm:max-w-sm">
+              <div className="relative w-full sm:max-w-sm">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                     placeholder="이름, ID, 부서로 검색..."
@@ -317,8 +318,8 @@ export default function UserRoleManagement({
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-8"
                 />
-                </div>
-                <div className="flex items-center gap-2">
+              </div>
+              <div className="flex items-center gap-2">
                 <Button onClick={() => setIsAddUserDialogOpen(true)}>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     사용자 추가
@@ -331,15 +332,17 @@ export default function UserRoleManagement({
                     <Trash2 className="mr-2 h-4 w-4" />
                     선택 항목 삭제 ({selectedIds.size})
                 </Button>
-                </div>
+              </div>
             </div>
-             <Tabs defaultValue="all">
-                <TabsList>
-                    <TabsTrigger value="employee" data-state={roleFilter.has('employee') ? 'active' : 'inactive'} onClick={() => handleToggleRoleFilter('employee')}>피평가자</TabsTrigger>
-                    <TabsTrigger value="evaluator" data-state={roleFilter.has('evaluator') ? 'active' : 'inactive'} onClick={() => handleToggleRoleFilter('evaluator')}>평가자</TabsTrigger>
-                    <TabsTrigger value="admin" data-state={roleFilter.has('admin') ? 'active' : 'inactive'} onClick={() => handleToggleRoleFilter('admin')}>관리자</TabsTrigger>
-                </TabsList>
-            </Tabs>
+            <div className="flex justify-start">
+              <Tabs defaultValue="all">
+                  <TabsList>
+                      <TabsTrigger value="employee" data-state={roleFilter.has('employee') ? 'active' : 'inactive'} onClick={() => handleToggleRoleFilter('employee')}>피평가자</TabsTrigger>
+                      <TabsTrigger value="evaluator" data-state={roleFilter.has('evaluator') ? 'active' : 'inactive'} onClick={() => handleToggleRoleFilter('evaluator')}>평가자</TabsTrigger>
+                      <TabsTrigger value="admin" data-state={roleFilter.has('admin') ? 'active' : 'inactive'} onClick={() => handleToggleRoleFilter('admin')}>관리자</TabsTrigger>
+                  </TabsList>
+              </Tabs>
+            </div>
           </div>
           
           <div className="border rounded-lg overflow-x-auto">
