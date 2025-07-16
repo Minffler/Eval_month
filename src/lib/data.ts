@@ -40,6 +40,7 @@ export const excelHeaderMapping: { [key: string]: string } = {
     // 값: 시스템 내부에서 사용하는 필드 이름
     "고유사번": "uniqueId",
     "사번": "uniqueId",
+    "ID": "uniqueId",
     "id": "uniqueId",
     "성명": "name",
     "이름": "name",
@@ -53,9 +54,9 @@ export const excelHeaderMapping: { [key: string]: string } = {
     "실근무율": "workRate",
     "기준금액": "baseAmount",
     "개인별 기준금액": "baseAmount",
-    "평가자 id": "evaluatorId",
     "평가자 ID": "evaluatorId",
     "평가자사번": "evaluatorId",
+    "평가자 id": "evaluatorId",
     "평가자": "evaluatorName",
     "등급": "grade",
     "비고": "memo",
