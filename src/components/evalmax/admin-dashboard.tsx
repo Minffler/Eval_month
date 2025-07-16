@@ -660,13 +660,15 @@ export default function AdminDashboard({
                     <Collapsible open={isDistributionChartOpen} onOpenChange={setIsDistributionChartOpen}>
                       <CardHeader className="flex flex-row items-center justify-between">
                           <CardTitle>등급 분포</CardTitle>
-                          <div className="flex gap-2">
-                            <Button variant={dashboardFilter === '전체' ? 'secondary' : 'ghost'} size="sm" onClick={() => setDashboardFilter('전체')}>전체</Button>
-                            <Button variant={dashboardFilter === 'A. 정규평가' ? 'secondary' : 'ghost'} size="sm" onClick={() => setDashboardFilter('A. 정규평가')}>A.정규</Button>
-                            <Button variant={dashboardFilter === 'B. 별도평가' ? 'secondary' : 'ghost'} size="sm" onClick={() => setDashboardFilter('B. 별도평가')}>B.별도</Button>
-                            <Button variant={dashboardFilter === '직책자' ? 'secondary' : 'ghost'} size="sm" onClick={() => setDashboardFilter('직책자')}>직책자</Button>
-                            <Button variant={dashboardFilter === '비직책자' ? 'secondary' : 'ghost'} size="sm" onClick={() => setDashboardFilter('비직책자')}>비직책자</Button>
-                          </div>
+                           <Tabs defaultValue="전체" onValueChange={(val) => setDashboardFilter(val)}>
+                                <TabsList>
+                                    <TabsTrigger value="전체">전체</TabsTrigger>
+                                    <TabsTrigger value="A. 정규평가">A.정규</TabsTrigger>
+                                    <TabsTrigger value="B. 별도평가">B.별도</TabsTrigger>
+                                    <TabsTrigger value="직책자">직책자</TabsTrigger>
+                                    <TabsTrigger value="비직책자">비직책자</TabsTrigger>
+                                </TabsList>
+                            </Tabs>
                       </CardHeader>
                       <CollapsibleContent>
                         <CardContent className="pt-0">
