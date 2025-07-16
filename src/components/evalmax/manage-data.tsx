@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -5,9 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Download, Trash2 } from 'lucide-react';
+import { Download, Trash2, UploadCloud, CheckCircle2, AlertCircle } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import type { Employee, EvaluationResult, Grade, EvaluationUploadData, WorkRateInputs, ShortenedWorkHourRecord, DailyAttendanceRecord, ShortenedWorkType } from '@/lib/types';
+import type { Employee, EvaluationResult, Grade, EvaluationUploadData, WorkRateInputs, ShortenedWorkHourRecord, DailyAttendanceRecord, ShortenedWorkType, HeaderMapping } from '@/lib/types';
 import { excelHeaderMapping } from '@/lib/data';
 import {
   AlertDialog,
@@ -20,11 +21,29 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Separator } from '../ui/separator';
+import {
+  Dialog,
+  DialogContent as DialogContent2,
+  DialogDescription as DialogDescription2,
+  DialogFooter as DialogFooter2,
+  DialogHeader as DialogHeader2,
+  DialogTitle as DialogTitle2,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
+import { ScrollArea } from '../ui/scroll-area';
+import { Label } from '../ui/label';
 
 interface ManageDataProps {
   results: EvaluationResult[];
-  onEmployeeUpload: (year: number, month: number, employees: Employee[]) => void;
-  onEvaluationUpload: (year: number, month: number, evaluations: EvaluationUploadData[]) => void;
+  onEmployeeUpload: (year: number, month: number, employees: Employee[], mapping: HeaderMapping) => void;
+  onEvaluationUpload: (year: number, month: number, evaluations: EvaluationUploadData[], mapping: HeaderMapping) => void;
   selectedDate: { year: number, month: number };
   setSelectedDate: (date: { year: number, month: number }) => void;
   onClearEmployeeData: (year: number, month: number) => void;
@@ -34,14 +53,16 @@ interface ManageDataProps {
   workRateInputs: WorkRateInputs;
 }
 
-const mapRowToSchema = <T extends {}>(row: any): T => {
+const mapRowToSchema = <T extends {}>(row: any, mapping: HeaderMapping): T => {
     const newRow: any = {};
-    for (const key in row) {
-        const mappedKey = excelHeaderMapping[key.trim()] || key.trim();
-        newRow[mappedKey] = row[key];
+    for (const excelHeader in mapping) {
+        const systemField = mapping[excelHeader];
+        if (systemField !== 'ignore' && row[excelHeader] !== undefined) {
+            newRow[systemField] = row[excelHeader];
+        }
     }
     return newRow as T;
-}
+};
 
 interface UploadSectionProps {
     id: string;
@@ -54,22 +75,33 @@ interface UploadSectionProps {
 }
 
 const UploadSection: React.FC<UploadSectionProps> = ({ title, description, id, onUpload, onDownload, onReset, isResetDisabled }) => {
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
+
     return (
         <div className="space-y-4">
             <div>
                 <h4 className="font-semibold">{title}</h4>
                 <p className="text-sm text-muted-foreground">{description}</p>
             </div>
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col sm:flex-row gap-4 items-center">
+                 <Button
+                    variant="outline"
+                    className="w-full flex-grow justify-start text-left font-normal text-muted-foreground cursor-pointer"
+                    onClick={() => fileInputRef.current?.click()}
+                >
+                    <UploadCloud className="mr-2" />
+                    엑셀 파일 선택...
+                </Button>
                 <Input 
+                    ref={fileInputRef}
                     id={id} 
                     type="file" 
                     accept=".xlsx, .xls" 
                     onChange={onUpload}
                     onClick={(e) => (e.currentTarget.value = '')}
-                    className="flex-grow text-sm file:text-sm"
+                    className="hidden"
                 />
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 self-end sm:self-center">
                     <Button onClick={onDownload} variant="ghost" className="text-muted-foreground">
                         <Download className="mr-2 h-4 w-4" /> 양식
                     </Button>
@@ -87,7 +119,6 @@ const UploadSection: React.FC<UploadSectionProps> = ({ title, description, id, o
     );
 };
 
-
 export default function ManageData({ 
   onEmployeeUpload, 
   onEvaluationUpload, 
@@ -102,6 +133,21 @@ export default function ManageData({
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = React.useState<{ type: 'deleteEmployees' | 'resetEvaluations' | 'resetWorkData', workDataType?: keyof WorkRateInputs | ShortenedWorkType } | null>(null);
 
+  // State for header mapping dialog
+  const [isMappingDialogOpen, setIsMappingDialogOpen] = React.useState(false);
+  const [excelHeaders, setExcelHeaders] = React.useState<string[]>([]);
+  const [currentMapping, setCurrentMapping] = React.useState<HeaderMapping>({});
+  const [fileToProcess, setFileToProcess] = React.useState<File | null>(null);
+  const [uploadType, setUploadType] = React.useState<'employees' | 'evaluations' | null>(null);
+
+  const systemFields = Object.keys(excelHeaderMapping).sort();
+  const requiredFields: (keyof typeof excelHeaderMapping)[] = ['uniqueId'];
+
+  const isMappingValid = React.useMemo(() => {
+    const mappedSystemFields = Object.values(currentMapping);
+    return requiredFields.every(field => mappedSystemFields.includes(field));
+  }, [currentMapping]);
+  
   const handleClearEmployees = () => {
     onClearEmployeeData(selectedDate.year, selectedDate.month);
     toast({ title: '삭제 완료', description: '해당 월의 모든 대상자 데이터가 삭제되었습니다.' });
@@ -121,7 +167,7 @@ export default function ManageData({
     setDialogOpen(null);
   }
 
-  const parseExcelFile = <T extends {}>(file: File, parser: (rows: any[]) => T[]): Promise<T[]> => {
+  const parseExcelFile = <T extends {}>(file: File, parser: (rows: any[], mapping: HeaderMapping) => T[]): Promise<T[]> => {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -131,8 +177,8 @@ export default function ManageData({
                 const sheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[sheetName];
                 const json = XLSX.utils.sheet_to_json<any>(worksheet);
-                const mappedJson = json.map(row => mapRowToSchema(row));
-                resolve(parser(mappedJson));
+                const mappedJson = json.map(row => mapRowToSchema(row, currentMapping));
+                resolve(parser(mappedJson, currentMapping));
             } catch (error: any) {
                 reject(error);
             }
@@ -142,16 +188,52 @@ export default function ManageData({
     });
   }
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, uploadType: 'employees' | 'evaluations' | 'shortenedWork' | 'dailyAttendance', shortenedWorkType?: ShortenedWorkType) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, type: 'employees' | 'evaluations' | 'shortenedWork' | 'dailyAttendance', shortenedWorkType?: ShortenedWorkType) => {
     const file = event.target.files?.[0];
-    if (file) {
-      try {
-        const now = new Date().toISOString();
-        let uploadCount = 0;
+    if (!file) return;
 
-        switch(uploadType) {
-          case 'employees':
-            const newEmployees = await parseExcelFile<Employee>(file, json => json.map((row, index) => {
+    if (type === 'shortenedWork' || type === 'dailyAttendance') {
+        processSimpleUpload(file, type, shortenedWorkType);
+        return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const data = new Uint8Array(e.target?.result as ArrayBuffer);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const headers: string[] = XLSX.utils.sheet_to_json(worksheet, { header: 1 })[0] as string[];
+            
+            setExcelHeaders(headers);
+            setFileToProcess(file);
+            setUploadType(type);
+
+            const initialMapping: HeaderMapping = {};
+            const reverseMapping = Object.fromEntries(Object.entries(excelHeaderMapping).map(([k, v]) => [v, k]));
+            headers.forEach(header => {
+                const systemField = reverseMapping[header];
+                if(systemField) {
+                    initialMapping[header] = systemField;
+                }
+            });
+            setCurrentMapping(initialMapping);
+            
+            setIsMappingDialogOpen(true);
+        } catch (error) {
+            toast({ variant: 'destructive', title: '파일 오류', description: '엑셀 파일 헤더를 읽는 중 오류가 발생했습니다.' });
+        }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+  
+  const handleProcessMappedFile = async () => {
+    if (!fileToProcess || !uploadType) return;
+    try {
+        let uploadCount = 0;
+        if (uploadType === 'employees') {
+            const newEmployees = await parseExcelFile<Employee>(fileToProcess, (json, mapping) => json.map((row, index) => {
               const uniqueId = String(row['uniqueId'] || '');
               if (!uniqueId) throw new Error(`${index + 2}번째 행에 ID가 없습니다.`);
               return {
@@ -164,10 +246,9 @@ export default function ManageData({
               };
             }));
             uploadCount = newEmployees.length;
-            onEmployeeUpload(selectedDate.year, selectedDate.month, newEmployees);
-            break;
-          case 'evaluations':
-            const newEvals = await parseExcelFile<EvaluationUploadData>(file, json => json.map((row, index) => {
+            onEmployeeUpload(selectedDate.year, selectedDate.month, newEmployees, currentMapping);
+        } else if (uploadType === 'evaluations') {
+             const newEvals = await parseExcelFile<EvaluationUploadData>(fileToProcess, json => json.map((row, index) => {
               const uniqueId = String(row['uniqueId'] || '');
               if (!uniqueId) throw new Error(`${index + 2}번째 행에 ID가 없습니다.`);
               const workRateValue = row['workRate'];
@@ -185,11 +266,27 @@ export default function ManageData({
               };
             }));
             uploadCount = newEvals.length;
-            onEvaluationUpload(selectedDate.year, selectedDate.month, newEvals);
-            break;
-          case 'shortenedWork':
+            onEvaluationUpload(selectedDate.year, selectedDate.month, newEvals, currentMapping);
+        }
+
+        toast({ title: '업로드 성공', description: `${uploadCount}명의 데이터가 처리되었습니다.` });
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: '파일 처리 오류', description: error.message || '파일 처리 중 오류가 발생했습니다.' });
+    } finally {
+        setIsMappingDialogOpen(false);
+        setFileToProcess(null);
+        setUploadType(null);
+    }
+  }
+
+  const processSimpleUpload = async (file: File, uploadType: 'shortenedWork' | 'dailyAttendance', shortenedWorkType?: ShortenedWorkType) => {
+    try {
+        const now = new Date().toISOString();
+        let uploadCount = 0;
+        
+        if (uploadType === 'shortenedWork') {
             if (!shortenedWorkType) throw new Error('Shortened work type is required.');
-            const newShortenedWork = await parseExcelFile<ShortenedWorkHourRecord>(file, json => json.map((row, index) => {
+            const newShortenedWork = await parseExcelFileSimple<ShortenedWorkHourRecord>(file, json => json.map((row, index) => {
               const uniqueId = String(row['uniqueId'] || '');
               if (!uniqueId) throw new Error(`${index + 2}번째 행에 사번이 없습니다.`);
               return {
@@ -202,9 +299,8 @@ export default function ManageData({
             }));
             uploadCount = newShortenedWork.length;
             onWorkRateDataUpload(selectedDate.year, selectedDate.month, 'shortenedWorkHours', newShortenedWork, true);
-            break;
-          case 'dailyAttendance':
-            const newDailyAttendance = await parseExcelFile<DailyAttendanceRecord>(file, json => json.map((row, index) => {
+        } else if (uploadType === 'dailyAttendance') {
+            const newDailyAttendance = await parseExcelFileSimple<DailyAttendanceRecord>(file, json => json.map((row, index) => {
               const uniqueId = String(row['uniqueId'] || '');
               if (!uniqueId) throw new Error(`${index + 2}번째 행에 사번이 없습니다.`);
               return {
@@ -215,19 +311,45 @@ export default function ManageData({
             }));
             uploadCount = newDailyAttendance.length;
             onWorkRateDataUpload(selectedDate.year, selectedDate.month, 'dailyAttendance', newDailyAttendance, true);
-            break;
         }
+        
         toast({ title: '업로드 성공', description: `${uploadCount}명의 데이터가 처리되었습니다.` });
-      } catch (error: any) {
+    } catch (error: any) {
         toast({ variant: 'destructive', title: '파일 처리 오류', description: error.message || '파일 처리 중 오류가 발생했습니다.' });
-      } finally {
-        if(event.target) event.target.value = "";
-      }
     }
-  };
+  }
+  
+  const parseExcelFileSimple = <T extends {}>(file: File, parser: (rows: any[]) => T[]): Promise<T[]> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = new Uint8Array(e.target?.result as ArrayBuffer);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                const json = XLSX.utils.sheet_to_json<any>(worksheet);
+                const simpleMapping: HeaderMapping = {};
+                if (json.length > 0) {
+                  for (const header in json[0]) {
+                      const systemField = Object.keys(excelHeaderMapping).find(key => excelHeaderMapping[key as keyof typeof excelHeaderMapping] === header);
+                      if (systemField) {
+                         simpleMapping[header] = systemField;
+                      }
+                  }
+                }
+                const mappedJson = json.map(row => mapRowToSchema(row, simpleMapping));
+                resolve(parser(mappedJson));
+            } catch (error: any) {
+                reject(error);
+            }
+        };
+        reader.onerror = (error) => reject(error);
+        reader.readAsArrayBuffer(file);
+    });
+  }
 
   const handleDownloadTemplate = (type: 'employees' | 'evaluations' | 'shortenedWork' | 'dailyAttendance') => {
-    let dataToExport: any[] = [{}];
     let headers: string[];
     let fileName: string;
     
@@ -252,11 +374,15 @@ export default function ManageData({
             return;
     }
 
-    const worksheet = XLSX.utils.json_to_sheet(dataToExport, { header: headers });
+    const worksheet = XLSX.utils.json_to_sheet([{}], { header: headers });
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Data');
     XLSX.writeFile(workbook, fileName);
   };
+
+  const handleMappingChange = (excelHeader: string, systemField: string) => {
+    setCurrentMapping(prev => ({...prev, [excelHeader]: systemField}));
+  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -352,6 +478,78 @@ export default function ManageData({
               </AlertDialogFooter>
           </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={isMappingDialogOpen} onOpenChange={setIsMappingDialogOpen}>
+        <DialogContent2 className="max-w-3xl">
+          <DialogHeader2>
+            <DialogTitle2>엑셀 헤더 매핑 설정</DialogTitle2>
+            <DialogDescription2>
+              업로드한 엑셀 파일의 각 열(헤더)이 시스템의 어떤 데이터에 해당하는지 설정해주세요.
+              <br />
+              <span className="text-destructive">*</span> 표시된 필드는 업로드를 위해 필수적으로 매핑되어야 합니다.
+            </DialogDescription2>
+          </DialogHeader2>
+          <ScrollArea className="h-[60vh] p-1">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-1/2">엑셀 헤더</TableHead>
+                  <TableHead className="w-1/2">시스템 데이터</TableHead>
+                  <TableHead className="w-[50px]">상태</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {excelHeaders.map(header => (
+                  <TableRow key={header}>
+                    <TableCell className="font-medium">{header}</TableCell>
+                    <TableCell>
+                      <Select
+                        value={currentMapping[header] || 'ignore'}
+                        onValueChange={(value) => handleMappingChange(header, value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="매핑할 필드 선택..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ignore">매핑 안함</SelectItem>
+                          <Separator />
+                          {systemFields.map(field => (
+                            <SelectItem key={field} value={field} disabled={Object.values(currentMapping).includes(field)}>
+                              {requiredFields.includes(field as any) && <span className="text-destructive">* </span>}
+                              {excelHeaderMapping[field as keyof typeof excelHeaderMapping]} ({field})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell className="text-center">
+                        {requiredFields.includes(currentMapping[header] as any)
+                            ? <CheckCircle2 className="h-5 w-5 text-green-500" />
+                            : currentMapping[header] && currentMapping[header] !== 'ignore' 
+                            ? <CheckCircle2 className="h-5 w-5 text-muted-foreground" />
+                            : null
+                        }
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </ScrollArea>
+           <div className="flex justify-between items-center pt-2">
+            <Label className="text-xs text-muted-foreground">
+              {requiredFields.map(f => excelHeaderMapping[f as keyof typeof excelHeaderMapping]).join(', ')} 필드는 반드시 매핑되어야 합니다.
+            </Label>
+            {isMappingValid ? 
+                <p className="text-sm text-green-600 flex items-center gap-2"><CheckCircle2/> 모든 필수 항목이 매핑되었습니다.</p> :
+                <p className="text-sm text-destructive flex items-center gap-2"><AlertCircle/> 필수 항목을 매핑해주세요.</p>
+            }
+          </div>
+          <DialogFooter2>
+            <Button variant="outline" onClick={() => setIsMappingDialogOpen(false)}>취소</Button>
+            <Button onClick={handleProcessMappedFile} disabled={!isMappingValid}>업로드 진행</Button>
+          </DialogFooter2>
+        </DialogContent2>
+      </Dialog>
     </div>
   );
 }

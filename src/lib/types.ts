@@ -1,3 +1,4 @@
+
 export type Role = 'admin' | 'evaluator' | 'employee' | null;
 
 export type User = {
@@ -155,4 +156,8 @@ export type Holiday = {
     id: string;
     date: string; // YYYY-MM-DD
     name: string;
+}
+
+export type HeaderMapping = {
+  [excelHeader: string]: string; // systemField
 }
