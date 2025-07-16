@@ -1,6 +1,7 @@
 
 
 
+
 'use client';
 
 import * as React from 'react';
@@ -169,7 +170,7 @@ export default function ManageData({
   const handleResetWorkData = () => {
     if (!dialogOpen?.workDataType) return;
     onClearWorkRateData(selectedDate.year, selectedDate.month, dialogOpen.workDataType);
-    toast({ title: '초기화 완료', `선택한 근무 데이터가 초기화되었습니다.` });
+    toast({ title: '초기화 완료', description: `선택한 근무 데이터가 초기화되었습니다.` });
     setDialogOpen(null);
   }
 

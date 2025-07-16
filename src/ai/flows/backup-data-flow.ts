@@ -11,7 +11,7 @@ import { z } from 'genkit';
 import fs from 'fs/promises';
 import path from 'path';
 
-export const BackupDataInputSchema = z.object({
+const BackupDataInputSchema = z.object({
     users: z.string().describe('사용자 데이터의 JSON 문자열'),
     employees: z.string().describe('월별 직원 데이터의 JSON 문자열'),
     evaluations: z.string().describe('월별 평가 데이터의 JSON 문자열'),
