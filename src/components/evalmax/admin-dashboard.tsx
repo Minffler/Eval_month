@@ -65,6 +65,7 @@ import { Separator } from '../ui/separator';
 import AdminNotifications from './admin-dashboard-notifications';
 import { Label } from '../ui/label';
 import GradeManagement from './grade-management';
+import EvaluatorManagement from './evaluator-management';
 
 interface AdminDashboardProps {
   results: EvaluationResult[];
