@@ -533,10 +533,17 @@ export default function Home() {
         const monthlyEmployees = employees[monthKey] || [];
         const monthlyEvaluations = evaluations[monthKey] || [];
         
+        // Use a Map to ensure unique users based on uniqueId
         const combinedUserMap = new Map<string, Partial<User & Employee>>();
         
-        allUsers.forEach(u => combinedUserMap.set(u.uniqueId, { ...u }));
+        // Prioritize data from the main `allUsers` list
+        allUsers.forEach(u => {
+            if (u.uniqueId) {
+                combinedUserMap.set(u.uniqueId, { ...u });
+            }
+        });
         
+        // Override or add data from the monthly `employees` list
         monthlyEmployees.forEach(e => {
             if (e.uniqueId) {
                 const existing = combinedUserMap.get(e.uniqueId) || {};
