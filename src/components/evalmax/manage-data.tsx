@@ -2,6 +2,7 @@
 
 
 
+
 'use client';
 
 import * as React from 'react';
@@ -196,7 +197,7 @@ export default function ManageData({
     }
   };
 
-  const parseExcelFile = <T extends {}>(file: File, parser: (rows: any[], mapping: HeaderMapping) => T[]): Promise<T[]> => {
+  const parseExcelFile = <T extends {}>(file: File, parser: (rows: any[]) => T[]): Promise<T[]> => {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -207,6 +208,7 @@ export default function ManageData({
                 const worksheet = workbook.Sheets[sheetName];
                 const json = XLSX.utils.sheet_to_json<any>(worksheet);
 
+                // Reverse the currentMapping to map from system field to Excel header
                 const reverseMapping: {[key: string]: string} = {};
                 for (const excelHeader in currentMapping) {
                     const systemField = currentMapping[excelHeader];
@@ -215,6 +217,7 @@ export default function ManageData({
                     }
                 }
 
+                // Create a new JSON array where keys are system fields
                 const mappedJson = json.map(row => {
                     const newRow: any = {};
                     for (const systemField in reverseMapping) {
@@ -226,7 +229,7 @@ export default function ManageData({
                     return newRow;
                 });
                 
-                resolve(parser(mappedJson, currentMapping));
+                resolve(parser(mappedJson));
             } catch (error: any) {
                 reject(error);
             }
@@ -280,7 +283,7 @@ export default function ManageData({
     try {
         let uploadCount = 0;
         if (uploadType === 'employees') {
-            const newEmployees = await parseExcelFile<Employee>(fileToProcess, (json, mapping) => json.map((row, index) => {
+            const newEmployees = await parseExcelFile<Employee>(fileToProcess, (json) => json.map((row, index) => {
               const uniqueId = String(row['uniqueId'] || '');
               if (!uniqueId) throw new Error(`${index + 2}번째 행에 ID가 없습니다.`);
               return {
