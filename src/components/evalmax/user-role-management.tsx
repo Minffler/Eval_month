@@ -104,7 +104,7 @@ export default function UserRoleManagement({
     // Role filter
     if (roleFilter.size > 0) {
       users = users.filter(user => {
-        // If no roles match, filter out.
+        // If user has no roles, filter out
         if (!user.roles || user.roles.length === 0) return false;
         // Check if any of the user's roles are in the filter set.
         return user.roles.some(role => role && roleFilter.has(role));
@@ -120,21 +120,25 @@ export default function UserRoleManagement({
       );
     }
 
-    return users;
+    return users.sort((a,b) => a.name.localeCompare(b.name));
   }, [allUsers, searchTerm, roleFilter]);
 
-  const handleToggleRole = (userId: string, role: 'admin' | 'evaluator') => {
+  const handleToggleRole = (userId: string, role: 'admin' | 'evaluator' | 'employee') => {
     const user = allUsers.find(u => u.id === userId);
     if (!user) return;
 
     const newRoles = new Set(user.roles);
     if (newRoles.has(role)) {
-      if(user.roles.length > 1) newRoles.delete(role);
-      else toast({ variant: 'destructive', title: '오류', description: '사용자는 최소 하나 이상의 역할을 가져야 합니다.' });
+      if(user.roles.length > 1) {
+        newRoles.delete(role);
+      } else {
+        toast({ variant: 'destructive', title: '오류', description: '사용자는 최소 하나 이상의 역할을 가져야 합니다.' });
+        return;
+      }
     } else {
       newRoles.add(role);
     }
-    onRolesChange(userId, Array.from(newRoles) as Role[]);
+    onRolesChange(userId, Array.from(newRoles).filter(Boolean) as Role[]);
   };
 
   const handleAddUser = () => {
@@ -166,14 +170,14 @@ export default function UserRoleManagement({
     setNewUserRoles(['employee']);
   };
   
-  const handleToggleNewUserRole = (role: 'admin' | 'evaluator') => {
+  const handleToggleNewUserRole = (role: 'admin' | 'evaluator' | 'employee') => {
     const newRoles = new Set(newUserRoles);
     if (newRoles.has(role)) {
       if(newRoles.size > 1) newRoles.delete(role);
     } else {
       newRoles.add(role);
     }
-    setNewUserRoles(Array.from(newRoles));
+    setNewUserRoles(Array.from(newRoles).filter(Boolean) as Role[]);
   };
   
   const openEditDialog = (user: User) => {
@@ -204,10 +208,13 @@ export default function UserRoleManagement({
         if (adminUser && selectedIds.has(adminUser.id)) {
             const newSelection = new Set(selectedIds);
             newSelection.delete(adminUser.id);
-            setSelectedIds(newSelection);
             if (newSelection.size === 0) {
-                 toast({ title: '정보', description: '관리자 계정은 삭제할 수 없습니다.' });
+                 toast({ title: '정보', description: '관리자 계정은 삭제할 수 없습니다. 다른 사용자들을 선택 해제했습니다.' });
+                 setSelectedIds(newSelection);
                  return;
+            } else {
+                 toast({ title: '정보', description: '관리자 계정은 삭제할 수 없어 선택 해제되었습니다.' });
+                 setSelectedIds(newSelection);
             }
         }
     }
@@ -343,6 +350,7 @@ export default function UserRoleManagement({
                   <TableHead className="text-center">이름</TableHead>
                   <TableHead className="text-center">부서</TableHead>
                   <TableHead className="text-center">직책</TableHead>
+                  <TableHead className="w-[100px] text-center">피평가자</TableHead>
                   <TableHead className="w-[100px] text-center">평가자</TableHead>
                   <TableHead className="w-[100px] text-center">관리자</TableHead>
                   <TableHead className="w-[200px] text-center">관리</TableHead>
@@ -363,6 +371,12 @@ export default function UserRoleManagement({
                     <TableCell className="text-center font-semibold">{user.name}</TableCell>
                     <TableCell className="text-center">{user.department}</TableCell>
                     <TableCell className="text-center">{user.title}</TableCell>
+                     <TableCell className="text-center">
+                      <Switch
+                        checked={user.roles.includes('employee')}
+                        onCheckedChange={() => handleToggleRole(user.id, 'employee')}
+                      />
+                    </TableCell>
                     <TableCell className="text-center">
                       <Switch
                         checked={user.roles.includes('evaluator')}
@@ -425,6 +439,10 @@ export default function UserRoleManagement({
             <div className="grid grid-cols-4 items-center gap-4">
               <Label className="text-right">역할</Label>
               <div className="col-span-3 flex items-center gap-4">
+                 <div className="flex items-center gap-2">
+                  <Switch id="new-role-employee" checked={newUserRoles.includes('employee')} onCheckedChange={() => handleToggleNewUserRole('employee')} />
+                  <Label htmlFor="new-role-employee">피평가자</Label>
+                </div>
                 <div className="flex items-center gap-2">
                   <Switch id="new-role-evaluator" checked={newUserRoles.includes('evaluator')} onCheckedChange={() => handleToggleNewUserRole('evaluator')} />
                   <Label htmlFor="new-role-evaluator">평가자</Label>
