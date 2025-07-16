@@ -597,6 +597,7 @@ export default function Home() {
         });
         
         const uniqueUsers = Array.from(combinedUserMap.values());
+        const uniqueUserMap = new Map(uniqueUsers.map(u => [u.uniqueId, u]));
 
         return uniqueUsers.map(user => {
             // Find corresponding data from original sources if needed
@@ -624,7 +625,7 @@ export default function Home() {
             const gradeAmount = (base.baseAmount || 0) * payoutRate;
             const finalAmount = calculateFinalAmount(gradeAmount, base.workRate);
             
-            const evaluator = allUsers.find(u => u.uniqueId === base.evaluatorId);
+            const evaluator = uniqueUserMap.get(base.evaluatorId);
             
             const getEvaluationGroup = (workRate: number): string => {
                 if (workRate >= 0.7) return 'A. 정규평가';
