@@ -142,7 +142,7 @@ export default function ManageData({
   const [fileToProcess, setFileToProcess] = React.useState<File | null>(null);
   const [uploadType, setUploadType] = React.useState<'employees' | 'evaluations' | null>(null);
 
-  const systemFields = Object.values(excelHeaderMapping).filter((v, i, a) => a.indexOf(v) === i).sort();
+  const systemFields = [...new Set(Object.values(excelHeaderMapping))].sort();
   const requiredFields: string[] = ['uniqueId'];
 
   const isMappingValid = React.useMemo(() => {
@@ -183,7 +183,11 @@ export default function ManageData({
                 // Create a reverse mapping from systemField to excelHeader for this specific mapping
                 const reverseMapping: {[key: string]: string} = {};
                 for (const excelHeader in currentMapping) {
-                    reverseMapping[currentMapping[excelHeader]] = excelHeader;
+                    const systemField = currentMapping[excelHeader];
+                    if (systemField !== 'ignore') {
+                        // If multiple excel headers map to the same system field, the last one wins. This is intended.
+                        reverseMapping[systemField] = excelHeader;
+                    }
                 }
 
                 const mappedJson = json.map(row => {
@@ -231,10 +235,13 @@ export default function ManageData({
 
             const initialMapping: HeaderMapping = {};
             headers.forEach(header => {
-              const normalizedHeader = header.toLowerCase().replace(/\s/g, '');
-              const systemField = excelHeaderMapping[normalizedHeader];
+              // Find a matching system field from our predefined mapping
+              const systemField = excelHeaderMapping[header];
               if (systemField) {
-                  initialMapping[header] = systemField;
+                  // Ensure we don't overwrite an already mapped field with a lower-priority one if multiple headers map to it.
+                  if (!Object.values(initialMapping).includes(systemField)) {
+                      initialMapping[header] = systemField;
+                  }
               }
             });
             
@@ -357,8 +364,7 @@ export default function ManageData({
                 const mappedJson = json.map(row => {
                     const newRow: any = {};
                     for (const excelHeader in row) {
-                        const normalizedHeader = excelHeader.toLowerCase().replace(/\s/g, '');
-                        const systemField = excelHeaderMapping[normalizedHeader];
+                        const systemField = excelHeaderMapping[excelHeader];
                         if(systemField) {
                             newRow[systemField] = row[excelHeader];
                         }
@@ -548,7 +554,7 @@ export default function ManageData({
                             return (
                                 <SelectItem key={field} value={field} disabled={selectedByOtherHeader}>
                                 {requiredFields.includes(field as any) && <span className="text-destructive">* </span>}
-                                {systemFieldName} ({field})
+                                {field}
                                 </SelectItem>
                             )
                            })}
