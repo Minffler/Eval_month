@@ -179,6 +179,7 @@ export const excelHeaderMapping: HeaderMapping = {
     "기준금액": "baseAmount",
     "개인별 기준금액": "baseAmount",
     "평가자 ID": "evaluatorId",
+    "평가자 id": "evaluatorId",
     "평가자사번": "evaluatorId",
     "평가자": "evaluatorName",
     "등급": "grade",
