@@ -44,6 +44,7 @@ const headerMapping: Record<string, string> = {
     '근태': 'type', '근태종류': 'type',
     '평가자 ID': 'evaluatorId', '평가자사번': 'evaluatorId',
     '평가자': 'evaluatorName',
+    '기준금액': 'baseAmount', '개인별 기준금액': 'baseAmount',
 };
 
 const mapRowToSchema = <T extends {}>(row: any): T => {
@@ -171,7 +172,7 @@ export default function ManageData({
                 company: String(row['회사'] || ''), department: String(row['department'] || ''),
                 title: String(row['직책'] || '팀원'), position: String(row['직책'] || '팀원'),
                 growthLevel: String(row['성장레벨'] || ''), workRate: parseFloat(String(row['실근무율'] || '1')),
-                evaluatorId: String(row['evaluatorId'] || ''), baseAmount: Number(String(row['개인별 기준금액'] || '0').replace(/,/g, '')),
+                evaluatorId: String(row['evaluatorId'] || ''), baseAmount: Number(String(row['baseAmount'] || '0').replace(/,/g, '')),
                 memo: String(row['비고'] || ''),
               };
             }));
@@ -182,7 +183,8 @@ export default function ManageData({
             const newEvals = await parseExcelFile<EvaluationUploadData>(file, json => json.map((row, index) => {
               const uniqueId = String(row['uniqueId'] || '');
               if (!uniqueId) throw new Error(`${index + 2}번째 행에 ID가 없습니다.`);
-              const workRateValue = row['실근무율']; const baseAmountValue = row['기준금액'];
+              const workRateValue = row['실근무율'];
+              const baseAmountValue = row['baseAmount'];
               return {
                   employeeId: `E${uniqueId}`,
                   name: row['name'] ? String(row['name']) : undefined, company: row['회사'] ? String(row['회사']) : undefined,
@@ -244,7 +246,7 @@ export default function ManageData({
     
     switch (type) {
         case 'employees':
-            headers = ['ID', '이름', '회사', '소속부서', '직책', '성장레벨', '실근무율', '평가자 ID', '개인별 기준금액', '비고'];
+            headers = ['ID', '이름', '회사', '소속부서', '직책', '성장레벨', '실근무율', '평가자 ID', '기준금액', '비고'];
             fileName = `${selectedDate.year}.${String(selectedDate.month).padStart(2,'0')}_월성과대상자_양식.xlsx`;
             break;
         case 'evaluations':
