@@ -108,9 +108,6 @@ export default function UserRoleManagement({
         if (!user.roles || user.roles.length === 0) return false;
         return user.roles.some(role => role && roleFilter.has(role));
       });
-    } else {
-      // If no filters are selected, show an empty list
-      return [];
     }
 
     // Search term filter
