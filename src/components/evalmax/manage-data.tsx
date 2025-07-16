@@ -1,5 +1,6 @@
 
 
+
 'use client';
 
 import * as React from 'react';
@@ -7,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Download, Trash2, UploadCloud, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Download, Trash2, UploadCloud, CheckCircle2, AlertCircle, Save } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import type { Employee, EvaluationResult, Grade, EvaluationUploadData, WorkRateInputs, ShortenedWorkHourRecord, DailyAttendanceRecord, ShortenedWorkType, HeaderMapping } from '@/lib/types';
 import { excelHeaderMapping, excelHeaderTargetScreens } from '@/lib/data';
@@ -41,6 +42,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { ScrollArea } from '../ui/scroll-area';
 import { Label } from '../ui/label';
 import { cn } from '@/lib/utils';
+import { backupData, type BackupDataInput } from '@/ai/flows/backup-data-flow';
+import { Loader2 } from 'lucide-react';
 
 interface ManageDataProps {
   results: EvaluationResult[];
@@ -133,7 +136,8 @@ export default function ManageData({
   workRateInputs
 }: ManageDataProps) {
   const { toast } = useToast();
-  const [dialogOpen, setDialogOpen] = React.useState<{ type: 'deleteEmployees' | 'resetEvaluations' | 'resetWorkData', workDataType?: keyof WorkRateInputs | ShortenedWorkType } | null>(null);
+  const [dialogOpen, setDialogOpen] = React.useState<{ type: 'deleteEmployees' | 'resetEvaluations' | 'resetWorkData' | 'backupData', workDataType?: keyof WorkRateInputs | ShortenedWorkType } | null>(null);
+  const [isBackupLoading, setIsBackupLoading] = React.useState(false);
 
   // State for header mapping dialog
   const [isMappingDialogOpen, setIsMappingDialogOpen] = React.useState(false);
@@ -165,9 +169,31 @@ export default function ManageData({
   const handleResetWorkData = () => {
     if (!dialogOpen?.workDataType) return;
     onClearWorkRateData(selectedDate.year, selectedDate.month, dialogOpen.workDataType);
-    toast({ title: '초기화 완료', description: `선택한 근무 데이터가 초기화되었습니다.` });
+    toast({ title: '초기화 완료', `선택한 근무 데이터가 초기화되었습니다.` });
     setDialogOpen(null);
   }
+
+  const handleBackupData = async () => {
+    setIsBackupLoading(true);
+    try {
+        const backupPayload: BackupDataInput = {
+            users: localStorage.getItem('users') || '[]',
+            employees: localStorage.getItem('employees') || '{}',
+            evaluations: localStorage.getItem('evaluations') || '{}',
+            gradingScale: localStorage.getItem('gradingScale') || '{}',
+            attendanceTypes: localStorage.getItem('attendanceTypes') || '[]',
+            holidays: localStorage.getItem('holidays') || '[]',
+        };
+        await backupData(backupPayload);
+        toast({ title: '저장 완료', description: '현재 데이터를 초기 데이터로 저장했습니다. 앱을 새로고침하여 변경사항을 확인하세요.' });
+    } catch (error) {
+        toast({ variant: 'destructive', title: '저장 실패', description: '데이터 저장 중 오류가 발생했습니다.' });
+        console.error("Backup failed", error);
+    } finally {
+        setIsBackupLoading(false);
+        setDialogOpen(null);
+    }
+  };
 
   const parseExcelFile = <T extends {}>(file: File, parser: (rows: any[], mapping: HeaderMapping) => T[]): Promise<T[]> => {
     return new Promise((resolve, reject) => {
@@ -180,12 +206,10 @@ export default function ManageData({
                 const worksheet = workbook.Sheets[sheetName];
                 const json = XLSX.utils.sheet_to_json<any>(worksheet);
 
-                // Create a reverse mapping from systemField to excelHeader for this specific mapping
                 const reverseMapping: {[key: string]: string} = {};
                 for (const excelHeader in currentMapping) {
                     const systemField = currentMapping[excelHeader];
                     if (systemField !== 'ignore') {
-                        // If multiple excel headers map to the same system field, the last one wins. This is intended.
                         reverseMapping[systemField] = excelHeader;
                     }
                 }
@@ -235,7 +259,7 @@ export default function ManageData({
 
             const initialMapping: HeaderMapping = {};
             headers.forEach(header => {
-              const systemField = excelHeaderMapping[header];
+              const systemField = excelHeaderMapping[header as keyof typeof excelHeaderMapping];
               if (systemField && !Object.values(initialMapping).includes(systemField)) {
                   initialMapping[header] = systemField;
               }
@@ -360,7 +384,7 @@ export default function ManageData({
                 const mappedJson = json.map(row => {
                     const newRow: any = {};
                     for (const excelHeader in row) {
-                        const systemField = excelHeaderMapping[excelHeader];
+                        const systemField = excelHeaderMapping[excelHeader as keyof typeof excelHeaderMapping];
                         if(systemField) {
                             newRow[systemField] = row[excelHeader];
                         }
@@ -447,9 +471,9 @@ export default function ManageData({
       
       <Card>
         <CardHeader>
-            <CardTitle>근무 데이터 관리</CardTitle>
+            <CardTitle>근무 데이터 및 시스템 관리</CardTitle>
             <CardDescription>
-                근무율 계산에 사용되는 데이터를 업로드합니다.
+                근무율 계산 데이터 및 시스템 초기 데이터를 관리합니다.
             </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -482,6 +506,17 @@ export default function ManageData({
                 onReset={() => setDialogOpen({type: 'resetWorkData', workDataType: 'dailyAttendance'})}
                 isResetDisabled={!workRateInputs.dailyAttendance?.length}
             />
+            <Separator />
+            <div className="space-y-4">
+                <div>
+                    <h4 className="font-semibold">초기 데이터 저장</h4>
+                    <p className="text-sm text-muted-foreground">현재 시스템의 모든 데이터를 초기 목업 데이터로 덮어씁니다. (사용자, 직원, 평가, 등급표, 근무기준 등)</p>
+                </div>
+                <Button variant="secondary" className="w-full" onClick={() => setDialogOpen({ type: 'backupData'})}>
+                    <Save className="mr-2 h-4 w-4"/>
+                    현재 데이터를 초기 데이터로 저장
+                </Button>
+            </div>
         </CardContent>
       </Card>
       
@@ -493,15 +528,21 @@ export default function ManageData({
                       {dialogOpen?.type === 'deleteEmployees' && `기존 대상자 ${results.length}명의 이력을 모두 삭제합니다. 이 작업은 되돌릴 수 없습니다.`}
                       {dialogOpen?.type === 'resetEvaluations' && `기존 대상자 ${results.filter(r => r.grade).length}명의 평가 데이터를 모두 초기화합니다. 이 작업은 되돌릴 수 없습니다.`}
                       {dialogOpen?.type === 'resetWorkData' && `선택한 근무 데이터를 초기화합니다. 이 작업은 되돌릴 수 없습니다.`}
+                      {dialogOpen?.type === 'backupData' && `현재 브라우저에 저장된 모든 데이터를 시스템의 초기 데이터로 덮어씁니다. 이 작업은 되돌릴 수 없으며, 앱을 새로고침해야 적용됩니다.`}
                   </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                   <AlertDialogCancel onClick={() => setDialogOpen(null)}>취소</AlertDialogCancel>
-                  <AlertDialogAction onClick={() => {
-                      if (dialogOpen?.type === 'deleteEmployees') handleClearEmployees();
-                      else if (dialogOpen?.type === 'resetEvaluations') handleResetEvaluations();
-                      else if (dialogOpen?.type === 'resetWorkData') handleResetWorkData();
-                  }}>
+                  <AlertDialogAction
+                    onClick={() => {
+                        if (dialogOpen?.type === 'deleteEmployees') handleClearEmployees();
+                        else if (dialogOpen?.type === 'resetEvaluations') handleResetEvaluations();
+                        else if (dialogOpen?.type === 'resetWorkData') handleResetWorkData();
+                        else if (dialogOpen?.type === 'backupData') handleBackupData();
+                    }}
+                    disabled={isBackupLoading}
+                  >
+                      {isBackupLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       확인
                   </AlertDialogAction>
               </AlertDialogFooter>

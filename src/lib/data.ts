@@ -1,41 +1,165 @@
-import type { User, Employee, Grade, Evaluation, GradeInfo, AttendanceType } from './types';
+import type { User, Employee, Grade, Evaluation, GradeInfo, AttendanceType, HeaderMapping, Holiday } from './types';
 
 export const mockUsers: User[] = [
-  { id: 'user-1', employeeId: 'E1911042', uniqueId: '1911042', name: '김민선', roles: ['admin', 'evaluator', 'employee'], avatar: 'https://placehold.co/100x100.png?text=A', title: '팀원', department: '인사부' },
-  { id: 'user-admin', employeeId: 'Eadmin', uniqueId: 'admin', name: '김관리', roles: ['admin', 'evaluator', 'employee'], avatar: 'https://placehold.co/100x100.png?text=A', title: '팀원', department: '인사부' },
+  {
+    "id": "user-1",
+    "employeeId": "E1911042",
+    "uniqueId": "1911042",
+    "name": "김민선",
+    "roles": [
+      "admin",
+      "evaluator",
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=A",
+    "title": "팀원",
+    "department": "인사부",
+    "password": "1",
+    "evaluatorId": "1911042"
+  },
+  {
+    "id": "user-admin",
+    "employeeId": "Eadmin",
+    "uniqueId": "admin",
+    "name": "김관리",
+    "roles": [
+      "admin",
+      "evaluator",
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=A",
+    "title": "팀원",
+    "department": "인사부",
+    "password": "1",
+    "evaluatorId": "admin"
+  }
 ];
 
 export const gradingScale: Record<NonNullable<Grade>, GradeInfo> = {
-  S: { score: 150, payoutRate: 150, description: '최고 성과' },
-  'A+': { score: 130, payoutRate: 130, description: '우수 성과' },
-  A: { score: 115, payoutRate: 115, description: '좋은 성과' },
-  'B+': { score: 105, payoutRate: 105, description: '기대 이상' },
-  B: { score: 100, payoutRate: 100, description: '기대치 충족 (기준)' },
-  'B-': { score: 95, payoutRate: 95, description: '기대 이하' },
-  C: { score: 85, payoutRate: 85, description: '개선 필요' },
-  'C-': { score: 70, payoutRate: 70, description: '상당한 개선 필요' },
-  D: { score: 0, payoutRate: 0, description: '미흡' },
+  "S": {
+    "score": 150,
+    "payoutRate": 150,
+    "description": "최고 성과"
+  },
+  "A+": {
+    "score": 130,
+    "payoutRate": 130,
+    "description": "우수 성과"
+  },
+  "A": {
+    "score": 115,
+    "payoutRate": 115,
+    "description": "좋은 성과"
+  },
+  "B+": {
+    "score": 105,
+    "payoutRate": 105,
+    "description": "기대 이상"
+  },
+  "B": {
+    "score": 100,
+    "payoutRate": 100,
+    "description": "기대치 충족 (기준)"
+  },
+  "B-": {
+    "score": 95,
+    "payoutRate": 95,
+    "description": "기대 이하"
+  },
+  "C": {
+    "score": 85,
+    "payoutRate": 85,
+    "description": "개선 필요"
+  },
+  "C-": {
+    "score": 70,
+    "payoutRate": 70,
+    "description": "상당한 개선 필요"
+  },
+  "D": {
+    "score": 0,
+    "payoutRate": 0,
+    "description": "미흡"
+  }
 };
 
 export const initialAttendanceTypes: AttendanceType[] = [
-    { id: 'att-1', name: '연차', deductionDays: 1.00 },
-    { id: 'att-2', name: '오전반차', deductionDays: 0.50 },
-    { id: 'att-3', name: '오후반차', deductionDays: 0.50 },
-    { id: 'att-4', name: '오전반반차', deductionDays: 0.25 },
-    { id: 'att-5', name: '오후반반차', deductionDays: 0.25 },
-    { id: 'att-6', name: '병가', deductionDays: 1.00 },
-    { id: 'att-7', name: '공가', deductionDays: 1.00 },
+  {
+    "id": "att-1",
+    "name": "연차",
+    "deductionDays": 1
+  },
+  {
+    "id": "att-2",
+    "name": "오전반차",
+    "deductionDays": 0.5
+  },
+  {
+    "id": "att-3",
+    "name": "오후반차",
+    "deductionDays": 0.5
+  },
+  {
+    "id": "att-4",
+    "name": "오전반반차",
+    "deductionDays": 0.25
+  },
+  {
+    "id": "att-5",
+    "name": "오후반반차",
+    "deductionDays": 0.25
+  },
+  {
+    "id": "att-6",
+    "name": "병가",
+    "deductionDays": 1
+  },
+  {
+    "id": "att-7",
+    "name": "공가",
+    "deductionDays": 1
+  }
 ];
 
-export const mockEmployees: Employee[] = [
-  { id: '1911042', uniqueId: '1911042', name: '김민선', company: 'OKH', department: '인사부', title: '팀원', position: '팀원', growthLevel: 'Lv.2', workRate: 1.0, evaluatorId: '1911042', baseAmount: 8000000, memo: '' },
-  { id: 'admin', uniqueId: 'admin', name: '김관리', company: 'OKH', department: '인사부', title: '팀원', position: '팀원', growthLevel: 'Lv.3', workRate: 1.0, evaluatorId: 'admin', baseAmount: 8000000, memo: '' },
-];
+export const mockEmployees: Record<string, Partial<Employee>[]> = {
+  "2025-7": [
+    {
+      "id": "E1911042",
+      "uniqueId": "1911042",
+      "name": "김민선",
+      "company": "OKH",
+      "department": "인사부",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 1,
+      "evaluatorId": "1911042",
+      "baseAmount": 8000000,
+      "memo": ""
+    },
+    {
+      "id": "Eadmin",
+      "uniqueId": "admin",
+      "name": "김관리",
+      "company": "OKH",
+      "department": "인사부",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.3",
+      "workRate": 1,
+      "evaluatorId": "admin",
+      "baseAmount": 8000000,
+      "memo": ""
+    }
+  ]
+};
 
-export const mockEvaluations: Evaluation[] = [
-];
+export const mockEvaluations: Record<string, Evaluation[]> = {};
 
-export const excelHeaderMapping: { [key: string]: string } = {
+export const initialHolidays: Holiday[] = [];
+
+
+export const excelHeaderMapping: HeaderMapping = {
     // 키: 엑셀에서 사용될 수 있는 헤더 이름
     // 값: 시스템 내부에서 사용하는 필드 이름
     "고유사번": "uniqueId",
@@ -56,7 +180,6 @@ export const excelHeaderMapping: { [key: string]: string } = {
     "개인별 기준금액": "baseAmount",
     "평가자 ID": "evaluatorId",
     "평가자사번": "evaluatorId",
-    "평가자 id": "evaluatorId",
     "평가자": "evaluatorName",
     "등급": "grade",
     "비고": "memo",
