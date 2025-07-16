@@ -36,7 +36,7 @@ export const mockEvaluations: Evaluation[] = [
 ];
 
 export const excelHeaderMapping: { [key: string]: string } = {
-    // 키: 엑셀에서 사용될 수 있는 헤더 이름 (소문자, 공백제거)
+    // 키: 엑셀에서 사용될 수 있는 헤더 이름
     // 값: 시스템 내부에서 사용하는 필드 이름
     "고유사번": "uniqueId",
     "사번": "uniqueId",
@@ -54,6 +54,7 @@ export const excelHeaderMapping: { [key: string]: string } = {
     "기준금액": "baseAmount",
     "개인별 기준금액": "baseAmount",
     "평가자 id": "evaluatorId",
+    "평가자 ID": "evaluatorId",
     "평가자사번": "evaluatorId",
     "평가자": "evaluatorName",
     "등급": "grade",
