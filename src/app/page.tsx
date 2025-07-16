@@ -533,20 +533,33 @@ export default function Home() {
         const monthlyEmployees = employees[monthKey] || [];
         const monthlyEvaluations = evaluations[monthKey] || [];
         
-        // Create a unique map of users to avoid duplicates
-        const userMap = new Map(allUsers.map(u => [u.uniqueId, u]));
+        const combinedUserMap = new Map<string, Partial<User & Employee>>();
+        
+        allUsers.forEach(u => combinedUserMap.set(u.uniqueId, { ...u }));
+        monthlyEmployees.forEach(e => {
+            if (e.uniqueId) {
+                const existing = combinedUserMap.get(e.uniqueId) || {};
+                combinedUserMap.set(e.uniqueId, { ...existing, ...e });
+            }
+        });
+        
+        const uniqueUsers = Array.from(combinedUserMap.values());
 
-        return Array.from(userMap.values()).map(user => {
+        return uniqueUsers.map(user => {
             const employeeData = monthlyEmployees.find(e => e.uniqueId === user.uniqueId);
             const evaluation = monthlyEvaluations.find(e => e.employeeId === user.employeeId);
 
             const base: Employee = {
-                id: user.employeeId, uniqueId: user.uniqueId, name: user.name,
-                department: user.department, title: user.title, position: user.title,
-                company: employeeData?.company || user.company || 'N/A', 
-                growthLevel: employeeData?.growthLevel || '',
-                workRate: employeeData?.workRate ?? 1.0, 
-                baseAmount: employeeData?.baseAmount ?? 0,
+                id: user.employeeId || `E${user.uniqueId}`,
+                uniqueId: user.uniqueId!,
+                name: user.name || 'N/A',
+                department: user.department || '미지정',
+                title: user.title || '팀원',
+                position: user.position || user.title || '팀원',
+                company: employeeData?.company || user.company || 'N/A',
+                growthLevel: employeeData?.growthLevel || user.growthLevel || '',
+                workRate: employeeData?.workRate ?? user.workRate ?? 1.0,
+                baseAmount: employeeData?.baseAmount ?? user.baseAmount ?? 0,
                 evaluatorId: user.evaluatorId || '',
             };
             
@@ -557,7 +570,7 @@ export default function Home() {
             const gradeAmount = (base.baseAmount || 0) * payoutRate;
             const finalAmount = calculateFinalAmount(gradeAmount, base.workRate);
             
-            const evaluator = userMap.get(base.evaluatorId);
+            const evaluator = allUsers.find(u => u.uniqueId === base.evaluatorId);
             
             const getEvaluationGroup = (workRate: number): string => {
                 if (workRate >= 0.7) return 'A. 정규평가';
