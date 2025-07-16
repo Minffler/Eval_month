@@ -257,10 +257,15 @@ export default function AdminDashboard({
 
   const evaluatorStats = React.useMemo(() => {
     const statsByUniqueId: Record<string, { total: number; completed: number; evaluatorName: string; }> = {};
-    const evaluators = allUsers.filter(u => u.roles.includes('evaluator'));
+    const monthlyEvaluatorIds = new Set(initialResults.map(r => r.evaluatorId).filter(Boolean));
 
-    evaluators.forEach(evaluator => {
-        statsByUniqueId[evaluator.uniqueId] = { total: 0, completed: 0, evaluatorName: evaluator.name };
+    monthlyEvaluatorIds.forEach(evaluatorId => {
+        const evaluatorInfo = allUsers.find(u => u.uniqueId === evaluatorId);
+        statsByUniqueId[evaluatorId] = { 
+            total: 0, 
+            completed: 0, 
+            evaluatorName: evaluatorInfo?.name || `미지정 (${evaluatorId})` 
+        };
     });
 
     initialResults.forEach(r => {
