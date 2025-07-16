@@ -536,6 +536,7 @@ export default function Home() {
         const combinedUserMap = new Map<string, Partial<User & Employee>>();
         
         allUsers.forEach(u => combinedUserMap.set(u.uniqueId, { ...u }));
+        
         monthlyEmployees.forEach(e => {
             if (e.uniqueId) {
                 const existing = combinedUserMap.get(e.uniqueId) || {};

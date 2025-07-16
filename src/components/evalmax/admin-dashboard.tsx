@@ -177,7 +177,7 @@ export default function AdminDashboard({
   const { toast } = useToast();
 
   const evaluatorsForView = React.useMemo(() => {
-      return allUsers.filter(u => u.roles.includes('evaluator'));
+    return allUsers.filter(u => u.roles.includes('evaluator'));
   }, [allUsers]);
 
 
@@ -257,8 +257,8 @@ export default function AdminDashboard({
 
   const evaluatorStats = React.useMemo(() => {
     const statsByUniqueId: Record<string, { total: number; completed: number; evaluatorName: string; }> = {};
-    const monthlyEvaluatorIds = new Set(initialResults.map(r => r.evaluatorId).filter(Boolean));
-
+    const monthlyEvaluatorIds = Array.from(new Set(initialResults.map(r => r.evaluatorId).filter(Boolean)));
+    
     monthlyEvaluatorIds.forEach(evaluatorId => {
         const evaluatorInfo = allUsers.find(u => u.uniqueId === evaluatorId);
         statsByUniqueId[evaluatorId] = { 
