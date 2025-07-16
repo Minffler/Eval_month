@@ -58,7 +58,7 @@ interface ManageDataProps {
 const mapRowToSchema = <T extends {}>(row: any, mapping: HeaderMapping): T => {
     const newRow: any = {};
     for (const excelHeader in mapping) {
-        const systemField = mapping[excelHeader];
+        const systemField = mapping[excelHeader as keyof typeof mapping];
         if (systemField !== 'ignore' && row[excelHeader] !== undefined) {
             newRow[systemField] = row[excelHeader];
         }
@@ -235,13 +235,9 @@ export default function ManageData({
 
             const initialMapping: HeaderMapping = {};
             headers.forEach(header => {
-              // Find a matching system field from our predefined mapping
               const systemField = excelHeaderMapping[header];
-              if (systemField) {
-                  // Ensure we don't overwrite an already mapped field with a lower-priority one if multiple headers map to it.
-                  if (!Object.values(initialMapping).includes(systemField)) {
-                      initialMapping[header] = systemField;
-                  }
+              if (systemField && !Object.values(initialMapping).includes(systemField)) {
+                  initialMapping[header] = systemField;
               }
             });
             
@@ -547,9 +543,6 @@ export default function ManageData({
                           <SelectItem value="ignore">매핑 안함</SelectItem>
                           <Separator />
                           {systemFields.map(field => {
-                            const systemFieldInfo = Object.entries(excelHeaderMapping).find(([key, val]) => val === field);
-                            const systemFieldName = systemFieldInfo ? systemFieldInfo[0] : field;
-
                             const selectedByOtherHeader = Object.values(currentMapping).includes(field) && currentMapping[header] !== field;
                             return (
                                 <SelectItem key={field} value={field} disabled={selectedByOtherHeader}>
