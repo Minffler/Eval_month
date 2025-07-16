@@ -336,9 +336,16 @@ export default function Home() {
             const evaluatorUser = allUsers.find(u => u.uniqueId === evaluatorId);
             if (!evaluatorUser) {
                 handleUserAdd({
-                    uniqueId: evaluatorId, name: evaluatorName || `평가자(${evaluatorId})`,
-                    department: '미지정', title: '평가자', position: '평가자', company: 'N/A',
-                    growthLevel: '', workRate: 1.0, evaluatorId: '', baseAmount: 0,
+                    uniqueId: evaluatorId,
+                    name: evaluatorName || `평가자(${evaluatorId})`,
+                    department: '미지정',
+                    title: '평가자',
+                    position: '평가자',
+                    company: 'N/A',
+                    growthLevel: '',
+                    workRate: 1.0,
+                    evaluatorId: '',
+                    baseAmount: 0,
                 }, ['evaluator', 'employee']);
             } else if (evaluatorName && evaluatorUser.name !== evaluatorName) {
                 handleUserUpdate(evaluatorUser.id, { name: evaluatorName });
