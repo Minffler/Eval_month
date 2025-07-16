@@ -532,17 +532,21 @@ export default function Home() {
         
         const monthlyEmployees = employees[monthKey] || [];
         const monthlyEvaluations = evaluations[monthKey] || [];
+        
+        // Create a unique map of users to avoid duplicates
         const userMap = new Map(allUsers.map(u => [u.uniqueId, u]));
 
-        return allUsers.map(user => {
+        return Array.from(userMap.values()).map(user => {
             const employeeData = monthlyEmployees.find(e => e.uniqueId === user.uniqueId);
             const evaluation = monthlyEvaluations.find(e => e.employeeId === user.employeeId);
 
             const base: Employee = {
                 id: user.employeeId, uniqueId: user.uniqueId, name: user.name,
                 department: user.department, title: user.title, position: user.title,
-                company: employeeData?.company || 'N/A', growthLevel: employeeData?.growthLevel || '',
-                workRate: employeeData?.workRate ?? 1.0, baseAmount: employeeData?.baseAmount ?? 0,
+                company: employeeData?.company || user.company || 'N/A', 
+                growthLevel: employeeData?.growthLevel || '',
+                workRate: employeeData?.workRate ?? 1.0, 
+                baseAmount: employeeData?.baseAmount ?? 0,
                 evaluatorId: user.evaluatorId || '',
             };
             
