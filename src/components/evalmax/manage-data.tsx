@@ -67,9 +67,10 @@ const parseExcelFile = <T extends {}>(file: File, mapping: HeaderMapping, parser
                 const worksheet = workbook.Sheets[sheetName];
                 const json = XLSX.utils.sheet_to_json<any>(worksheet);
 
+                // Use the provided mapping to translate headers
                 const reverseMapping: {[key: string]: string} = {};
                 for (const excelHeader in mapping) {
-                  reverseMapping[mapping[excelHeader]] = excelHeader;
+                    reverseMapping[mapping[excelHeader]] = excelHeader;
                 }
                 
                 const mappedJson = json.map(row => {
@@ -81,6 +82,13 @@ const parseExcelFile = <T extends {}>(file: File, mapping: HeaderMapping, parser
                            newRow[mappedField] = row[excelHeader];
                         }
                     }
+                    // Handle cases where mapping is from system field to Excel header
+                     for (const systemField in reverseMapping) {
+                        if (!newRow[systemField] && row[reverseMapping[systemField]]) {
+                            newRow[systemField] = row[reverseMapping[systemField]];
+                        }
+                    }
+
                     return newRow;
                 });
                 
