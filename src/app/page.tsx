@@ -349,7 +349,8 @@ export default function Home() {
           if (evaluatorId) {
               const existingEvaluator = allUsers.find(u => u.uniqueId === evaluatorId);
               if (existingEvaluator) {
-                  if (evaluatorName && existingEvaluator.name !== evaluatorName) {
+                  // ★★★ 핵심 수정: 엑셀에 평가자 이름이 있으면, 무조건 그 이름으로 업데이트
+                  if (evaluatorName) {
                       usersToUpdate[existingEvaluator.id] = {
                           ...(usersToUpdate[existingEvaluator.id] || {}),
                           name: evaluatorName,
@@ -380,10 +381,9 @@ export default function Home() {
           uploadedData.forEach(uploadItem => {
               const empIndex = newEmpsForMonth.findIndex((e: Employee) => e.id === uploadItem.employeeId);
               const { grade, memo, employeeId, ...empDetails } = uploadItem;
-              const dataToUpdate = { ...empDetails };
 
-              if (empIndex > -1) Object.assign(newEmpsForMonth[empIndex], dataToUpdate);
-              else newEmpsForMonth.push({ uniqueId: uploadItem.employeeId.replace('E',''), id: uploadItem.employeeId, ...dataToUpdate });
+              if (empIndex > -1) Object.assign(newEmpsForMonth[empIndex], empDetails);
+              else newEmpsForMonth.push({ uniqueId: uploadItem.employeeId.replace('E',''), id: uploadItem.employeeId, ...empDetails });
           });
           newState[key] = newEmpsForMonth;
           return newState;
