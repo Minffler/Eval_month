@@ -102,7 +102,6 @@ interface EvaluatorDashboardProps {
   gradingScale: Record<NonNullable<Grade>, GradeInfo>;
   selectedDate: { year: number; month: number };
   setSelectedDate: (date: { year: number; month: number }) => void;
-  handleEvaluatorAssignmentChange: (userId: string, newEvaluatorId: string) => void;
   evaluatorUser?: User | null;
   activeView: EvaluatorView;
   onClearMyEvaluations: (year: number, month: number, evaluatorId: string) => void;
@@ -115,7 +114,6 @@ interface EvaluatorDashboardProps {
   addNotification: (notification: Omit<AppNotification, 'id' | 'date' | 'isRead'>) => void;
   deleteNotification: (notificationId: string) => void;
   approvals: Approval[];
-  onWorkRateDataUpload: (year: number, month: number, type: keyof WorkRateInputs, data: any[], isApproved: boolean) => void;
 }
 
 type SortConfig = {
@@ -867,14 +865,14 @@ interface AssignmentManagementViewProps {
   myEmployees: EvaluationResult[];
   currentMonthResults: EvaluationResult[];
   allUsers: User[];
-  handleEvaluatorAssignmentChange: (updatedUserId: string, newEvaluatorId: string) => void;
   evaluatorId: string;
   evaluatorName: string;
 }
 
 
-const AssignmentManagementView = ({ myEmployees, currentMonthResults, allUsers, handleEvaluatorAssignmentChange, evaluatorId, evaluatorName }: AssignmentManagementViewProps) => {
+const AssignmentManagementView = ({ myEmployees, currentMonthResults, allUsers, evaluatorId, evaluatorName }: AssignmentManagementViewProps) => {
   const { toast } = useToast();
+  const { handleEvaluatorAssignmentChange } = useAuth();
   
   const [company, setCompany] = React.useState('');
   const [department, setDepartment] = React.useState('');
@@ -1129,27 +1127,13 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, allUsers, 
 };
 
 
-export default function EvaluatorDashboard({ allResults, currentMonthResults, gradingScale, selectedDate, setSelectedDate, handleEvaluatorAssignmentChange, evaluatorUser, activeView, onClearMyEvaluations, workRateDetails, holidays, allUsers, attendanceTypes, onApprovalAction, notifications, addNotification, deleteNotification, approvals, onWorkRateDataUpload }: EvaluatorDashboardProps) {
-  const { user: authUser, addUser, updateUser, deleteUser, deleteUsers, updateUserRoles } = useAuth();
+export default function EvaluatorDashboard({ allResults, currentMonthResults, gradingScale, selectedDate, setSelectedDate, evaluatorUser, activeView, onClearMyEvaluations, workRateDetails, holidays, allUsers, attendanceTypes, onApprovalAction, notifications, addNotification, deleteNotification, approvals }: EvaluatorDashboardProps) {
+  const { user: authUser } = useAuth();
   const { toast } = useToast();
   const [effectiveUser, setEffectiveUser] = React.useState<User | null>(null);
   const [approvalDetailModalOpen, setApprovalDetailModalOpen] = React.useState(false);
   const [selectedApproval, setSelectedApproval] = React.useState<Approval | null>(null);
   const [rejectionReason, setRejectionReason] = React.useState('');
-  
-  const { 
-    setGradingScale,
-    workRateInputs,
-    setHolidays,
-    setAttendanceTypes,
-    handleEmployeeUpload,
-    handleEvaluationUpload,
-    handleClearEmployeeData,
-    handleClearEvaluationData,
-    handleClearWorkRateData,
-    evaluationStatus,
-    setEvaluationStatus
-  } = useEvaluation();
   
   React.useEffect(() => {
     if (evaluatorUser) {
@@ -1287,7 +1271,6 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
                  myEmployees={myEmployees} 
                  currentMonthResults={currentMonthResults}
                  allUsers={allUsers}
-                 handleEvaluatorAssignmentChange={handleEvaluatorAssignmentChange}
                  evaluatorId={effectiveUser.uniqueId}
                  evaluatorName={effectiveUser.name}
                />;
@@ -1355,44 +1338,6 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
       case 'notifications':
           return <EvaluatorNotifications notifications={notifications} deleteNotification={deleteNotification} />;
       default:
-        if (authUser?.roles.includes('admin') && evaluatorUser) {
-            return (
-                <AdminDashboard
-                    results={allResults}
-                    allUsers={allUsers}
-                    onEmployeeUpload={handleEmployeeUpload}
-                    onEvaluationUpload={handleEvaluationUpload}
-                    gradingScale={gradingScale}
-                    setGradingScale={setGradingScale}
-                    selectedDate={selectedDate}
-                    setSelectedDate={setSelectedDate}
-                    onEvaluatorAssignmentChange={handleEvaluatorAssignmentChange}
-                    onUserAdd={addUser}
-                    onRolesChange={updateUserRoles}
-                    onUserUpdate={updateUser}
-                    onUserDelete={deleteUser}
-                    onUsersDelete={deleteUsers}
-                    activeView={activeView}
-                    onClearEmployeeData={handleClearEmployeeData}
-                    onClearEvaluationData={handleClearEvaluationData}
-                    onWorkRateDataUpload={onWorkRateDataUpload}
-                    onClearWorkRateData={handleClearWorkRateData}
-                    workRateInputs={workRateInputs}
-                    attendanceTypes={attendanceTypes}
-                    setAttendanceTypes={setAttendanceTypes}
-                    holidays={holidays}
-                    setHolidays={setHolidays}
-                    workRateDetails={workRateDetails}
-                    onApprovalAction={onApprovalAction}
-                    notifications={notifications}
-                    addNotification={addNotification}
-                    deleteNotification={deleteNotification}
-                    approvals={approvals}
-                    evaluationStatus={evaluationStatus[`${selectedDate.year}-${selectedDate.month}`] || 'open'}
-                    onEvaluationStatusChange={(year, month, status) => setEvaluationStatus(prev => ({...prev, [`${year}-${month}`]: status}))}
-                />
-            );
-        }
         return <div className="flex flex-col items-center justify-center h-40 text-center">
                   <Inbox className="h-10 w-10 text-muted-foreground mb-4" />
                   <p className="text-muted-foreground">새로운 알림이 없습니다.</p>

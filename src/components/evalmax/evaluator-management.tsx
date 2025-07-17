@@ -36,12 +36,10 @@ import {
   CommandList,
 } from "@/components/ui/command"
 import { useAuth } from '@/contexts/auth-context';
+import { useEvaluation } from '@/contexts/evaluation-context';
 
 
-interface EvaluatorManagementProps {
-  results: EvaluationResult[];
-  onEvaluatorAssignmentChange: (userId: string, newEvaluatorId: string) => void;
-}
+interface EvaluatorManagementProps {}
 
 type SortConfig = {
   key: keyof (User & { evaluatorName?: string});
@@ -185,11 +183,11 @@ const EvaluatorSelector = ({
 };
 
 
-export default function EvaluatorManagement({
-  results,
-  onEvaluatorAssignmentChange,
-}: EvaluatorManagementProps) {
-  const { allUsers } = useAuth();
+export default function EvaluatorManagement(props: EvaluatorManagementProps) {
+  const { allUsers, updateUser } = useAuth();
+  const { allEvaluationResults } = useEvaluation();
+  const results = allEvaluationResults;
+
   const [filteredResults, setFilteredResults] = React.useState<EvaluationResult[]>(results);
   const [companyFilter, setCompanyFilter] = React.useState<Set<string>>(new Set());
   const [departmentFilter, setDepartmentFilter] = React.useState<Set<string>>(new Set());
@@ -269,7 +267,7 @@ export default function EvaluatorManagement({
             const orderA = getPositionSortValue(a.title);
             const orderB = getPositionSortValue(b.title);
             if (orderA !== orderB) {
-                return sortConfig.direction === 'ascending' ? orderA - orderB : orderB - orderA;
+                return sortConfig.direction === 'ascending' ? orderA - orderB : orderB - a;
             }
         }
         
@@ -329,7 +327,7 @@ export default function EvaluatorManagement({
     const user = allUsers.find(u => u.employeeId === employeeId);
     if (user) {
         const finalEvaluatorId = newEvaluatorId === 'unassigned' ? '' : newEvaluatorId;
-        onEvaluatorAssignmentChange(user.id, finalEvaluatorId);
+        updateUser(user.id, { evaluatorId: finalEvaluatorId });
     }
   };
   
@@ -347,7 +345,7 @@ export default function EvaluatorManagement({
     selectedIds.forEach(employeeId => {
       const user = allUsers.find(u => u.id === employeeId);
       if (user) {
-        onEvaluatorAssignmentChange(user.id, finalEvaluatorId);
+        updateUser(user.id, { evaluatorId: finalEvaluatorId });
       }
     });
 

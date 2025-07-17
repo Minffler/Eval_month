@@ -113,13 +113,13 @@ const getInitialDate = () => {
 };
 
 export default function Home() {
-  const { user, allUsers, loading: authLoading, logout, updateUser, updateUserRoles, deleteUser, deleteUsers, addUser, role } = useAuth();
+  const { user, allUsers, loading: authLoading, logout, updateUser, role } = useAuth();
   const {
       gradingScale, setGradingScale, workRateInputs,
-      attendanceTypes, setAttendanceTypes, holidays, setHolidays, evaluationStatus, setEvaluationStatus,
+      attendanceTypes, setAttendanceTypes, holidays, setHolidays, evaluationStatus, 
       handleEmployeeUpload, handleEvaluationUpload, handleClearEmployeeData, handleClearEvaluationData,
-      handleClearWorkRateData, handleWorkRateDataUpload, handleClearMyEvaluations, handleEvaluatorAssignmentChange,
-      allEvaluationResults, monthlyEvaluationTargets, workRateDetails
+      handleClearWorkRateData, handleWorkRateDataUpload, handleClearMyEvaluations,
+      allEvaluationResults, monthlyEvaluationTargets, workRateDetails, setEvaluationStatus
   } = useEvaluation();
   const router = useRouter();
 
@@ -179,12 +179,6 @@ export default function Home() {
                   setGradingScale={setGradingScale}
                   selectedDate={selectedDate}
                   setSelectedDate={setSelectedDate}
-                  onEvaluatorAssignmentChange={handleEvaluatorAssignmentChange}
-                  onUserAdd={addUser}
-                  onRolesChange={updateUserRoles}
-                  onUserUpdate={updateUser}
-                  onUserDelete={deleteUser}
-                  onUsersDelete={deleteUsers}
                   activeView={adminActiveView}
                   onClearEmployeeData={handleClearEmployeeData}
                   onClearEvaluationData={handleClearEvaluationData}
@@ -216,7 +210,6 @@ export default function Home() {
                   gradingScale={gradingScale}
                   selectedDate={selectedDate}
                   setSelectedDate={setSelectedDate} 
-                  handleEvaluatorAssignmentChange={handleEvaluatorAssignmentChange}
                   activeView={evaluatorActiveView}
                   onClearMyEvaluations={(year, month) => handleClearMyEvaluations(year, month, user!.uniqueId)}
                   workRateDetails={workRateDetails}

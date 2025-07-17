@@ -6,6 +6,17 @@ import type { User, Role, Employee } from '@/lib/types';
 import { mockUsers as initialMockUsers } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 
+/**
+ * @fileoverview AuthContext는 앱의 인증 및 사용자 정보 관리를 전담합니다.
+ *
+ * @description
+ * 이 컨텍스트는 다음을 제공합니다:
+ * - 현재 로그인된 사용자 정보 (`user`, `role`)
+ * - 전체 사용자 목록 (`allUsers`)
+ * - 로그인, 로그아웃 기능 (`login`, `logout`)
+ * - 사용자 추가, 수정, 삭제, 권한 변경 함수
+ * - 데이터 로딩 상태 (`loading`)
+ */
 
 interface AuthContextType {
   user: User | null;
@@ -40,8 +51,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
   const [allUsers, setAllUsers] = React.useState<User[]>(() => {
     if (typeof window === 'undefined') return initialMockUsers;
-    const stored = localStorage.getItem('users');
-    return stored ? JSON.parse(stored) : initialMockUsers;
+    try {
+      const stored = localStorage.getItem('users');
+      return stored ? JSON.parse(stored) : initialMockUsers;
+    } catch (error) {
+      console.error("Error reading 'users' from localStorage", error);
+      return initialMockUsers;
+    }
   });
   const [user, setUser] = React.useState<User | null>(null);
   const [role, setRole] = React.useState<Role>(null);

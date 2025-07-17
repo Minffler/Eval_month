@@ -2,10 +2,26 @@
 
 import * as React from 'react';
 import type { User, Employee, Grade, Evaluation, GradeInfo, WorkRateInputs, AttendanceType, Holiday, EvaluationResult, EvaluationUploadData, ShortenedWorkType, ShortenedWorkHourRecord, DailyAttendanceRecord } from '@/lib/types';
-import { mockEmployees as initialMockEmployees, gradingScale as initialGradingScale, mockEvaluations as initialMockEvaluations, initialAttendanceTypes, initialHolidays, calculateFinalAmount, getDetailedGroup1 } from '@/lib/data';
+import { mockEmployees, gradingScale as initialGradingScale, mockEvaluations, initialAttendanceTypes, initialHolidays, calculateFinalAmount, getDetailedGroup1 } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from './auth-context';
 import { calculateWorkRateDetails, type WorkRateDetailsResult } from '@/lib/work-rate-calculator';
+
+/**
+ * @fileoverview EvaluationContext는 평가와 관련된 모든 데이터와 로직을 관리합니다.
+ * @description
+ * 이 컨텍스트는 AuthContext에 의존하여 사용자 정보를 가져오고,
+ * 직원, 평가, 근무율 등 평가에 필요한 모든 데이터를 종합하여 최종 결과를 계산하고 제공합니다.
+ *
+ * 제공하는 데이터:
+ * - allEvaluationResults: 화면에 표시될 최종 평가 결과 (계산 완료된 상태)
+ * - monthlyEvaluationTargets: 특정 월의 평가 대상자 목록을 반환하는 함수
+ * - workRateDetails: 근무율 상세 계산 결과
+ * - gradingScale, attendanceTypes, holidays 등 평가 기준 데이터
+ *
+ * 제공하는 함수:
+ * - 데이터 업로드/초기화/수정 등 평가 데이터와 관련된 모든 setter 함수
+ */
 
 const getFromLocalStorage = (key: string, defaultValue: any) => {
   if (typeof window === 'undefined') return defaultValue;
@@ -20,12 +36,10 @@ const getFromLocalStorage = (key: string, defaultValue: any) => {
 }
 
 interface EvaluationContextType {
-  employees: Record<string, Partial<Employee>[]>;
-  setEmployees: React.Dispatch<React.SetStateAction<Record<string, Partial<Employee>[]>>>;
-  evaluations: Record<string, Evaluation[]>;
-  setEvaluations: React.Dispatch<React.SetStateAction<Record<string, Evaluation[]>>>;
   gradingScale: Record<NonNullable<Grade>, GradeInfo>;
   setGradingScale: React.Dispatch<React.SetStateAction<Record<NonNullable<Grade>, GradeInfo>>>;
+  evaluations: Record<string, Evaluation[]>;
+  setEvaluations: React.Dispatch<React.SetStateAction<Record<string, Evaluation[]>>>;
   workRateInputs: Record<string, WorkRateInputs>;
   setWorkRateInputs: React.Dispatch<React.SetStateAction<Record<string, WorkRateInputs>>>;
   attendanceTypes: AttendanceType[];
@@ -42,7 +56,6 @@ interface EvaluationContextType {
   handleClearWorkRateData: (year: number, month: number, type: keyof WorkRateInputs | ShortenedWorkType) => void;
   handleWorkRateDataUpload: (year: number, month: number, type: keyof WorkRateInputs, data: any[], isApproved: boolean) => void;
   handleClearMyEvaluations: (year: number, month: number, evaluatorId: string) => void;
-  handleEvaluatorAssignmentChange: (userId: string, newEvaluatorId: string) => void;
 
   allEvaluationResults: EvaluationResult[];
   monthlyEvaluationTargets: (selectedDate: {year: number, month: number}) => EvaluationResult[];
@@ -55,8 +68,8 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
   const { allUsers, addUser, updateUser } = useAuth();
   const { toast } = useToast();
   
-  const [employees, setEmployees] = React.useState<Record<string, Partial<Employee>[]>>(() => getFromLocalStorage('employees', initialMockEmployees ));
-  const [evaluations, setEvaluations] = React.useState<Record<string, Evaluation[]>>(() => getFromLocalStorage('evaluations', initialMockEvaluations ));
+  const [employees, setEmployees] = React.useState<Record<string, Partial<Employee>[]>>(() => getFromLocalStorage('employees', mockEmployees ));
+  const [evaluations, setEvaluations] = React.useState<Record<string, Evaluation[]>>(() => getFromLocalStorage('evaluations', mockEvaluations ));
   const [gradingScale, setGradingScale] = React.useState<Record<NonNullable<Grade>, GradeInfo>>(() => getFromLocalStorage('gradingScale', initialGradingScale));
   const [workRateInputs, setWorkRateInputs] = React.useState<Record<string, WorkRateInputs>>(() => getFromLocalStorage('workRateInputs', {}));
   const [attendanceTypes, setAttendanceTypes] = React.useState<AttendanceType[]>(() => getFromLocalStorage('attendanceTypes', initialAttendanceTypes));
@@ -76,11 +89,12 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
 
     newEmployees.forEach(emp => {
       const existingUser = allUsers.find(u => u.uniqueId === emp.uniqueId);
-      const employeeDataForUser: Partial<User> = { name: emp.name, department: emp.department, title: emp.title };
+      const employeeDataForUser: Partial<User> = { name: emp.name, department: emp.department, title: emp.title, company: emp.company };
+      
       if (emp.evaluatorId) {
         employeeDataForUser.evaluatorId = emp.evaluatorId;
       }
-
+      
       if (!existingUser) {
         addUser({ ...emp, company: emp.company || 'N/A', position: emp.position || emp.title || '팀원', }, ['employee']);
       } else {
@@ -95,7 +109,7 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
         const finalEvals = newEmployees.map(emp => {
             const existingEval = currentEvalsForMonth.find(e => e.employeeId === emp.id);
             return {
-              id: `eval-${emp.id}-${year}-${month}`,
+              id: existingEval?.id || `eval-${emp.id}-${year}-${month}`,
               employeeId: emp.id, year, month,
               grade: existingEval?.grade || null,
               memo: existingEval?.memo || emp.memo || '',
@@ -110,23 +124,18 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
       const usersToUpdate: Record<string, Partial<User>> = {};
       
       const processUserUpdate = (item: EvaluationUploadData) => {
-        if (!item.uniqueId) return;
+          if (!item.uniqueId) return;
 
-        const userData: Partial<User> = {};
-        if (item.name) userData.name = item.name;
-        if (item.department) userData.department = item.department;
-        if (item.title) userData.title = item.title;
-        if (item.evaluatorId) userData.evaluatorId = item.evaluatorId;
+          const userData: Partial<User> = { name: item.name, department: item.department, title: item.title, company: item.company };
+          if(item.evaluatorId) userData.evaluatorId = item.evaluatorId;
 
-        if (Object.keys(userData).length > 0) {
-            const existingUser = allUsers.find(u => u.uniqueId === item.uniqueId);
-            if (existingUser) {
-                if (!usersToUpdate[existingUser.id]) usersToUpdate[existingUser.id] = {};
-                Object.assign(usersToUpdate[existingUser.id], userData);
-            } else {
-                addUser({ uniqueId: item.uniqueId, ...userData }, ['employee']);
-            }
-        }
+          const existingUser = allUsers.find(u => u.uniqueId === item.uniqueId);
+          if(existingUser) {
+              if (!usersToUpdate[existingUser.id]) usersToUpdate[existingUser.id] = {};
+              Object.assign(usersToUpdate[existingUser.id], userData);
+          } else {
+              addUser({ uniqueId: item.uniqueId, ...userData }, ['employee']);
+          }
       };
 
       uploadedData.forEach(processUserUpdate);
@@ -136,7 +145,7 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
       }
         
       setEmployees(prevEmps => {
-          const newState = JSON.parse(JSON.stringify(prevEmps));
+          const newState = { ...prevEmps };
           const newEmpsForMonth = newState[key] ? [...newState[key]] : [];
           
           uploadedData.forEach(uploadItem => {
@@ -156,14 +165,14 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
       });
 
       setEvaluations(prevEvals => {
-          const newState = JSON.parse(JSON.stringify(prevEvals));
+          const newState = { ...prevEvals };
           const newEvalsForMonth = newState[key] ? [...newState[key]] : [];
           
           uploadedData.forEach(uploadItem => {
               if (!uploadItem.uniqueId) return;
               const employeeId = `E${uploadItem.uniqueId}`;
               const evalIndex = newEvalsForMonth.findIndex((e: Evaluation) => e.employeeId === employeeId);
-              const evalData = { grade: uploadItem.grade, memo: uploadItem.memo || '', };
+              const evalData = { grade: uploadItem.grade || null, memo: uploadItem.memo || '', };
               if (evalIndex > -1) {
                   Object.assign(newEvalsForMonth[evalIndex], evalData);
               } else {
@@ -265,10 +274,6 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
         return { ...prev, [key]: updatedEvalsForMonth };
     });
   };
-
-  const handleEvaluatorAssignmentChange = (userId: string, newEvaluatorId: string) => {
-     updateUser(userId, { evaluatorId: newEvaluatorId });
-  };
   
   const allEvaluationResults = React.useMemo(() => {
     const uniqueUserMap = new Map(allUsers.map(u => [u.uniqueId, u]));
@@ -339,16 +344,15 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
 
 
   const value = {
-    employees, setEmployees,
-    evaluations, setEvaluations,
     gradingScale, setGradingScale,
+    evaluations, setEvaluations,
     workRateInputs, setWorkRateInputs,
     attendanceTypes, setAttendanceTypes,
     holidays, setHolidays,
     evaluationStatus, setEvaluationStatus,
     handleEmployeeUpload, handleEvaluationUpload, handleClearEmployeeData,
     handleClearEvaluationData, handleClearWorkRateData, handleWorkRateDataUpload,
-    handleClearMyEvaluations, handleEvaluatorAssignmentChange,
+    handleClearMyEvaluations,
     allEvaluationResults, monthlyEvaluationTargets: getMonthlyEvaluationTargets, workRateDetails
   };
 

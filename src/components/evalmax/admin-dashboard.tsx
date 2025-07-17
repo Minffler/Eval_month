@@ -66,6 +66,8 @@ import AdminNotifications from './admin-dashboard-notifications';
 import { Label } from '../ui/label';
 import GradeManagement from './grade-management';
 import EvaluatorManagement from './evaluator-management';
+import { useEvaluation } from '@/contexts/evaluation-context';
+import { useAuth } from '@/contexts/auth-context';
 
 interface AdminDashboardProps {
   results: EvaluationResult[];
@@ -76,12 +78,6 @@ interface AdminDashboardProps {
   setGradingScale: React.Dispatch<React.SetStateAction<Record<NonNullable<Grade>, GradeInfo>>>;
   selectedDate: { year: number; month: number };
   setSelectedDate: (date: { year: number; month: number }) => void;
-  onEvaluatorAssignmentChange: (userId: string, newEvaluatorId: string) => void;
-  onUserAdd: (newEmployee: Partial<Employee>, roles: Role[]) => void;
-  onRolesChange: (userId: string, newRoles: Role[]) => void;
-  onUserUpdate: (userId: string, updatedData: Partial<User>) => void;
-  onUserDelete: (userId: string) => void;
-  onUsersDelete: (userIds: string[]) => void;
   activeView: string;
   onClearEmployeeData: (year: number, month: number) => void;
   onClearEvaluationData: (year: number, month: number) => void;
@@ -132,12 +128,6 @@ export default function AdminDashboard({
   setGradingScale,
   selectedDate,
   setSelectedDate,
-  onEvaluatorAssignmentChange,
-  onUserAdd,
-  onRolesChange,
-  onUserUpdate,
-  onUserDelete,
-  onUsersDelete,
   activeView,
   onClearEmployeeData,
   onClearEvaluationData,
@@ -157,6 +147,7 @@ export default function AdminDashboard({
   evaluationStatus,
   onEvaluationStatusChange
 }: AdminDashboardProps) {
+  const { setEvaluations } = useEvaluation();
   const [results, setResults] = React.useState<EvaluationResult[]>(initialResults);
   const [activeResultsTab, setActiveResultsTab] = React.useState<EvaluationGroupCategory>('전체');
   const [selectedEvaluators, setSelectedEvaluators] = React.useState<Set<string>>(new Set());
@@ -457,6 +448,19 @@ export default function AdminDashboard({
 
   const updateAndSaveChanges = (updatedResults: EvaluationResult[]) => {
     setResults(updatedResults);
+    const key = `${selectedDate.year}-${selectedDate.month}`;
+    setEvaluations(prev => {
+        const newEvals = { ...prev };
+        const updatedEvalsForMonth = (newEvals[key] || []).map(ev => {
+            const result = updatedResults.find(r => r.id === ev.employeeId);
+            if (result) {
+                return { ...ev, grade: result.grade, memo: result.memo };
+            }
+            return ev;
+        });
+        newEvals[key] = updatedEvalsForMonth;
+        return newEvals;
+    });
   };
   
   const handleBaseAmountChange = (employeeId: string, newAmountStr: string) => {
@@ -977,7 +981,6 @@ export default function AdminDashboard({
                             gradingScale={gradingScale}
                             selectedDate={selectedDate}
                             setSelectedDate={setSelectedDate} 
-                            handleEvaluatorAssignmentChange={onEvaluatorAssignmentChange}
                             evaluatorUser={selectedEvaluator}
                             activeView='evaluation-input'
                             onClearMyEvaluations={()=>{}}
@@ -1005,7 +1008,7 @@ export default function AdminDashboard({
         case 'file-upload':
             return <ManageData onEmployeeUpload={onEmployeeUpload} onEvaluationUpload={onEvaluationUpload} results={initialResults} selectedDate={selectedDate} setSelectedDate={setSelectedDate} onClearEmployeeData={onClearEmployeeData} onClearEvaluationData={onClearEvaluationData} onWorkRateDataUpload={onWorkRateDataUpload} onClearWorkRateData={onClearWorkRateData} workRateInputs={currentWorkRateInputs} />;
         case 'evaluator-management':
-            return <EvaluatorManagement results={initialResults} onEvaluatorAssignmentChange={onEvaluatorAssignmentChange} />;
+            return <EvaluatorManagement />;
         case 'user-role-management':
             return <UserRoleManagement />;
         case 'consistency-check':

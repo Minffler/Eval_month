@@ -9,7 +9,7 @@ export type User = {
   avatar: string;
   title: string;
   department: string;
-  evaluatorId: string; // 평가자 ID (고유사번)
+  evaluatorId?: string; // 평가자 ID (고유사번)
   password?: string;
   company?: string;
 };
@@ -26,7 +26,7 @@ export type Employee = {
   position: string; // 호칭
   growthLevel: string; // 성장레벨
   workRate: number; // 근무율
-  evaluatorId: string; // 평가자 ID (고유사번)
+  evaluatorId?: string; // 평가자 ID (고유사번)
   baseAmount: number; // 개인별 기준금액
   memo?: string;
 };
@@ -78,7 +78,7 @@ export type EvaluatorView = 'evaluation-input' | 'all-results' | 'assignment-man
 export type EmployeeView = 'my-review' | 'evaluation-details' | 'my-work-rate' | 'my-shortened-work' | 'my-daily-attendance' | 'notifications' | 'approvals' | 'personal-settings';
 
 
-export type EvaluationUploadData = Partial<Omit<Employee, 'id'>> & Partial<Pick<Evaluation, 'grade' | 'memo'>> & {
+export type EvaluationUploadData = Partial<Omit<Employee, 'id' | 'uniqueId'>> & Partial<Pick<Evaluation, 'grade' | 'memo'>> & {
   uniqueId: string;
 };
 
