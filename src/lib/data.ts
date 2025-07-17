@@ -407,15 +407,31 @@ export const excelHeaderMapping: HeaderMapping = {
 };
 
 export const excelHeaderTargetScreens: Record<string, string> = {
-    uniqueId: '공통', name: '공통',
-    company: '대상자 관리', department: '대상자 관리',
-    title: '대상자 관리', growthLevel: '대상자 관리',
-    workRate: '대상자 관리', baseAmount: '대상자 관리',
-    evaluatorId: '대상자/평가 결과', evaluatorName: '평가 결과',
-    grade: '평가 결과', memo: '평가 결과',
-    startDate: '근무 데이터', endDate: '근무 데이터',
-    startTime: '근무 데이터', endTime: '근무 데이터',
-    date: '근무 데이터', type: '근무 데이터',
+    // 공통
+    uniqueId: '공통',
+    name: '공통',
+    evaluatorId: '공통',
+    evaluatorName: '공통',
+
+    // 월별 대상자
+    company: '월별 대상자',
+    department: '월별 대상자',
+    title: '월별 대상자',
+    growthLevel: '월별 대상자',
+    workRate: '월별 대상자',
+    baseAmount: '월별 대상자',
+    
+    // 평가 결과
+    grade: '평가 결과',
+    memo: '평가 결과',
+    
+    // 근무 데이터
+    startDate: '근무 데이터',
+    endDate: '근무 데이터',
+    startTime: '근무 데이터',
+    endTime: '근무 데이터',
+    date: '근무 데이터',
+    type: '근무 데이터',
 };
 
 
@@ -451,4 +467,3 @@ export const getDetailedGroup1 = (workRate: number): string => {
   
   return `${upperBound}%~${lowerBound}%`;
 };
-
