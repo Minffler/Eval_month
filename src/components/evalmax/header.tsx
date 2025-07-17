@@ -50,7 +50,7 @@ export default function Header({
   markApprovalsAsRead,
   setActiveView
 }: HeaderProps) {
-  const { user, role, setRole } = useAuth();
+  const { user, users, role, setRole } = useAuth();
 
   const roleDisplay: Record<string, string> = {
     admin: '관리자',
@@ -61,6 +61,8 @@ export default function Header({
   if (!user || !role) {
     return null;
   }
+  
+  const currentUser = users.find(u => u.id === user.id);
 
   const currentClientYear = new Date().getFullYear();
   const availableYears = Array.from({ length: Math.max(0, currentClientYear - 2025 + 1) }, (_, i) => 2025 + i).reverse();
@@ -129,8 +131,8 @@ export default function Header({
         </div>
         
         <div className="flex items-center gap-2">
-            {user.roles.length > 1 && (
-               <RoleSwitcher currentRole={role} availableRoles={user.roles} onRoleChange={setRole} />
+            {(currentUser?.roles?.length ?? 0) > 1 && (
+               <RoleSwitcher currentRole={role} availableRoles={currentUser?.roles || user.roles} onRoleChange={setRole} />
             )}
             
             <Popover onOpenChange={(open) => { if (open) markApprovalsAsRead()}}>

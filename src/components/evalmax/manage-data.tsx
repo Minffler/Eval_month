@@ -75,8 +75,8 @@ const parseExcelFile = <T extends {}>(file: File, mapping: HeaderMapping, parser
                 const mappedJson = json.map(row => {
                     const newRow: any = {};
                     for (const excelHeader in row) {
-                        const systemField = Object.keys(reverseMapping).find(key => reverseMapping[key] === excelHeader);
-                        const mappedField = mapping[excelHeader];
+                        const systemField = Object.keys(mapping).find(key => key === excelHeader);
+                        const mappedField = systemField ? mapping[systemField] : undefined;
                         if (mappedField && mappedField !== 'ignore') {
                            newRow[mappedField] = row[excelHeader];
                         }
@@ -194,7 +194,7 @@ export default function ManageData({
   const handleResetWorkData = () => {
     if (!dialogOpen?.workDataType) return;
     onClearWorkRateData(selectedDate.year, selectedDate.month, dialogOpen.workDataType);
-    toast({ title: '초기화 완료', description: `선택한 근무 데이터가 초기화되었습니다.` });
+    toast({ title: '초기화 완료', description: '선택한 근무 데이터가 초기화되었습니다.' });
     setDialogOpen(null);
   }
 
@@ -225,7 +225,7 @@ export default function ManageData({
     try {
         const restoredData = await restoreData();
         for (const key in restoredData) {
-            localStorage.setItem(key, restoredData[key]);
+            localStorage.setItem(key, restoredData[key as keyof typeof restoredData]);
         }
         toast({ title: '동기화 완료', description: '최신 초기 데이터로 덮어썼습니다. 페이지를 새로고침합니다.' });
         
@@ -473,14 +473,31 @@ export default function ManageData({
               onReset={() => setDialogOpen({type: 'resetEvaluations'})}
               isResetDisabled={results.filter(r => r.grade).length === 0}
            />
+           <Separator />
+            <div className="space-y-4">
+                <div>
+                    <h4 className="font-semibold">초기 데이터 동기화</h4>
+                    <p className="text-sm text-muted-foreground">현재 시스템의 모든 데이터를 초기 목업 데이터로 덮어쓰거나, 최신 초기 데이터로 동기화합니다.</p>
+                </div>
+                <div className="flex gap-4">
+                  <Button variant="secondary" className="w-full" onClick={() => setDialogOpen({ type: 'backupData'})}>
+                      <Save className="mr-2 h-4 w-4"/>
+                      현재 데이터를 초기 데이터로 저장
+                  </Button>
+                  <Button variant="outline" className="w-full" onClick={() => setDialogOpen({ type: 'restoreData'})}>
+                      <RefreshCw className="mr-2 h-4 w-4"/>
+                      초기 데이터로 덮어쓰기
+                  </Button>
+                </div>
+            </div>
         </CardContent>
       </Card>
       
       <Card>
         <CardHeader>
-            <CardTitle>근무 데이터 및 시스템 관리</CardTitle>
+            <CardTitle>근무 데이터 관리</CardTitle>
             <CardDescription>
-                근무율 계산 데이터 및 시스템 초기 데이터를 관리합니다.
+                근무율 계산에 사용되는 데이터를 관리합니다.
             </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -513,23 +530,6 @@ export default function ManageData({
                 onReset={() => setDialogOpen({type: 'resetWorkData', workDataType: 'dailyAttendance'})}
                 isResetDisabled={!workRateInputs.dailyAttendance?.length}
             />
-            <Separator />
-            <div className="space-y-4">
-                <div>
-                    <h4 className="font-semibold">초기 데이터 동기화</h4>
-                    <p className="text-sm text-muted-foreground">현재 시스템의 모든 데이터를 초기 목업 데이터로 덮어쓰거나, 최신 초기 데이터로 동기화합니다.</p>
-                </div>
-                <div className="flex gap-4">
-                  <Button variant="secondary" className="w-full" onClick={() => setDialogOpen({ type: 'backupData'})}>
-                      <Save className="mr-2 h-4 w-4"/>
-                      현재 데이터를 초기 데이터로 저장
-                  </Button>
-                  <Button variant="outline" className="w-full" onClick={() => setDialogOpen({ type: 'restoreData'})}>
-                      <RefreshCw className="mr-2 h-4 w-4"/>
-                      초기 데이터로 덮어쓰기
-                  </Button>
-                </div>
-            </div>
         </CardContent>
       </Card>
       
