@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -378,7 +379,7 @@ export default function Home() {
           
           uploadedData.forEach(uploadItem => {
               const empIndex = newEmpsForMonth.findIndex((e: Employee) => e.id === uploadItem.employeeId);
-              const { grade, memo, evaluatorName, employeeId, ...empDetails } = uploadItem;
+              const { grade, memo, employeeId, ...empDetails } = uploadItem;
               const dataToUpdate = { ...empDetails };
 
               if (empIndex > -1) Object.assign(newEmpsForMonth[empIndex], dataToUpdate);
@@ -842,3 +843,5 @@ export default function Home() {
     </div>
   );
 }
+
+    
