@@ -457,11 +457,6 @@ export default function AdminDashboard({
 
   const updateAndSaveChanges = (updatedResults: EvaluationResult[]) => {
     setResults(updatedResults);
-    // handleResultsUpdate is removed because changes are now local until saved by another mechanism
-    // Or, we need to decide if inline edits should persist.
-    // For now, let's assume they are local to the view.
-    // We'll need a different way to save them. A save button might be needed.
-    // The prompt is about evaluator assignment, so let's focus on that.
   };
   
   const handleBaseAmountChange = (employeeId: string, newAmountStr: string) => {
@@ -673,7 +668,7 @@ export default function AdminDashboard({
                       </CardHeader>
                       <CollapsibleContent>
                         <CardContent className="pt-0">
-                          <GradeHistogram data={overallGradeDistribution} gradingScale={gradingScale} />
+                          <GradeHistogram data={overallGradeDistribution} gradingScale={gradingScale} highlightGrade={null} />
                         </CardContent>
                       </CollapsibleContent>
                       <CollapsibleTrigger asChild>
@@ -995,6 +990,7 @@ export default function AdminDashboard({
                             addNotification={addNotification}
                             deleteNotification={deleteNotification}
                             approvals={approvals}
+                            onWorkRateDataUpload={onWorkRateDataUpload}
                         />
                     ) : (
                         <Card className="flex items-center justify-center h-64">
@@ -1009,9 +1005,9 @@ export default function AdminDashboard({
         case 'file-upload':
             return <ManageData onEmployeeUpload={onEmployeeUpload} onEvaluationUpload={onEvaluationUpload} results={initialResults} selectedDate={selectedDate} setSelectedDate={setSelectedDate} onClearEmployeeData={onClearEmployeeData} onClearEvaluationData={onClearEvaluationData} onWorkRateDataUpload={onWorkRateDataUpload} onClearWorkRateData={onClearWorkRateData} workRateInputs={currentWorkRateInputs} />;
         case 'evaluator-management':
-            return <EvaluatorManagement results={initialResults} allUsers={allUsers} onEvaluatorAssignmentChange={onEvaluatorAssignmentChange} />;
+            return <EvaluatorManagement results={initialResults} onEvaluatorAssignmentChange={onEvaluatorAssignmentChange} />;
         case 'user-role-management':
-            return <UserRoleManagement allUsers={allUsers} onUserAdd={onUserAdd} onRolesChange={onRolesChange} onUserUpdate={onUserUpdate} onUserDelete={onUserDelete} onUsersDelete={onUsersDelete} />;
+            return <UserRoleManagement />;
         case 'consistency-check':
             return <ConsistencyValidator results={initialResults} gradingScale={gradingScale} />;
         case 'work-rate-view':

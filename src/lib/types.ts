@@ -1,5 +1,3 @@
-
-
 export type Role = 'admin' | 'evaluator' | 'employee' | null;
 
 export type User = {
@@ -76,13 +74,13 @@ export type EvaluationResult = Employee & {
   memo?: string;
 };
 
-export type EvaluatorView = 'evaluation-input' | 'all-results' | 'assignment-management' | 'notifications' | 'approvals' | 'work-rate-view' | 'shortened-work-details' | 'daily-attendance-details';
-export type EmployeeView = 'my-review' | 'my-work-rate' | 'my-shortened-work' | 'my-daily-attendance' | 'notifications' | 'approvals';
+export type EvaluatorView = 'evaluation-input' | 'all-results' | 'assignment-management' | 'notifications' | 'approvals' | 'work-rate-view' | 'shortened-work-details' | 'daily-attendance-details' | 'personal-settings';
+export type EmployeeView = 'my-review' | 'evaluation-details' | 'my-work-rate' | 'my-shortened-work' | 'my-daily-attendance' | 'notifications' | 'approvals' | 'personal-settings';
 
-export type EvaluationUploadData = {
+
+export type EvaluationUploadData = Partial<Omit<Employee, 'id'>> & Partial<Pick<Evaluation, 'grade' | 'memo'>> & {
   uniqueId: string;
-} & Partial<Omit<Employee, 'id' | 'uniqueId'>> & Partial<Pick<Evaluation, 'grade' | 'memo'>>;
-
+};
 
 export type AppNotification = {
   id: string;

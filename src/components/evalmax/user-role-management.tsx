@@ -44,24 +44,10 @@ import {
 import { cn } from '@/lib/utils';
 import { Checkbox } from '../ui/checkbox';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuth } from '@/contexts/auth-context';
 
-interface UserRoleManagementProps {
-  allUsers: User[];
-  onUserAdd: (newEmployee: Partial<Employee>, roles: Role[]) => void;
-  onRolesChange: (userId: string, newRoles: Role[]) => void;
-  onUserUpdate: (userId: string, updatedData: Partial<User & { newUniqueId?: string }>) => void;
-  onUserDelete: (userId: string) => void;
-  onUsersDelete: (userIds: string[]) => void;
-}
-
-export default function UserRoleManagement({
-  allUsers,
-  onUserAdd,
-  onRolesChange,
-  onUserUpdate,
-  onUserDelete,
-  onUsersDelete,
-}: UserRoleManagementProps) {
+export default function UserRoleManagement() {
+  const { allUsers, addUser, updateUserRoles, updateUser, deleteUser, deleteUsers } = useAuth();
   const [searchTerm, setSearchTerm] = React.useState('');
   const [roleFilter, setRoleFilter] = React.useState<Set<Role>>(new Set());
   const [isAddUserDialogOpen, setIsAddUserDialogOpen] = React.useState(false);
@@ -137,7 +123,7 @@ export default function UserRoleManagement({
     } else {
       newRoles.add(role);
     }
-    onRolesChange(userId, Array.from(newRoles).filter(Boolean) as Role[]);
+    updateUserRoles(userId, Array.from(newRoles).filter(Boolean) as Role[]);
   };
 
   const handleAddUser = () => {
@@ -158,7 +144,7 @@ export default function UserRoleManagement({
       position: newUserTitle,
     };
     
-    onUserAdd(newUserAsEmployee, newUserRoles);
+    addUser(newUserAsEmployee, newUserRoles);
 
     toast({ title: '성공', description: `사용자 '${newUserName}'님이 추가되었습니다.` });
     setIsAddUserDialogOpen(false);
@@ -190,7 +176,7 @@ export default function UserRoleManagement({
 
   const handleEditUser = () => {
     if(!selectedUser) return;
-    onUserUpdate(selectedUser.id, {
+    updateUser(selectedUser.id, {
         newUniqueId: editUserId,
         name: editUserName,
         department: editUserDepartment,
@@ -225,15 +211,15 @@ export default function UserRoleManagement({
   const handleConfirmAction = () => {
     if(actionType === 'bulkDelete') {
         const idsToDelete = Array.from(selectedIds);
-        onUsersDelete(idsToDelete);
+        deleteUsers(idsToDelete);
         toast({ title: '삭제 완료', description: `${idsToDelete.length}명의 사용자가 삭제되었습니다.` });
         setSelectedIds(new Set());
     } else if (selectedUser) {
         if(actionType === 'resetPassword') {
-            onUserUpdate(selectedUser.id, { password: '1' });
+            updateUser(selectedUser.id, { password: '1' });
             toast({ title: '초기화 완료', description: `사용자 '${selectedUser.name}'의 비밀번호가 '1'로 초기화되었습니다.`});
         } else if (actionType === 'delete') {
-            onUserDelete(selectedUser.id);
+            deleteUser(selectedUser.id);
             toast({ title: '삭제 완료', description: `사용자 '${selectedUser.name}'이(가) 삭제되었습니다.` });
         }
     }

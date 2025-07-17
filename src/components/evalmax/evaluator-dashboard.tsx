@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import * as React from 'react';
@@ -116,7 +114,7 @@ interface EvaluatorDashboardProps {
   addNotification: (notification: Omit<AppNotification, 'id' | 'date' | 'isRead'>) => void;
   deleteNotification: (notificationId: string) => void;
   approvals: Approval[];
-  onWorkRateDataUpload?: (year: number, month: number, type: keyof WorkRateInputs, data: any[], isApproved: boolean) => void;
+  onWorkRateDataUpload: (year: number, month: number, type: keyof WorkRateInputs, data: any[], isApproved: boolean) => void;
 }
 
 type SortConfig = {
@@ -1135,11 +1133,6 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
     return currentMonthResults.filter(r => r.evaluatorId === effectiveUser.uniqueId);
   }, [effectiveUser, currentMonthResults]);
   
-  const myAllTimeResults = React.useMemo(() => {
-    if (!effectiveUser) return [];
-    return allResults.filter(r => r.evaluatorId === effectiveUser.uniqueId);
-  }, [effectiveUser, allResults]);
-  
   const myManagedWorkRateDetails: WorkRateDetailsResult = React.useMemo(() => {
     if (!effectiveUser) return { shortenedWorkDetails: [], dailyAttendanceDetails: [] };
     const myManagedEmployeeIds = new Set(myEmployees.map(e => e.uniqueId));
@@ -1335,7 +1328,8 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
       default:
         // This case might be triggered when admin is viewing an evaluator's dashboard.
         // The AdminDashboard is more appropriate here.
-        if (authUser?.roles.includes('admin') && evaluatorUser && onWorkRateDataUpload) {
+        if (authUser?.roles.includes('admin') && evaluatorUser) {
+            // AdminDashboard props need to be satisfied
             return (
                 <AdminDashboard
                     results={allResults}

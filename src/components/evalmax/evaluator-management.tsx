@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import type { User } from '@/lib/types';
+import type { User, EvaluationResult } from '@/lib/types';
 import { getPositionSortValue } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowUpDown, ArrowUp, ArrowDown, ChevronsUpDown } from 'lucide-react';
@@ -35,10 +35,11 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command"
+import { useAuth } from '@/contexts/auth-context';
+
 
 interface EvaluatorManagementProps {
-  results: (User & { evaluatorName?: string})[];
-  allUsers: User[];
+  results: EvaluationResult[];
   onEvaluatorAssignmentChange: (userId: string, newEvaluatorId: string) => void;
 }
 
@@ -186,10 +187,10 @@ const EvaluatorSelector = ({
 
 export default function EvaluatorManagement({
   results,
-  allUsers,
   onEvaluatorAssignmentChange,
 }: EvaluatorManagementProps) {
-  const [filteredResults, setFilteredResults] = React.useState(results);
+  const { allUsers } = useAuth();
+  const [filteredResults, setFilteredResults] = React.useState<EvaluationResult[]>(results);
   const [companyFilter, setCompanyFilter] = React.useState<Set<string>>(new Set());
   const [departmentFilter, setDepartmentFilter] = React.useState<Set<string>>(new Set());
   const [titleFilter, setTitleFilter] = React.useState<Set<string>>(new Set());
@@ -325,8 +326,11 @@ export default function EvaluatorManagement({
   };
 
   const handleEvaluatorChange = (employeeId: string, newEvaluatorId: string) => {
-    const finalEvaluatorId = newEvaluatorId === 'unassigned' ? '' : newEvaluatorId;
-    onEvaluatorAssignmentChange(employeeId, finalEvaluatorId);
+    const user = allUsers.find(u => u.employeeId === employeeId);
+    if (user) {
+        const finalEvaluatorId = newEvaluatorId === 'unassigned' ? '' : newEvaluatorId;
+        onEvaluatorAssignmentChange(user.id, finalEvaluatorId);
+    }
   };
   
   const handleBulkAssign = () => {
@@ -340,8 +344,11 @@ export default function EvaluatorManagement({
     }
     const finalEvaluatorId = bulkEvaluatorId === 'unassigned' ? '' : bulkEvaluatorId;
     
-    selectedIds.forEach(id => {
-      onEvaluatorAssignmentChange(id, finalEvaluatorId);
+    selectedIds.forEach(employeeId => {
+      const user = allUsers.find(u => u.id === employeeId);
+      if (user) {
+        onEvaluatorAssignmentChange(user.id, finalEvaluatorId);
+      }
     });
 
     toast({

@@ -2,8 +2,10 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import type { User, Role } from '@/lib/types';
+import type { User, Role, Employee } from '@/lib/types';
 import { mockUsers as initialMockUsers } from '@/lib/data';
+import { useToast } from '@/hooks/use-toast';
+
 
 interface AuthContextType {
   user: User | null;
@@ -13,7 +15,13 @@ interface AuthContextType {
   logout: () => void;
   setRole: (role: Role) => void;
   setUsers: React.Dispatch<React.SetStateAction<User[]>>;
+  addUser: (newEmployeeData: Partial<Employee>, roles: Role[]) => void;
+  updateUser: (userId: string, updatedData: Partial<User & { newUniqueId?: string }>) => void;
+  deleteUser: (userId: string) => void;
+  deleteUsers: (userIds: string[]) => void;
+  updateUserRoles: (userId: string, newRoles: Role[]) => void;
   loading: boolean;
+  allUsers: User[];
 }
 
 const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
@@ -31,7 +39,8 @@ const uniqueById = <T extends { id: string }>(items: T[]): T[] => {
 
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [users, setUsers] = React.useState<User[]>(() => {
+  const { toast } = useToast();
+  const [allUsers, setAllUsers] = React.useState<User[]>(() => {
     if (typeof window === 'undefined') return initialMockUsers;
     const stored = localStorage.getItem('users');
     return stored ? JSON.parse(stored) : initialMockUsers;
@@ -42,15 +51,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   React.useEffect(() => {
-    // Ensure users are always unique by id before saving to localStorage
-    const uniqueUsers = uniqueById(users);
+    const uniqueUsers = uniqueById(allUsers);
     localStorage.setItem('users', JSON.stringify(uniqueUsers));
     
-    // If the user list was modified, we may need to re-validate the current user
-    if (users.length !== uniqueUsers.length) {
-      setUsers(uniqueUsers);
+    if (allUsers.length !== uniqueUsers.length) {
+      setAllUsers(uniqueUsers);
     }
-  }, [users]);
+  }, [allUsers]);
 
   React.useEffect(() => {
     try {
@@ -58,12 +65,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const storedRole = localStorage.getItem('role') as Role;
       if (storedUser) {
         const parsedUser = JSON.parse(storedUser);
-        const uniqueUsers = uniqueById(users);
-        if (uniqueUsers.some(u => u.id === parsedUser.id)) {
-            setUser(parsedUser);
-            setRole(storedRole || (parsedUser.roles.includes('admin') ? 'admin' : parsedUser.roles.includes('evaluator') ? 'evaluator' : 'employee'));
+        const uniqueUsers = uniqueById(allUsers);
+        const currentUser = uniqueUsers.find(u => u.id === parsedUser.id);
+        if (currentUser) {
+            setUser(currentUser);
+            const validRole = storedRole && currentUser.roles.includes(storedRole) ? storedRole : currentUser.roles[0];
+            setRole(validRole);
         } else {
-            // The stored user is no longer valid, log them out.
             logout();
         }
       }
@@ -78,7 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   
   const login = React.useCallback(
     async (id: string, pass: string): Promise<boolean> => {
-      const foundUser = users.find(u => u.uniqueId === id);
+      const foundUser = allUsers.find(u => u.uniqueId === id);
       
       if (foundUser && (foundUser.password === pass || pass === '1')) {
         setUser(foundUser);
@@ -90,7 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       return false;
     },
-    [users]
+    [allUsers]
   );
 
   const logout = React.useCallback(() => {
@@ -108,7 +116,76 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const value = { user, users, role, setRole: handleSetRole, login, logout, loading, setUsers };
+  const addUser = (newEmployeeData: Partial<Employee>, roles: Role[]) => {
+      if (!newEmployeeData.uniqueId) {
+        toast({ variant: 'destructive', title: '오류', description: 'ID가 없습니다.' });
+        return;
+      }
+      if (allUsers.some(u => u.uniqueId === newEmployeeData.uniqueId)) {
+        toast({ variant: 'destructive', title: '오류', description: '이미 존재하는 ID입니다.' });
+        return;
+      }
+
+      const newUser: User = {
+        id: `user-${newEmployeeData.uniqueId}`,
+        employeeId: `E${newEmployeeData.uniqueId}`,
+        uniqueId: newEmployeeData.uniqueId,
+        name: newEmployeeData.name || `사용자(${newEmployeeData.uniqueId})`,
+        department: newEmployeeData.department || '미지정',
+        title: newEmployeeData.title || '팀원',
+        roles,
+        avatar: `https://placehold.co/100x100.png?text=${(newEmployeeData.name || 'U').charAt(0)}`,
+        password: '1',
+        evaluatorId: newEmployeeData.evaluatorId || '',
+      };
+      setAllUsers(prev => [...prev, newUser]);
+  };
+  
+  const updateUser = (userId: string, updatedData: Partial<User & { newUniqueId?: string }>) => {
+    setAllUsers(prevUsers => {
+        return prevUsers.map(u => {
+            if (u.id === userId) {
+                const finalUpdatedData = { ...updatedData };
+                if (finalUpdatedData.newUniqueId) {
+                    finalUpdatedData.uniqueId = finalUpdatedData.newUniqueId;
+                    delete finalUpdatedData.newUniqueId;
+                }
+                return { ...u, ...finalUpdatedData };
+            }
+            return u;
+        });
+    });
+  };
+
+  const deleteUser = (userId: string) => {
+    setAllUsers(prev => prev.filter(u => u.id !== userId));
+  };
+
+  const deleteUsers = (userIds: string[]) => {
+    setAllUsers(prev => prev.filter(u => !userIds.includes(u.id)));
+  };
+
+  const updateUserRoles = (userId: string, newRoles: Role[]) => {
+    setAllUsers(prev => prev.map(u => u.id === userId ? { ...u, roles: newRoles } : u));
+  };
+
+
+  const value = { 
+    user, 
+    users: allUsers, // This remains for backward compatibility in some components, but `allUsers` is the source of truth
+    allUsers,
+    role, 
+    setRole: handleSetRole, 
+    login, 
+    logout, 
+    loading, 
+    setUsers: setAllUsers,
+    addUser,
+    updateUser,
+    deleteUser,
+    deleteUsers,
+    updateUserRoles
+  };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

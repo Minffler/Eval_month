@@ -3,6 +3,7 @@ import './globals.css';
 import { AuthProvider } from '@/contexts/auth-context';
 import { Toaster } from '@/components/ui/toaster';
 import { NotificationProvider } from '@/contexts/notification-context';
+import { EvaluationProvider } from '@/contexts/evaluation-context';
 
 export const metadata: Metadata = {
   title: 'PL월성과평가',
@@ -23,10 +24,12 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <AuthProvider>
-          <NotificationProvider>
-            {children}
-            <Toaster />
-          </NotificationProvider>
+          <EvaluationProvider>
+            <NotificationProvider>
+              {children}
+              <Toaster />
+            </NotificationProvider>
+          </EvaluationProvider>
         </AuthProvider>
       </body>
     </html>
