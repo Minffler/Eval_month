@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Download, Trash2, UploadCloud, CheckCircle2, AlertCircle, Save, RefreshCw } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import type { Employee, EvaluationResult, Grade, EvaluationUploadData, WorkRateInputs, ShortenedWorkHourRecord, DailyAttendanceRecord, ShortenedWorkType, HeaderMapping } from '@/lib/types';
-import { excelHeaderMapping, excelHeaderTargetScreens } from '@/lib/data';
+import { excelHeaderTargetScreens } from '@/lib/data';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -66,8 +66,7 @@ const parseExcelFile = <T extends {}>(file: File, mapping: HeaderMapping, parser
                 const sheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[sheetName];
                 const json = XLSX.utils.sheet_to_json<any>(worksheet);
-
-                // Use the provided mapping to translate headers
+                
                 const reverseMapping: {[key: string]: string} = {};
                 for (const excelHeader in mapping) {
                     reverseMapping[mapping[excelHeader]] = excelHeader;
@@ -75,20 +74,12 @@ const parseExcelFile = <T extends {}>(file: File, mapping: HeaderMapping, parser
                 
                 const mappedJson = json.map(row => {
                     const newRow: any = {};
-                    for (const excelHeader in row) {
-                        const systemField = Object.keys(mapping).find(key => key === excelHeader);
-                        const mappedField = systemField ? mapping[systemField] : undefined;
-                        if (mappedField && mappedField !== 'ignore') {
-                           newRow[mappedField] = row[excelHeader];
+                    for(const systemField in reverseMapping) {
+                        const excelHeader = reverseMapping[systemField];
+                        if (row[excelHeader] !== undefined) {
+                            newRow[systemField] = row[excelHeader];
                         }
                     }
-                    // Handle cases where mapping is from system field to Excel header
-                     for (const systemField in reverseMapping) {
-                        if (!newRow[systemField] && row[reverseMapping[systemField]]) {
-                            newRow[systemField] = row[reverseMapping[systemField]];
-                        }
-                    }
-
                     return newRow;
                 });
                 
@@ -179,7 +170,7 @@ export default function ManageData({
   const [fileToProcess, setFileToProcess] = React.useState<File | null>(null);
   const [uploadType, setUploadType] = React.useState<'employees' | 'evaluations' | null>(null);
 
-  const systemFields = [...new Set(Object.values(excelHeaderMapping))].sort();
+  const systemFields = [...new Set(Object.values(excelHeaderTargetScreens))].sort();
   const requiredFields: string[] = ['uniqueId'];
 
   const isMappingValid = React.useMemo(() => {
@@ -272,15 +263,27 @@ export default function ManageData({
             setFileToProcess(file);
             setUploadType(type);
 
-            const initialMapping: HeaderMapping = {};
+            // Attempt to auto-map based on a reverse lookup of excelHeaderTargetScreens
+            const autoMapping: HeaderMapping = {};
+            const systemToExcelMap: Record<string, string[]> = {};
+            for (const header in excelHeaderTargetScreens) {
+              const systemField = excelHeaderTargetScreens[header];
+              if (!systemToExcelMap[systemField]) systemToExcelMap[systemField] = [];
+              systemToExcelMap[systemField].push(header);
+            }
+            
             headers.forEach(header => {
-              const systemField = excelHeaderMapping[header as keyof typeof excelHeaderMapping];
-              if (systemField && !Object.values(initialMapping).includes(systemField)) {
-                  initialMapping[header] = systemField;
+              for (const systemField in systemToExcelMap) {
+                if(systemToExcelMap[systemField].includes(header)) {
+                  if (!Object.values(autoMapping).includes(systemField)) {
+                    autoMapping[header] = systemField;
+                  }
+                  break;
+                }
               }
             });
             
-            setCurrentMapping(initialMapping);
+            setCurrentMapping(autoMapping);
             setIsMappingDialogOpen(true);
         } catch (error) {
             toast({ variant: 'destructive', title: '파일 오류', description: '엑셀 파일 헤더를 읽는 중 오류가 발생했습니다.' });
@@ -312,8 +315,10 @@ export default function ManageData({
              const newEvals = await parseExcelFile<EvaluationUploadData>(fileToProcess, currentMapping, json => json.map((row, index) => {
               const uniqueId = String(row['uniqueId'] || '');
               if (!uniqueId) throw new Error(`${index + 2}번째 행에 ID가 없습니다.`);
+              
               const workRateValue = row['workRate'];
               const baseAmountValue = row['baseAmount'];
+              
               return {
                   employeeId: `E${uniqueId}`,
                   name: row['name'] ? String(row['name']) : undefined, company: row['company'] ? String(row['company']) : undefined,
@@ -391,15 +396,20 @@ export default function ManageData({
                 const worksheet = workbook.Sheets[sheetName];
                 const json = XLSX.utils.sheet_to_json<any>(worksheet);
                 
-                const reverseMapping: {[key: string]: string} = {};
-                for (const excelHeader in excelHeaderMapping) {
-                  reverseMapping[excelHeaderMapping[excelHeader as keyof typeof excelHeaderMapping]] = excelHeader;
+                // A very simplified mapping based on common names
+                const simplifiedMapping: Record<string, string> = {
+                    "고유사번": "uniqueId", "사번": "uniqueId", "ID": "uniqueId",
+                    "성명": "name", "이름": "name",
+                    "시작일": "startDate", "종료일": "endDate",
+                    "출근시각": "startTime", "퇴근시각": "endTime",
+                    "근태사용일": "date", "일자": "date",
+                    "근태종류": "type", "근태": "type",
                 }
 
                 const mappedJson = json.map(row => {
                     const newRow: any = {};
                     for (const excelHeader in row) {
-                        const systemField = excelHeaderMapping[excelHeader as keyof typeof excelHeaderMapping];
+                        const systemField = simplifiedMapping[excelHeader];
                         if(systemField) {
                             newRow[systemField] = row[excelHeader];
                         }
@@ -629,8 +639,9 @@ export default function ManageData({
            <div className="flex justify-between items-center pt-2">
             <Label className="text-xs text-muted-foreground">
                 {requiredFields.map(f => {
-                    const systemFieldInfo = Object.entries(excelHeaderMapping).find(([key, val]) => val === f);
-                    return systemFieldInfo ? systemFieldInfo[0] : f;
+                    const systemFieldInfo = Object.entries(excelHeaderTargetScreens).find(([key, val]) => val === f);
+                    const excelHeaderName = Object.keys(excelHeaderTargetScreens).find(key => excelHeaderTargetScreens[key] === f);
+                    return excelHeaderName || f;
                 }).join(', ')} 필드는 반드시 매핑되어야 합니다.
             </Label>
             {isMappingValid ? 
@@ -647,3 +658,4 @@ export default function ManageData({
     </div>
   );
 }
+
