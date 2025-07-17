@@ -318,7 +318,7 @@ export default function Home() {
 
     // 1. Process all user info from the upload, preparing updates and additions
     const usersToUpdate: Record<string, Partial<User>> = {};
-    const usersToAdd: Record<string, { data: Partial<Employee>, roles: Set<Role> }> = {};
+    const usersToAdd: Record<string, { data: Partial<Employee & User>, roles: Set<Role> }> = {};
 
     uploadedData.forEach(item => {
         const { uniqueId, name, department, title, evaluatorId, ...rest } = item;
@@ -334,11 +334,11 @@ export default function Home() {
             Object.assign(usersToAdd[uniqueId].data, { uniqueId, name, department, title, evaluatorId, ...rest });
         }
 
-        // Process evaluator info (if present in the row)
+        // Process evaluator info
         if (evaluatorId) {
             const existingEvaluator = allUsers.find(u => u.uniqueId === evaluatorId);
             if (existingEvaluator) {
-                // If evaluator name is also in the excel, prepare to update it
+                // If the evaluator's name is also provided in the Excel row, update it.
                 if (item.name && item.uniqueId === evaluatorId) {
                    if (!usersToUpdate[existingEvaluator.id]) usersToUpdate[existingEvaluator.id] = {};
                    usersToUpdate[existingEvaluator.id].name = item.name;
@@ -352,13 +352,13 @@ export default function Home() {
             }
         }
     });
-
+    
     // 2. Batch-add and update users
     Object.values(usersToAdd).forEach(({ data, roles }) => {
         const defaultData = {
           name: `사용자(${data.uniqueId})`, department: '미지정', title: '팀원',
           position: data.title || '팀원', company: 'N/A', growthLevel: '', workRate: 1.0,
-          evaluatorId: '', baseAmount: 0,
+          evaluatorId: data.evaluatorId || '', baseAmount: 0,
         };
         handleUserAdd({ ...defaultData, ...data }, Array.from(roles));
     });
@@ -373,11 +373,12 @@ export default function Home() {
             if (!uploadItem.uniqueId) return;
             const empIndex = newEmpsForMonth.findIndex((e: Employee) => e.uniqueId === uploadItem.uniqueId);
             const { grade, memo, ...empDetails } = uploadItem;
+            const dataToUpdate = { ...empDetails, id: `E${uploadItem.uniqueId}` };
 
             if (empIndex > -1) {
-                Object.assign(newEmpsForMonth[empIndex], { ...empDetails, id: `E${uploadItem.uniqueId}` });
+                Object.assign(newEmpsForMonth[empIndex], dataToUpdate);
             } else {
-                newEmpsForMonth.push({ ...empDetails, id: `E${uploadItem.uniqueId}` });
+                newEmpsForMonth.push(dataToUpdate);
             }
         });
         newState[key] = newEmpsForMonth;
@@ -685,7 +686,7 @@ export default function Home() {
                   activeView={adminActiveView}
                   onClearEmployeeData={handleClearEmployeeData}
                   onClearEvaluationData={handleClearEvaluationData}
-                  onWorkRateDataUpload={onWorkRateDataUpload}
+                  onWorkRateDataUpload={handleWorkRateDataUpload}
                   onClearWorkRateData={handleClearWorkRateData}
                   workRateInputs={workRateInputs}
                   attendanceTypes={attendanceTypes}
@@ -725,6 +726,7 @@ export default function Home() {
                   addNotification={addNotification}
                   deleteNotification={deleteNotification}
                   approvals={approvals}
+                  onWorkRateDataUpload={handleWorkRateDataUpload}
                 />;
       case 'employee':
         if (employeeActiveView === 'personal-settings' && user) {

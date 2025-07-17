@@ -1,8 +1,9 @@
+
 'use client';
 
 import * as React from 'react';
 import { useAuth } from '@/contexts/auth-context';
-import type { EvaluationResult, Grade, GradeInfo, EvaluationGroupCategory, User, EvaluatorView, Employee, Holiday, AttendanceType, Approval, AppNotification, ApprovalStatus } from '@/lib/types';
+import type { EvaluationResult, Grade, GradeInfo, EvaluationGroupCategory, User, EvaluatorView, Employee, Holiday, AttendanceType, Approval, AppNotification, ApprovalStatus, WorkRateInputs } from '@/lib/types';
 import {
   DndContext,
   closestCenter,
@@ -114,6 +115,7 @@ interface EvaluatorDashboardProps {
   addNotification: (notification: Omit<AppNotification, 'id' | 'date' | 'isRead'>) => void;
   deleteNotification: (notificationId: string) => void;
   approvals: Approval[];
+  onWorkRateDataUpload?: (year: number, month: number, type: keyof WorkRateInputs, data: any[], isApproved: boolean) => void;
 }
 
 type SortConfig = {
@@ -1111,7 +1113,7 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, allUsers, 
 };
 
 
-export default function EvaluatorDashboard({ allResults, currentMonthResults, gradingScale, selectedDate, setSelectedDate, handleEvaluatorAssignmentChange, evaluatorUser, activeView, onClearMyEvaluations, workRateDetails, holidays, allUsers, attendanceTypes, onApprovalAction, notifications, addNotification, deleteNotification, approvals }: EvaluatorDashboardProps) {
+export default function EvaluatorDashboard({ allResults, currentMonthResults, gradingScale, selectedDate, setSelectedDate, handleEvaluatorAssignmentChange, evaluatorUser, activeView, onClearMyEvaluations, workRateDetails, holidays, allUsers, attendanceTypes, onApprovalAction, notifications, addNotification, deleteNotification, approvals, onWorkRateDataUpload }: EvaluatorDashboardProps) {
   const { user: authUser } = useAuth();
   const { toast } = useToast();
   const [effectiveUser, setEffectiveUser] = React.useState<User | null>(null);
@@ -1352,6 +1354,7 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
                     activeView={activeView}
                     onClearEmployeeData={() => {}}
                     onClearEvaluationData={() => {}}
+                    onWorkRateDataUpload={onWorkRateDataUpload || (() => {})}
                     onClearWorkRateData={() => {}}
                     workRateInputs={{}}
                     attendanceTypes={attendanceTypes}
