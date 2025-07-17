@@ -68,7 +68,7 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
   const { allUsers, addUser, updateUser } = useAuth();
   const { toast } = useToast();
   
-  const [employees, setEmployees] = React.useState<Record<string, Partial<Employee>[]>>(() => getFromLocalStorage('employees', mockEmployees ));
+  const [employees, setEmployees] = React.useState<Record<string, Employee[]>>(() => getFromLocalStorage('employees', mockEmployees ));
   const [evaluations, setEvaluations] = React.useState<Record<string, Evaluation[]>>(() => getFromLocalStorage('evaluations', mockEvaluations ));
   const [gradingScale, setGradingScale] = React.useState<Record<NonNullable<Grade>, GradeInfo>>(() => getFromLocalStorage('gradingScale', initialGradingScale));
   const [workRateInputs, setWorkRateInputs] = React.useState<Record<string, WorkRateInputs>>(() => getFromLocalStorage('workRateInputs', {}));
@@ -282,7 +282,13 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
         const [year, month] = key.split('-').map(Number);
         const monthlyEvaluations = evaluations[key] || [];
         
-        return (monthlyEmployees as Employee[]).map(employee => {
+        // Ensure monthlyEmployees is an array before mapping
+        if (!Array.isArray(monthlyEmployees)) {
+            console.warn(`Data for month ${key} is not an array, skipping.`);
+            return [];
+        }
+
+        return monthlyEmployees.map(employee => {
             const user = uniqueUserMap.get(employee.uniqueId) || {};
             const evaluation = monthlyEvaluations.find(e => e.employeeId === employee.id);
 
@@ -326,7 +332,11 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
 
   const getMonthlyEvaluationTargets = React.useCallback((selectedDate: {year: number, month: number}) => {
     const monthKey = `${selectedDate.year}-${selectedDate.month}`;
-    const monthlyEmployeeIds = new Set((employees[monthKey] || []).map(e => e.uniqueId));
+    const monthlyEmployeeList = employees[monthKey];
+    if (!Array.isArray(monthlyEmployeeList)) {
+        return [];
+    }
+    const monthlyEmployeeIds = new Set(monthlyEmployeeList.map(e => e.uniqueId));
     return allEvaluationResults.filter(r => r.year === selectedDate.year && r.month === selectedDate.month && monthlyEmployeeIds.has(r.uniqueId));
   }, [allEvaluationResults, employees]);
 
