@@ -1,8 +1,3 @@
-
-
-
-
-
 'use client';
 
 import * as React from 'react';
@@ -60,15 +55,37 @@ interface ManageDataProps {
   workRateInputs: WorkRateInputs;
 }
 
-const mapRowToSchema = <T extends {}>(row: any, mapping: HeaderMapping): T => {
-    const newRow: any = {};
-    for (const excelHeader in mapping) {
-        const systemField = mapping[excelHeader as keyof typeof mapping];
-        if (systemField !== 'ignore' && row[excelHeader] !== undefined) {
-            newRow[systemField] = row[excelHeader];
-        }
-    }
-    return newRow as T;
+const parseExcelFile = <T extends {}>(file: File, mapping: HeaderMapping, parser: (rows: any[]) => T[]): Promise<T[]> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = new Uint8Array(e.target?.result as ArrayBuffer);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                const json = XLSX.utils.sheet_to_json<any>(worksheet);
+
+                // Reverse the provided mapping to map from system field to Excel header
+                const mappedJson = json.map(row => {
+                    const newRow: any = {};
+                    for (const excelHeader in row) {
+                        const systemField = mapping[excelHeader];
+                        if (systemField && systemField !== 'ignore') {
+                           newRow[systemField] = row[excelHeader];
+                        }
+                    }
+                    return newRow;
+                });
+                
+                resolve(parser(mappedJson));
+            } catch (error: any) {
+                reject(error);
+            }
+        };
+        reader.onerror = (error) => reject(error);
+        reader.readAsArrayBuffer(file);
+    });
 };
 
 interface UploadSectionProps {
@@ -197,48 +214,6 @@ export default function ManageData({
     }
   };
 
-  const parseExcelFile = <T extends {}>(file: File, parser: (rows: any[]) => T[]): Promise<T[]> => {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const data = new Uint8Array(e.target?.result as ArrayBuffer);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const sheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[sheetName];
-                const json = XLSX.utils.sheet_to_json<any>(worksheet);
-
-                // Reverse the currentMapping to map from system field to Excel header
-                const reverseMapping: {[key: string]: string} = {};
-                for (const excelHeader in currentMapping) {
-                    const systemField = currentMapping[excelHeader];
-                    if (systemField !== 'ignore') {
-                        reverseMapping[systemField] = excelHeader;
-                    }
-                }
-
-                // Create a new JSON array where keys are system fields
-                const mappedJson = json.map(row => {
-                    const newRow: any = {};
-                    for (const systemField in reverseMapping) {
-                         const excelHeader = reverseMapping[systemField];
-                         if (row[excelHeader] !== undefined) {
-                            newRow[systemField] = row[excelHeader];
-                         }
-                    }
-                    return newRow;
-                });
-                
-                resolve(parser(mappedJson));
-            } catch (error: any) {
-                reject(error);
-            }
-        };
-        reader.onerror = (error) => reject(error);
-        reader.readAsArrayBuffer(file);
-    });
-  }
-
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, type: 'employees' | 'evaluations' | 'shortenedWork' | 'dailyAttendance', shortenedWorkType?: ShortenedWorkType) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -283,7 +258,7 @@ export default function ManageData({
     try {
         let uploadCount = 0;
         if (uploadType === 'employees') {
-            const newEmployees = await parseExcelFile<Employee>(fileToProcess, (json) => json.map((row, index) => {
+            const newEmployees = await parseExcelFile<Employee>(fileToProcess, currentMapping, (json) => json.map((row, index) => {
               const uniqueId = String(row['uniqueId'] || '');
               if (!uniqueId) throw new Error(`${index + 2}번째 행에 ID가 없습니다.`);
               return {
@@ -298,7 +273,7 @@ export default function ManageData({
             uploadCount = newEmployees.length;
             onEmployeeUpload(selectedDate.year, selectedDate.month, newEmployees);
         } else if (uploadType === 'evaluations') {
-             const newEvals = await parseExcelFile<EvaluationUploadData>(fileToProcess, json => json.map((row, index) => {
+             const newEvals = await parseExcelFile<EvaluationUploadData>(fileToProcess, currentMapping, json => json.map((row, index) => {
               const uniqueId = String(row['uniqueId'] || '');
               if (!uniqueId) throw new Error(`${index + 2}번째 행에 ID가 없습니다.`);
               const workRateValue = row['workRate'];
