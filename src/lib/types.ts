@@ -79,12 +79,7 @@ export type EvaluationResult = Employee & {
 export type EvaluatorView = 'evaluation-input' | 'all-results' | 'assignment-management' | 'notifications' | 'approvals' | 'work-rate-view' | 'shortened-work-details' | 'daily-attendance-details';
 export type EmployeeView = 'my-review' | 'my-work-rate' | 'my-shortened-work' | 'my-daily-attendance' | 'notifications' | 'approvals';
 
-export type EvaluationUploadData = {
-  employeeId: string;
-  grade: Grade;
-  memo?: string;
-  evaluatorName?: string;
-} & Partial<Omit<Employee, 'id' | 'uniqueId'>>;
+export type EvaluationUploadData = Partial<Omit<Employee, 'id'>>;
 
 export type AppNotification = {
   id: string;

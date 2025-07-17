@@ -314,94 +314,94 @@ export default function Home() {
   };
 
   const handleEvaluationUpload = (year: number, month: number, uploadedData: EvaluationUploadData[]) => {
-      const key = `${year}-${month}`;
+    const key = `${year}-${month}`;
 
-      // 1단계: 사용자 정보 사전 등록 및 업데이트
-      const usersToUpdate: Record<string, Partial<User>> = {};
-      const usersToAdd: Record<string, { data: Partial<Employee>, roles: Role[] }> = {};
+    // 1. Process all user info from the upload, preparing updates and additions
+    const usersToUpdate: Record<string, Partial<User>> = {};
+    const usersToAdd: Record<string, { data: Partial<Employee>, roles: Set<Role> }> = {};
 
-      uploadedData.forEach(item => {
-          const { employeeId, evaluatorId, evaluatorName, ...empData } = item;
-          const uniqueId = employeeId.replace('E', '');
+    uploadedData.forEach(item => {
+        const { uniqueId, name, department, title, evaluatorId, ...rest } = item;
+        if (!uniqueId) return;
 
-          // 직원 정보 처리
-          const existingEmployee = allUsers.find(u => u.uniqueId === uniqueId);
-          if (existingEmployee) {
-              usersToUpdate[existingEmployee.id] = {
-                  ...(usersToUpdate[existingEmployee.id] || {}),
-                  name: empData.name, department: empData.department, title: empData.title,
-                  evaluatorId: evaluatorId || existingEmployee.evaluatorId,
-              };
-          } else {
-              usersToAdd[uniqueId] = {
-                  data: {
-                      uniqueId, name: empData.name || `사용자(${uniqueId})`,
-                      department: empData.department || '미지정', title: empData.title || '팀원',
-                      position: empData.position || empData.title || '팀원', company: empData.company || 'N/A',
-                      growthLevel: empData.growthLevel || '', workRate: empData.workRate ?? 1.0,
-                      evaluatorId: evaluatorId || '', baseAmount: empData.baseAmount ?? 0,
-                  },
-                  roles: ['employee']
-              };
-          }
+        // Process employee info
+        const existingEmployee = allUsers.find(u => u.uniqueId === uniqueId);
+        if (existingEmployee) {
+            if (!usersToUpdate[existingEmployee.id]) usersToUpdate[existingEmployee.id] = {};
+            Object.assign(usersToUpdate[existingEmployee.id], { name, department, title, evaluatorId });
+        } else {
+            if (!usersToAdd[uniqueId]) usersToAdd[uniqueId] = { data: {}, roles: new Set(['employee']) };
+            Object.assign(usersToAdd[uniqueId].data, { uniqueId, name, department, title, evaluatorId, ...rest });
+        }
 
-          // 평가자 정보 처리
-          if (evaluatorId) {
-              const existingEvaluator = allUsers.find(u => u.uniqueId === evaluatorId);
-              if (existingEvaluator) {
-                  // ★★★ 핵심 수정: 엑셀에 평가자 이름이 있으면, 무조건 그 이름으로 업데이트
-                  if (evaluatorName) {
-                      usersToUpdate[existingEvaluator.id] = {
-                          ...(usersToUpdate[existingEvaluator.id] || {}),
-                          name: evaluatorName,
-                      };
-                  }
-              } else if (!usersToAdd[evaluatorId]) {
-                  usersToAdd[evaluatorId] = {
-                      data: {
-                          uniqueId: evaluatorId, name: evaluatorName || `평가자(${evaluatorId})`,
-                          department: '미지정', title: '평가자', position: '평가자', company: 'N/A',
-                          growthLevel: '', workRate: 1.0, evaluatorId: '', baseAmount: 0,
-                      },
-                      roles: ['evaluator', 'employee']
-                  };
-              }
-          }
-      });
+        // Process evaluator info (if present in the row)
+        if (evaluatorId) {
+            const existingEvaluator = allUsers.find(u => u.uniqueId === evaluatorId);
+            if (existingEvaluator) {
+                // If evaluator name is also in the excel, prepare to update it
+                if (item.name && item.uniqueId === evaluatorId) {
+                   if (!usersToUpdate[existingEvaluator.id]) usersToUpdate[existingEvaluator.id] = {};
+                   usersToUpdate[existingEvaluator.id].name = item.name;
+                }
+            } else {
+                if (!usersToAdd[evaluatorId]) usersToAdd[evaluatorId] = { data: {}, roles: new Set(['evaluator', 'employee']) };
+                if (item.name && item.uniqueId === evaluatorId) {
+                    usersToAdd[evaluatorId].data.name = item.name;
+                }
+                 Object.assign(usersToAdd[evaluatorId].data, { uniqueId: evaluatorId });
+            }
+        }
+    });
+
+    // 2. Batch-add and update users
+    Object.values(usersToAdd).forEach(({ data, roles }) => {
+        const defaultData = {
+          name: `사용자(${data.uniqueId})`, department: '미지정', title: '팀원',
+          position: data.title || '팀원', company: 'N/A', growthLevel: '', workRate: 1.0,
+          evaluatorId: '', baseAmount: 0,
+        };
+        handleUserAdd({ ...defaultData, ...data }, Array.from(roles));
+    });
+    Object.entries(usersToUpdate).forEach(([userId, data]) => handleUserUpdate(userId, data));
       
-      // 일괄적으로 사용자 추가 및 업데이트
-      Object.values(usersToAdd).forEach(({ data, roles }) => handleUserAdd(data, roles));
-      Object.entries(usersToUpdate).forEach(([userId, data]) => handleUserUpdate(userId, data));
-      
-      // 2단계: 직원 및 평가 데이터 설정
-      setEmployees(prevEmps => {
-          const newState = JSON.parse(JSON.stringify(prevEmps));
-          const newEmpsForMonth = newState[key] ? [...newState[key]] : [];
-          
-          uploadedData.forEach(uploadItem => {
-              const empIndex = newEmpsForMonth.findIndex((e: Employee) => e.id === uploadItem.employeeId);
-              const { grade, memo, employeeId, ...empDetails } = uploadItem;
+    // 3. Set employee and evaluation data for the month
+    setEmployees(prevEmps => {
+        const newState = JSON.parse(JSON.stringify(prevEmps));
+        const newEmpsForMonth = newState[key] ? [...newState[key]] : [];
+        
+        uploadedData.forEach(uploadItem => {
+            if (!uploadItem.uniqueId) return;
+            const empIndex = newEmpsForMonth.findIndex((e: Employee) => e.uniqueId === uploadItem.uniqueId);
+            const { grade, memo, ...empDetails } = uploadItem;
 
-              if (empIndex > -1) Object.assign(newEmpsForMonth[empIndex], empDetails);
-              else newEmpsForMonth.push({ uniqueId: uploadItem.employeeId.replace('E',''), id: uploadItem.employeeId, ...empDetails });
-          });
-          newState[key] = newEmpsForMonth;
-          return newState;
-      });
+            if (empIndex > -1) {
+                Object.assign(newEmpsForMonth[empIndex], { ...empDetails, id: `E${uploadItem.uniqueId}` });
+            } else {
+                newEmpsForMonth.push({ ...empDetails, id: `E${uploadItem.uniqueId}` });
+            }
+        });
+        newState[key] = newEmpsForMonth;
+        return newState;
+    });
 
-      setEvaluations(prevEvals => {
-          const newState = JSON.parse(JSON.stringify(prevEvals));
-          const newEvalsForMonth = newState[key] ? [...newState[key]] : [];
-          
-          uploadedData.forEach(uploadItem => {
-              const evalIndex = newEvalsForMonth.findIndex((e: Evaluation) => e.employeeId === uploadItem.employeeId);
-              const evalData = { grade: uploadItem.grade, memo: uploadItem.memo || '', };
-              if (evalIndex > -1) Object.assign(newEvalsForMonth[evalIndex], evalData);
-              else newEvalsForMonth.push({ id: `eval-${uploadItem.employeeId}-${year}-${month}`, employeeId: uploadItem.employeeId, year, month, ...evalData });
-          });
-          newState[key] = newEvalsForMonth;
-          return newState;
-      });
+    setEvaluations(prevEvals => {
+        const newState = JSON.parse(JSON.stringify(prevEvals));
+        const newEvalsForMonth = newState[key] ? [...newState[key]] : [];
+        
+        uploadedData.forEach(uploadItem => {
+            if (!uploadItem.uniqueId) return;
+            const employeeId = `E${uploadItem.uniqueId}`;
+            const evalIndex = newEvalsForMonth.findIndex((e: Evaluation) => e.employeeId === employeeId);
+            const evalData = { grade: uploadItem.grade, memo: uploadItem.memo || '', };
+            if (evalIndex > -1) {
+                Object.assign(newEvalsForMonth[evalIndex], evalData);
+            } else {
+                newEvalsForMonth.push({ id: `eval-${employeeId}-${year}-${month}`, employeeId, year, month, ...evalData });
+            }
+        });
+        newState[key] = newEvalsForMonth;
+        return newState;
+    });
   };
   
   const handleWorkRateDataUpload = (year: number, month: number, type: keyof WorkRateInputs, newData: any[], isApproved: boolean) => {
@@ -685,7 +685,7 @@ export default function Home() {
                   activeView={adminActiveView}
                   onClearEmployeeData={handleClearEmployeeData}
                   onClearEvaluationData={handleClearEvaluationData}
-                  onWorkRateDataUpload={handleWorkRateDataUpload}
+                  onWorkRateDataUpload={onWorkRateDataUpload}
                   onClearWorkRateData={handleClearWorkRateData}
                   workRateInputs={workRateInputs}
                   attendanceTypes={attendanceTypes}
