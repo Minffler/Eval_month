@@ -8,8 +8,7 @@ export const mockUsers: User[] = [
     "name": "김관리",
     "roles": [
       "admin",
-      "evaluator",
-      "employee"
+      "evaluator"
     ],
     "avatar": "https://placehold.co/100x100.png?text=A",
     "title": "팀원",

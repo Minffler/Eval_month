@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Download, Trash2, UploadCloud, CheckCircle2, AlertCircle, Save } from 'lucide-react';
+import { Download, Trash2, UploadCloud, CheckCircle2, AlertCircle, Save, RefreshCw } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import type { Employee, EvaluationResult, Grade, EvaluationUploadData, WorkRateInputs, ShortenedWorkHourRecord, DailyAttendanceRecord, ShortenedWorkType, HeaderMapping } from '@/lib/types';
 import { excelHeaderMapping, excelHeaderTargetScreens } from '@/lib/data';
@@ -40,6 +40,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import { Label } from '../ui/label';
 import { cn } from '@/lib/utils';
 import { backupData, type BackupDataInput } from '@/ai/flows/backup-data-flow';
+import { restoreData } from '@/ai/flows/restore-data-flow';
 import { Loader2 } from 'lucide-react';
 
 interface ManageDataProps {
@@ -66,13 +67,18 @@ const parseExcelFile = <T extends {}>(file: File, mapping: HeaderMapping, parser
                 const worksheet = workbook.Sheets[sheetName];
                 const json = XLSX.utils.sheet_to_json<any>(worksheet);
 
-                // Reverse the provided mapping to map from system field to Excel header
+                const reverseMapping: {[key: string]: string} = {};
+                for (const excelHeader in mapping) {
+                  reverseMapping[mapping[excelHeader]] = excelHeader;
+                }
+                
                 const mappedJson = json.map(row => {
                     const newRow: any = {};
                     for (const excelHeader in row) {
-                        const systemField = mapping[excelHeader];
-                        if (systemField && systemField !== 'ignore') {
-                           newRow[systemField] = row[excelHeader];
+                        const systemField = Object.keys(reverseMapping).find(key => reverseMapping[key] === excelHeader);
+                        const mappedField = mapping[excelHeader];
+                        if (mappedField && mappedField !== 'ignore') {
+                           newRow[mappedField] = row[excelHeader];
                         }
                     }
                     return newRow;
@@ -155,8 +161,8 @@ export default function ManageData({
   workRateInputs
 }: ManageDataProps) {
   const { toast } = useToast();
-  const [dialogOpen, setDialogOpen] = React.useState<{ type: 'deleteEmployees' | 'resetEvaluations' | 'resetWorkData' | 'backupData', workDataType?: keyof WorkRateInputs | ShortenedWorkType } | null>(null);
-  const [isBackupLoading, setIsBackupLoading] = React.useState(false);
+  const [dialogOpen, setDialogOpen] = React.useState<{ type: 'deleteEmployees' | 'resetEvaluations' | 'resetWorkData' | 'backupData' | 'restoreData', workDataType?: keyof WorkRateInputs | ShortenedWorkType } | null>(null);
+  const [isProcessing, setIsProcessing] = React.useState(false);
 
   // State for header mapping dialog
   const [isMappingDialogOpen, setIsMappingDialogOpen] = React.useState(false);
@@ -193,7 +199,7 @@ export default function ManageData({
   }
 
   const handleBackupData = async () => {
-    setIsBackupLoading(true);
+    setIsProcessing(true);
     try {
         const backupPayload: BackupDataInput = {
             users: localStorage.getItem('users') || '[]',
@@ -204,12 +210,34 @@ export default function ManageData({
             holidays: localStorage.getItem('holidays') || '[]',
         };
         await backupData(backupPayload);
-        toast({ title: '저장 완료', description: '현재 데이터를 초기 데이터로 저장했습니다. 앱을 새로고침하여 변경사항을 확인하세요.' });
+        toast({ title: '저장 완료', description: '현재 데이터를 초기 데이터로 저장했습니다. 다른 브라우저에서 [초기 데이터로 덮어쓰기]를 실행하여 동기화하세요.' });
     } catch (error) {
         toast({ variant: 'destructive', title: '저장 실패', description: '데이터 저장 중 오류가 발생했습니다.' });
         console.error("Backup failed", error);
     } finally {
-        setIsBackupLoading(false);
+        setIsProcessing(false);
+        setDialogOpen(null);
+    }
+  };
+
+  const handleRestoreData = async () => {
+    setIsProcessing(true);
+    try {
+        const restoredData = await restoreData();
+        for (const key in restoredData) {
+            localStorage.setItem(key, restoredData[key]);
+        }
+        toast({ title: '동기화 완료', description: '최신 초기 데이터로 덮어썼습니다. 페이지를 새로고침합니다.' });
+        
+        setTimeout(() => {
+            window.location.reload();
+        }, 1500);
+
+    } catch (error) {
+        toast({ variant: 'destructive', title: '복원 실패', description: '초기 데이터를 불러오는 중 오류가 발생했습니다.' });
+        console.error("Restore failed", error);
+    } finally {
+        setIsProcessing(false);
         setDialogOpen(null);
     }
   };
@@ -488,13 +516,19 @@ export default function ManageData({
             <Separator />
             <div className="space-y-4">
                 <div>
-                    <h4 className="font-semibold">초기 데이터 저장</h4>
-                    <p className="text-sm text-muted-foreground">현재 시스템의 모든 데이터를 초기 목업 데이터로 덮어씁니다. (사용자, 직원, 평가, 등급표, 근무기준 등)</p>
+                    <h4 className="font-semibold">초기 데이터 동기화</h4>
+                    <p className="text-sm text-muted-foreground">현재 시스템의 모든 데이터를 초기 목업 데이터로 덮어쓰거나, 최신 초기 데이터로 동기화합니다.</p>
                 </div>
-                <Button variant="secondary" className="w-full" onClick={() => setDialogOpen({ type: 'backupData'})}>
-                    <Save className="mr-2 h-4 w-4"/>
-                    현재 데이터를 초기 데이터로 저장
-                </Button>
+                <div className="flex gap-4">
+                  <Button variant="secondary" className="w-full" onClick={() => setDialogOpen({ type: 'backupData'})}>
+                      <Save className="mr-2 h-4 w-4"/>
+                      현재 데이터를 초기 데이터로 저장
+                  </Button>
+                  <Button variant="outline" className="w-full" onClick={() => setDialogOpen({ type: 'restoreData'})}>
+                      <RefreshCw className="mr-2 h-4 w-4"/>
+                      초기 데이터로 덮어쓰기
+                  </Button>
+                </div>
             </div>
         </CardContent>
       </Card>
@@ -507,7 +541,8 @@ export default function ManageData({
                       {dialogOpen?.type === 'deleteEmployees' && `기존 대상자 ${results.length}명의 이력을 모두 삭제합니다. 이 작업은 되돌릴 수 없습니다.`}
                       {dialogOpen?.type === 'resetEvaluations' && `기존 대상자 ${results.filter(r => r.grade).length}명의 평가 데이터를 모두 초기화합니다. 이 작업은 되돌릴 수 없습니다.`}
                       {dialogOpen?.type === 'resetWorkData' && `선택한 근무 데이터를 초기화합니다. 이 작업은 되돌릴 수 없습니다.`}
-                      {dialogOpen?.type === 'backupData' && `현재 브라우저에 저장된 모든 데이터를 시스템의 초기 데이터로 덮어씁니다. 이 작업은 되돌릴 수 없으며, 앱을 새로고침해야 적용됩니다.`}
+                      {dialogOpen?.type === 'backupData' && `현재 브라우저에 저장된 모든 데이터를 시스템의 초기 데이터로 덮어씁니다. 이 작업은 되돌릴 수 없습니다.`}
+                      {dialogOpen?.type === 'restoreData' && `현재 브라우저의 모든 데이터를 서버의 최신 초기 데이터로 덮어씁니다. 저장하지 않은 변경사항은 사라지며, 이 작업은 되돌릴 수 없습니다.`}
                   </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -518,10 +553,11 @@ export default function ManageData({
                         else if (dialogOpen?.type === 'resetEvaluations') handleResetEvaluations();
                         else if (dialogOpen?.type === 'resetWorkData') handleResetWorkData();
                         else if (dialogOpen?.type === 'backupData') handleBackupData();
+                        else if (dialogOpen?.type === 'restoreData') handleRestoreData();
                     }}
-                    disabled={isBackupLoading}
+                    disabled={isProcessing}
                   >
-                      {isBackupLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       확인
                   </AlertDialogAction>
               </AlertDialogFooter>
