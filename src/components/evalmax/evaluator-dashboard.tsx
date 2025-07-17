@@ -92,6 +92,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command"
+import AdminDashboard from './admin-dashboard';
 
 
 interface EvaluatorDashboardProps {
@@ -1329,6 +1330,45 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
       case 'notifications':
           return <EvaluatorNotifications notifications={notifications} deleteNotification={deleteNotification} />;
       default:
+        // This case might be triggered when admin is viewing an evaluator's dashboard.
+        // The AdminDashboard is more appropriate here.
+        if (authUser?.roles.includes('admin') && evaluatorUser) {
+            return (
+                <AdminDashboard
+                    results={allResults}
+                    allUsers={allUsers}
+                    onEmployeeUpload={() => {}}
+                    onEvaluationUpload={() => {}}
+                    gradingScale={gradingScale}
+                    setGradingScale={() => {}}
+                    selectedDate={selectedDate}
+                    setSelectedDate={setSelectedDate}
+                    onEvaluatorAssignmentChange={handleEvaluatorAssignmentChange}
+                    onUserAdd={() => {}}
+                    onRolesChange={() => {}}
+                    onUserUpdate={() => {}}
+                    onUserDelete={() => {}}
+                    onUsersDelete={() => {}}
+                    activeView={activeView}
+                    onClearEmployeeData={() => {}}
+                    onClearEvaluationData={() => {}}
+                    onClearWorkRateData={() => {}}
+                    workRateInputs={{}}
+                    attendanceTypes={attendanceTypes}
+                    setAttendanceTypes={() => {}}
+                    holidays={holidays}
+                    setHolidays={() => {}}
+                    workRateDetails={workRateDetails}
+                    onApprovalAction={onApprovalAction}
+                    notifications={notifications}
+                    addNotification={addNotification}
+                    deleteNotification={deleteNotification}
+                    approvals={approvals}
+                    evaluationStatus="open"
+                    onEvaluationStatusChange={() => {}}
+                />
+            );
+        }
         return <div className="flex flex-col items-center justify-center h-40 text-center">
                   <Inbox className="h-10 w-10 text-muted-foreground mb-4" />
                   <p className="text-muted-foreground">새로운 알림이 없습니다.</p>
