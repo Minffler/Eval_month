@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -1334,7 +1335,7 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
       default:
         // This case might be triggered when admin is viewing an evaluator's dashboard.
         // The AdminDashboard is more appropriate here.
-        if (authUser?.roles.includes('admin') && evaluatorUser) {
+        if (authUser?.roles.includes('admin') && evaluatorUser && onWorkRateDataUpload) {
             return (
                 <AdminDashboard
                     results={allResults}
@@ -1354,7 +1355,7 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
                     activeView={activeView}
                     onClearEmployeeData={() => {}}
                     onClearEvaluationData={() => {}}
-                    onWorkRateDataUpload={onWorkRateDataUpload || (() => {})}
+                    onWorkRateDataUpload={onWorkRateDataUpload}
                     onClearWorkRateData={() => {}}
                     workRateInputs={{}}
                     attendanceTypes={attendanceTypes}

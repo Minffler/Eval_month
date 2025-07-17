@@ -314,95 +314,94 @@ export default function Home() {
   };
 
   const handleEvaluationUpload = (year: number, month: number, uploadedData: EvaluationUploadData[]) => {
-    const key = `${year}-${month}`;
+      const key = `${year}-${month}`;
 
-    // 1. Process all user info from the upload, preparing updates and additions
-    const usersToUpdate: Record<string, Partial<User>> = {};
-    const usersToAdd: Record<string, { data: Partial<Employee & User>, roles: Set<Role> }> = {};
-
-    uploadedData.forEach(item => {
-        const { uniqueId, name, department, title, evaluatorId, ...rest } = item;
-        if (!uniqueId) return;
-
-        // Process employee info
-        const existingEmployee = allUsers.find(u => u.uniqueId === uniqueId);
-        if (existingEmployee) {
-            if (!usersToUpdate[existingEmployee.id]) usersToUpdate[existingEmployee.id] = {};
-            Object.assign(usersToUpdate[existingEmployee.id], { name, department, title, evaluatorId });
-        } else {
-            if (!usersToAdd[uniqueId]) usersToAdd[uniqueId] = { data: {}, roles: new Set(['employee']) };
-            Object.assign(usersToAdd[uniqueId].data, { uniqueId, name, department, title, evaluatorId, ...rest });
-        }
-
-        // Process evaluator info
-        if (evaluatorId) {
-            const existingEvaluator = allUsers.find(u => u.uniqueId === evaluatorId);
-            if (existingEvaluator) {
-                // If the evaluator's name is also provided in the Excel row, update it.
-                if (item.name && item.uniqueId === evaluatorId) {
-                   if (!usersToUpdate[existingEvaluator.id]) usersToUpdate[existingEvaluator.id] = {};
-                   usersToUpdate[existingEvaluator.id].name = item.name;
-                }
-            } else {
-                if (!usersToAdd[evaluatorId]) usersToAdd[evaluatorId] = { data: {}, roles: new Set(['evaluator', 'employee']) };
-                if (item.name && item.uniqueId === evaluatorId) {
-                    usersToAdd[evaluatorId].data.name = item.name;
-                }
-                 Object.assign(usersToAdd[evaluatorId].data, { uniqueId: evaluatorId });
-            }
-        }
-    });
-    
-    // 2. Batch-add and update users
-    Object.values(usersToAdd).forEach(({ data, roles }) => {
-        const defaultData = {
-          name: `사용자(${data.uniqueId})`, department: '미지정', title: '팀원',
-          position: data.title || '팀원', company: 'N/A', growthLevel: '', workRate: 1.0,
-          evaluatorId: data.evaluatorId || '', baseAmount: 0,
-        };
-        handleUserAdd({ ...defaultData, ...data }, Array.from(roles));
-    });
-    Object.entries(usersToUpdate).forEach(([userId, data]) => handleUserUpdate(userId, data));
+      // 1. Prepare user updates from the uploaded data
+      const usersToUpdate: Record<string, Partial<User>> = {};
+      const usersToAdd: Record<string, { data: Partial<User>, roles: Set<Role> }> = {};
       
-    // 3. Set employee and evaluation data for the month
-    setEmployees(prevEmps => {
-        const newState = JSON.parse(JSON.stringify(prevEmps));
-        const newEmpsForMonth = newState[key] ? [...newState[key]] : [];
-        
-        uploadedData.forEach(uploadItem => {
-            if (!uploadItem.uniqueId) return;
-            const empIndex = newEmpsForMonth.findIndex((e: Employee) => e.uniqueId === uploadItem.uniqueId);
-            const { grade, memo, ...empDetails } = uploadItem;
-            const dataToUpdate = { ...empDetails, id: `E${uploadItem.uniqueId}` };
+      const processUser = (uniqueId: string, name: string | undefined, roles: Role[], data: Partial<User>) => {
+          if (!uniqueId) return;
+          const existingUser = allUsers.find(u => u.uniqueId === uniqueId);
+          if (existingUser) {
+              if (!usersToUpdate[existingUser.id]) usersToUpdate[existingUser.id] = {};
+              if (name) usersToUpdate[existingUser.id].name = name;
+              Object.assign(usersToUpdate[existingUser.id], data);
+          } else {
+              if (!usersToAdd[uniqueId]) usersToAdd[uniqueId] = { data: {}, roles: new Set(roles) };
+              Object.assign(usersToAdd[uniqueId].data, { uniqueId, name, ...data });
+              roles.forEach(r => usersToAdd[uniqueId].roles.add(r));
+          }
+      };
 
-            if (empIndex > -1) {
-                Object.assign(newEmpsForMonth[empIndex], dataToUpdate);
-            } else {
-                newEmpsForMonth.push(dataToUpdate);
-            }
-        });
-        newState[key] = newEmpsForMonth;
-        return newState;
-    });
+      uploadedData.forEach(item => {
+          const { uniqueId, name, department, title, evaluatorId, ...rest } = item;
+          if (!uniqueId) return;
 
-    setEvaluations(prevEvals => {
-        const newState = JSON.parse(JSON.stringify(prevEvals));
-        const newEvalsForMonth = newState[key] ? [...newState[key]] : [];
+          // Process employee info
+          processUser(uniqueId, name, ['employee'], { department, title, evaluatorId });
+          
+          // Process evaluator info
+          if (evaluatorId) {
+            const isEvaluatorInSheetAsEmployee = uploadedData.find(d => d.uniqueId === evaluatorId);
+            const evaluatorName = isEvaluatorInSheetAsEmployee?.name;
+            processUser(evaluatorId, evaluatorName, ['evaluator', 'employee'], {});
+          }
+      });
+      
+      // 2. Batch-add and update users
+      Object.values(usersToAdd).forEach(({ data, roles }) => {
+          const defaultData = {
+              name: `사용자(${data.uniqueId})`, department: '미지정', title: '팀원',
+              position: data.title || '팀원', company: 'N/A', growthLevel: '', workRate: 1.0,
+              evaluatorId: data.evaluatorId || '', baseAmount: 0,
+          };
+          handleUserAdd({ ...defaultData, ...data }, Array.from(roles));
+      });
+      
+      Object.entries(usersToUpdate).forEach(([userId, data]) => {
+          handleUserUpdate(userId, data);
+      });
         
-        uploadedData.forEach(uploadItem => {
-            if (!uploadItem.uniqueId) return;
-            const employeeId = `E${uploadItem.uniqueId}`;
-            const evalIndex = newEvalsForMonth.findIndex((e: Evaluation) => e.employeeId === employeeId);
-            const evalData = { grade: uploadItem.grade, memo: uploadItem.memo || '', };
-            if (evalIndex > -1) {
-                Object.assign(newEvalsForMonth[evalIndex], evalData);
-            } else {
-                newEvalsForMonth.push({ id: `eval-${employeeId}-${year}-${month}`, employeeId, year, month, ...evalData });
-            }
-        });
-        newState[key] = newEvalsForMonth;
-        return newState;
-    });
+      // 3. Set employee and evaluation data for the month
+      setEmployees(prevEmps => {
+          const newState = JSON.parse(JSON.stringify(prevEmps));
+          const newEmpsForMonth = newState[key] ? [...newState[key]] : [];
+          
+          uploadedData.forEach(uploadItem => {
+              if (!uploadItem.uniqueId) return;
+              const empIndex = newEmpsForMonth.findIndex((e: Employee) => e.uniqueId === uploadItem.uniqueId);
+              const { grade, memo, ...empDetails } = uploadItem;
+              const dataToUpdate = { ...empDetails, id: `E${uploadItem.uniqueId}` };
+
+              if (empIndex > -1) {
+                  Object.assign(newEmpsForMonth[empIndex], dataToUpdate);
+              } else {
+                  newEmpsForMonth.push(dataToUpdate);
+              }
+          });
+          newState[key] = newEmpsForMonth;
+          return newState;
+      });
+
+      setEvaluations(prevEvals => {
+          const newState = JSON.parse(JSON.stringify(prevEvals));
+          const newEvalsForMonth = newState[key] ? [...newState[key]] : [];
+          
+          uploadedData.forEach(uploadItem => {
+              if (!uploadItem.uniqueId) return;
+              const employeeId = `E${uploadItem.uniqueId}`;
+              const evalIndex = newEvalsForMonth.findIndex((e: Evaluation) => e.employeeId === employeeId);
+              const evalData = { grade: uploadItem.grade, memo: uploadItem.memo || '', };
+              if (evalIndex > -1) {
+                  Object.assign(newEvalsForMonth[evalIndex], evalData);
+              } else {
+                  newEvalsForMonth.push({ id: `eval-${employeeId}-${year}-${month}`, employeeId, year, month, ...evalData });
+              }
+          });
+          newState[key] = newEvalsForMonth;
+          return newState;
+      });
   };
   
   const handleWorkRateDataUpload = (year: number, month: number, type: keyof WorkRateInputs, newData: any[], isApproved: boolean) => {
