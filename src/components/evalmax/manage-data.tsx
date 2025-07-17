@@ -69,7 +69,7 @@ const parseExcelFile = <T extends {}>(file: File, mapping: HeaderMapping, parser
                 
                 const reverseMapping: {[key: string]: string} = {};
                 for (const excelHeader in mapping) {
-                    reverseMapping[mapping[excelHeader]] = excelHeader;
+                    reverseMapping[mapping[excelHeader].field] = excelHeader;
                 }
                 
                 const mappedJson = json.map(row => {
@@ -170,11 +170,24 @@ export default function ManageData({
   const [fileToProcess, setFileToProcess] = React.useState<File | null>(null);
   const [uploadType, setUploadType] = React.useState<'employees' | 'evaluations' | null>(null);
 
-  const systemFields = [...new Set(Object.values(excelHeaderTargetScreens))].sort();
+  const systemFieldsByScreen: Record<string, string[]> = React.useMemo(() => {
+    const result: Record<string, string[]> = {};
+    for (const field in excelHeaderTargetScreens) {
+        const screen = excelHeaderTargetScreens[field];
+        if (!result[screen]) {
+            result[screen] = [];
+        }
+        if (!result[screen].includes(field)) {
+            result[screen].push(field);
+        }
+    }
+    return result;
+  }, []);
+
   const requiredFields: string[] = ['uniqueId'];
 
   const isMappingValid = React.useMemo(() => {
-    const mappedSystemFields = Object.values(currentMapping);
+    const mappedSystemFields = Object.values(currentMapping).map(m => m.field);
     return requiredFields.every(field => mappedSystemFields.includes(field));
   }, [currentMapping]);
   
@@ -263,23 +276,17 @@ export default function ManageData({
             setFileToProcess(file);
             setUploadType(type);
 
-            // Attempt to auto-map based on a reverse lookup of excelHeaderTargetScreens
             const autoMapping: HeaderMapping = {};
-            const systemToExcelMap: Record<string, string[]> = {};
-            for (const header in excelHeaderTargetScreens) {
-              const systemField = excelHeaderTargetScreens[header];
-              if (!systemToExcelMap[systemField]) systemToExcelMap[systemField] = [];
-              systemToExcelMap[systemField].push(header);
-            }
             
             headers.forEach(header => {
-              for (const systemField in systemToExcelMap) {
-                if(systemToExcelMap[systemField].includes(header)) {
-                  if (!Object.values(autoMapping).includes(systemField)) {
-                    autoMapping[header] = systemField;
+              for (const field in excelHeaderTargetScreens) {
+                  if (header === field || header.replace(/\s/g, '').toLowerCase() === field.replace(/\s/g, '').toLowerCase()) {
+                      const screen = excelHeaderTargetScreens[field];
+                      if (!Object.values(autoMapping).some(m => m.field === field)) {
+                          autoMapping[header] = { screen, field };
+                          break;
+                      }
                   }
-                  break;
-                }
               }
             });
             
@@ -294,10 +301,46 @@ export default function ManageData({
   
   const handleProcessMappedFile = async () => {
     if (!fileToProcess || !uploadType) return;
+    
+    const finalMapping: { [key: string]: string } = {};
+    for (const header in currentMapping) {
+        if(currentMapping[header].field) {
+            finalMapping[header] = currentMapping[header].field;
+        }
+    }
+    const simpleParser = (json: any[]) => json.map(row => {
+        const newRow: any = {};
+        for (const excelHeader in finalMapping) {
+            const systemField = finalMapping[excelHeader];
+            if (row[excelHeader] !== undefined) {
+                newRow[systemField] = row[excelHeader];
+            }
+        }
+        return newRow;
+    });
+
     try {
         let uploadCount = 0;
+        const parsedJson = await new Promise<any[]>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = new Uint8Array(e.target?.result as ArrayBuffer);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    resolve(XLSX.utils.sheet_to_json<any>(worksheet));
+                } catch (error) {
+                    reject(error);
+                }
+            };
+            reader.readAsArrayBuffer(fileToProcess);
+        });
+
+        const processedData = simpleParser(parsedJson);
+
         if (uploadType === 'employees') {
-            const newEmployees = await parseExcelFile<Employee>(fileToProcess, currentMapping, (json) => json.map((row, index) => {
+            const newEmployees = processedData.map((row, index) => {
               const uniqueId = String(row['uniqueId'] || '');
               if (!uniqueId) throw new Error(`${index + 2}번째 행에 ID가 없습니다.`);
               return {
@@ -308,11 +351,11 @@ export default function ManageData({
                 evaluatorId: String(row['evaluatorId'] || ''), baseAmount: Number(String(row['baseAmount'] || '0').replace(/,/g, '')),
                 memo: String(row['memo'] || ''),
               };
-            }));
+            });
             uploadCount = newEmployees.length;
             onEmployeeUpload(selectedDate.year, selectedDate.month, newEmployees);
         } else if (uploadType === 'evaluations') {
-             const newEvals = await parseExcelFile<EvaluationUploadData>(fileToProcess, currentMapping, json => json.map((row, index) => {
+             const newEvals = processedData.map((row, index) => {
               const uniqueId = String(row['uniqueId'] || '');
               if (!uniqueId) throw new Error(`${index + 2}번째 행에 ID가 없습니다.`);
               
@@ -330,7 +373,7 @@ export default function ManageData({
                   baseAmount: baseAmountValue !== undefined && baseAmountValue !== null ? Number(String(baseAmountValue).replace(/,/g, '')) : undefined,
                   grade: (String(row['grade'] || '') || null) as Grade, memo: row['memo'] !== undefined ? String(row['memo']) : undefined,
               };
-            }));
+            });
             uploadCount = newEvals.length;
             onEvaluationUpload(selectedDate.year, selectedDate.month, newEvals);
         }
@@ -458,9 +501,20 @@ export default function ManageData({
     XLSX.writeFile(workbook, fileName);
   };
 
-  const handleMappingChange = (excelHeader: string, systemField: string) => {
-    setCurrentMapping(prev => ({...prev, [excelHeader]: systemField}));
-  }
+  const handleMappingChange = (excelHeader: string, type: 'screen' | 'field', value: string) => {
+      setCurrentMapping(prev => {
+          const newMapping = { ...prev };
+          const current = newMapping[excelHeader] || { screen: '', field: '' };
+
+          if (type === 'screen') {
+              // If screen changes, reset the field
+              newMapping[excelHeader] = { screen: value, field: '' };
+          } else {
+              newMapping[excelHeader] = { ...current, field: value };
+          }
+          return newMapping;
+      });
+  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -583,7 +637,7 @@ export default function ManageData({
       </AlertDialog>
 
       <Dialog open={isMappingDialogOpen} onOpenChange={setIsMappingDialogOpen}>
-        <DialogContent2 className="max-w-3xl">
+        <DialogContent2 className="max-w-4xl">
           <DialogHeader2>
             <DialogTitle2>엑셀 헤더 매핑 설정</DialogTitle2>
             <DialogDescription2>
@@ -597,51 +651,72 @@ export default function ManageData({
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-1/3">엑셀 헤더</TableHead>
-                  <TableHead>시스템 데이터</TableHead>
-                  <TableHead className="w-[120px]">연결된 화면</TableHead>
+                  <TableHead>데이터 종류</TableHead>
+                  <TableHead>세부 항목</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {excelHeaders.map(header => (
-                  <TableRow key={header}>
-                    <TableCell className="font-medium">{header}</TableCell>
-                    <TableCell>
-                      <Select
-                        value={currentMapping[header] || 'ignore'}
-                        onValueChange={(value) => handleMappingChange(header, value)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="매핑할 필드 선택..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="ignore">매핑 안함</SelectItem>
-                          <Separator />
-                          {systemFields.map(field => {
-                            const selectedByOtherHeader = Object.values(currentMapping).includes(field) && currentMapping[header] !== field;
-                            return (
-                                <SelectItem key={field} value={field} disabled={selectedByOtherHeader}>
-                                {requiredFields.includes(field as any) && <span className="text-destructive">* </span>}
-                                {field}
-                                </SelectItem>
-                            )
-                           })}
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell className="text-center text-xs text-muted-foreground">
-                        {excelHeaderTargetScreens[currentMapping[header] as keyof typeof excelHeaderTargetScreens] || ''}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {excelHeaders.map(header => {
+                  const mapping = currentMapping[header] || { screen: '', field: '' };
+                  const availableFields = mapping.screen ? systemFieldsByScreen[mapping.screen] : [];
+
+                  return (
+                    <TableRow key={header}>
+                      <TableCell className="font-medium">{header}</TableCell>
+                      <TableCell>
+                        <Select
+                          value={mapping.screen || 'ignore'}
+                          onValueChange={(value) => handleMappingChange(header, 'screen', value === 'ignore' ? '' : value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="종류 선택..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="ignore">매핑 안함</SelectItem>
+                            <Separator />
+                            {Object.keys(systemFieldsByScreen).map(screen => (
+                              <SelectItem key={screen} value={screen}>
+                                {screen}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        <Select
+                          value={mapping.field || 'ignore'}
+                          onValueChange={(value) => handleMappingChange(header, 'field', value === 'ignore' ? '' : value)}
+                          disabled={!mapping.screen}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="항목 선택..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="ignore">매핑 안함</SelectItem>
+                            <Separator />
+                            {availableFields.map(field => {
+                                const selectedByOtherHeader = Object.values(currentMapping).some(m => m.field === field && m.screen === mapping.screen) && mapping.field !== field;
+                                return (
+                                    <SelectItem key={field} value={field} disabled={selectedByOtherHeader}>
+                                    {requiredFields.includes(field) && <span className="text-destructive">* </span>}
+                                    {field}
+                                    </SelectItem>
+                                )
+                            })}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </ScrollArea>
            <div className="flex justify-between items-center pt-2">
             <Label className="text-xs text-muted-foreground">
                 {requiredFields.map(f => {
-                    const systemFieldInfo = Object.entries(excelHeaderTargetScreens).find(([key, val]) => val === f);
-                    const excelHeaderName = Object.keys(excelHeaderTargetScreens).find(key => excelHeaderTargetScreens[key] === f);
-                    return excelHeaderName || f;
+                    const fieldName = Object.keys(excelHeaderTargetScreens).find(key => key === f) || f;
+                    return fieldName;
                 }).join(', ')} 필드는 반드시 매핑되어야 합니다.
             </Label>
             {isMappingValid ? 
@@ -658,4 +733,3 @@ export default function ManageData({
     </div>
   );
 }
-

@@ -160,5 +160,8 @@ export type Holiday = {
 }
 
 export type HeaderMapping = {
-  [excelHeader: string]: string; // systemField
-}
+  [excelHeader: string]: {
+    screen: string;
+    field: string;
+  };
+};
