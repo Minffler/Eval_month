@@ -369,41 +369,27 @@ export const initialHolidays: Holiday[] = [
 ];
 
 
-export const excelHeaderMapping: HeaderMapping = {
+export const excelHeaderMapping: Record<string, string> = {
     // 키: 엑셀에서 사용될 수 있는 헤더 이름
     // 값: 시스템 내부에서 사용하는 필드 이름
-    "고유사번": "uniqueId",
-    "사번": "uniqueId",
-    "ID": "uniqueId",
-    "id": "uniqueId",
-    "성명": "name",
-    "이름": "name",
-    "피평가자": "name",
+    "고유사번": "uniqueId", "사번": "uniqueId", "ID": "uniqueId", "id": "uniqueId",
+    "성명": "name", "이름": "name", "피평가자": "name",
     "회사": "company",
-    "부서": "department",
-    "소속부서": "department",
+    "부서": "department", "소속부서": "department",
     "직책": "title",
     "성장레벨": "growthLevel",
-    "근무율": "workRate",
-    "실근무율": "workRate",
-    "기준금액": "baseAmount",
-    "개인별 기준금액": "baseAmount",
-    "평가자 ID": "evaluatorId",
-    "평가자 id": "evaluatorId",
-    "평가자사번": "evaluatorId",
+    "근무율": "workRate", "실근무율": "workRate",
+    "기준금액": "baseAmount", "개인별 기준금액": "baseAmount",
+    "평가자 ID": "evaluatorId", "평가자 id": "evaluatorId", "평가자사번": "evaluatorId",
     "평가자": "evaluatorName",
     "등급": "grade",
     "비고": "memo",
-    "시작일": "startDate",
-    "시작일자": "startDate",
-    "종료일": "endDate",
-    "종료일자": "endDate",
+    "시작일": "startDate", "시작일자": "startDate",
+    "종료일": "endDate", "종료일자": "endDate",
     "출근시각": "startTime",
     "퇴근시각": "endTime",
-    "일자": "date",
-    "근태사용일": "date",
-    "근태": "type",
-    "근태종류": "type"
+    "일자": "date", "근태사용일": "date",
+    "근태": "type", "근태종류": "type"
 };
 
 export const excelHeaderTargetScreens: Record<string, string> = {
@@ -418,7 +404,6 @@ export const excelHeaderTargetScreens: Record<string, string> = {
     department: '월별 대상자',
     title: '월별 대상자',
     growthLevel: '월별 대상자',
-    workRate: '월별 대상자',
     baseAmount: '월별 대상자',
     
     // 평가 결과
@@ -432,6 +417,7 @@ export const excelHeaderTargetScreens: Record<string, string> = {
     endTime: '근무 데이터',
     date: '근무 데이터',
     type: '근무 데이터',
+    workRate: '월별 대상자',
 };
 
 
@@ -467,3 +453,4 @@ export const getDetailedGroup1 = (workRate: number): string => {
   
   return `${upperBound}%~${lowerBound}%`;
 };
+

@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Download, Trash2, UploadCloud, CheckCircle2, AlertCircle, Save, RefreshCw } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import type { Employee, EvaluationResult, Grade, EvaluationUploadData, WorkRateInputs, ShortenedWorkHourRecord, DailyAttendanceRecord, ShortenedWorkType, HeaderMapping } from '@/lib/types';
-import { excelHeaderTargetScreens } from '@/lib/data';
+import { excelHeaderMapping, excelHeaderTargetScreens } from '@/lib/data';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -66,12 +66,15 @@ const parseExcelFile = <T extends {}>(file: File, mapping: HeaderMapping, parser
                 const sheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[sheetName];
                 const json = XLSX.utils.sheet_to_json<any>(worksheet);
-                
+
                 const reverseMapping: {[key: string]: string} = {};
                 for (const excelHeader in mapping) {
-                    reverseMapping[mapping[excelHeader].field] = excelHeader;
+                    const systemField = mapping[excelHeader].field;
+                    if(systemField) {
+                       reverseMapping[systemField] = excelHeader;
+                    }
                 }
-                
+
                 const mappedJson = json.map(row => {
                     const newRow: any = {};
                     for(const systemField in reverseMapping) {
@@ -277,13 +280,13 @@ export default function ManageData({
             setUploadType(type);
 
             const autoMapping: HeaderMapping = {};
-            
             headers.forEach(header => {
-              for (const field in excelHeaderTargetScreens) {
-                  if (header === field || header.replace(/\s/g, '').toLowerCase() === field.replace(/\s/g, '').toLowerCase()) {
-                      const screen = excelHeaderTargetScreens[field];
-                      if (!Object.values(autoMapping).some(m => m.field === field)) {
-                          autoMapping[header] = { screen, field };
+              for (const excelHeaderVariant in excelHeaderMapping) {
+                  if (header === excelHeaderVariant) {
+                      const systemField = excelHeaderMapping[excelHeaderVariant];
+                      const screen = excelHeaderTargetScreens[systemField];
+                      if (screen && !Object.values(autoMapping).some(m => m.field === systemField)) {
+                          autoMapping[header] = { screen, field: systemField };
                           break;
                       }
                   }
@@ -302,83 +305,47 @@ export default function ManageData({
   const handleProcessMappedFile = async () => {
     if (!fileToProcess || !uploadType) return;
     
-    const finalMapping: { [key: string]: string } = {};
-    for (const header in currentMapping) {
-        if(currentMapping[header].field) {
-            finalMapping[header] = currentMapping[header].field;
-        }
-    }
-    const simpleParser = (json: any[]) => json.map(row => {
-        const newRow: any = {};
-        for (const excelHeader in finalMapping) {
-            const systemField = finalMapping[excelHeader];
-            if (row[excelHeader] !== undefined) {
-                newRow[systemField] = row[excelHeader];
-            }
-        }
-        return newRow;
-    });
-
     try {
-        let uploadCount = 0;
-        const parsedJson = await new Promise<any[]>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    const data = new Uint8Array(e.target?.result as ArrayBuffer);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const sheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[sheetName];
-                    resolve(XLSX.utils.sheet_to_json<any>(worksheet));
-                } catch (error) {
-                    reject(error);
-                }
+      const parsedData = await parseExcelFile(fileToProcess, currentMapping, (rows) => rows);
+
+      let uploadCount = 0;
+      if (uploadType === 'employees') {
+          const newEmployees = parsedData.map((row, index) => {
+            const uniqueId = String(row['uniqueId'] || '');
+            if (!uniqueId) throw new Error(`${index + 2}번째 행에 ID가 없습니다.`);
+            return {
+              id: `E${uniqueId}`, uniqueId, name: String(row['name'] || ''),
+              company: String(row['company'] || ''), department: String(row['department'] || ''),
+              title: String(row['title'] || '팀원'), position: String(row['title'] || '팀원'),
+              growthLevel: String(row['growthLevel'] || ''), workRate: parseFloat(String(row['workRate'] || '1')),
+              evaluatorId: String(row['evaluatorId'] || ''), baseAmount: Number(String(row['baseAmount'] || '0').replace(/,/g, '')),
+              memo: String(row['memo'] || ''),
             };
-            reader.readAsArrayBuffer(fileToProcess);
-        });
+          });
+          uploadCount = newEmployees.length;
+          onEmployeeUpload(selectedDate.year, selectedDate.month, newEmployees);
+      } else if (uploadType === 'evaluations') {
+            const newEvals = parsedData.map((row, index) => {
+            const uniqueId = String(row['uniqueId'] || '');
+            if (!uniqueId) throw new Error(`${index + 2}번째 행에 ID가 없습니다.`);
+            
+            return {
+                employeeId: `E${uniqueId}`,
+                name: row['name'] ? String(row['name']) : undefined, company: row['company'] ? String(row['company']) : undefined,
+                department: row['department'] ? String(row['department']) : undefined, title: row['title'] ? String(row['title']) : undefined,
+                growthLevel: row['growthLevel'] ? String(row['growthLevel']) : undefined,
+                workRate: row['workRate'] !== undefined ? parseFloat(String(row['workRate'])) : undefined,
+                evaluatorId: row['evaluatorId'] ? String(row['evaluatorId']) : undefined, 
+                evaluatorName: row['evaluatorName'] ? String(row['evaluatorName']) : undefined,
+                baseAmount: row['baseAmount'] !== undefined ? Number(String(row['baseAmount']).replace(/,/g, '')) : undefined,
+                grade: (String(row['grade'] || '') || null) as Grade, memo: row['memo'] !== undefined ? String(row['memo']) : undefined,
+            };
+          });
+          uploadCount = newEvals.length;
+          onEvaluationUpload(selectedDate.year, selectedDate.month, newEvals);
+      }
 
-        const processedData = simpleParser(parsedJson);
-
-        if (uploadType === 'employees') {
-            const newEmployees = processedData.map((row, index) => {
-              const uniqueId = String(row['uniqueId'] || '');
-              if (!uniqueId) throw new Error(`${index + 2}번째 행에 ID가 없습니다.`);
-              return {
-                id: `E${uniqueId}`, uniqueId, name: String(row['name'] || ''),
-                company: String(row['company'] || ''), department: String(row['department'] || ''),
-                title: String(row['title'] || '팀원'), position: String(row['title'] || '팀원'),
-                growthLevel: String(row['growthLevel'] || ''), workRate: parseFloat(String(row['workRate'] || '1')),
-                evaluatorId: String(row['evaluatorId'] || ''), baseAmount: Number(String(row['baseAmount'] || '0').replace(/,/g, '')),
-                memo: String(row['memo'] || ''),
-              };
-            });
-            uploadCount = newEmployees.length;
-            onEmployeeUpload(selectedDate.year, selectedDate.month, newEmployees);
-        } else if (uploadType === 'evaluations') {
-             const newEvals = processedData.map((row, index) => {
-              const uniqueId = String(row['uniqueId'] || '');
-              if (!uniqueId) throw new Error(`${index + 2}번째 행에 ID가 없습니다.`);
-              
-              const workRateValue = row['workRate'];
-              const baseAmountValue = row['baseAmount'];
-              
-              return {
-                  employeeId: `E${uniqueId}`,
-                  name: row['name'] ? String(row['name']) : undefined, company: row['company'] ? String(row['company']) : undefined,
-                  department: row['department'] ? String(row['department']) : undefined, title: row['title'] ? String(row['title']) : undefined,
-                  position: row['position'] ? String(row['position']) : undefined, growthLevel: row['growthLevel'] ? String(row['growthLevel']) : undefined,
-                  workRate: workRateValue !== undefined && workRateValue !== null ? parseFloat(String(workRateValue)) : undefined,
-                  evaluatorId: row['evaluatorId'] ? String(row['evaluatorId']) : undefined, 
-                  evaluatorName: row['evaluatorName'] ? String(row['evaluatorName']) : undefined,
-                  baseAmount: baseAmountValue !== undefined && baseAmountValue !== null ? Number(String(baseAmountValue).replace(/,/g, '')) : undefined,
-                  grade: (String(row['grade'] || '') || null) as Grade, memo: row['memo'] !== undefined ? String(row['memo']) : undefined,
-              };
-            });
-            uploadCount = newEvals.length;
-            onEvaluationUpload(selectedDate.year, selectedDate.month, newEvals);
-        }
-
-        toast({ title: '업로드 성공', description: `${uploadCount}명의 데이터가 처리되었습니다.` });
+      toast({ title: '업로드 성공', description: `${uploadCount}명의 데이터가 처리되었습니다.` });
     } catch (error: any) {
         toast({ variant: 'destructive', title: '파일 처리 오류', description: error.message || '파일 처리 중 오류가 발생했습니다.' });
     } finally {
