@@ -113,7 +113,7 @@ const getInitialDate = () => {
 };
 
 export default function Home() {
-  const { user, users: allUsers, loading: authLoading, logout, updateUser, updateUserRoles, deleteUser, deleteUsers, addUser } = useAuth();
+  const { user, allUsers, loading: authLoading, logout, updateUser, updateUserRoles, deleteUser, deleteUsers, addUser, role } = useAuth();
   const {
       gradingScale, setGradingScale, workRateInputs,
       attendanceTypes, setAttendanceTypes, holidays, setHolidays, evaluationStatus, setEvaluationStatus,
@@ -148,8 +148,6 @@ export default function Home() {
       router.push('/login');
     }
   }, [user, authLoading, router]);
-  
-  const role = user ? allUsers.find(u => u.id === user.id)?.roles.find(r => r === (localStorage.getItem('role') || 'employee')) : 'employee';
   
   const handleEvaluationStatusChange = (year: number, month: number, status: 'open' | 'closed') => {
     const key = `${year}-${month}`;

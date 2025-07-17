@@ -395,6 +395,7 @@ export const excelHeaderTargetScreens: Record<string, string> = {
     // 공통
     uniqueId: '공통',
     name: '공통',
+    evaluatorId: '공통',
 
     // 월별 대상자
     company: '월별 대상자',
@@ -403,7 +404,6 @@ export const excelHeaderTargetScreens: Record<string, string> = {
     growthLevel: '월별 대상자',
     baseAmount: '월별 대상자',
     workRate: '월별 대상자',
-    evaluatorId: '월별 대상자',
     
     // 평가 결과
     grade: '평가 결과',
@@ -451,4 +451,3 @@ export const getDetailedGroup1 = (workRate: number): string => {
   
   return `${upperBound}%~${lowerBound}%`;
 };
-

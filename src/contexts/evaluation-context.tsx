@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -64,12 +63,6 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
   const [holidays, setHolidays] = React.useState<Holiday[]>(() => getFromLocalStorage('holidays', initialHolidays));
   const [evaluationStatus, setEvaluationStatus] = React.useState<Record<string, 'open' | 'closed'>>(() => getFromLocalStorage('evaluationStatus', {}));
 
-  const [selectedDateForWorkRate, setSelectedDateForWorkRate] = React.useState<{year: number, month: number}>(() => {
-    const today = new Date();
-    const lastMonthDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-    return { year: lastMonthDate.getFullYear(), month: lastMonthDate.getMonth() + 1 };
-  });
-
   React.useEffect(() => { localStorage.setItem('employees', JSON.stringify(employees)); }, [employees]);
   React.useEffect(() => { localStorage.setItem('evaluations', JSON.stringify(evaluations)); }, [evaluations]);
   React.useEffect(() => { localStorage.setItem('gradingScale', JSON.stringify(gradingScale)); }, [gradingScale]);
@@ -92,26 +85,6 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
         addUser({ ...emp, company: emp.company || 'N/A', position: emp.position || emp.title || '팀원', }, ['employee']);
       } else {
         updateUser(existingUser.id, employeeDataForUser);
-      }
-
-      if (emp.evaluatorId) {
-        const evaluatorUser = allUsers.find(u => u.uniqueId === emp.evaluatorId);
-        if(!evaluatorUser) {
-            addUser({
-                uniqueId: emp.evaluatorId,
-                name: emp.name,
-                department: '미지정',
-                title: '평가자',
-                position: '평가자',
-                company: 'N/A',
-                growthLevel: '',
-                workRate: 1.0,
-                evaluatorId: '',
-                baseAmount: 0,
-            }, ['evaluator', 'employee']);
-        } else if (emp.name && evaluatorUser.name !== emp.name) {
-            updateUser(evaluatorUser.id, { name: emp.name });
-        }
       }
     });
 
@@ -143,9 +116,7 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
         if (item.name) userData.name = item.name;
         if (item.department) userData.department = item.department;
         if (item.title) userData.title = item.title;
-        
-        const evaluatorId = (item as any).evaluatorId;
-        if (evaluatorId) userData.evaluatorId = evaluatorId;
+        if (item.evaluatorId) userData.evaluatorId = item.evaluatorId;
 
         if (Object.keys(userData).length > 0) {
             const existingUser = allUsers.find(u => u.uniqueId === item.uniqueId);
@@ -154,22 +125,6 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
                 Object.assign(usersToUpdate[existingUser.id], userData);
             } else {
                 addUser({ uniqueId: item.uniqueId, ...userData }, ['employee']);
-            }
-        }
-
-        if (evaluatorId) {
-            const evalUserData: Partial<User> = {};
-            const evaluatorName = (item as any).evaluatorName;
-            if(evaluatorName) evalUserData.name = evaluatorName;
-
-            const existingEvaluator = allUsers.find(u => u.uniqueId === evaluatorId);
-            if (existingEvaluator) {
-                 if(Object.keys(evalUserData).length > 0 && existingEvaluator.name !== evalUserData.name) {
-                    if (!usersToUpdate[existingEvaluator.id]) usersToUpdate[existingEvaluator.id] = {};
-                    Object.assign(usersToUpdate[existingEvaluator.id], evalUserData);
-                 }
-            } else {
-                addUser({ uniqueId: evaluatorId, ...evalUserData }, ['evaluator', 'employee']);
             }
         }
       };

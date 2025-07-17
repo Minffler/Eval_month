@@ -9,12 +9,10 @@ import { useToast } from '@/hooks/use-toast';
 
 interface AuthContextType {
   user: User | null;
-  users: User[];
   role: Role;
   login: (id: string, pass:string) => Promise<boolean>;
   logout: () => void;
   setRole: (role: Role) => void;
-  setUsers: React.Dispatch<React.SetStateAction<User[]>>;
   addUser: (newEmployeeData: Partial<Employee>, roles: Role[]) => void;
   updateUser: (userId: string, updatedData: Partial<User & { newUniqueId?: string }>) => void;
   deleteUser: (userId: string) => void;
@@ -172,14 +170,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const value = { 
     user, 
-    users: allUsers, // This remains for backward compatibility in some components, but `allUsers` is the source of truth
     allUsers,
     role, 
     setRole: handleSetRole, 
     login, 
     logout, 
     loading, 
-    setUsers: setAllUsers,
     addUser,
     updateUser,
     deleteUser,

@@ -93,6 +93,7 @@ import {
   CommandList,
 } from "@/components/ui/command"
 import AdminDashboard from './admin-dashboard';
+import { useEvaluation } from '@/contexts/evaluation-context';
 
 
 interface EvaluatorDashboardProps {
@@ -235,15 +236,14 @@ const DraggableTableRow = ({ employee, gradingScale, selected, onSelect, onGrade
 };
 
 
-const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, handleResultsUpdate, allResults, onClearMyEvaluations }: {
+const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, onClearMyEvaluations }: {
   myEmployees: EvaluationResult[];
   gradingScale: Record<NonNullable<Grade>, GradeInfo>;
   selectedDate: { year: number; month: number };
-  handleResultsUpdate: (updatedResults: EvaluationResult[]) => void;
-  allResults: EvaluationResult[];
   onClearMyEvaluations: (year: number, month: number) => void;
 }) => {
   const { toast } = useToast();
+  const { allEvaluationResults, setEvaluations } = useEvaluation();
   const [activeTab, setActiveTab] = React.useState<EvaluationGroupCategory | '전체'>('A. 정규평가');
   const [groups, setGroups] = React.useState<Groups>({});
   const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
@@ -345,7 +345,7 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, handleRe
     );
     const myEmployeeIds = new Set(myEmployees.map(e => e.id));
     const updatedMemberMap = new Map(allGroupMembers.map(m => [m.id, m]));
-    const updatedResultsInScope = allResults.map(res => {
+    const updatedResultsInScope = allEvaluationResults.map(res => {
       if (!myEmployeeIds.has(res.id)) return res;
       const updatedMember = updatedMemberMap.get(res.id);
       if (updatedMember) return updatedMember;
@@ -355,8 +355,27 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, handleRe
   };
   
   const handleSave = () => {
-    // This function is now just for local state saving, not pushing to parent.
-    // The parent component should have a master save button if needed.
+    const key = `${selectedDate.year}-${selectedDate.month}`;
+    const allGroupMembers = Object.values(groups).flatMap(group => 
+        group.members.map(member => ({ ...member, detailedGroup2: group.name }))
+    );
+    const memberMap = new Map(allGroupMembers.map(m => [m.id, m]));
+
+    setEvaluations(prevEvals => {
+        const newState = JSON.parse(JSON.stringify(prevEvals));
+        const newEvalsForMonth = newState[key] ? [...newState[key]] : [];
+        
+        memberMap.forEach((member, memberId) => {
+            const evalIndex = newEvalsForMonth.findIndex((e: Evaluation) => e.employeeId === memberId);
+            const evalData = { grade: member.grade, memo: member.memo };
+            if (evalIndex > -1) {
+                Object.assign(newEvalsForMonth[evalIndex], evalData);
+            }
+        });
+        newState[key] = newEvalsForMonth;
+        return newState;
+    });
+
     toast({ title: '성공!', description: '평가가 성공적으로 저장되었습니다.' });
   };
 
@@ -499,7 +518,7 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, handleRe
         // Add new group
         newGroups[newGroupName.trim()] = {
             name: newGroupName.trim(),
-            members: allResults.filter(r => idsForNewGroup.has(r.id)),
+            members: allEvaluationResults.filter(r => idsForNewGroup.has(r.id)),
         };
 
         return newGroups;
@@ -566,7 +585,7 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, handleRe
               <CardContent className='p-4 pt-0 space-y-2'>
                 <h3 className="font-semibold">{`${activeTab} 등급 분포`}</h3>
                 <div className="border rounded-lg p-2">
-                  <GradeHistogram data={gradeDistribution} gradingScale={gradingScale} />
+                  <GradeHistogram data={gradeDistribution} gradingScale={gradingScale} highlightGrade={null} />
                 </div>
               </CardContent>
             </CollapsibleContent>
@@ -705,11 +724,9 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, handleRe
   );
 }
 
-const AllResultsView = ({ currentMonthResults, allEmployees, gradingScale, handleResultsUpdate }: {
+const AllResultsView = ({ currentMonthResults, gradingScale }: {
   currentMonthResults: EvaluationResult[];
-  allEmployees: Employee[];
   gradingScale: Record<NonNullable<Grade>, GradeInfo>;
-  handleResultsUpdate: (updatedResults: EvaluationResult[]) => void;
 }) => {
   const [sortConfig, setSortConfig] = React.useState<SortConfig>(null);
   const [companyFilter, setCompanyFilter] = React.useState<string>('all');
@@ -1113,12 +1130,26 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, allUsers, 
 
 
 export default function EvaluatorDashboard({ allResults, currentMonthResults, gradingScale, selectedDate, setSelectedDate, handleEvaluatorAssignmentChange, evaluatorUser, activeView, onClearMyEvaluations, workRateDetails, holidays, allUsers, attendanceTypes, onApprovalAction, notifications, addNotification, deleteNotification, approvals, onWorkRateDataUpload }: EvaluatorDashboardProps) {
-  const { user: authUser } = useAuth();
+  const { user: authUser, addUser, updateUser, deleteUser, deleteUsers, updateUserRoles } = useAuth();
   const { toast } = useToast();
   const [effectiveUser, setEffectiveUser] = React.useState<User | null>(null);
   const [approvalDetailModalOpen, setApprovalDetailModalOpen] = React.useState(false);
   const [selectedApproval, setSelectedApproval] = React.useState<Approval | null>(null);
   const [rejectionReason, setRejectionReason] = React.useState('');
+  
+  const { 
+    setGradingScale,
+    workRateInputs,
+    setHolidays,
+    setAttendanceTypes,
+    handleEmployeeUpload,
+    handleEvaluationUpload,
+    handleClearEmployeeData,
+    handleClearEvaluationData,
+    handleClearWorkRateData,
+    evaluationStatus,
+    setEvaluationStatus
+  } = useEvaluation();
   
   React.useEffect(() => {
     if (evaluatorUser) {
@@ -1247,12 +1278,10 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
                   myEmployees={myEmployees} 
                   gradingScale={gradingScale}
                   selectedDate={selectedDate}
-                  handleResultsUpdate={() => {}}
-                  allResults={allResults}
                   onClearMyEvaluations={(year, month) => onClearMyEvaluations(year, month, effectiveUser!.uniqueId)}
                 />;
       case 'all-results':
-        return <AllResultsView currentMonthResults={currentMonthResults} allEmployees={allUsers} gradingScale={gradingScale} handleResultsUpdate={() => {}} />;
+        return <AllResultsView currentMonthResults={currentMonthResults} gradingScale={gradingScale} />;
       case 'assignment-management':
         return <AssignmentManagementView 
                  myEmployees={myEmployees} 
@@ -1263,7 +1292,7 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
                  evaluatorName={effectiveUser.name}
                />;
       case 'work-rate-view':
-          return <WorkRateManagement results={myEmployees} workRateDetails={myManagedWorkRateDetails} selectedDate={selectedDate} holidays={holidays} handleResultsUpdate={() => {}} />;
+          return <WorkRateManagement results={myEmployees} workRateDetails={myManagedWorkRateDetails} selectedDate={selectedDate} holidays={holidays} attendanceTypes={attendanceTypes} handleResultsUpdate={() => {}} />;
       case 'shortened-work-details':
           return <WorkRateDetails type="shortenedWork" data={myManagedWorkRateDetails.shortenedWorkDetails} selectedDate={selectedDate} allEmployees={allUsers} attendanceTypes={attendanceTypes} onDataChange={()=>{}} />;
       case 'daily-attendance-details':
@@ -1326,44 +1355,41 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
       case 'notifications':
           return <EvaluatorNotifications notifications={notifications} deleteNotification={deleteNotification} />;
       default:
-        // This case might be triggered when admin is viewing an evaluator's dashboard.
-        // The AdminDashboard is more appropriate here.
         if (authUser?.roles.includes('admin') && evaluatorUser) {
-            // AdminDashboard props need to be satisfied
             return (
                 <AdminDashboard
                     results={allResults}
                     allUsers={allUsers}
-                    onEmployeeUpload={() => {}}
-                    onEvaluationUpload={() => {}}
+                    onEmployeeUpload={handleEmployeeUpload}
+                    onEvaluationUpload={handleEvaluationUpload}
                     gradingScale={gradingScale}
-                    setGradingScale={() => {}}
+                    setGradingScale={setGradingScale}
                     selectedDate={selectedDate}
                     setSelectedDate={setSelectedDate}
                     onEvaluatorAssignmentChange={handleEvaluatorAssignmentChange}
-                    onUserAdd={() => {}}
-                    onRolesChange={() => {}}
-                    onUserUpdate={() => {}}
-                    onUserDelete={() => {}}
-                    onUsersDelete={() => {}}
+                    onUserAdd={addUser}
+                    onRolesChange={updateUserRoles}
+                    onUserUpdate={updateUser}
+                    onUserDelete={deleteUser}
+                    onUsersDelete={deleteUsers}
                     activeView={activeView}
-                    onClearEmployeeData={() => {}}
-                    onClearEvaluationData={() => {}}
+                    onClearEmployeeData={handleClearEmployeeData}
+                    onClearEvaluationData={handleClearEvaluationData}
                     onWorkRateDataUpload={onWorkRateDataUpload}
-                    onClearWorkRateData={() => {}}
-                    workRateInputs={{}}
+                    onClearWorkRateData={handleClearWorkRateData}
+                    workRateInputs={workRateInputs}
                     attendanceTypes={attendanceTypes}
-                    setAttendanceTypes={() => {}}
+                    setAttendanceTypes={setAttendanceTypes}
                     holidays={holidays}
-                    setHolidays={() => {}}
+                    setHolidays={setHolidays}
                     workRateDetails={workRateDetails}
                     onApprovalAction={onApprovalAction}
                     notifications={notifications}
                     addNotification={addNotification}
                     deleteNotification={deleteNotification}
                     approvals={approvals}
-                    evaluationStatus="open"
-                    onEvaluationStatusChange={() => {}}
+                    evaluationStatus={evaluationStatus[`${selectedDate.year}-${selectedDate.month}`] || 'open'}
+                    onEvaluationStatusChange={(year, month, status) => setEvaluationStatus(prev => ({...prev, [`${year}-${month}`]: status}))}
                 />
             );
         }
