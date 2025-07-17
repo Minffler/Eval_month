@@ -50,7 +50,7 @@ export default function Header({
   markApprovalsAsRead,
   setActiveView
 }: HeaderProps) {
-  const { user, users, role, setRole } = useAuth();
+  const { user, allUsers, role, setRole } = useAuth();
 
   const roleDisplay: Record<string, string> = {
     admin: '관리자',
@@ -62,7 +62,7 @@ export default function Header({
     return null;
   }
   
-  const currentUser = users.find(u => u.id === user.id);
+  const currentUser = allUsers.find(u => u.id === user.id);
 
   const currentClientYear = new Date().getFullYear();
   const availableYears = Array.from({ length: Math.max(0, currentClientYear - 2025 + 1) }, (_, i) => 2025 + i).reverse();

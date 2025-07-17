@@ -46,19 +46,22 @@ const uniqueById = <T extends { id: string }>(items: T[]): T[] => {
     return Array.from(seen.values());
 };
 
+const getFromLocalStorage = (key: string, defaultValue: any) => {
+  if (typeof window === 'undefined') return defaultValue;
+  try {
+    const stored = localStorage.getItem(key);
+    if (stored) return JSON.parse(stored);
+  } catch (error) {
+    console.error(`Error reading ${key} from localStorage`, error);
+    localStorage.removeItem(key);
+  }
+  return defaultValue;
+}
+
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
-  const [allUsers, setAllUsers] = React.useState<User[]>(() => {
-    if (typeof window === 'undefined') return initialMockUsers;
-    try {
-      const stored = localStorage.getItem('users');
-      return stored ? JSON.parse(stored) : initialMockUsers;
-    } catch (error) {
-      console.error("Error reading 'users' from localStorage", error);
-      return initialMockUsers;
-    }
-  });
+  const [allUsers, setAllUsers] = React.useState<User[]>(() => getFromLocalStorage('users', initialMockUsers));
   const [user, setUser] = React.useState<User | null>(null);
   const [role, setRole] = React.useState<Role>(null);
   const [loading, setLoading] = React.useState(true);
@@ -157,7 +160,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   
   const updateUser = (userId: string, updatedData: Partial<User & { newUniqueId?: string }>) => {
     setAllUsers(prevUsers => {
-        return prevUsers.map(u => {
+        const updated = prevUsers.map(u => {
             if (u.id === userId) {
                 const finalUpdatedData = { ...updatedData };
                 if (finalUpdatedData.newUniqueId) {
@@ -168,6 +171,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
             return u;
         });
+
+        // Also update the current user state if they are the one being updated
+        if(user && user.id === userId) {
+          const updatedCurrentUser = updated.find(u => u.id === userId);
+          if (updatedCurrentUser) {
+            setUser(updatedCurrentUser);
+            localStorage.setItem('user', JSON.stringify(updatedCurrentUser));
+          }
+        }
+        return updated;
     });
   };
 
