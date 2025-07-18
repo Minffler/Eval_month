@@ -14,7 +14,7 @@ import AdminDashboard from '@/components/evalmax/admin-dashboard';
 import EvaluatorDashboard from '@/components/evalmax/evaluator-dashboard';
 import EmployeeDashboard from '@/components/evalmax/employee-dashboard';
 import PersonalSettings from '@/components/evalmax/personal-settings';
-import type { EmployeeView, EvaluatorView } from '@/lib/types';
+import type { EmployeeView, EvaluatorView, User } from '@/lib/types';
 
 
 const adminNavItems: NavItem[] = [
@@ -113,7 +113,7 @@ const getInitialDate = () => {
 };
 
 export default function Home() {
-  const { user, allUsers, loading: authLoading, logout, updateUser, role } = useAuth();
+  const { user, allUsers, loading: authLoading, logout, upsertUsers, role } = useAuth();
   const {
       gradingScale, setGradingScale, workRateInputs,
       attendanceTypes, setAttendanceTypes, holidays, setHolidays, evaluationStatus, 
@@ -130,15 +130,12 @@ export default function Home() {
   
   const [selectedDate, setSelectedDate] = React.useState(getInitialDate);
   
-  // State for admin view
   const [isAdminSidebarOpen, setIsAdminSidebarOpen] = React.useState(true);
   const [adminActiveView, setAdminActiveView] = React.useState('dashboard');
 
-  // State for evaluator view
   const [isEvaluatorSidebarOpen, setIsEvaluatorSidebarOpen] = React.useState(true);
   const [evaluatorActiveView, setEvaluatorActiveView] = React.useState<EvaluatorView>('evaluation-input');
 
-  // State for employee view
   const [isEmployeeSidebarOpen, setIsEmployeeSidebarOpen] = React.useState(true);
   const [employeeActiveView, setEmployeeActiveView] = React.useState<EmployeeView>('my-review');
 
@@ -158,16 +155,22 @@ export default function Home() {
         const evaluatorIds = new Set(monthEmployees.map(e => e.evaluatorId).filter(Boolean));
         const employeeIds = new Set(monthEmployees.map(e => e.uniqueId));
         const message = `${year}년 ${month}월 평가가 최종 마감되었습니다.`;
-        evaluatorIds.forEach(id => addNotification({ recipientId: id, message }));
+        evaluatorIds.forEach(id => addNotification({ recipientId: id!, message }));
         employeeIds.forEach(id => addNotification({ recipientId: id, message }));
     }
   };
+  
+  const handleUserUpdate = (userId: string, updatedData: Partial<User>) => {
+    if (!updatedData.uniqueId) return;
+    upsertUsers([{ ...updatedData, uniqueId: updatedData.uniqueId }]);
+  };
+
 
   const renderDashboard = () => {
     switch (role) {
       case 'admin':
         if (adminActiveView === 'personal-settings' && user) {
-            return <PersonalSettings user={user} onUserUpdate={updateUser} />;
+            return <PersonalSettings user={user} onUserUpdate={handleUserUpdate} />;
         }
         const currentMonthStatus = evaluationStatus[`${selectedDate.year}-${selectedDate.month}`] || 'open';
         return <AdminDashboard 
@@ -200,7 +203,7 @@ export default function Home() {
                 />;
       case 'evaluator':
         if (evaluatorActiveView === 'personal-settings' && user) {
-            return <PersonalSettings user={user} onUserUpdate={updateUser} />;
+            return <PersonalSettings user={user} onUserUpdate={handleUserUpdate} />;
         }
         const myManagedEmployees = monthlyEvaluationTargets(selectedDate).filter(e => e.evaluatorId === user?.uniqueId);
         
@@ -225,7 +228,7 @@ export default function Home() {
                 />;
       case 'employee':
         if (employeeActiveView === 'personal-settings' && user) {
-            return <PersonalSettings user={user} onUserUpdate={updateUser} />;
+            return <PersonalSettings user={user} onUserUpdate={handleUserUpdate} />;
         }
         const myEmployeeInfo = monthlyEvaluationTargets(selectedDate).find(e => e.uniqueId === user?.uniqueId);
         const myApprovals = approvals.filter(a => a.requesterId === user.uniqueId);

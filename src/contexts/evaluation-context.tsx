@@ -94,15 +94,14 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
         title: emp.title,
         company: emp.company,
         evaluatorId: emp.evaluatorId,
-        roles: ['employee']
+        roles: ['employee'] as Role[]
     }));
 
-    // Ensure evaluators are also in the user list
     newEmployees.forEach(emp => {
       if (emp.evaluatorId) {
         const evaluatorInList = usersToUpdate.find(u => u.uniqueId === emp.evaluatorId);
         if (!evaluatorInList) {
-          usersToUpdate.push({ uniqueId: emp.evaluatorId, roles: ['evaluator'] });
+          usersToUpdate.push({ uniqueId: emp.evaluatorId, name: `평가자(${emp.evaluatorId})`, roles: ['evaluator'], department: 'N/A', title: '평가자', company: 'N/A', evaluatorId: '' });
         }
       }
     });
@@ -136,7 +135,6 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
       uploadedData.forEach(item => {
         if (!item.uniqueId) return;
 
-        // 1. Prepare user data for upsert
         usersToUpdate.push({
           uniqueId: item.uniqueId,
           name: item.name,
@@ -147,16 +145,14 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
           roles: ['employee'],
         });
 
-        // 2. Prepare evaluator data for upsert (if they exist and are not already in the list)
         if (item.evaluatorId && !usersToUpdate.some(u => u.uniqueId === item.evaluatorId)) {
           usersToUpdate.push({
             uniqueId: item.evaluatorId,
-            name: item.evaluatorName,
+            name: item.evaluatorName || `평가자(${item.evaluatorId})`,
             roles: ['evaluator'],
           });
         }
         
-        // 3. Prepare employee data for state update
         const employeeId = `E${item.uniqueId}`;
         employeeData.push({
             id: employeeId,
@@ -172,7 +168,6 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
             baseAmount: item.baseAmount ?? 0,
         });
         
-        // 4. Prepare evaluation data for state update
         evaluationData.push({
             id: `eval-${employeeId}-${year}-${month}`,
             employeeId,
@@ -183,13 +178,8 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
         });
       });
 
-      // Step 1: Sync user data first
       upsertUsers(usersToUpdate);
-
-      // Step 2: Then, update employees for the month
       setEmployees(prev => ({...prev, [key]: employeeData}));
-
-      // Step 3: Finally, update evaluations for the month
       setEvaluations(prev => ({...prev, [key]: evaluationData}));
   };
 
@@ -290,6 +280,11 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
     return Object.entries(employees).flatMap(([key, monthlyEmployees]) => {
         const [year, month] = key.split('-').map(Number);
         const monthlyEvaluations = evaluations[key] || [];
+
+        if (!Array.isArray(monthlyEmployees)) {
+            console.warn(`Data for key ${key} is not an array, skipping.`);
+            return [];
+        }
 
         return (monthlyEmployees as Employee[]).map(employee => {
             const user = uniqueUserMap.get(employee.uniqueId) || {};

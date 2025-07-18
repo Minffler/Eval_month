@@ -33,6 +33,7 @@ export default function PersonalSettings({ user, onUserUpdate }: PersonalSetting
     }
 
     const updatedData: Partial<User> = {
+      uniqueId: user.uniqueId,
       department,
       title,
     };

@@ -24,10 +24,6 @@ interface AuthContextType {
   login: (id: string, pass:string) => Promise<boolean>;
   logout: () => void;
   setRole: (role: Role) => void;
-  addUser: (newEmployeeData: Partial<Employee>, roles: Role[]) => void;
-  updateUser: (userId: string, updatedData: Partial<User & { newUniqueId?: string }>) => void;
-  deleteUser: (userId: string) => void;
-  deleteUsers: (userIds: string[]) => void;
   updateUserRoles: (userId: string, newRoles: Role[]) => void;
   upsertUsers: (usersToUpsert: Partial<User>[]) => void;
   loading: boolean;
@@ -143,10 +139,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         const existingUser = userMap.get(userToUpsert.uniqueId);
         if (existingUser) {
-          // Update existing user
           userMap.set(userToUpsert.uniqueId, { ...existingUser, ...userToUpsert });
         } else {
-          // Add new user
           const newUser: User = {
             id: `user-${userToUpsert.uniqueId}`,
             employeeId: `E${userToUpsert.uniqueId}`,
@@ -166,55 +160,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  const addUser = (newEmployeeData: Partial<Employee>, roles: Role[]) => {
-      if (!newEmployeeData.uniqueId) {
-        toast({ variant: 'destructive', title: '오류', description: 'ID가 없습니다.' });
-        return;
-      }
-      upsertUsers([{
-        uniqueId: newEmployeeData.uniqueId,
-        name: newEmployeeData.name,
-        department: newEmployeeData.department,
-        title: newEmployeeData.title,
-        company: newEmployeeData.company,
-        evaluatorId: newEmployeeData.evaluatorId,
-        roles
-      }]);
-  };
-  
-  const updateUser = (userId: string, updatedData: Partial<User & { newUniqueId?: string }>) => {
-    setAllUsers(prevUsers => {
-        const userToUpdate = prevUsers.find(u => u.id === userId);
-        if (!userToUpdate) return prevUsers;
-        
-        const finalUpdatedData = { ...updatedData };
-        if (finalUpdatedData.newUniqueId) {
-            finalUpdatedData.uniqueId = finalUpdatedData.newUniqueId;
-            delete finalUpdatedData.newUniqueId;
-        }
-
-        const newUsers = prevUsers.map(u => u.id === userId ? { ...u, ...finalUpdatedData } : u);
-
-        // Also update the current user state if they are the one being updated
-        if(user && user.id === userId) {
-          const updatedCurrentUser = newUsers.find(u => u.id === userId);
-          if (updatedCurrentUser) {
-            setUser(updatedCurrentUser);
-            localStorage.setItem('user', JSON.stringify(updatedCurrentUser));
-          }
-        }
-        return newUsers;
-    });
-  };
-
-  const deleteUser = (userId: string) => {
-    setAllUsers(prev => prev.filter(u => u.id !== userId));
-  };
-
-  const deleteUsers = (userIds: string[]) => {
-    setAllUsers(prev => prev.filter(u => !userIds.includes(u.id)));
-  };
-
   const updateUserRoles = (userId: string, newRoles: Role[]) => {
     setAllUsers(prev => prev.map(u => u.id === userId ? { ...u, roles: newRoles } : u));
   };
@@ -228,10 +173,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     login, 
     logout, 
     loading, 
-    addUser,
-    updateUser,
-    deleteUser,
-    deleteUsers,
     updateUserRoles,
     upsertUsers
   };

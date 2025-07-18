@@ -47,7 +47,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/auth-context';
 
 export default function UserRoleManagement() {
-  const { allUsers, addUser, updateUserRoles, updateUser, deleteUser, deleteUsers } = useAuth();
+  const { allUsers, updateUserRoles, upsertUsers } = useAuth();
   const [searchTerm, setSearchTerm] = React.useState('');
   const [roleFilter, setRoleFilter] = React.useState<Set<Role>>(new Set());
   const [isAddUserDialogOpen, setIsAddUserDialogOpen] = React.useState(false);
@@ -131,20 +131,14 @@ export default function UserRoleManagement() {
       toast({ variant: 'destructive', title: '오류', description: '사용자 이름과 ID를 모두 입력해주세요.' });
       return;
     }
-    if (allUsers.some(u => u.uniqueId === newUserId)) {
-      toast({ variant: 'destructive', title: '오류', description: '이미 존재하는 ID입니다.' });
-      return;
-    }
-
-    const newUserAsEmployee: Partial<Employee> = {
+    
+    upsertUsers([{
       uniqueId: newUserId,
       name: newUserName,
       department: newUserDepartment,
       title: newUserTitle,
-      position: newUserTitle,
-    };
-    
-    addUser(newUserAsEmployee, newUserRoles);
+      roles: newUserRoles,
+    }]);
 
     toast({ title: '성공', description: `사용자 '${newUserName}'님이 추가되었습니다.` });
     setIsAddUserDialogOpen(false);
@@ -176,12 +170,12 @@ export default function UserRoleManagement() {
 
   const handleEditUser = () => {
     if(!selectedUser) return;
-    updateUser(selectedUser.id, {
-        newUniqueId: editUserId,
+    upsertUsers([{
+        uniqueId: editUserId,
         name: editUserName,
         department: editUserDepartment,
         title: editUserTitle
-    });
+    }]);
     toast({ title: "수정 완료", description: "사용자 정보가 업데이트되었습니다." });
     setIsEditUserDialogOpen(false);
     setSelectedUser(null);
@@ -210,16 +204,20 @@ export default function UserRoleManagement() {
   
   const handleConfirmAction = () => {
     if(actionType === 'bulkDelete') {
-        const idsToDelete = Array.from(selectedIds);
-        deleteUsers(idsToDelete);
-        toast({ title: '삭제 완료', description: `${idsToDelete.length}명의 사용자가 삭제되었습니다.` });
+        const uniqueIdsToDelete = Array.from(selectedIds).map(id => allUsers.find(u => u.id === id)?.uniqueId).filter(Boolean);
+        const remainingUsers = allUsers.filter(u => !uniqueIdsToDelete.includes(u.uniqueId));
+        localStorage.setItem('users', JSON.stringify(remainingUsers));
+        window.location.reload();
+        toast({ title: '삭제 완료', description: `${uniqueIdsToDelete.length}명의 사용자가 삭제되었습니다.` });
         setSelectedIds(new Set());
     } else if (selectedUser) {
         if(actionType === 'resetPassword') {
-            updateUser(selectedUser.id, { password: '1' });
+            upsertUsers([{ uniqueId: selectedUser.uniqueId, password: '1' }]);
             toast({ title: '초기화 완료', description: `사용자 '${selectedUser.name}'의 비밀번호가 '1'로 초기화되었습니다.`});
         } else if (actionType === 'delete') {
-            deleteUser(selectedUser.id);
+            const remainingUsers = allUsers.filter(u => u.id !== selectedUser.id);
+            localStorage.setItem('users', JSON.stringify(remainingUsers));
+            window.location.reload();
             toast({ title: '삭제 완료', description: `사용자 '${selectedUser.name}'이(가) 삭제되었습니다.` });
         }
     }
