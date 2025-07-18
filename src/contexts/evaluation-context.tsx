@@ -7,22 +7,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from './auth-context';
 import { calculateWorkRateDetails, type WorkRateDetailsResult } from '@/lib/work-rate-calculator';
 
-/**
- * @fileoverview EvaluationContext는 평가와 관련된 모든 데이터와 로직을 관리합니다.
- * @description
- * 이 컨텍스트는 AuthContext에 의존하여 사용자 정보를 가져오고,
- * 직원, 평가, 근무율 등 평가에 필요한 모든 데이터를 종합하여 최종 결과를 계산하고 제공합니다.
- *
- * 제공하는 데이터:
- * - allEvaluationResults: 화면에 표시될 최종 평가 결과 (계산 완료된 상태)
- * - monthlyEvaluationTargets: 특정 월의 평가 대상자 목록을 반환하는 함수
- * - workRateDetails: 근무율 상세 계산 결과
- * - gradingScale, attendanceTypes, holidays 등 평가 기준 데이터
- *
- * 제공하는 함수:
- * - 데이터 업로드/초기화/수정 등 평가 데이터와 관련된 모든 setter 함수
- */
-
 const getFromLocalStorage = (key: string, defaultValue: any) => {
   if (typeof window === 'undefined') return defaultValue;
   try {
@@ -87,7 +71,7 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
   const handleEmployeeUpload = (year: number, month: number, newEmployees: Employee[]) => {
     const key = `${year}-${month}`;
 
-    const usersToUpdate = newEmployees.map(emp => ({
+    const usersToUpsert = newEmployees.map(emp => ({
         uniqueId: emp.uniqueId,
         name: emp.name,
         department: emp.department,
@@ -99,14 +83,14 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
 
     newEmployees.forEach(emp => {
       if (emp.evaluatorId) {
-        const evaluatorInList = usersToUpdate.find(u => u.uniqueId === emp.evaluatorId);
+        const evaluatorInList = usersToUpsert.find(u => u.uniqueId === emp.evaluatorId);
         if (!evaluatorInList) {
-          usersToUpdate.push({ uniqueId: emp.evaluatorId, name: `평가자(${emp.evaluatorId})`, roles: ['evaluator'], department: 'N/A', title: '평가자', company: 'N/A', evaluatorId: '' });
+          usersToUpsert.push({ uniqueId: emp.evaluatorId, name: `평가자(${emp.evaluatorId})`, roles: ['evaluator'], department: 'N/A', title: '평가자', company: 'N/A', evaluatorId: '' });
         }
       }
     });
 
-    upsertUsers(usersToUpdate);
+    upsertUsers(usersToUpsert);
 
     setEmployees(prev => ({...prev, [key]: newEmployees}));
 
@@ -128,35 +112,39 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
   const handleEvaluationUpload = (year: number, month: number, uploadedData: EvaluationUploadData[]) => {
       const key = `${year}-${month}`;
       
-      const usersToUpdate: Partial<User>[] = [];
+      const usersToUpsert: Partial<User>[] = [];
       const employeeData: Employee[] = [];
       const evaluationData: Evaluation[] = [];
 
       uploadedData.forEach(item => {
-        if (!item.uniqueId) return;
+        const uniqueId = String(item.uniqueId || '');
+        if (!uniqueId) return;
 
-        usersToUpdate.push({
-          uniqueId: item.uniqueId,
+        // Add employee to users list
+        usersToUpsert.push({
+          uniqueId: uniqueId,
           name: item.name,
           department: item.department,
           title: item.title,
           company: item.company,
-          evaluatorId: item.evaluatorId,
+          evaluatorId: item.evaluatorId, // This will just update the field, not create a user from it
           roles: ['employee'],
         });
-
-        if (item.evaluatorId && !usersToUpdate.some(u => u.uniqueId === item.evaluatorId)) {
-          usersToUpdate.push({
-            uniqueId: item.evaluatorId,
-            name: item.evaluatorName || `평가자(${item.evaluatorId})`,
+        
+        // Add evaluator to users list if they exist in the upload
+        const evaluatorId = String(item.evaluatorId || '');
+        if (evaluatorId && !usersToUpsert.some(u => u.uniqueId === evaluatorId)) {
+          usersToUpsert.push({
+            uniqueId: evaluatorId,
+            name: item.evaluatorName || `평가자(${evaluatorId})`,
             roles: ['evaluator'],
           });
         }
         
-        const employeeId = `E${item.uniqueId}`;
+        const employeeId = `E${uniqueId}`;
         employeeData.push({
             id: employeeId,
-            uniqueId: item.uniqueId,
+            uniqueId: uniqueId,
             name: item.name || '',
             company: item.company || 'N/A',
             department: item.department || 'N/A',
@@ -164,7 +152,7 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
             position: item.title || '팀원',
             growthLevel: item.growthLevel || '',
             workRate: item.workRate ?? 1,
-            evaluatorId: item.evaluatorId,
+            evaluatorId: evaluatorId,
             baseAmount: item.baseAmount ?? 0,
         });
         
@@ -177,8 +165,8 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
             memo: item.memo || '',
         });
       });
-
-      upsertUsers(usersToUpdate);
+      
+      upsertUsers(usersToUpsert);
       setEmployees(prev => ({...prev, [key]: employeeData}));
       setEvaluations(prev => ({...prev, [key]: evaluationData}));
   };
@@ -281,12 +269,7 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
         const [year, month] = key.split('-').map(Number);
         const monthlyEvaluations = evaluations[key] || [];
 
-        if (!Array.isArray(monthlyEmployees)) {
-            console.warn(`Data for key ${key} is not an array, skipping.`);
-            return [];
-        }
-
-        return (monthlyEmployees as Employee[]).map(employee => {
+        return (monthlyEmployees || []).map(employee => {
             const user = uniqueUserMap.get(employee.uniqueId) || {};
             const base: Employee = { ...employee, ...user };
             

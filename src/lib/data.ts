@@ -369,10 +369,16 @@ export const initialHolidays: Holiday[] = [
   }
 ];
 
-
 export const excelHeaderMapping: Record<string, string> = {
-    "고유사번": "uniqueId", "사번": "uniqueId", "ID": "uniqueId", "id": "uniqueId", "피평가자 ID": "uniqueId", "평가자 ID": "evaluatorId", "평가자사번": "evaluatorId",
-    "성명": "name", "이름": "name", "피평가자": "name",
+    // 공통 ID
+    "고유사번": "uniqueId", "사번": "uniqueId", "ID": "uniqueId", "id": "uniqueId",
+    
+    // 공통 이름
+    "성명": "name", "이름": "name",
+    
+    // 피평가자 정보
+    "피평가자 ID": "uniqueId",
+    "피평가자": "name",
     "회사": "company",
     "부서": "department", "소속부서": "department",
     "직책": "title",
@@ -381,6 +387,12 @@ export const excelHeaderMapping: Record<string, string> = {
     "기준금액": "baseAmount", "개인별 기준금액": "baseAmount",
     "등급": "grade",
     "비고": "memo",
+
+    // 평가자 정보
+    "평가자 ID": "evaluatorId", "평가자사번": "evaluatorId",
+    "평가자": "evaluatorName", "평가자명": "evaluatorName",
+    
+    // 근무 데이터 (단축/일근태)
     "시작일": "startDate", "시작일자": "startDate",
     "종료일": "endDate", "종료일자": "endDate",
     "출근시각": "startTime",
@@ -388,34 +400,6 @@ export const excelHeaderMapping: Record<string, string> = {
     "일자": "date", "근태사용일": "date",
     "근태": "type", "근태종류": "type",
 };
-
-export const excelHeaderTargetScreens: Record<string, string> = {
-    // 공통
-    uniqueId: '공통',
-    name: '공통',
-
-    // 월별 대상자
-    company: '월별 대상자',
-    department: '월별 대상자',
-    title: '월별 대상자',
-    growthLevel: '월별 대상자',
-    baseAmount: '월별 대상자',
-    workRate: '월별 대상자',
-    evaluatorId: '월별 대상자',
-    
-    // 평가 결과
-    grade: '평가 결과',
-    memo: '평가 결과',
-    
-    // 근무 데이터
-    startDate: '근무 데이터',
-    endDate: '근무 데이터',
-    startTime: '근무 데이터',
-    endTime: '근무 데이터',
-    date: '근무 데이터',
-    type: '근무 데이터',
-};
-
 
 export const calculateFinalAmount = (gradeAmount: number, workRate: number): number => {
   let calculatedAmount = 0;

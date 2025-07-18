@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Download, Trash2, UploadCloud, CheckCircle2, AlertCircle, Save, RefreshCw } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import type { Employee, EvaluationResult, Grade, EvaluationUploadData, WorkRateInputs, ShortenedWorkHourRecord, DailyAttendanceRecord, ShortenedWorkType, HeaderMapping } from '@/lib/types';
-import { excelHeaderMapping, excelHeaderTargetScreens } from '@/lib/data';
+import { excelHeaderMapping } from '@/lib/data';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,21 +42,17 @@ import { cn } from '@/lib/utils';
 import { backupData, type BackupDataInput } from '@/ai/flows/backup-data-flow';
 import { restoreData } from '@/ai/flows/restore-data-flow';
 import { Loader2 } from 'lucide-react';
+import { useEvaluation } from '@/contexts/evaluation-context';
 
 interface ManageDataProps {
   results: EvaluationResult[];
-  onEmployeeUpload: (year: number, month: number, employees: Employee[]) => void;
-  onEvaluationUpload: (year: number, month: number, evaluations: EvaluationUploadData[]) => void;
   selectedDate: { year: number, month: number };
-  setSelectedDate: (date: { year: number, month: number }) => void;
-  onClearEmployeeData: (year: number, month: number) => void;
-  onClearEvaluationData: (year: number, month: number) => void;
-  onWorkRateDataUpload: (year: number, month: number, type: keyof WorkRateInputs, data: any[], isApproved: boolean) => void;
-  onClearWorkRateData: (year: number, month: number, type: keyof WorkRateInputs | ShortenedWorkType) => void;
-  workRateInputs: WorkRateInputs;
 }
 
-const parseExcelFile = <T extends {}>(file: File, mapping: HeaderMapping, parser: (rows: any[]) => T[]): Promise<T[]> => {
+// 최종 파싱된 데이터의 각 행이 어떤 타입인지 명시
+type ParsedRow = Partial<EvaluationUploadData & { evaluatorId: string, evaluatorName: string }>;
+
+const parseExcelFile = (file: File, mapping: HeaderMapping): Promise<ParsedRow[]> => {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -67,26 +63,18 @@ const parseExcelFile = <T extends {}>(file: File, mapping: HeaderMapping, parser
                 const worksheet = workbook.Sheets[sheetName];
                 const json = XLSX.utils.sheet_to_json<any>(worksheet);
 
-                const reverseMapping: {[key: string]: string} = {};
-                for (const excelHeader in mapping) {
-                    const systemField = mapping[excelHeader].field;
-                    if(systemField) {
-                       reverseMapping[systemField] = excelHeader;
-                    }
-                }
-
                 const mappedJson = json.map(row => {
-                    const newRow: any = {};
-                    for(const systemField in reverseMapping) {
-                        const excelHeader = reverseMapping[systemField];
-                        if (row[excelHeader] !== undefined) {
-                            newRow[systemField] = row[excelHeader];
+                    const newRow: ParsedRow = {};
+                    for(const excelHeader in row) {
+                        const systemField = mapping[excelHeader]?.field;
+                        if (systemField) {
+                            (newRow as any)[systemField] = row[excelHeader];
                         }
                     }
                     return newRow;
                 });
                 
-                resolve(parser(mappedJson));
+                resolve(mappedJson);
             } catch (error: any) {
                 reject(error);
             }
@@ -152,39 +140,30 @@ const UploadSection: React.FC<UploadSectionProps> = ({ title, description, id, o
 };
 
 export default function ManageData({ 
-  onEmployeeUpload, 
-  onEvaluationUpload, 
   results,
   selectedDate, 
-  onClearEmployeeData, 
-  onClearEvaluationData,
-  onWorkRateDataUpload,
-  onClearWorkRateData,
-  workRateInputs
 }: ManageDataProps) {
+  const { 
+    handleEmployeeUpload,
+    handleEvaluationUpload,
+    handleClearEmployeeData,
+    handleClearEvaluationData,
+    handleWorkRateDataUpload,
+    onClearWorkRateData,
+    workRateInputs
+  } = useEvaluation();
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = React.useState<{ type: 'deleteEmployees' | 'resetEvaluations' | 'resetWorkData' | 'backupData' | 'restoreData', workDataType?: keyof WorkRateInputs | ShortenedWorkType } | null>(null);
   const [isProcessing, setIsProcessing] = React.useState(false);
 
-  // State for header mapping dialog
   const [isMappingDialogOpen, setIsMappingDialogOpen] = React.useState(false);
   const [excelHeaders, setExcelHeaders] = React.useState<string[]>([]);
   const [currentMapping, setCurrentMapping] = React.useState<HeaderMapping>({});
   const [fileToProcess, setFileToProcess] = React.useState<File | null>(null);
   const [uploadType, setUploadType] = React.useState<'employees' | 'evaluations' | null>(null);
 
-  const systemFieldsByScreen: Record<string, string[]> = React.useMemo(() => {
-    const result: Record<string, string[]> = {};
-    for (const field in excelHeaderTargetScreens) {
-        const screen = excelHeaderTargetScreens[field];
-        if (!result[screen]) {
-            result[screen] = [];
-        }
-        if (!result[screen].includes(field)) {
-            result[screen].push(field);
-        }
-    }
-    return result;
+  const systemFields = React.useMemo(() => {
+    return Object.values(excelHeaderMapping);
   }, []);
 
   const requiredFields: string[] = ['uniqueId'];
@@ -192,16 +171,16 @@ export default function ManageData({
   const isMappingValid = React.useMemo(() => {
     const mappedSystemFields = Object.values(currentMapping).map(m => m.field);
     return requiredFields.every(field => mappedSystemFields.includes(field));
-  }, [currentMapping]);
+  }, [currentMapping, requiredFields]);
   
   const handleClearEmployees = () => {
-    onClearEmployeeData(selectedDate.year, selectedDate.month);
+    handleClearEmployeeData(selectedDate.year, selectedDate.month);
     toast({ title: '삭제 완료', description: '해당 월의 모든 대상자 데이터가 삭제되었습니다.' });
     setDialogOpen(null);
   };
   
   const handleResetEvaluations = () => {
-    onClearEvaluationData(selectedDate.year, selectedDate.month);
+    handleClearEvaluationData(selectedDate.year, selectedDate.month);
     toast({ title: '초기화 완료', description: '해당 월의 모든 평가 데이터가 초기화되었습니다.' });
     setDialogOpen(null);
   };
@@ -281,15 +260,9 @@ export default function ManageData({
 
             const autoMapping: HeaderMapping = {};
             headers.forEach(header => {
-              for (const excelHeaderVariant in excelHeaderMapping) {
-                  if (header === excelHeaderVariant) {
-                      const systemField = excelHeaderMapping[excelHeaderVariant];
-                      const screen = excelHeaderTargetScreens[systemField];
-                      if (screen && !Object.values(autoMapping).some(m => m.field === systemField)) {
-                          autoMapping[header] = { screen, field: systemField };
-                          break;
-                      }
-                  }
+              const systemField = excelHeaderMapping[header];
+              if (systemField && !Object.values(autoMapping).some(m => m.field === systemField)) {
+                  autoMapping[header] = { field: systemField };
               }
             });
             
@@ -306,46 +279,29 @@ export default function ManageData({
     if (!fileToProcess || !uploadType) return;
     
     try {
-      const parsedData = await parseExcelFile(fileToProcess, currentMapping, (rows) => rows);
+      const parsedData = await parseExcelFile(fileToProcess, currentMapping);
 
-      let uploadCount = 0;
       if (uploadType === 'employees') {
-          const newEmployees = parsedData.map((row, index) => {
-            const uniqueId = String(row['uniqueId'] || '');
-            if (!uniqueId) throw new Error(`${index + 2}번째 행에 ID가 없습니다.`);
-            return {
-              id: `E${uniqueId}`, uniqueId, name: String(row['name'] || ''),
-              company: String(row['company'] || ''), department: String(row['department'] || ''),
-              title: String(row['title'] || '팀원'), position: String(row['title'] || '팀원'),
-              growthLevel: String(row['growthLevel'] || ''), workRate: parseFloat(String(row['workRate'] || '1')),
-              evaluatorId: String(row['evaluatorId'] || ''), baseAmount: Number(String(row['baseAmount'] || '0').replace(/,/g, '')),
-              memo: String(row['memo'] || ''),
-            };
-          });
-          uploadCount = newEmployees.length;
-          onEmployeeUpload(selectedDate.year, selectedDate.month, newEmployees);
+        const newEmployees = parsedData.map((row, index) => {
+          const uniqueId = String(row['uniqueId'] || '');
+          if (!uniqueId) throw new Error(`${index + 2}번째 행에 ID가 없습니다.`);
+          return {
+            id: `E${uniqueId}`, uniqueId, name: String(row['name'] || ''),
+            company: String(row['company'] || ''), department: String(row['department'] || ''),
+            title: String(row['title'] || '팀원'), position: String(row['title'] || '팀원'),
+            growthLevel: String(row['growthLevel'] || ''), workRate: parseFloat(String(row['workRate'] || '1')),
+            evaluatorId: String(row['evaluatorId'] || ''), baseAmount: Number(String(row['baseAmount'] || '0').replace(/,/g, '')),
+            memo: String(row['memo'] || ''),
+          };
+        });
+        handleEmployeeUpload(selectedDate.year, selectedDate.month, newEmployees);
+        toast({ title: '업로드 성공', description: `${newEmployees.length}명의 데이터가 처리되었습니다.` });
+
       } else if (uploadType === 'evaluations') {
-            const newEvals = parsedData.map((row, index) => {
-            const uniqueId = String(row['uniqueId'] || '');
-            if (!uniqueId) throw new Error(`${index + 2}번째 행에 ID가 없습니다.`);
-            
-            return {
-                employeeId: `E${uniqueId}`,
-                name: row['name'] ? String(row['name']) : undefined, company: row['company'] ? String(row['company']) : undefined,
-                department: row['department'] ? String(row['department']) : undefined, title: row['title'] ? String(row['title']) : undefined,
-                growthLevel: row['growthLevel'] ? String(row['growthLevel']) : undefined,
-                workRate: row['workRate'] !== undefined ? parseFloat(String(row['workRate'])) : undefined,
-                evaluatorId: row['evaluatorId'] ? String(row['evaluatorId']) : undefined, 
-                evaluatorName: row['evaluatorName'] ? String(row['evaluatorName']) : undefined,
-                baseAmount: row['baseAmount'] !== undefined ? Number(String(row['baseAmount']).replace(/,/g, '')) : undefined,
-                grade: (String(row['grade'] || '') || null) as Grade, memo: row['memo'] !== undefined ? String(row['memo']) : undefined,
-            };
-          });
-          uploadCount = newEvals.length;
-          onEvaluationUpload(selectedDate.year, selectedDate.month, newEvals);
+          handleEvaluationUpload(selectedDate.year, selectedDate.month, parsedData);
+          toast({ title: '업로드 성공', description: `${parsedData.length}명의 데이터가 처리되었습니다.` });
       }
 
-      toast({ title: '업로드 성공', description: `${uploadCount}명의 데이터가 처리되었습니다.` });
     } catch (error: any) {
         toast({ variant: 'destructive', title: '파일 처리 오류', description: error.message || '파일 처리 중 오류가 발생했습니다.' });
     } finally {
@@ -374,7 +330,7 @@ export default function ManageData({
               }
             }));
             uploadCount = newShortenedWork.length;
-            onWorkRateDataUpload(selectedDate.year, selectedDate.month, 'shortenedWorkHours', newShortenedWork, true);
+            handleWorkRateDataUpload(selectedDate.year, selectedDate.month, 'shortenedWorkHours', newShortenedWork, true);
         } else if (uploadType === 'dailyAttendance') {
             const newDailyAttendance = await parseExcelFileSimple<DailyAttendanceRecord>(file, json => json.map((row, index) => {
               const uniqueId = String(row['uniqueId'] || '');
@@ -386,7 +342,7 @@ export default function ManageData({
               }
             }));
             uploadCount = newDailyAttendance.length;
-            onWorkRateDataUpload(selectedDate.year, selectedDate.month, 'dailyAttendance', newDailyAttendance, true);
+            handleWorkRateDataUpload(selectedDate.year, selectedDate.month, 'dailyAttendance', newDailyAttendance, true);
         }
         
         toast({ title: '업로드 성공', description: `${uploadCount}명의 데이터가 처리되었습니다.` });
@@ -406,7 +362,6 @@ export default function ManageData({
                 const worksheet = workbook.Sheets[sheetName];
                 const json = XLSX.utils.sheet_to_json<any>(worksheet);
                 
-                // A very simplified mapping based on common names
                 const simplifiedMapping: Record<string, string> = {
                     "고유사번": "uniqueId", "사번": "uniqueId", "ID": "uniqueId",
                     "성명": "name", "이름": "name",
@@ -447,7 +402,7 @@ export default function ManageData({
             fileName = `${selectedDate.year}.${String(selectedDate.month).padStart(2,'0')}_월성과대상자_양식.xlsx`;
             break;
         case 'evaluations':
-            headers = ['ID', '이름', '회사', '소속부서', '직책', '성장레벨', '근무율', '평가그룹', '세부구분1', '세부구분2', '평가자 ID', '평가자', '점수', '등급', '기준금액', '최종금액', '비고'];
+            headers = ['ID', '이름', '등급', '비고', '평가자 ID', '평가자'];
             fileName = `${selectedDate.year}.${String(selectedDate.month).padStart(2, '0')}_월성과데이터_양식.xlsx`;
             break;
         case 'shortenedWork':
@@ -468,16 +423,13 @@ export default function ManageData({
     XLSX.writeFile(workbook, fileName);
   };
 
-  const handleMappingChange = (excelHeader: string, type: 'screen' | 'field', value: string) => {
+  const handleMappingChange = (excelHeader: string, value: string) => {
       setCurrentMapping(prev => {
           const newMapping = { ...prev };
-          const current = newMapping[excelHeader] || { screen: '', field: '' };
-
-          if (type === 'screen') {
-              // If screen changes, reset the field
-              newMapping[excelHeader] = { screen: value, field: '' };
+          if (value === 'ignore') {
+            delete newMapping[excelHeader];
           } else {
-              newMapping[excelHeader] = { ...current, field: value };
+            newMapping[excelHeader] = { field: value };
           }
           return newMapping;
       });
@@ -547,7 +499,7 @@ export default function ManageData({
                 onUpload={(e) => handleFileUpload(e, 'shortenedWork', '임신')}
                 onDownload={() => handleDownloadTemplate('shortenedWork')}
                 onReset={() => setDialogOpen({type: 'resetWorkData', workDataType: '임신'})}
-                isResetDisabled={!workRateInputs.shortenedWorkHours?.some(r => r.type === '임신')}
+                isResetDisabled={!workRateInputs?.shortenedWorkHours?.some(r => r.type === '임신')}
             />
             <Separator />
             <UploadSection
@@ -557,7 +509,7 @@ export default function ManageData({
                 onUpload={(e) => handleFileUpload(e, 'shortenedWork', '육아/돌봄')}
                 onDownload={() => handleDownloadTemplate('shortenedWork')}
                 onReset={() => setDialogOpen({type: 'resetWorkData', workDataType: '육아/돌봄'})}
-                isResetDisabled={!workRateInputs.shortenedWorkHours?.some(r => r.type === '육아/돌봄')}
+                isResetDisabled={!workRateInputs?.shortenedWorkHours?.some(r => r.type === '육아/돌봄')}
             />
             <Separator />
             <UploadSection
@@ -567,7 +519,7 @@ export default function ManageData({
                 onUpload={(e) => handleFileUpload(e, 'dailyAttendance')}
                 onDownload={() => handleDownloadTemplate('dailyAttendance')}
                 onReset={() => setDialogOpen({type: 'resetWorkData', workDataType: 'dailyAttendance'})}
-                isResetDisabled={!workRateInputs.dailyAttendance?.length}
+                isResetDisabled={!workRateInputs?.dailyAttendance?.length}
             />
         </CardContent>
       </Card>
@@ -604,7 +556,7 @@ export default function ManageData({
       </AlertDialog>
 
       <Dialog open={isMappingDialogOpen} onOpenChange={setIsMappingDialogOpen}>
-        <DialogContent2 className="max-w-4xl">
+        <DialogContent2 className="max-w-2xl">
           <DialogHeader2>
             <DialogTitle2>엑셀 헤더 매핑 설정</DialogTitle2>
             <DialogDescription2>
@@ -617,43 +569,20 @@ export default function ManageData({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-1/3">엑셀 헤더</TableHead>
-                  <TableHead>데이터 종류</TableHead>
-                  <TableHead>세부 항목</TableHead>
+                  <TableHead className="w-1/2">엑셀 헤더</TableHead>
+                  <TableHead>시스템 필드</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {excelHeaders.map(header => {
-                  const mapping = currentMapping[header] || { screen: '', field: '' };
-                  const availableFields = mapping.screen ? systemFieldsByScreen[mapping.screen] : [];
-
+                  const mapping = currentMapping[header] || { field: '' };
                   return (
                     <TableRow key={header}>
                       <TableCell className="font-medium">{header}</TableCell>
                       <TableCell>
                         <Select
-                          value={mapping.screen || 'ignore'}
-                          onValueChange={(value) => handleMappingChange(header, 'screen', value === 'ignore' ? '' : value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="종류 선택..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="ignore">매핑 안함</SelectItem>
-                            <Separator />
-                            {Object.keys(systemFieldsByScreen).map(screen => (
-                              <SelectItem key={screen} value={screen}>
-                                {screen}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                      <TableCell>
-                        <Select
                           value={mapping.field || 'ignore'}
-                          onValueChange={(value) => handleMappingChange(header, 'field', value === 'ignore' ? '' : value)}
-                          disabled={!mapping.screen}
+                          onValueChange={(value) => handleMappingChange(header, value)}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="항목 선택..." />
@@ -661,8 +590,8 @@ export default function ManageData({
                           <SelectContent>
                             <SelectItem value="ignore">매핑 안함</SelectItem>
                             <Separator />
-                            {availableFields.map(field => {
-                                const selectedByOtherHeader = Object.values(currentMapping).some(m => m.field === field && m.screen === mapping.screen) && mapping.field !== field;
+                            {systemFields.map(field => {
+                                const selectedByOtherHeader = Object.values(currentMapping).some(m => m.field === field) && mapping.field !== field;
                                 return (
                                     <SelectItem key={field} value={field} disabled={selectedByOtherHeader}>
                                     {requiredFields.includes(field) && <span className="text-destructive">* </span>}
@@ -681,10 +610,7 @@ export default function ManageData({
           </ScrollArea>
            <div className="flex justify-between items-center pt-2">
             <Label className="text-xs text-muted-foreground">
-                {requiredFields.map(f => {
-                    const fieldName = Object.keys(excelHeaderTargetScreens).find(key => key === f) || f;
-                    return fieldName;
-                }).join(', ')} 필드는 반드시 매핑되어야 합니다.
+                <span className="text-destructive">*</span> {requiredFields.join(', ')} 필드는 반드시 매핑되어야 합니다.
             </Label>
             {isMappingValid ? 
                 <p className="text-sm text-green-600 flex items-center gap-2"><CheckCircle2/> 모든 필수 항목이 매핑되었습니다.</p> :
