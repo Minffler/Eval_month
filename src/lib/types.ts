@@ -80,6 +80,7 @@ export type EmployeeView = 'my-review' | 'evaluation-details' | 'my-work-rate' |
 
 export type EvaluationUploadData = Partial<Omit<Employee, 'id' | 'uniqueId'>> & Partial<Pick<Evaluation, 'grade' | 'memo'>> & {
   uniqueId: string;
+  evaluatorName?: string;
 };
 
 export type AppNotification = {

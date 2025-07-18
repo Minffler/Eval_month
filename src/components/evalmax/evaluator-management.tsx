@@ -343,7 +343,7 @@ export default function EvaluatorManagement(props: EvaluatorManagementProps) {
     const finalEvaluatorId = bulkEvaluatorId === 'unassigned' ? '' : bulkEvaluatorId;
     
     selectedIds.forEach(employeeId => {
-      const user = allUsers.find(u => u.id === employeeId);
+      const user = allUsers.find(u => u.employeeId === employeeId);
       if (user) {
         updateUser(user.id, { evaluatorId: finalEvaluatorId });
       }

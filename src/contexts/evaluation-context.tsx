@@ -65,7 +65,7 @@ interface EvaluationContextType {
 const EvaluationContext = React.createContext<EvaluationContextType | undefined>(undefined);
 
 export function EvaluationProvider({ children }: { children: React.ReactNode }) {
-  const { allUsers, addUser, updateUser } = useAuth();
+  const { allUsers, upsertUsers } = useAuth();
   const { toast } = useToast();
   
   const [employees, setEmployees] = React.useState<Record<string, Employee[]>>(() => getFromLocalStorage('employees', initialMockEmployees ));
@@ -87,20 +87,27 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
   const handleEmployeeUpload = (year: number, month: number, newEmployees: Employee[]) => {
     const key = `${year}-${month}`;
 
+    const usersToUpdate = newEmployees.map(emp => ({
+        uniqueId: emp.uniqueId,
+        name: emp.name,
+        department: emp.department,
+        title: emp.title,
+        company: emp.company,
+        evaluatorId: emp.evaluatorId,
+        roles: ['employee']
+    }));
+
+    // Ensure evaluators are also in the user list
     newEmployees.forEach(emp => {
-      const existingUser = allUsers.find(u => u.uniqueId === emp.uniqueId);
-      const employeeDataForUser: Partial<User> = { name: emp.name, department: emp.department, title: emp.title, company: emp.company };
-      
       if (emp.evaluatorId) {
-        employeeDataForUser.evaluatorId = emp.evaluatorId;
-      }
-      
-      if (!existingUser) {
-        addUser({ ...emp, company: emp.company || 'N/A', position: emp.position || emp.title || '팀원', }, ['employee']);
-      } else {
-        updateUser(existingUser.id, employeeDataForUser);
+        const evaluatorInList = usersToUpdate.find(u => u.uniqueId === emp.evaluatorId);
+        if (!evaluatorInList) {
+          usersToUpdate.push({ uniqueId: emp.evaluatorId, roles: ['evaluator'] });
+        }
       }
     });
+
+    upsertUsers(usersToUpdate);
 
     setEmployees(prev => ({...prev, [key]: newEmployees}));
 
@@ -121,67 +128,69 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
 
   const handleEvaluationUpload = (year: number, month: number, uploadedData: EvaluationUploadData[]) => {
       const key = `${year}-${month}`;
-      const usersToUpdate: Record<string, Partial<User>> = {};
       
-      const processUserUpdate = (item: EvaluationUploadData) => {
-          if (!item.uniqueId) return;
+      const usersToUpdate: Partial<User>[] = [];
+      const employeeData: Employee[] = [];
+      const evaluationData: Evaluation[] = [];
 
-          const userData: Partial<User> = { name: item.name, department: item.department, title: item.title, company: item.company };
-          if(item.evaluatorId) userData.evaluatorId = item.evaluatorId;
+      uploadedData.forEach(item => {
+        if (!item.uniqueId) return;
 
-          const existingUser = allUsers.find(u => u.uniqueId === item.uniqueId);
-          if(existingUser) {
-              if (!usersToUpdate[existingUser.id]) usersToUpdate[existingUser.id] = {};
-              Object.assign(usersToUpdate[existingUser.id], userData);
-          } else {
-              addUser({ uniqueId: item.uniqueId, ...userData }, ['employee']);
-          }
-      };
+        // 1. Prepare user data for upsert
+        usersToUpdate.push({
+          uniqueId: item.uniqueId,
+          name: item.name,
+          department: item.department,
+          title: item.title,
+          company: item.company,
+          evaluatorId: item.evaluatorId,
+          roles: ['employee'],
+        });
 
-      uploadedData.forEach(processUserUpdate);
-
-      for(const userId in usersToUpdate) {
-          updateUser(userId, usersToUpdate[userId]);
-      }
+        // 2. Prepare evaluator data for upsert (if they exist and are not already in the list)
+        if (item.evaluatorId && !usersToUpdate.some(u => u.uniqueId === item.evaluatorId)) {
+          usersToUpdate.push({
+            uniqueId: item.evaluatorId,
+            name: item.evaluatorName,
+            roles: ['evaluator'],
+          });
+        }
         
-      setEmployees(prevEmps => {
-          const newState = { ...prevEmps };
-          const newEmpsForMonth = newState[key] ? [...newState[key]] : [];
-          
-          uploadedData.forEach(uploadItem => {
-              if (!uploadItem.uniqueId) return;
-              const empIndex = newEmpsForMonth.findIndex((e: Employee) => e.uniqueId === uploadItem.uniqueId);
-              const { grade, memo, ...empDetails } = uploadItem;
-              const dataToUpdate = { ...empDetails, id: `E${uploadItem.uniqueId}` };
-
-              if (empIndex > -1) {
-                  Object.assign(newEmpsForMonth[empIndex], dataToUpdate);
-              } else {
-                  newEmpsForMonth.push(dataToUpdate as Employee);
-              }
-          });
-          newState[key] = newEmpsForMonth;
-          return newState;
+        // 3. Prepare employee data for state update
+        const employeeId = `E${item.uniqueId}`;
+        employeeData.push({
+            id: employeeId,
+            uniqueId: item.uniqueId,
+            name: item.name || '',
+            company: item.company || 'N/A',
+            department: item.department || 'N/A',
+            title: item.title || '팀원',
+            position: item.title || '팀원',
+            growthLevel: item.growthLevel || '',
+            workRate: item.workRate ?? 1,
+            evaluatorId: item.evaluatorId,
+            baseAmount: item.baseAmount ?? 0,
+        });
+        
+        // 4. Prepare evaluation data for state update
+        evaluationData.push({
+            id: `eval-${employeeId}-${year}-${month}`,
+            employeeId,
+            year,
+            month,
+            grade: item.grade || null,
+            memo: item.memo || '',
+        });
       });
 
-      setEvaluations(prevEvals => {
-          const newState = { ...prevEvals };
-          const newEvalsForMonth = newState[key] ? [...newState[key]] : [];
-          
-          uploadedData.forEach(uploadItem => {
-              if (!uploadItem.uniqueId) return;
-              const employeeId = `E${uploadItem.uniqueId}`;
-              const evalIndex = newEvalsForMonth.findIndex((e: Evaluation) => e.employeeId === employeeId);
-              const evalData = { grade: uploadItem.grade || null, memo: uploadItem.memo || '', };
-              if (evalIndex > -1) {
-                  Object.assign(newEvalsForMonth[evalIndex], evalData);
-              } else {
-                  newEvalsForMonth.push({ id: `eval-${employeeId}-${year}-${month}`, employeeId, year, month, ...evalData });
-              }
-          });
-          newState[key] = newEvalsForMonth;
-          return newState;
-      });
+      // Step 1: Sync user data first
+      upsertUsers(usersToUpdate);
+
+      // Step 2: Then, update employees for the month
+      setEmployees(prev => ({...prev, [key]: employeeData}));
+
+      // Step 3: Finally, update evaluations for the month
+      setEvaluations(prev => ({...prev, [key]: evaluationData}));
   };
 
   const handleClearEmployeeData = (year: number, month: number) => {
@@ -282,11 +291,11 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
         const [year, month] = key.split('-').map(Number);
         const monthlyEvaluations = evaluations[key] || [];
 
-        return monthlyEmployees.map(employee => {
-            const userForEmployee = uniqueUserMap.get(employee.uniqueId) || {};
-            const evaluation = monthlyEvaluations.find(e => e.employeeId === employee.id);
-            const base: Employee = { ...employee, ...userForEmployee };
+        return (monthlyEmployees as Employee[]).map(employee => {
+            const user = uniqueUserMap.get(employee.uniqueId) || {};
+            const base: Employee = { ...employee, ...user };
             
+            const evaluation = monthlyEvaluations.find(e => e.employeeId === base.id);
             const grade = evaluation?.grade || null;
             const gradeInfo = grade ? gradingScale[grade] : null;
             const score = gradeInfo?.score || 0;
@@ -327,6 +336,8 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
     const monthKey = `${selectedDate.year}-${selectedDate.month}`;
     const monthlyEmployeeList = employees[monthKey] || [];
     
+    if (!Array.isArray(monthlyEmployeeList)) return [];
+
     const monthlyEmployeeIds = new Set(monthlyEmployeeList.map(e => e.uniqueId));
     return allEvaluationResults.filter(r => r.year === selectedDate.year && r.month === selectedDate.month && monthlyEmployeeIds.has(r.uniqueId));
   }, [allEvaluationResults, employees]);

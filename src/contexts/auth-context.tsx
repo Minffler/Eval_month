@@ -29,6 +29,7 @@ interface AuthContextType {
   deleteUser: (userId: string) => void;
   deleteUsers: (userIds: string[]) => void;
   updateUserRoles: (userId: string, newRoles: Role[]) => void;
+  upsertUsers: (usersToUpsert: Partial<User>[]) => void;
   loading: boolean;
   allUsers: User[];
 }
@@ -36,11 +37,11 @@ interface AuthContextType {
 const AuthContext = React.createContext<AuthContextType | undefined>(undefined);
 
 // Helper to remove duplicates from an array of objects based on a key
-const uniqueById = <T extends { id: string }>(items: T[]): T[] => {
+const uniqueByUniqueId = <T extends { uniqueId: string }>(items: T[]): T[] => {
     const seen = new Map<string, T>();
     items.forEach(item => {
-        if (!seen.has(item.id)) {
-            seen.set(item.id, item);
+        if (!seen.has(item.uniqueId)) {
+            seen.set(item.uniqueId, item);
         }
     });
     return Array.from(seen.values());
@@ -68,7 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   React.useEffect(() => {
-    const uniqueUsers = uniqueById(allUsers);
+    const uniqueUsers = uniqueByUniqueId(allUsers);
     localStorage.setItem('users', JSON.stringify(uniqueUsers));
     
     if (allUsers.length !== uniqueUsers.length) {
@@ -82,7 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const storedRole = localStorage.getItem('role') as Role;
       if (storedUser) {
         const parsedUser = JSON.parse(storedUser);
-        const uniqueUsers = uniqueById(allUsers);
+        const uniqueUsers = uniqueByUniqueId(allUsers);
         const currentUser = uniqueUsers.find(u => u.id === parsedUser.id);
         if (currentUser) {
             setUser(currentUser);
@@ -133,54 +134,76 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const upsertUsers = (usersToUpsert: Partial<User>[]) => {
+    setAllUsers(prevUsers => {
+      const userMap = new Map(prevUsers.map(u => [u.uniqueId, u]));
+      
+      usersToUpsert.forEach(userToUpsert => {
+        if (!userToUpsert.uniqueId) return;
+
+        const existingUser = userMap.get(userToUpsert.uniqueId);
+        if (existingUser) {
+          // Update existing user
+          userMap.set(userToUpsert.uniqueId, { ...existingUser, ...userToUpsert });
+        } else {
+          // Add new user
+          const newUser: User = {
+            id: `user-${userToUpsert.uniqueId}`,
+            employeeId: `E${userToUpsert.uniqueId}`,
+            uniqueId: userToUpsert.uniqueId,
+            name: userToUpsert.name || `사용자(${userToUpsert.uniqueId})`,
+            department: userToUpsert.department || '미지정',
+            title: userToUpsert.title || '팀원',
+            roles: userToUpsert.roles || ['employee'],
+            avatar: `https://placehold.co/100x100.png?text=${(userToUpsert.name || 'U').charAt(0)}`,
+            password: '1',
+            ...userToUpsert
+          };
+          userMap.set(userToUpsert.uniqueId, newUser);
+        }
+      });
+      return Array.from(userMap.values());
+    });
+  };
+
   const addUser = (newEmployeeData: Partial<Employee>, roles: Role[]) => {
       if (!newEmployeeData.uniqueId) {
         toast({ variant: 'destructive', title: '오류', description: 'ID가 없습니다.' });
         return;
       }
-      if (allUsers.some(u => u.uniqueId === newEmployeeData.uniqueId)) {
-        toast({ variant: 'destructive', title: '오류', description: '이미 존재하는 ID입니다.' });
-        return;
-      }
-
-      const newUser: User = {
-        id: `user-${newEmployeeData.uniqueId}`,
-        employeeId: `E${newEmployeeData.uniqueId}`,
+      upsertUsers([{
         uniqueId: newEmployeeData.uniqueId,
-        name: newEmployeeData.name || `사용자(${newEmployeeData.uniqueId})`,
-        department: newEmployeeData.department || '미지정',
-        title: newEmployeeData.title || '팀원',
-        roles,
-        avatar: `https://placehold.co/100x100.png?text=${(newEmployeeData.name || 'U').charAt(0)}`,
-        password: '1',
-        evaluatorId: newEmployeeData.evaluatorId || '',
-      };
-      setAllUsers(prev => [...prev, newUser]);
+        name: newEmployeeData.name,
+        department: newEmployeeData.department,
+        title: newEmployeeData.title,
+        company: newEmployeeData.company,
+        evaluatorId: newEmployeeData.evaluatorId,
+        roles
+      }]);
   };
   
   const updateUser = (userId: string, updatedData: Partial<User & { newUniqueId?: string }>) => {
     setAllUsers(prevUsers => {
-        const updated = prevUsers.map(u => {
-            if (u.id === userId) {
-                const finalUpdatedData = { ...updatedData };
-                if (finalUpdatedData.newUniqueId) {
-                    finalUpdatedData.uniqueId = finalUpdatedData.newUniqueId;
-                    delete finalUpdatedData.newUniqueId;
-                }
-                return { ...u, ...finalUpdatedData };
-            }
-            return u;
-        });
+        const userToUpdate = prevUsers.find(u => u.id === userId);
+        if (!userToUpdate) return prevUsers;
+        
+        const finalUpdatedData = { ...updatedData };
+        if (finalUpdatedData.newUniqueId) {
+            finalUpdatedData.uniqueId = finalUpdatedData.newUniqueId;
+            delete finalUpdatedData.newUniqueId;
+        }
+
+        const newUsers = prevUsers.map(u => u.id === userId ? { ...u, ...finalUpdatedData } : u);
 
         // Also update the current user state if they are the one being updated
         if(user && user.id === userId) {
-          const updatedCurrentUser = updated.find(u => u.id === userId);
+          const updatedCurrentUser = newUsers.find(u => u.id === userId);
           if (updatedCurrentUser) {
             setUser(updatedCurrentUser);
             localStorage.setItem('user', JSON.stringify(updatedCurrentUser));
           }
         }
-        return updated;
+        return newUsers;
     });
   };
 
@@ -209,7 +232,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     updateUser,
     deleteUser,
     deleteUsers,
-    updateUserRoles
+    updateUserRoles,
+    upsertUsers
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
