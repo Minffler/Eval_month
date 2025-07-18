@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import type { User, Employee, Grade, Evaluation, GradeInfo, WorkRateInputs, AttendanceType, Holiday, EvaluationResult, EvaluationUploadData, ShortenedWorkType, ShortenedWorkHourRecord, DailyAttendanceRecord } from '@/lib/types';
-import { mockEmployees, gradingScale as initialGradingScale, mockEvaluations, initialAttendanceTypes, initialHolidays, calculateFinalAmount, getDetailedGroup1 } from '@/lib/data';
+import { mockEmployees as initialMockEmployees, gradingScale as initialGradingScale, mockEvaluations as initialMockEvaluations, initialAttendanceTypes, initialHolidays, calculateFinalAmount, getDetailedGroup1 } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from './auth-context';
 import { calculateWorkRateDetails, type WorkRateDetailsResult } from '@/lib/work-rate-calculator';
@@ -68,8 +68,8 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
   const { allUsers, addUser, updateUser } = useAuth();
   const { toast } = useToast();
   
-  const [employees, setEmployees] = React.useState<Record<string, Employee[]>>(() => getFromLocalStorage('employees', mockEmployees ));
-  const [evaluations, setEvaluations] = React.useState<Record<string, Evaluation[]>>(() => getFromLocalStorage('evaluations', mockEvaluations ));
+  const [employees, setEmployees] = React.useState<Record<string, Employee[]>>(() => getFromLocalStorage('employees', initialMockEmployees ));
+  const [evaluations, setEvaluations] = React.useState<Record<string, Evaluation[]>>(() => getFromLocalStorage('evaluations', initialMockEvaluations ));
   const [gradingScale, setGradingScale] = React.useState<Record<NonNullable<Grade>, GradeInfo>>(() => getFromLocalStorage('gradingScale', initialGradingScale));
   const [workRateInputs, setWorkRateInputs] = React.useState<Record<string, WorkRateInputs>>(() => getFromLocalStorage('workRateInputs', {}));
   const [attendanceTypes, setAttendanceTypes] = React.useState<AttendanceType[]>(() => getFromLocalStorage('attendanceTypes', initialAttendanceTypes));
@@ -157,7 +157,7 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
               if (empIndex > -1) {
                   Object.assign(newEmpsForMonth[empIndex], dataToUpdate);
               } else {
-                  newEmpsForMonth.push(dataToUpdate);
+                  newEmpsForMonth.push(dataToUpdate as Employee);
               }
           });
           newState[key] = newEmpsForMonth;
@@ -281,18 +281,11 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
     return Object.entries(employees).flatMap(([key, monthlyEmployees]) => {
         const [year, month] = key.split('-').map(Number);
         const monthlyEvaluations = evaluations[key] || [];
-        
-        // Ensure monthlyEmployees is an array before mapping
-        if (!Array.isArray(monthlyEmployees)) {
-            console.warn(`Data for month ${key} is not an array, skipping.`);
-            return [];
-        }
 
         return monthlyEmployees.map(employee => {
-            const user = uniqueUserMap.get(employee.uniqueId) || {};
+            const userForEmployee = uniqueUserMap.get(employee.uniqueId) || {};
             const evaluation = monthlyEvaluations.find(e => e.employeeId === employee.id);
-
-            const base: Employee = { ...employee, ...user };
+            const base: Employee = { ...employee, ...userForEmployee };
             
             const grade = evaluation?.grade || null;
             const gradeInfo = grade ? gradingScale[grade] : null;
@@ -301,7 +294,7 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
             const gradeAmount = (base.baseAmount || 0) * payoutRate;
             const finalAmount = calculateFinalAmount(gradeAmount, base.workRate);
             
-            const evaluator = uniqueUserMap.get(base.evaluatorId);
+            const evaluator = uniqueUserMap.get(base.evaluatorId || '');
             
             const getEvaluationGroup = (workRate: number): string => {
                 if (workRate >= 0.7) return 'A. 정규평가';
@@ -332,10 +325,8 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
 
   const getMonthlyEvaluationTargets = React.useCallback((selectedDate: {year: number, month: number}) => {
     const monthKey = `${selectedDate.year}-${selectedDate.month}`;
-    const monthlyEmployeeList = employees[monthKey];
-    if (!Array.isArray(monthlyEmployeeList)) {
-        return [];
-    }
+    const monthlyEmployeeList = employees[monthKey] || [];
+    
     const monthlyEmployeeIds = new Set(monthlyEmployeeList.map(e => e.uniqueId));
     return allEvaluationResults.filter(r => r.year === selectedDate.year && r.month === selectedDate.month && monthlyEmployeeIds.has(r.uniqueId));
   }, [allEvaluationResults, employees]);
