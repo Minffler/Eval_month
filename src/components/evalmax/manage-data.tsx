@@ -52,7 +52,7 @@ interface ManageDataProps {
 // 최종 파싱된 데이터의 각 행이 어떤 타입인지 명시
 type ParsedRow = Partial<EvaluationUploadData & { evaluatorId: string, evaluatorName: string }>;
 
-const parseExcelFile = (file: File, mapping: HeaderMapping): Promise<ParsedRow[]> => {
+const parseExcelFile = (file: File, mapping: Record<string, string>): Promise<ParsedRow[]> => {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -66,7 +66,7 @@ const parseExcelFile = (file: File, mapping: HeaderMapping): Promise<ParsedRow[]
                 const mappedJson = json.map(row => {
                     const newRow: ParsedRow = {};
                     for(const excelHeader in row) {
-                        const systemField = mapping[excelHeader]?.field;
+                        const systemField = mapping[excelHeader];
                         if (systemField) {
                             (newRow as any)[systemField] = row[excelHeader];
                         }
@@ -158,18 +158,18 @@ export default function ManageData({
 
   const [isMappingDialogOpen, setIsMappingDialogOpen] = React.useState(false);
   const [excelHeaders, setExcelHeaders] = React.useState<string[]>([]);
-  const [currentMapping, setCurrentMapping] = React.useState<HeaderMapping>({});
+  const [currentMapping, setCurrentMapping] = React.useState<Record<string, string>>({});
   const [fileToProcess, setFileToProcess] = React.useState<File | null>(null);
   const [uploadType, setUploadType] = React.useState<'employees' | 'evaluations' | null>(null);
 
   const systemFields = React.useMemo(() => {
-    return Object.values(excelHeaderMapping);
+    return Array.from(new Set(Object.values(excelHeaderMapping)));
   }, []);
 
   const requiredFields: string[] = ['uniqueId'];
 
   const isMappingValid = React.useMemo(() => {
-    const mappedSystemFields = Object.values(currentMapping).map(m => m.field);
+    const mappedSystemFields = Object.values(currentMapping);
     return requiredFields.every(field => mappedSystemFields.includes(field));
   }, [currentMapping, requiredFields]);
   
@@ -258,11 +258,11 @@ export default function ManageData({
             setFileToProcess(file);
             setUploadType(type);
 
-            const autoMapping: HeaderMapping = {};
+            const autoMapping: Record<string, string> = {};
             headers.forEach(header => {
               const systemField = excelHeaderMapping[header];
-              if (systemField && !Object.values(autoMapping).some(m => m.field === systemField)) {
-                  autoMapping[header] = { field: systemField };
+              if (systemField && !Object.values(autoMapping).includes(systemField)) {
+                  autoMapping[header] = systemField;
               }
             });
             
@@ -429,7 +429,7 @@ export default function ManageData({
           if (value === 'ignore') {
             delete newMapping[excelHeader];
           } else {
-            newMapping[excelHeader] = { field: value };
+            newMapping[excelHeader] = value;
           }
           return newMapping;
       });
@@ -575,13 +575,13 @@ export default function ManageData({
               </TableHeader>
               <TableBody>
                 {excelHeaders.map(header => {
-                  const mapping = currentMapping[header] || { field: '' };
+                  const mapping = currentMapping[header] || '';
                   return (
                     <TableRow key={header}>
                       <TableCell className="font-medium">{header}</TableCell>
                       <TableCell>
                         <Select
-                          value={mapping.field || 'ignore'}
+                          value={mapping || 'ignore'}
                           onValueChange={(value) => handleMappingChange(header, value)}
                         >
                           <SelectTrigger>
@@ -591,7 +591,7 @@ export default function ManageData({
                             <SelectItem value="ignore">매핑 안함</SelectItem>
                             <Separator />
                             {systemFields.map(field => {
-                                const selectedByOtherHeader = Object.values(currentMapping).some(m => m.field === field) && mapping.field !== field;
+                                const selectedByOtherHeader = Object.values(currentMapping).some(m => m === field) && mapping !== field;
                                 return (
                                     <SelectItem key={field} value={field} disabled={selectedByOtherHeader}>
                                     {requiredFields.includes(field) && <span className="text-destructive">* </span>}
