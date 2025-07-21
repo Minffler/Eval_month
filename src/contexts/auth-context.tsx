@@ -139,7 +139,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         const existingUser = userMap.get(userToUpsert.uniqueId);
         if (existingUser) {
-          userMap.set(userToUpsert.uniqueId, { ...existingUser, ...userToUpsert });
+          // Keep existing roles if the update doesn't provide new ones.
+          const updatedRoles = userToUpsert.roles || existingUser.roles;
+          userMap.set(userToUpsert.uniqueId, { ...existingUser, ...userToUpsert, roles: updatedRoles });
         } else {
           const newUser: User = {
             id: `user-${userToUpsert.uniqueId}`,
