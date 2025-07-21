@@ -82,6 +82,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const uniqueUsers = uniqueByUniqueId(allUsers);
         const currentUser = uniqueUsers.find(u => u.id === parsedUser.id);
         if (currentUser) {
+            // Stale data fix: Refresh the user object in localStorage
+            if (JSON.stringify(currentUser) !== JSON.stringify(parsedUser)) {
+                localStorage.setItem('user', JSON.stringify(currentUser));
+            }
+
             setUser(currentUser);
             const validRole = storedRole && currentUser.roles.includes(storedRole) ? storedRole : currentUser.roles[0];
             setRole(validRole);
@@ -96,7 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     setLoading(false);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [allUsers]);
   
   const login = React.useCallback(
     async (id: string, pass: string): Promise<boolean> => {
