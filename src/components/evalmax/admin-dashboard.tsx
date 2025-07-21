@@ -67,6 +67,7 @@ import GradeManagement from './grade-management';
 import EvaluatorManagement from './evaluator-management';
 import { useEvaluation } from '@/contexts/evaluation-context';
 import { useAuth } from '@/contexts/auth-context';
+import { calculateWorkRateDetails } from '@/lib/work-rate-calculator';
 
 interface AdminDashboardProps {
   results: EvaluationResult[];
