@@ -13,8 +13,8 @@ import {
 } from '@/components/ui/table';
 import { Input } from '../ui/input';
 import { Search, ArrowUpDown, ArrowUp, ArrowDown, Download, PlusCircle, Edit, ChevronsUpDown, CalendarIcon } from 'lucide-react';
-import type { Employee, AttendanceType, Role, Approval, DailyAttendanceRecord, ShortenedWorkHourRecord } from '@/lib/types';
-import type { ShortenedWorkDetail, DailyAttendanceDetail } from '@/lib/work-rate-calculator';
+import type { Employee, AttendanceType, Role, Approval, DailyAttendanceRecord, ShortenedWorkHourRecord, WorkRateInputs } from '@/lib/types';
+import { calculateWorkRateDetails, type ShortenedWorkDetail, type DailyAttendanceDetail } from '@/lib/work-rate-calculator';
 import { Button } from '../ui/button';
 import * as XLSX from 'xlsx';
 import { Progress } from '../ui/progress';
@@ -61,6 +61,7 @@ type SortConfig<T> = {
 interface WorkRateDetailsProps {
   type: 'shortenedWork' | 'dailyAttendance';
   data: any[];
+  workRateInputs: Record<string, WorkRateInputs>;
   selectedDate: { year: number, month: number };
   allEmployees: Employee[];
   attendanceTypes: AttendanceType[];
@@ -209,7 +210,7 @@ const TimePicker = ({ value, onChange }: { value: string, onChange: (time: strin
     )
 }
 
-export default function WorkRateDetails({ type, data, selectedDate, allEmployees, attendanceTypes, viewAs = 'admin', onDataChange }: WorkRateDetailsProps) {
+export default function WorkRateDetails({ type, data, workRateInputs, selectedDate, allEmployees, attendanceTypes, viewAs = 'admin', onDataChange }: WorkRateDetailsProps) {
   const { user } = useAuth();
   const { addApproval } = useNotifications();
   const { toast } = useToast();
@@ -224,13 +225,22 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
   const [employeeSearchOpen, setEmployeeSearchOpen] = React.useState(false);
   const [attendanceTypeSearchOpen, setAttendanceTypeSearchOpen] = React.useState(false);
 
+  const tableData = React.useMemo(() => {
+    const details = calculateWorkRateDetails(workRateInputs, attendanceTypes, [], selectedDate.year, selectedDate.month);
+    if (type === 'shortenedWork') {
+        return details.shortenedWorkDetails;
+    }
+    return details.dailyAttendanceDetails;
+  }, [workRateInputs, attendanceTypes, selectedDate, type]);
+
+
   const filteredData = React.useMemo(() => {
-    if (!searchTerm) return data;
-    return data.filter(item => 
+    if (!searchTerm) return tableData;
+    return tableData.filter(item => 
       item.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
       item.uniqueId.includes(searchTerm)
     );
-  }, [data, searchTerm]);
+  }, [tableData, searchTerm]);
 
   const sortedData = React.useMemo(() => {
     let sortableItems = [...filteredData];
@@ -726,7 +736,7 @@ export default function WorkRateDetails({ type, data, selectedDate, allEmployees
         </CardHeader>
         <CardContent>
             <div className="border rounded-lg overflow-x-auto">
-                {data.length > 0 
+                {tableData.length > 0 
                   ? (type === 'shortenedWork' ? renderShortenedWorkTable() : renderDailyAttendanceTable())
                   : (
                     <div className="flex items-center justify-center h-64">

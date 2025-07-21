@@ -55,7 +55,6 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/colla
 import { AmountDistributionChart } from './amount-distribution-chart';
 import WorkRateManagement from './work-rate-management';
 import WorkRateDetails from './work-rate-details';
-import type { WorkRateDetailsResult } from '@/lib/work-rate-calculator';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
@@ -88,7 +87,6 @@ interface AdminDashboardProps {
   setAttendanceTypes: React.Dispatch<React.SetStateAction<AttendanceType[]>>;
   holidays: Holiday[];
   setHolidays: React.Dispatch<React.SetStateAction<Holiday[]>>;
-  workRateDetails: WorkRateDetailsResult;
   onApprovalAction: (approval: Approval) => void;
   notifications: AppNotification[];
   addNotification: (notification: Omit<AppNotification, 'id' | 'date' | 'isRead'>) => void;
@@ -138,7 +136,6 @@ export default function AdminDashboard({
   setAttendanceTypes,
   holidays,
   setHolidays,
-  workRateDetails,
   onApprovalAction,
   notifications,
   addNotification,
@@ -649,9 +646,6 @@ export default function AdminDashboard({
     }, [selectedApproval, allUsers]);
   
   const renderContent = () => {
-    const key = `${selectedDate.year}-${selectedDate.month}`;
-    const currentWorkRateInputs = workRateInputs[key] || { shortenedWorkHours: [], dailyAttendance: [] };
-    
     switch(activeView) {
         case 'dashboard':
             return (
@@ -984,7 +978,7 @@ export default function AdminDashboard({
                             evaluatorUser={selectedEvaluator}
                             activeView='evaluation-input'
                             onClearMyEvaluations={()=>{}}
-                            workRateDetails={workRateDetails}
+                            workRateInputs={workRateInputs}
                             holidays={holidays}
                             allUsers={allUsers}
                             attendanceTypes={attendanceTypes}
@@ -1006,7 +1000,7 @@ export default function AdminDashboard({
             );
         }
         case 'file-upload':
-            return <ManageData onEmployeeUpload={onEmployeeUpload} onEvaluationUpload={onEvaluationUpload} results={initialResults} selectedDate={selectedDate} setSelectedDate={setSelectedDate} onClearEmployeeData={onClearEmployeeData} onClearEvaluationData={onClearEvaluationData} onWorkRateDataUpload={onWorkRateDataUpload} onClearWorkRateData={onClearWorkRateData} workRateInputs={currentWorkRateInputs} />;
+            return <ManageData onEmployeeUpload={onEmployeeUpload} onEvaluationUpload={onEvaluationUpload} results={initialResults} selectedDate={selectedDate} setSelectedDate={setSelectedDate} onClearEmployeeData={onClearEmployeeData} onClearEvaluationData={onClearEvaluationData} onWorkRateDataUpload={onWorkRateDataUpload} onClearWorkRateData={onClearWorkRateData} workRateInputs={workRateInputs} />;
         case 'evaluator-management':
             return <EvaluatorManagement />;
         case 'user-role-management':
@@ -1014,11 +1008,11 @@ export default function AdminDashboard({
         case 'consistency-check':
             return <ConsistencyValidator results={initialResults} gradingScale={gradingScale} />;
         case 'work-rate-view':
-            return <WorkRateManagement results={allUsers} workRateDetails={workRateDetails} selectedDate={selectedDate} holidays={holidays} setHolidays={setHolidays} attendanceTypes={attendanceTypes} setAttendanceTypes={setAttendanceTypes} handleResultsUpdate={() => {}} />;
+            return <WorkRateManagement results={allUsers} workRateInputs={workRateInputs} selectedDate={selectedDate} holidays={holidays} setHolidays={setHolidays} attendanceTypes={attendanceTypes} setAttendanceTypes={setAttendanceTypes} handleResultsUpdate={() => {}} />;
         case 'shortened-work-details':
-            return <WorkRateDetails type="shortenedWork" data={workRateDetails.shortenedWorkDetails} selectedDate={selectedDate} allEmployees={allUsers} attendanceTypes={attendanceTypes} onDataChange={() => {}}/>;
+            return <WorkRateDetails type="shortenedWork" data={allUsers} selectedDate={selectedDate} allEmployees={allUsers} attendanceTypes={attendanceTypes} onDataChange={() => {}} workRateInputs={workRateInputs}/>;
         case 'daily-attendance-details':
-            return <WorkRateDetails type="dailyAttendance" data={workRateDetails.dailyAttendanceDetails} selectedDate={selectedDate} allEmployees={allUsers} attendanceTypes={attendanceTypes} onDataChange={() => {}}/>;
+            return <WorkRateDetails type="dailyAttendance" data={allUsers} selectedDate={selectedDate} allEmployees={allUsers} attendanceTypes={attendanceTypes} onDataChange={() => {}} workRateInputs={workRateInputs}/>;
         case 'approvals': {
             const sortedApprovals = [...approvals].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
             return (

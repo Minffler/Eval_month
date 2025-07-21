@@ -77,7 +77,6 @@ import { getPositionSortValue } from '@/lib/data';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import WorkRateManagement from './work-rate-management';
-import type { WorkRateDetailsResult } from '@/lib/work-rate-calculator';
 import WorkRateDetails from './work-rate-details';
 import EvaluatorNotifications from './evaluator-dashboard-notifications';
 import { Textarea } from '../ui/textarea';
@@ -105,7 +104,7 @@ interface EvaluatorDashboardProps {
   evaluatorUser?: User | null;
   activeView: EvaluatorView;
   onClearMyEvaluations: (year: number, month: number, evaluatorId: string) => void;
-  workRateDetails: WorkRateDetailsResult;
+  workRateInputs: Record<string, WorkRateInputs>;
   holidays: Holiday[];
   allUsers: User[];
   attendanceTypes: AttendanceType[];
@@ -114,6 +113,7 @@ interface EvaluatorDashboardProps {
   addNotification: (notification: Omit<AppNotification, 'id' | 'date' | 'isRead'>) => void;
   deleteNotification: (notificationId: string) => void;
   approvals: Approval[];
+  onWorkRateDataUpload: (year: number, month: number, type: keyof WorkRateInputs, data: any[], isApproved: boolean) => void;
 }
 
 type SortConfig = {
@@ -1127,7 +1127,7 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, allUsers, 
 };
 
 
-export default function EvaluatorDashboard({ allResults, currentMonthResults, gradingScale, selectedDate, setSelectedDate, evaluatorUser, activeView, onClearMyEvaluations, workRateDetails, holidays, allUsers, attendanceTypes, onApprovalAction, notifications, addNotification, deleteNotification, approvals }: EvaluatorDashboardProps) {
+export default function EvaluatorDashboard({ allResults, currentMonthResults, gradingScale, selectedDate, setSelectedDate, evaluatorUser, activeView, onClearMyEvaluations, workRateInputs, holidays, allUsers, attendanceTypes, onApprovalAction, notifications, addNotification, deleteNotification, approvals }: EvaluatorDashboardProps) {
   const { user: authUser } = useAuth();
   const { toast } = useToast();
   const [effectiveUser, setEffectiveUser] = React.useState<User | null>(null);
@@ -1147,15 +1147,6 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
     if (!effectiveUser) return [];
     return currentMonthResults.filter(r => r.evaluatorId === effectiveUser.uniqueId);
   }, [effectiveUser, currentMonthResults]);
-  
-  const myManagedWorkRateDetails: WorkRateDetailsResult = React.useMemo(() => {
-    if (!effectiveUser) return { shortenedWorkDetails: [], dailyAttendanceDetails: [] };
-    const myManagedEmployeeIds = new Set(myEmployees.map(e => e.uniqueId));
-    return {
-      shortenedWorkDetails: workRateDetails.shortenedWorkDetails.filter(d => myManagedEmployeeIds.has(d.uniqueId)),
-      dailyAttendanceDetails: workRateDetails.dailyAttendanceDetails.filter(d => myManagedEmployeeIds.has(d.uniqueId)),
-    }
-  }, [effectiveUser, myEmployees, workRateDetails]);
   
     const formatTimestamp = (isoString: string | null) => {
         if (!isoString) return '-';
@@ -1275,11 +1266,11 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
                  evaluatorName={effectiveUser.name}
                />;
       case 'work-rate-view':
-          return <WorkRateManagement results={myEmployees} workRateDetails={myManagedWorkRateDetails} selectedDate={selectedDate} holidays={holidays} attendanceTypes={attendanceTypes} handleResultsUpdate={() => {}} />;
+          return <WorkRateManagement results={myEmployees} workRateInputs={workRateInputs} selectedDate={selectedDate} holidays={holidays} attendanceTypes={attendanceTypes} handleResultsUpdate={() => {}} />;
       case 'shortened-work-details':
-          return <WorkRateDetails type="shortenedWork" data={myManagedWorkRateDetails.shortenedWorkDetails} selectedDate={selectedDate} allEmployees={allUsers} attendanceTypes={attendanceTypes} onDataChange={()=>{}} />;
+          return <WorkRateDetails type="shortenedWork" data={allUsers} selectedDate={selectedDate} allEmployees={allUsers} attendanceTypes={attendanceTypes} onDataChange={()=>{}} workRateInputs={workRateInputs} viewAs="evaluator" />;
       case 'daily-attendance-details':
-          return <WorkRateDetails type="dailyAttendance" data={myManagedWorkRateDetails.dailyAttendanceDetails} selectedDate={selectedDate} allEmployees={allUsers} attendanceTypes={attendanceTypes} onDataChange={()=>{}} />;
+          return <WorkRateDetails type="dailyAttendance" data={allUsers} selectedDate={selectedDate} allEmployees={allUsers} attendanceTypes={attendanceTypes} onDataChange={()=>{}} workRateInputs={workRateInputs} viewAs="evaluator"/>;
       case 'approvals': {
             const myApprovals = approvals.filter(a => a.approverTeamId === effectiveUser.uniqueId).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
             return (

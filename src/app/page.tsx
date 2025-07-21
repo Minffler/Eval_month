@@ -119,7 +119,7 @@ export default function Home() {
       attendanceTypes, setAttendanceTypes, holidays, setHolidays, evaluationStatus, 
       handleEmployeeUpload, handleEvaluationUpload, handleClearEmployeeData, handleClearEvaluationData,
       handleClearWorkRateData, handleWorkRateDataUpload, handleClearMyEvaluations,
-      allEvaluationResults, monthlyEvaluationTargets, workRateDetails, setEvaluationStatus
+      allEvaluationResults, monthlyEvaluationTargets, setEvaluationStatus
   } = useEvaluation();
   const router = useRouter();
 
@@ -192,7 +192,6 @@ export default function Home() {
                   setAttendanceTypes={setAttendanceTypes}
                   holidays={holidays}
                   setHolidays={setHolidays}
-                  workRateDetails={workRateDetails}
                   onApprovalAction={handleApprovalAction}
                   notifications={notifications}
                   addNotification={addNotification}
@@ -215,7 +214,7 @@ export default function Home() {
                   setSelectedDate={setSelectedDate} 
                   activeView={evaluatorActiveView}
                   onClearMyEvaluations={(year, month) => handleClearMyEvaluations(year, month, user!.uniqueId)}
-                  workRateDetails={workRateDetails}
+                  workRateInputs={workRateInputs}
                   holidays={holidays}
                   allUsers={allUsers}
                   attendanceTypes={attendanceTypes}
@@ -237,7 +236,7 @@ export default function Home() {
                   allResultsForYear={allEvaluationResults.filter(e => e.uniqueId === user?.uniqueId && e.year === selectedDate.year)}
                   gradingScale={gradingScale} 
                   activeView={employeeActiveView}
-                  workRateDetails={workRateDetails}
+                  workRateInputs={workRateInputs}
                   selectedDate={selectedDate}
                   allEmployees={allUsers}
                   attendanceTypes={attendanceTypes}

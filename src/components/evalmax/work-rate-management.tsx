@@ -4,8 +4,8 @@
 import * as React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import type { Employee, EvaluationResult, Holiday, ShortenedWorkType, AppNotification, AttendanceType, User } from '@/lib/types';
-import type { WorkRateDetailsResult, ShortenedWorkDetail, DailyAttendanceDetail } from '@/lib/work-rate-calculator';
+import type { Employee, EvaluationResult, Holiday, ShortenedWorkType, AppNotification, AttendanceType, User, WorkRateInputs } from '@/lib/types';
+import { calculateWorkRateDetails, type WorkRateDetailsResult, type ShortenedWorkDetail, type DailyAttendanceDetail } from '@/lib/work-rate-calculator';
 import { Button } from '../ui/button';
 import { ArrowUpDown, Download, ArrowUp, ArrowDown, Settings2, Search } from 'lucide-react';
 import * as XLSX from 'xlsx';
@@ -27,7 +27,7 @@ import GradeManagement from './grade-management';
 
 interface WorkRateManagementProps {
   results: (EvaluationResult | User)[];
-  workRateDetails: WorkRateDetailsResult;
+  workRateInputs: Record<string, WorkRateInputs>;
   selectedDate: { year: number, month: number };
   holidays: Holiday[];
   setHolidays?: React.Dispatch<React.SetStateAction<Holiday[]>>;
@@ -80,7 +80,7 @@ function countBusinessDaysForMonth(year: number, month: number, holidays: Set<st
 
 export default function WorkRateManagement({ 
   results, 
-  workRateDetails, 
+  workRateInputs, 
   selectedDate, 
   holidays, 
   setHolidays,
@@ -102,6 +102,17 @@ export default function WorkRateManagement({
   );
   const [searchTerm, setSearchTerm] = React.useState('');
   const [isSettingsDialogOpen, setIsSettingsDialogOpen] = React.useState(false);
+
+  const workRateDetails = React.useMemo(() => {
+    return calculateWorkRateDetails(
+      workRateInputs,
+      attendanceTypes,
+      holidays,
+      selectedDate.year,
+      selectedDate.month
+    );
+  }, [workRateInputs, attendanceTypes, holidays, selectedDate]);
+
 
   const businessDays = React.useMemo(() => {
     const holidaySet = new Set(holidays.map(h => h.date));

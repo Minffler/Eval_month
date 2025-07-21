@@ -58,7 +58,7 @@ function countBusinessDays(startDate: Date, endDate: Date, holidays: Set<string>
 
 
 export const calculateWorkRateDetails = (
-  workRateInputs: Record<string, WorkRateInputs>,
+  allWorkRateInputs: Record<string, WorkRateInputs>,
   attendanceTypes: AttendanceType[],
   holidays: Holiday[],
   year: number,
@@ -69,7 +69,7 @@ export const calculateWorkRateDetails = (
   const attendanceTypeMap = new Map(attendanceTypes.map(at => [at.name, at.deductionDays]));
 
   const monthKey = `${year}-${month}`;
-  const currentMonthInputs = workRateInputs[monthKey] || { shortenedWorkHours: [], dailyAttendance: [] };
+  const currentMonthInputs = allWorkRateInputs[monthKey] || { shortenedWorkHours: [], dailyAttendance: [] };
   
   // 1. Process shortened work details first, as they are needed for daily attendance calculation
   const shortenedWorkDetails: ShortenedWorkDetail[] = currentMonthInputs.shortenedWorkHours

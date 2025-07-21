@@ -2,14 +2,13 @@
 
 import * as React from 'react';
 import { useAuth } from '@/contexts/auth-context';
-import type { EvaluationResult, Grade, GradeInfo, Employee, EmployeeView, AttendanceType, Approval, ApprovalStatus, AppNotification } from '@/lib/types';
+import type { EvaluationResult, Grade, GradeInfo, Employee, EmployeeView, AttendanceType, Approval, ApprovalStatus, AppNotification, WorkRateInputs } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Inbox, ChevronsUpDown, CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import WorkRateManagement from './work-rate-management';
 import WorkRateDetails from './work-rate-details';
-import type { WorkRateDetailsResult } from '@/lib/work-rate-calculator';
 import EmployeeNotifications from './employee-dashboard-notifications';
 import { cn } from '@/lib/utils';
 import { format, isValid, parse } from 'date-fns';
@@ -149,7 +148,7 @@ interface EmployeeDashboardProps {
   allResultsForYear: EvaluationResult[];
   gradingScale: Record<NonNullable<Grade>, GradeInfo>;
   activeView: EmployeeView;
-  workRateDetails: WorkRateDetailsResult;
+  workRateInputs: Record<string, WorkRateInputs>;
   selectedDate: { year: number, month: number };
   allEmployees: Employee[];
   attendanceTypes: AttendanceType[];
@@ -192,7 +191,7 @@ export default function EmployeeDashboard({
     allResultsForYear,
     gradingScale, 
     activeView, 
-    workRateDetails, 
+    workRateInputs, 
     selectedDate, 
     allEmployees, 
     attendanceTypes,
@@ -211,11 +210,6 @@ export default function EmployeeDashboard({
 
   if (!user) {
     return <div>결과를 불러오는 중입니다...</div>;
-  }
-  
-  const myWorkRateDetails: WorkRateDetailsResult = {
-      shortenedWorkDetails: workRateDetails.shortenedWorkDetails.filter(d => d.uniqueId === user.uniqueId),
-      dailyAttendanceDetails: workRateDetails.dailyAttendanceDetails.filter(d => d.uniqueId === user.uniqueId),
   }
   
   const handleApprovalModalOpen = (approval: Approval) => {
@@ -341,11 +335,11 @@ export default function EmployeeDashboard({
       case 'evaluation-details':
         return <DetailedEvaluationView allResultsForYear={allResultsForYear} gradingScale={gradingScale} />;
       case 'my-work-rate':
-        return <WorkRateManagement results={employeeResults} workRateDetails={myWorkRateDetails} selectedDate={selectedDate} allEmployees={allEmployees} holidays={[]} setHolidays={() => {}} attendanceTypes={attendanceTypes} setAttendanceTypes={() => {}} handleResultsUpdate={() => {}} addNotification={() => {}} />;
+        return <WorkRateManagement results={employeeResults} workRateInputs={workRateInputs} selectedDate={selectedDate} allEmployees={allEmployees} holidays={[]} setHolidays={() => {}} attendanceTypes={attendanceTypes} setAttendanceTypes={() => {}} handleResultsUpdate={() => {}} addNotification={() => {}} />;
       case 'my-shortened-work':
-        return <WorkRateDetails type="shortenedWork" data={myWorkRateDetails.shortenedWorkDetails} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} viewAs={role} onDataChange={() => {}} />;
+        return <WorkRateDetails type="shortenedWork" data={allUsers} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} viewAs={role} onDataChange={() => {}} workRateInputs={workRateInputs}/>;
       case 'my-daily-attendance':
-        return <WorkRateDetails type="dailyAttendance" data={myWorkRateDetails.dailyAttendanceDetails} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} viewAs={role} onDataChange={() => {}} />;
+        return <WorkRateDetails type="dailyAttendance" data={allUsers} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} viewAs={role} onDataChange={() => {}} workRateInputs={workRateInputs}/>;
       case 'approvals': {
             const mySentApprovals = approvals.filter(a => a.requesterId === user.uniqueId).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
             return (

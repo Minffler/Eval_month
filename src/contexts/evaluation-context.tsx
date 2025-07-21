@@ -1,8 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import type { User, Employee, Grade, Evaluation, GradeInfo, WorkRateInputs, AttendanceType, Holiday, EvaluationResult, EvaluationUploadData, ShortenedWorkType, ShortenedWorkHourRecord, DailyAttendanceRecord } from '@/lib/types';
-import { mockEmployees as initialMockEmployees, gradingScale as initialGradingScale, mockEvaluations as initialMockEvaluations, initialAttendanceTypes, initialHolidays, calculateFinalAmount, getDetailedGroup1 } from '@/lib/data';
+import type { User, Employee, Grade, Evaluation, GradeInfo, WorkRateInputs, AttendanceType, Holiday, EvaluationResult, EvaluationUploadData, ShortenedWorkType, ShortenedWorkHourRecord, DailyAttendanceRecord, Role } from '@/lib/types';
+import { mockEmployees, gradingScale as initialGradingScale, mockEvaluations, initialAttendanceTypes, initialHolidays, calculateFinalAmount, getDetailedGroup1 } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from './auth-context';
 import { calculateWorkRateDetails, type WorkRateDetailsResult } from '@/lib/work-rate-calculator';
@@ -43,7 +43,6 @@ interface EvaluationContextType {
 
   allEvaluationResults: EvaluationResult[];
   monthlyEvaluationTargets: (selectedDate: {year: number, month: number}) => EvaluationResult[];
-  workRateDetails: WorkRateDetailsResult;
 }
 
 const EvaluationContext = React.createContext<EvaluationContextType | undefined>(undefined);
@@ -52,8 +51,8 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
   const { allUsers, upsertUsers } = useAuth();
   const { toast } = useToast();
   
-  const [employees, setEmployees] = React.useState<Record<string, Employee[]>>(() => getFromLocalStorage('employees', initialMockEmployees ));
-  const [evaluations, setEvaluations] = React.useState<Record<string, Evaluation[]>>(() => getFromLocalStorage('evaluations', initialMockEvaluations ));
+  const [employees, setEmployees] = React.useState<Record<string, Employee[]>>(() => getFromLocalStorage('employees', mockEmployees ));
+  const [evaluations, setEvaluations] = React.useState<Record<string, Evaluation[]>>(() => getFromLocalStorage('evaluations', mockEvaluations ));
   const [gradingScale, setGradingScale] = React.useState<Record<NonNullable<Grade>, GradeInfo>>(() => getFromLocalStorage('gradingScale', initialGradingScale));
   const [workRateInputs, setWorkRateInputs] = React.useState<Record<string, WorkRateInputs>>(() => getFromLocalStorage('workRateInputs', {}));
   const [attendanceTypes, setAttendanceTypes] = React.useState<AttendanceType[]>(() => getFromLocalStorage('attendanceTypes', initialAttendanceTypes));
@@ -269,7 +268,7 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
         const [year, month] = key.split('-').map(Number);
         const monthlyEvaluations = evaluations[key] || [];
 
-        return (monthlyEmployees || []).map(employee => {
+        return (monthlyEmployees as Employee[]).map(employee => {
             const user = uniqueUserMap.get(employee.uniqueId) || {};
             const base: Employee = { ...employee, ...user };
             
@@ -320,18 +319,6 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
     return allEvaluationResults.filter(r => r.year === selectedDate.year && r.month === selectedDate.month && monthlyEmployeeIds.has(r.uniqueId));
   }, [allEvaluationResults, employees]);
 
-  const workRateDetails = React.useMemo(() => {
-      const today = new Date();
-      const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-      return calculateWorkRateDetails(
-          workRateInputs,
-          attendanceTypes,
-          holidays,
-          lastMonth.getFullYear(),
-          lastMonth.getMonth() + 1
-      );
-  }, [workRateInputs, attendanceTypes, holidays]);
-
 
   const value = {
     gradingScale, setGradingScale,
@@ -343,7 +330,7 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
     handleEmployeeUpload, handleEvaluationUpload, handleClearEmployeeData,
     handleClearEvaluationData, handleClearWorkRateData, handleWorkRateDataUpload,
     handleClearMyEvaluations,
-    allEvaluationResults, monthlyEvaluationTargets: getMonthlyEvaluationTargets, workRateDetails
+    allEvaluationResults, monthlyEvaluationTargets: getMonthlyEvaluationTargets
   };
 
   return <EvaluationContext.Provider value={value}>{children}</EvaluationContext.Provider>;
