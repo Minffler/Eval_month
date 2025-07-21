@@ -113,13 +113,13 @@ const getInitialDate = () => {
 };
 
 export default function Home() {
-  const { user, allUsers, loading: authLoading, logout, upsertUsers, role } = useAuth();
+  const { user, allUsers, loading: authLoading, logout, upsertUsers, role, setRole } = useAuth();
   const {
-      gradingScale, setGradingScale, workRateInputs,
+      gradingScale, setGradingScale,
       attendanceTypes, setAttendanceTypes, holidays, setHolidays, evaluationStatus, 
       handleEmployeeUpload, handleEvaluationUpload, handleClearEmployeeData, handleClearEvaluationData,
       handleClearWorkRateData, handleWorkRateDataUpload, handleClearMyEvaluations,
-      allEvaluationResults, monthlyEvaluationTargets, setEvaluationStatus
+      allEvaluationResults, monthlyEvaluationTargets, setEvaluationStatus, workRateInputs,
   } = useEvaluation();
   const router = useRouter();
 

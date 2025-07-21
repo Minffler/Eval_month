@@ -132,7 +132,7 @@ export default function Header({
         
         <div className="flex items-center gap-2">
             {(currentUser?.roles?.length ?? 0) > 1 && (
-               <RoleSwitcher currentRole={role} availableRoles={currentUser?.roles || user.roles} onRoleChange={setRole} />
+               <RoleSwitcher currentRole={role} availableRoles={currentUser?.roles || []} onRoleChange={setRole} />
             )}
             
             <Popover onOpenChange={(open) => { if (open) markApprovalsAsRead()}}>
