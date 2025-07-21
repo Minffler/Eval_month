@@ -5,15 +5,287 @@ export const mockUsers: User[] = [
     "id": "user-admin",
     "employeeId": "Eadmin",
     "uniqueId": "admin",
-    "name": "김관리",
+    "name": "평가자(admin)",
     "roles": [
+      "evaluator",
       "admin",
-      "evaluator"
+      "employee"
     ],
     "avatar": "https://placehold.co/100x100.png?text=A",
+    "title": "평가자",
+    "department": "N/A",
+    "company": "N/A",
+    "evaluatorId": ""
+  },
+  {
+    "id": "user-0000198",
+    "employeeId": "E0000198",
+    "uniqueId": "0000198",
+    "name": "김O섭",
+    "department": "일산PL팀",
+    "title": "팀장",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=김",
+    "password": "1",
+    "company": "OK",
+    "evaluatorId": "0000011"
+  },
+  {
+    "id": "user-0000245",
+    "employeeId": "E0000245",
+    "uniqueId": "0000245",
+    "name": "신O원",
+    "department": "일산PL팀",
     "title": "팀원",
-    "department": "인사부",
-    "password": "1"
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=신",
+    "password": "1",
+    "company": "OK",
+    "evaluatorId": "0000011"
+  },
+  {
+    "id": "user-0000246",
+    "employeeId": "E0000246",
+    "uniqueId": "0000246",
+    "name": "김O정",
+    "department": "일산PL팀",
+    "title": "팀원",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=김",
+    "password": "1",
+    "company": "OK",
+    "evaluatorId": "0000011"
+  },
+  {
+    "id": "user-0000247",
+    "employeeId": "E0000247",
+    "uniqueId": "0000247",
+    "name": "강O화",
+    "department": "일산PL팀",
+    "title": "팀원",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=강",
+    "password": "1",
+    "company": "OK",
+    "evaluatorId": "0000011"
+  },
+  {
+    "id": "user-0000298",
+    "employeeId": "E0000298",
+    "uniqueId": "0000298",
+    "name": "김O철c",
+    "department": "일산PL팀",
+    "title": "팀원",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=김",
+    "password": "1",
+    "company": "OK",
+    "evaluatorId": "0000011"
+  },
+  {
+    "id": "user-0000299",
+    "employeeId": "E0000299",
+    "uniqueId": "0000299",
+    "name": "엄O호",
+    "department": "일산PL팀",
+    "title": "팀원",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=엄",
+    "password": "1",
+    "company": "OK",
+    "evaluatorId": "0000011"
+  },
+  {
+    "id": "user-0000300",
+    "employeeId": "E0000300",
+    "uniqueId": "0000300",
+    "name": "홍O환",
+    "department": "일산PL팀",
+    "title": "팀원",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=홍",
+    "password": "1",
+    "company": "OK",
+    "evaluatorId": "0000011"
+  },
+  {
+    "id": "user-0000195",
+    "employeeId": "E0000195",
+    "uniqueId": "0000195",
+    "name": "김O균",
+    "department": "대전PL팀",
+    "title": "팀장",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=김",
+    "password": "1",
+    "company": "OK",
+    "evaluatorId": "0000011"
+  },
+  {
+    "id": "user-0000231",
+    "employeeId": "E0000231",
+    "uniqueId": "0000231",
+    "name": "노O호",
+    "department": "대전PL팀",
+    "title": "팀원",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=노",
+    "password": "1",
+    "company": "OK",
+    "evaluatorId": "0000011"
+  },
+  {
+    "id": "user-0000232",
+    "employeeId": "E0000232",
+    "uniqueId": "0000232",
+    "name": "김O주b",
+    "department": "대전PL팀",
+    "title": "팀원",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=김",
+    "password": "1",
+    "company": "OK",
+    "evaluatorId": "0000011"
+  },
+  {
+    "id": "user-0000281",
+    "employeeId": "E0000281",
+    "uniqueId": "0000281",
+    "name": "김O진b",
+    "department": "대전PL팀",
+    "title": "팀원",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=김",
+    "password": "1",
+    "company": "OK",
+    "evaluatorId": "0000011"
+  },
+  {
+    "id": "user-0000282",
+    "employeeId": "E0000282",
+    "uniqueId": "0000282",
+    "name": "신O섭",
+    "department": "대전PL팀",
+    "title": "팀원",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=신",
+    "password": "1",
+    "company": "OK",
+    "evaluatorId": "0000011"
+  },
+  {
+    "id": "user-0000287",
+    "employeeId": "E0000287",
+    "uniqueId": "0000287",
+    "name": "송O훈",
+    "department": "대전PL팀",
+    "title": "팀원",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=송",
+    "password": "1",
+    "company": "OK",
+    "evaluatorId": "0000011"
+  },
+  {
+    "id": "user-0000584",
+    "employeeId": "E0000584",
+    "uniqueId": "0000584",
+    "name": "김O미",
+    "department": "경영관리팀",
+    "title": "팀원",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=김",
+    "password": "1",
+    "company": "OCI",
+    "evaluatorId": "admin"
+  },
+  {
+    "id": "user-0000586",
+    "employeeId": "E0000586",
+    "uniqueId": "0000586",
+    "name": "조O진",
+    "department": "경영관리팀",
+    "title": "팀원",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=조",
+    "password": "1",
+    "company": "OFI",
+    "evaluatorId": "admin"
+  },
+  {
+    "id": "user-0000609",
+    "employeeId": "E0000609",
+    "uniqueId": "0000609",
+    "name": "정O석b",
+    "department": "경영관리팀",
+    "title": "팀원",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=정",
+    "password": "1",
+    "company": "OC",
+    "evaluatorId": "admin"
+  },
+  {
+    "id": "user-0000610",
+    "employeeId": "E0000610",
+    "uniqueId": "0000610",
+    "name": "김O희",
+    "department": "경영관리팀",
+    "title": "팀원",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=김",
+    "password": "1",
+    "company": "OC",
+    "evaluatorId": "admin"
+  },
+  {
+    "id": "user-0000011",
+    "employeeId": "E0000011",
+    "uniqueId": "0000011",
+    "name": "이O권",
+    "department": "콜렉션센터",
+    "title": "센터장",
+    "roles": [
+      "evaluator"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=평",
+    "password": "1",
+    "company": "N/A",
+    "evaluatorId": ""
   }
 ];
 
@@ -67,54 +339,29 @@ export const gradingScale: Record<NonNullable<Grade>, GradeInfo> = {
 
 export const initialAttendanceTypes: AttendanceType[] = [
   {
-    "id": "att-1752539390040-0.43708339740241187",
-    "name": "가족돌봄휴가",
+    "id": "att-1",
+    "name": "연차",
     "deductionDays": 1
   },
   {
-    "id": "att-1752539390040-0.8600289269946465",
-    "name": "가족돌봄휴직",
-    "deductionDays": 1
+    "id": "att-2",
+    "name": "오전반차",
+    "deductionDays": 0.5
   },
   {
-    "id": "att-1752539390040-0.2834111161336621",
-    "name": "결근",
-    "deductionDays": 1
+    "id": "att-3",
+    "name": "오후반차",
+    "deductionDays": 0.5
   },
   {
-    "id": "att-1752539390040-0.8453210432552445",
-    "name": "경조휴가",
-    "deductionDays": 1
+    "id": "att-4",
+    "name": "오전반반차",
+    "deductionDays": 0.25
   },
   {
-    "id": "att-7",
-    "name": "공가",
-    "deductionDays": 1
-  },
-  {
-    "id": "att-1752709882586",
-    "name": "난임치료휴가",
-    "deductionDays": 1
-  },
-  {
-    "id": "att-1752709920135",
-    "name": "대기발령",
-    "deductionDays": 1
-  },
-  {
-    "id": "att-1752709914658",
-    "name": "명령휴직",
-    "deductionDays": 1
-  },
-  {
-    "id": "att-1752709944969",
-    "name": "무급휴가",
-    "deductionDays": 1
-  },
-  {
-    "id": "att-1752709943678",
-    "name": "무단결근",
-    "deductionDays": 1
+    "id": "att-5",
+    "name": "오후반반차",
+    "deductionDays": 0.25
   },
   {
     "id": "att-6",
@@ -122,252 +369,397 @@ export const initialAttendanceTypes: AttendanceType[] = [
     "deductionDays": 1
   },
   {
-    "id": "att-1752539390040-0.8971776875145197",
-    "name": "보건휴가",
+    "id": "att-7",
+    "name": "공가",
     "deductionDays": 1
-  },
-  {
-    "id": "att-1752539390040-0.7344014112808761",
-    "name": "연차(1년미만)",
-    "deductionDays": 1
-  },
-  {
-    "id": "att-1752539390040-0.5333859035780778",
-    "name": "연차휴가",
-    "deductionDays": 1
-  },
-  {
-    "id": "att-1752539390040-0.8800839231440238",
-    "name": "유산휴가",
-    "deductionDays": 1
-  },
-  {
-    "id": "att-1752539390040-0.5862032989597719",
-    "name": "육아휴직",
-    "deductionDays": 1
-  },
-  {
-    "id": "att-1752539390040-0.62526242425624",
-    "name": "인병휴직(무급)",
-    "deductionDays": 1
-  },
-  {
-    "id": "att-1752539390040-0.30246647655655434",
-    "name": "자유휴가",
-    "deductionDays": 1
-  },
-  {
-    "id": "att-1752710116199",
-    "name": "정직",
-    "deductionDays": 1
-  },
-  {
-    "id": "att-1752710132178",
-    "name": "청원휴직",
-    "deductionDays": 1
-  },
-  {
-    "id": "att-1752539390040-0.8391113114108122",
-    "name": "출산휴가",
-    "deductionDays": 1
-  },
-  {
-    "id": "att-1752539390040-0.4808296766365241",
-    "name": "건강검진(오전)",
-    "deductionDays": 0.5
-  },
-  {
-    "id": "att-1752539390040-0.8646152617567209",
-    "name": "건강검진(오후)",
-    "deductionDays": 0.5
-  },
-  {
-    "id": "att-1752539390040-0.7657984067337607",
-    "name": "공가(오전)",
-    "deductionDays": 0.5
-  },
-  {
-    "id": "att-1752539390040-0.4148133647409026",
-    "name": "공가(오후)",
-    "deductionDays": 0.5
-  },
-  {
-    "id": "att-1752709942122",
-    "name": "무단결근(반일)",
-    "deductionDays": 0.5
-  },
-  {
-    "id": "att-1752539390040-0.8347733198598951",
-    "name": "반차(오전)",
-    "deductionDays": 0.5
-  },
-  {
-    "id": "att-1752709982098",
-    "name": "반차(오전)(1년미만)",
-    "deductionDays": 0.5
-  },
-  {
-    "id": "att-1752539390040-0.693813999181229",
-    "name": "반차(오후)",
-    "deductionDays": 0.5
-  },
-  {
-    "id": "att-1752539390040-0.9127865276213667",
-    "name": "반차(오후)(1년미만)",
-    "deductionDays": 0.5
-  },
-  {
-    "id": "att-1752539390040-0.5727526466475253",
-    "name": "반반차(오전)",
-    "deductionDays": 0.25
-  },
-  {
-    "id": "att-1752709982787",
-    "name": "반반차(오전)(1년미만)",
-    "deductionDays": 0.25
-  },
-  {
-    "id": "att-1752539390040-0.42005587751365636",
-    "name": "반반차(오후)",
-    "deductionDays": 0.25
-  },
-  {
-    "id": "att-1752539390040-0.9397542463038702",
-    "name": "반반차(오후)(1년미만)",
-    "deductionDays": 0.25
-  },
-  {
-    "id": "att-1752709892381",
-    "name": "교육",
-    "deductionDays": 0
-  },
-  {
-    "id": "att-1752539390040-0.1604328370700735",
-    "name": "대체반차(오전)",
-    "deductionDays": 0
-  },
-  {
-    "id": "att-1752539390040-0.2303215011705021",
-    "name": "대체반차(오후)",
-    "deductionDays": 0
-  },
-  {
-    "id": "att-1752539390040-0.21665336905984234",
-    "name": "대체휴무(종일)",
-    "deductionDays": 0
-  },
-  {
-    "id": "att-1752539390040-0.819947120862848",
-    "name": "지각",
-    "deductionDays": 0
   }
 ];
 
 export const mockEmployees: Record<string, Partial<Employee>[]> = {
-  "2025-6": []
+  "2025-6": [
+    {
+      "id": "E0000198",
+      "uniqueId": "0000198",
+      "name": "김O섭",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀장",
+      "position": "팀장",
+      "growthLevel": "Lv.3",
+      "workRate": 0.8947368421052632,
+      "evaluatorId": "0000011",
+      "baseAmount": 730000,
+      "memo": ""
+    },
+    {
+      "id": "E0000245",
+      "uniqueId": "0000245",
+      "name": "신O원",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 0.8947368421052632,
+      "evaluatorId": "0000011",
+      "baseAmount": 480000,
+      "memo": ""
+    },
+    {
+      "id": "E0000246",
+      "uniqueId": "0000246",
+      "name": "김O정",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 0.8947368421052632,
+      "evaluatorId": "0000011",
+      "baseAmount": 570000,
+      "memo": ""
+    },
+    {
+      "id": "E0000247",
+      "uniqueId": "0000247",
+      "name": "강O화",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 0.868421052631579,
+      "evaluatorId": "0000011",
+      "baseAmount": 570000,
+      "memo": ""
+    },
+    {
+      "id": "E0000298",
+      "uniqueId": "0000298",
+      "name": "김O철c",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 0.8421052631578947,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000,
+      "memo": ""
+    },
+    {
+      "id": "E0000299",
+      "uniqueId": "0000299",
+      "name": "엄O호",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 0.9473684210526316,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000,
+      "memo": ""
+    },
+    {
+      "id": "E0000300",
+      "uniqueId": "0000300",
+      "name": "홍O환",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 0.9473684210526316,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000,
+      "memo": ""
+    },
+    {
+      "id": "E0000195",
+      "uniqueId": "0000195",
+      "name": "김O균",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀장",
+      "position": "팀장",
+      "growthLevel": "Lv.3",
+      "workRate": 0.9473684210526316,
+      "evaluatorId": "0000011",
+      "baseAmount": 730000,
+      "memo": ""
+    },
+    {
+      "id": "E0000231",
+      "uniqueId": "0000231",
+      "name": "노O호",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.3",
+      "workRate": 0.8421052631578947,
+      "evaluatorId": "0000011",
+      "baseAmount": 570000,
+      "memo": ""
+    },
+    {
+      "id": "E0000232",
+      "uniqueId": "0000232",
+      "name": "김O주b",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 0.9473684210526316,
+      "evaluatorId": "0000011",
+      "baseAmount": 480000,
+      "memo": ""
+    },
+    {
+      "id": "E0000281",
+      "uniqueId": "0000281",
+      "name": "김O진b",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 0.9473684210526316,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000,
+      "memo": ""
+    },
+    {
+      "id": "E0000282",
+      "uniqueId": "0000282",
+      "name": "신O섭",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 0.9473684210526316,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000,
+      "memo": ""
+    },
+    {
+      "id": "E0000287",
+      "uniqueId": "0000287",
+      "name": "송O훈",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 0.9736842105263158,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000,
+      "memo": ""
+    },
+    {
+      "id": "E0000584",
+      "uniqueId": "0000584",
+      "name": "김O미",
+      "company": "OCI",
+      "department": "경영관리팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 0.9210526315789473,
+      "evaluatorId": "admin",
+      "baseAmount": 620000,
+      "memo": "B"
+    },
+    {
+      "id": "E0000586",
+      "uniqueId": "0000586",
+      "name": "조O진",
+      "company": "OFI",
+      "department": "경영관리팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 0.9473684210526316,
+      "evaluatorId": "admin",
+      "baseAmount": 570000,
+      "memo": "B"
+    },
+    {
+      "id": "E0000609",
+      "uniqueId": "0000609",
+      "name": "정O석b",
+      "company": "OC",
+      "department": "경영관리팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 0.9473684210526316,
+      "evaluatorId": "admin",
+      "baseAmount": 390000,
+      "memo": "B"
+    },
+    {
+      "id": "E0000610",
+      "uniqueId": "0000610",
+      "name": "김O희",
+      "company": "OC",
+      "department": "경영관리팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 0.8947368421052632,
+      "evaluatorId": "admin",
+      "baseAmount": 390000,
+      "memo": "B"
+    }
+  ]
 };
 
 export const mockEvaluations: Record<string, Evaluation[]> = {
-  "2025-6": []
+  "2025-6": [
+    {
+      "id": "eval-E0000198-2025-6",
+      "employeeId": "E0000198",
+      "year": 2025,
+      "month": 6,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000245-2025-6",
+      "employeeId": "E0000245",
+      "year": 2025,
+      "month": 6,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000246-2025-6",
+      "employeeId": "E0000246",
+      "year": 2025,
+      "month": 6,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000247-2025-6",
+      "employeeId": "E0000247",
+      "year": 2025,
+      "month": 6,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000298-2025-6",
+      "employeeId": "E0000298",
+      "year": 2025,
+      "month": 6,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000299-2025-6",
+      "employeeId": "E0000299",
+      "year": 2025,
+      "month": 6,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000300-2025-6",
+      "employeeId": "E0000300",
+      "year": 2025,
+      "month": 6,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000195-2025-6",
+      "employeeId": "E0000195",
+      "year": 2025,
+      "month": 6,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000231-2025-6",
+      "employeeId": "E0000231",
+      "year": 2025,
+      "month": 6,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000232-2025-6",
+      "employeeId": "E0000232",
+      "year": 2025,
+      "month": 6,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000281-2025-6",
+      "employeeId": "E0000281",
+      "year": 2025,
+      "month": 6,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000282-2025-6",
+      "employeeId": "E0000282",
+      "year": 2025,
+      "month": 6,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000287-2025-6",
+      "employeeId": "E0000287",
+      "year": 2025,
+      "month": 6,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000584-2025-6",
+      "employeeId": "E0000584",
+      "year": 2025,
+      "month": 6,
+      "grade": null,
+      "memo": "B"
+    },
+    {
+      "id": "eval-E0000586-2025-6",
+      "employeeId": "E0000586",
+      "year": 2025,
+      "month": 6,
+      "grade": null,
+      "memo": "B"
+    },
+    {
+      "id": "eval-E0000609-2025-6",
+      "employeeId": "E0000609",
+      "year": 2025,
+      "month": 6,
+      "grade": null,
+      "memo": "B"
+    },
+    {
+      "id": "eval-E0000610-2025-6",
+      "employeeId": "E0000610",
+      "year": 2025,
+      "month": 6,
+      "grade": null,
+      "memo": "B"
+    }
+  ]
 };
 
-export const initialHolidays: Holiday[] = [
-  {
-    "id": "hol-1752710200434",
-    "date": "2025-01-01",
-    "name": "신정"
-  },
-  {
-    "id": "hol-1752710231684",
-    "date": "2025-01-27",
-    "name": "설날_임시공휴일"
-  },
-  {
-    "id": "hol-1752710258354",
-    "date": "2025-01-28",
-    "name": "설날(-1)"
-  },
-  {
-    "id": "hol-1752710304704",
-    "date": "2025-01-29",
-    "name": "설날"
-  },
-  {
-    "id": "hol-1752710328536",
-    "date": "2025-01-30",
-    "name": "설날(+1)"
-  },
-  {
-    "id": "hol-1752710346350",
-    "date": "2025-03-03",
-    "name": "삼일절_대체휴일"
-  },
-  {
-    "id": "hol-1752710361676",
-    "date": "2025-05-01",
-    "name": "근로자의날"
-  },
-  {
-    "id": "hol-1752710373320",
-    "date": "2025-05-05",
-    "name": "석가탄신일, 어린이날"
-  },
-  {
-    "id": "hol-1752710405927",
-    "date": "2025-05-06",
-    "name": "석가탄신일_대체휴일"
-  },
-  {
-    "id": "hol-1752558168913",
-    "date": "2025-06-03",
-    "name": "대통령선거"
-  },
-  {
-    "id": "hol-1752710434726",
-    "date": "2025-06-06",
-    "name": "현충일"
-  },
-  {
-    "id": "hol-1752710453500",
-    "date": "2025-08-15",
-    "name": "광복절"
-  },
-  {
-    "id": "hol-1752710478647",
-    "date": "2025-10-03",
-    "name": "개천절"
-  },
-  {
-    "id": "hol-1752710478349",
-    "date": "2025-10-05",
-    "name": "추석(-1)"
-  },
-  {
-    "id": "hol-1752710478210",
-    "date": "2025-10-06",
-    "name": "추석"
-  },
-  {
-    "id": "hol-1752710477961",
-    "date": "2025-10-07",
-    "name": "추석(+1)"
-  },
-  {
-    "id": "hol-1752710477382",
-    "date": "2025-10-08",
-    "name": "추석_대체휴일"
-  },
-  {
-    "id": "hol-1752710587423",
-    "date": "2025-10-09",
-    "name": "한글날"
-  },
-  {
-    "id": "hol-1752710583783",
-    "date": "2025-12-25",
-    "name": "성탄절"
-  }
-];
+export const initialHolidays: Holiday[] = [];
 
 export const excelHeaderMapping: Record<string, string> = {
     // 공통 ID

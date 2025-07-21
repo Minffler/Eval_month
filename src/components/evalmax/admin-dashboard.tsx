@@ -1008,8 +1008,10 @@ export default function AdminDashboard({
             return <UserRoleManagement />;
         case 'consistency-check':
             return <ConsistencyValidator results={initialResults} gradingScale={gradingScale} />;
-        case 'work-rate-view':
-            return <WorkRateManagement results={allUsers} workRateInputs={workRateInputs} selectedDate={selectedDate} holidays={holidays} setHolidays={setHolidays} attendanceTypes={attendanceTypes} setAttendanceTypes={setAttendanceTypes} handleResultsUpdate={() => {}} />;
+        case 'work-rate-view': {
+            const usersForWorkRate = allUsers.filter(u => u.uniqueId !== 'admin');
+            return <WorkRateManagement results={usersForWorkRate} workRateInputs={workRateInputs} selectedDate={selectedDate} holidays={holidays} setHolidays={setHolidays} attendanceTypes={attendanceTypes} setAttendanceTypes={setAttendanceTypes} handleResultsUpdate={() => {}} />;
+        }
         case 'shortened-work-details':
             return <WorkRateDetails type="shortenedWork" data={allUsers} selectedDate={selectedDate} allEmployees={allUsers} attendanceTypes={attendanceTypes} onDataChange={() => {}} workRateInputs={workRateInputs}/>;
         case 'daily-attendance-details':
