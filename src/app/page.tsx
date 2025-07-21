@@ -113,7 +113,7 @@ const getInitialDate = () => {
 };
 
 export default function Home() {
-  const { user, allUsers, loading: authLoading, logout, upsertUsers, role, setRole } = useAuth();
+  const { user, allUsers, loading: authLoading, logout, role, setRole } = useAuth();
   const {
       gradingScale, setGradingScale,
       attendanceTypes, setAttendanceTypes, holidays, setHolidays, evaluationStatus, 
@@ -252,6 +252,10 @@ export default function Home() {
 
   const headerContent = (
     <Header
+      user={user}
+      allUsers={allUsers}
+      role={role}
+      setRole={setRole}
       selectedDate={selectedDate}
       onDateChange={setSelectedDate}
       notifications={notifications}

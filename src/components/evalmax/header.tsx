@@ -1,6 +1,5 @@
 'use client';
 
-import { useAuth } from '@/contexts/auth-context';
 import { RoleSwitcher } from './role-switcher';
 import { Button } from '@/components/ui/button';
 import { Bell, Inbox } from 'lucide-react';
@@ -20,9 +19,13 @@ import {
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import type { AppNotification, Approval } from '@/lib/types';
+import type { AppNotification, Approval, User, Role } from '@/lib/types';
 
 interface HeaderProps {
+    user: User | null;
+    allUsers: User[];
+    role: Role;
+    setRole: (role: Role) => void;
     selectedDate: { year: number, month: number };
     onDateChange: (date: { year: number, month: number }) => void;
     notifications: AppNotification[];
@@ -40,6 +43,10 @@ const formatTimestamp = (isoString: string | null) => {
 };
 
 export default function Header({ 
+  user,
+  allUsers,
+  role,
+  setRole,
   selectedDate, 
   onDateChange,
   notifications,
@@ -50,8 +57,6 @@ export default function Header({
   markApprovalsAsRead,
   setActiveView
 }: HeaderProps) {
-  const { user, allUsers, role, setRole } = useAuth();
-
   const roleDisplay: Record<string, string> = {
     admin: '관리자',
     evaluator: '평가자',
