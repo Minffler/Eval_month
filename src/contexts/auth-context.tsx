@@ -63,6 +63,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [role, setRole] = React.useState<Role>(null);
   const [loading, setLoading] = React.useState(true);
   const router = useRouter();
+  
+  // This effect will run once on component mount to clear localStorage
+  // for data reset purposes.
+  React.useEffect(() => {
+    const shouldReset = sessionStorage.getItem('resetData') === 'true';
+    if (shouldReset) {
+      localStorage.clear();
+      sessionStorage.removeItem('resetData');
+      window.location.reload();
+    }
+  }, []);
+
 
   React.useEffect(() => {
     const uniqueUsers = uniqueByUniqueId(allUsers);
@@ -128,7 +140,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.push('/login');
   }, [router]);
 
-  const handleSetRole = (newRole: Role) => {
+  const handleSetRole = (role: Role) => {
     if (user && user.roles.includes(newRole!)) {
       setRole(newRole);
       localStorage.setItem('role', newRole!);
