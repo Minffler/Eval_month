@@ -158,6 +158,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           userMap.set(userToUpsert.uniqueId, newUser);
         }
       });
+      
+      // Ensure admin user always has admin role
+      const adminUser = userMap.get('admin');
+      if (adminUser) {
+        const adminRoles = new Set(adminUser.roles);
+        adminRoles.add('admin');
+        userMap.set('admin', { ...adminUser, roles: Array.from(adminRoles) as Role[] });
+      }
+
       return Array.from(userMap.values());
     });
   };
