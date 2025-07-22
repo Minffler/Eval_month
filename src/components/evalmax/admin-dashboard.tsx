@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/select';
 import { ConsistencyValidator } from './consistency-validator';
 import ManageData from './manage-data';
-import type { EvaluationResult, Grade, Employee, GradeInfo, EvaluationGroupCategory, User, EvaluationUploadData, WorkRateInputs, AttendanceType, Holiday, Approval, AppNotification, ApprovalStatus, ShortenedWorkType, Role } from '@/lib/types';
+import type { EvaluationResult, Grade, Employee, GradeInfo, EvaluationGroupCategory, User, EvaluationUploadData, WorkRateInputs, AttendanceType, Holiday, Approval, AppNotification, ApprovalStatus, ShortenedWorkType, Role, Evaluation } from '@/lib/types';
 import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -95,6 +95,7 @@ interface AdminDashboardProps {
   approvals: Approval[];
   evaluationStatus: 'open' | 'closed';
   onEvaluationStatusChange: (year: number, month: number, status: 'open' | 'closed') => void;
+  setEvaluations: React.Dispatch<React.SetStateAction<Record<string, Evaluation[]>>>;
 }
 
 type SortConfig = {
@@ -143,9 +144,9 @@ export default function AdminDashboard({
   deleteNotification,
   approvals,
   evaluationStatus,
-  onEvaluationStatusChange
+  onEvaluationStatusChange,
+  setEvaluations
 }: AdminDashboardProps) {
-  const { setEvaluations } = useEvaluation();
   const [results, setResults] = React.useState<EvaluationResult[]>(initialResults);
   const [activeResultsTab, setActiveResultsTab] = React.useState<EvaluationGroupCategory>('전체');
   const [selectedEvaluators, setSelectedEvaluators] = React.useState<Set<string>>(new Set());
@@ -989,6 +990,7 @@ export default function AdminDashboard({
                             deleteNotification={deleteNotification}
                             approvals={approvals}
                             onWorkRateDataUpload={onWorkRateDataUpload}
+                            setEvaluations={setEvaluations}
                         />
                     ) : (
                         <Card className="flex items-center justify-center h-64">
@@ -1001,7 +1003,7 @@ export default function AdminDashboard({
             );
         }
         case 'file-upload':
-            return <ManageData onEmployeeUpload={onEmployeeUpload} onEvaluationUpload={onEvaluationUpload} results={initialResults} selectedDate={selectedDate} setSelectedDate={setSelectedDate} onClearEmployeeData={onClearEmployeeData} onClearEvaluationData={onClearEvaluationData} onWorkRateDataUpload={onWorkRateDataUpload} onClearWorkRateData={onClearWorkRateData} workRateInputs={workRateInputs} />;
+            return <ManageData results={initialResults} selectedDate={selectedDate} />;
         case 'evaluator-management':
             return <EvaluatorManagement />;
         case 'user-role-management':
