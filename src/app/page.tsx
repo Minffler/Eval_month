@@ -113,13 +113,13 @@ const getInitialDate = () => {
 };
 
 export default function Home() {
-  const { user, allUsers, loading: authLoading, logout, role, setRole, upsertUsers } = useAuth();
+  const { user, userMap, loading: authLoading, logout, role, setRole, upsertUsers } = useAuth();
   const {
-      gradingScale, setGradingScale,
-      attendanceTypes, setAttendanceTypes, holidays, setHolidays, evaluationStatus, 
-      handleEmployeeUpload, handleEvaluationUpload, handleClearEmployeeData, handleClearEvaluationData,
-      handleClearWorkRateData, handleWorkRateDataUpload, handleClearMyEvaluations,
-      allEvaluationResults, monthlyEvaluationTargets, setEvaluationStatus, workRateInputs, setEvaluations,
+      monthlyEvaluationTargets,
+      allEvaluationResults,
+      evaluationStatus,
+      setEvaluationStatus,
+      workRateInputs
   } = useEvaluation();
   const router = useRouter();
 
@@ -174,29 +174,10 @@ export default function Home() {
         }
         const currentMonthStatus = evaluationStatus[`${selectedDate.year}-${selectedDate.month}`] || 'open';
         return <AdminDashboard 
-                  results={monthlyEvaluationTargets(selectedDate)}
-                  allUsers={allUsers}
-                  onEmployeeUpload={(year, month, data) => handleEmployeeUpload(year, month, data)}
-                  onEvaluationUpload={(year, month, data) => handleEvaluationUpload(year, month, data)}
-                  gradingScale={gradingScale}
-                  setGradingScale={setGradingScale}
+                  activeView={adminActiveView}
                   selectedDate={selectedDate}
                   setSelectedDate={setSelectedDate}
-                  activeView={adminActiveView}
-                  onClearEmployeeData={handleClearEmployeeData}
-                  onClearEvaluationData={handleClearEvaluationData}
-                  onWorkRateDataUpload={handleWorkRateDataUpload}
-                  onClearWorkRateData={handleClearWorkRateData}
-                  workRateInputs={workRateInputs}
-                  attendanceTypes={attendanceTypes}
-                  setAttendanceTypes={setAttendanceTypes}
-                  holidays={holidays}
-                  setHolidays={setHolidays}
-                  onApprovalAction={handleApprovalAction}
-                  notifications={notifications}
-                  addNotification={addNotification}
-                  deleteNotification={deleteNotification}
-                  approvals={approvals}
+                  userMap={userMap}
                   evaluationStatus={currentMonthStatus}
                   onEvaluationStatusChange={handleEvaluationStatusChange}
                 />;
@@ -204,43 +185,25 @@ export default function Home() {
         if (evaluatorActiveView === 'personal-settings' && user) {
             return <PersonalSettings user={user} onUserUpdate={handleUserUpdate} />;
         }
-        const myManagedEmployees = monthlyEvaluationTargets(selectedDate).filter(e => e.evaluatorId === user?.uniqueId);
         
         return <EvaluatorDashboard 
-                  allResults={monthlyEvaluationTargets(selectedDate)}
-                  currentMonthResults={myManagedEmployees}
-                  gradingScale={gradingScale}
                   selectedDate={selectedDate}
                   setSelectedDate={setSelectedDate} 
                   activeView={evaluatorActiveView}
-                  onClearMyEvaluations={(year, month) => handleClearMyEvaluations(year, month, user!.uniqueId)}
-                  workRateInputs={workRateInputs}
-                  holidays={holidays}
-                  allUsers={allUsers}
-                  attendanceTypes={attendanceTypes}
-                  onApprovalAction={handleApprovalAction}
-                  notifications={notifications}
-                  addNotification={addNotification}
-                  deleteNotification={deleteNotification}
-                  approvals={approvals}
-                  onWorkRateDataUpload={handleWorkRateDataUpload}
-                  setEvaluations={setEvaluations}
+                  userMap={userMap}
                 />;
       case 'employee':
         if (employeeActiveView === 'personal-settings' && user) {
             return <PersonalSettings user={user} onUserUpdate={handleUserUpdate} />;
         }
         const myEmployeeInfo = monthlyEvaluationTargets(selectedDate).find(e => e.uniqueId === user?.uniqueId);
-        const myApprovals = approvals.filter(a => a.requesterId === user.uniqueId);
+        const myApprovals = approvals.filter(a => a.requesterId === user?.uniqueId);
         return <EmployeeDashboard 
                   employeeResults={myEmployeeInfo ? [myEmployeeInfo] : []}
                   allResultsForYear={allEvaluationResults.filter(e => e.uniqueId === user?.uniqueId && e.year === selectedDate.year)}
-                  gradingScale={gradingScale} 
                   activeView={employeeActiveView}
                   workRateInputs={workRateInputs}
                   selectedDate={selectedDate}
-                  allEmployees={allUsers}
-                  attendanceTypes={attendanceTypes}
                   onApprovalAction={handleApprovalAction}
                   notifications={notifications}
                   deleteNotification={deleteNotification}
@@ -254,7 +217,7 @@ export default function Home() {
   const headerContent = (
     <Header
       user={user}
-      allUsers={allUsers}
+      userMap={userMap}
       role={role}
       setRole={setRole}
       selectedDate={selectedDate}

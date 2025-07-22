@@ -5,7 +5,7 @@ import type { User, Employee, Grade, Evaluation, GradeInfo, WorkRateInputs, Atte
 import { mockEmployees, gradingScale as initialGradingScale, mockEvaluations, initialAttendanceTypes, initialHolidays, calculateFinalAmount, getDetailedGroup1 } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from './auth-context';
-import { calculateWorkRateDetails, type WorkRateDetailsResult } from '@/lib/work-rate-calculator';
+import { useDebouncedEffect } from '@/hooks/use-debounced-effect';
 
 const getFromLocalStorage = (key: string, defaultValue: any) => {
   if (typeof window === 'undefined') return defaultValue;
@@ -48,8 +48,7 @@ interface EvaluationContextType {
 const EvaluationContext = React.createContext<EvaluationContextType | undefined>(undefined);
 
 export function EvaluationProvider({ children }: { children: React.ReactNode }) {
-  const { allUsers, upsertUsers } = useAuth();
-  const { toast } = useToast();
+  const { userMap, upsertUsers } = useAuth();
   
   const [employees, setEmployees] = React.useState<Record<string, Employee[]>>(() => getFromLocalStorage('employees', mockEmployees ));
   const [evaluations, setEvaluations] = React.useState<Record<string, Evaluation[]>>(() => getFromLocalStorage('evaluations', mockEvaluations ));
@@ -59,13 +58,13 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
   const [holidays, setHolidays] = React.useState<Holiday[]>(() => getFromLocalStorage('holidays', initialHolidays));
   const [evaluationStatus, setEvaluationStatus] = React.useState<Record<string, 'open' | 'closed'>>(() => getFromLocalStorage('evaluationStatus', {}));
 
-  React.useEffect(() => { localStorage.setItem('employees', JSON.stringify(employees)); }, [employees]);
-  React.useEffect(() => { localStorage.setItem('evaluations', JSON.stringify(evaluations)); }, [evaluations]);
-  React.useEffect(() => { localStorage.setItem('gradingScale', JSON.stringify(gradingScale)); }, [gradingScale]);
-  React.useEffect(() => { localStorage.setItem('workRateInputs', JSON.stringify(workRateInputs)); }, [workRateInputs]);
-  React.useEffect(() => { localStorage.setItem('attendanceTypes', JSON.stringify(attendanceTypes)); }, [attendanceTypes]);
-  React.useEffect(() => { localStorage.setItem('holidays', JSON.stringify(holidays)); }, [holidays]);
-  React.useEffect(() => { localStorage.setItem('evaluationStatus', JSON.stringify(evaluationStatus)); }, [evaluationStatus]);
+  useDebouncedEffect(() => localStorage.setItem('employees', JSON.stringify(employees)), [employees], 500);
+  useDebouncedEffect(() => localStorage.setItem('evaluations', JSON.stringify(evaluations)), [evaluations], 500);
+  useDebouncedEffect(() => localStorage.setItem('gradingScale', JSON.stringify(gradingScale)), [gradingScale], 500);
+  useDebouncedEffect(() => localStorage.setItem('workRateInputs', JSON.stringify(workRateInputs)), [workRateInputs], 500);
+  useDebouncedEffect(() => localStorage.setItem('attendanceTypes', JSON.stringify(attendanceTypes)), [attendanceTypes], 500);
+  useDebouncedEffect(() => localStorage.setItem('holidays', JSON.stringify(holidays)), [holidays], 500);
+  useDebouncedEffect(() => localStorage.setItem('evaluationStatus', JSON.stringify(evaluationStatus)), [evaluationStatus], 500);
   
   const handleEmployeeUpload = (year: number, month: number, newEmployees: Employee[]) => {
     const key = `${year}-${month}`;
@@ -189,7 +188,7 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
       if (!isApproved) return;
       const key = `${year}-${month}`;
       setWorkRateInputs(prev => {
-          const currentMonthInputs = prev[key] || { shortenedWorkHours: [], dailyAttendance: [], };
+          const currentMonthInputs = prev[key] || { shortenedWorkHours: [], dailyAttendance: [] };
   
           let combinedData;
           if (type === 'shortenedWorkHours') {
@@ -249,7 +248,7 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
     const key = `${year}-${month}`;
     if (!evaluatorId) return;
 
-    const myEmployeeUniqueIds = new Set(allUsers.filter(u => u.evaluatorId === evaluatorId).map(u => u.uniqueId));
+    const myEmployeeUniqueIds = new Set(Array.from(userMap.values()).filter(u => u.evaluatorId === evaluatorId).map(u => u.uniqueId));
 
     setEvaluations(prev => {
         const updatedEvalsForMonth = (prev[key] || []).map(ev => {
@@ -262,17 +261,17 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
   };
   
   const allEvaluationResults = React.useMemo(() => {
-    const uniqueUserMap = new Map(allUsers.map(u => [u.uniqueId, u]));
     
     return Object.entries(employees).flatMap(([key, monthlyEmployees]) => {
         const [year, month] = key.split('-').map(Number);
         const monthlyEvaluations = evaluations[key] || [];
+        const evalMap = new Map(monthlyEvaluations.map(e => [e.employeeId, e]));
 
         return (monthlyEmployees as Employee[]).map(employee => {
-            const user = uniqueUserMap.get(employee.uniqueId) || {};
+            const user = userMap.get(employee.uniqueId) || {};
             const base: Employee = { ...employee, ...user };
             
-            const evaluation = monthlyEvaluations.find(e => e.employeeId === base.id);
+            const evaluation = evalMap.get(base.id);
             const grade = evaluation?.grade || null;
             const gradeInfo = grade ? gradingScale[grade] : null;
             const score = gradeInfo?.score || 0;
@@ -280,7 +279,7 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
             const gradeAmount = (base.baseAmount || 0) * payoutRate;
             const finalAmount = calculateFinalAmount(gradeAmount, base.workRate);
             
-            const evaluator = uniqueUserMap.get(base.evaluatorId || '');
+            const evaluator = userMap.get(base.evaluatorId || '');
             
             const getEvaluationGroup = (workRate: number): string => {
                 if (workRate >= 0.7) return 'A. 정규평가';
@@ -307,7 +306,7 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
             };
         });
     });
-  }, [employees, evaluations, gradingScale, allUsers]);
+  }, [employees, evaluations, gradingScale, userMap]);
 
   const getMonthlyEvaluationTargets = React.useCallback((selectedDate: {year: number, month: number}) => {
     const monthKey = `${selectedDate.year}-${selectedDate.month}`;

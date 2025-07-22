@@ -23,7 +23,7 @@ import type { AppNotification, Approval, User, Role } from '@/lib/types';
 
 interface HeaderProps {
     user: User | null;
-    allUsers: User[];
+    userMap: Map<string, User>;
     role: Role;
     setRole: (role: Role) => void;
     selectedDate: { year: number, month: number };
@@ -44,7 +44,7 @@ const formatTimestamp = (isoString: string | null) => {
 
 export default function Header({ 
   user,
-  allUsers,
+  userMap,
   role,
   setRole,
   selectedDate, 
@@ -67,7 +67,7 @@ export default function Header({
     return null;
   }
   
-  const currentUser = allUsers.find(u => u.id === user.id);
+  const currentUser = userMap.get(user.uniqueId);
 
   const currentClientYear = new Date().getFullYear();
   const availableYears = Array.from({ length: Math.max(0, currentClientYear - 2025 + 1) }, (_, i) => 2025 + i).reverse();

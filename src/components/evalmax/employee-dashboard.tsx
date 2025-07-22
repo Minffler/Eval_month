@@ -31,6 +31,7 @@ import { useNotifications } from '@/contexts/notification-context';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import MyPerformanceReview from './my-performance-review';
 import DetailedEvaluationView from './detailed-evaluation-view';
+import { useEvaluation } from '@/contexts/evaluation-context';
 
 
 const DatePickerWithInput = ({ value, onChange, disabled }: { value: string, onChange: (date?: string) => void, disabled?: boolean }) => {
@@ -146,12 +147,9 @@ const TimePicker = ({ value, onChange, disabled }: { value: string, onChange: (t
 interface EmployeeDashboardProps {
   employeeResults: EvaluationResult[];
   allResultsForYear: EvaluationResult[];
-  gradingScale: Record<NonNullable<Grade>, GradeInfo>;
   activeView: EmployeeView;
   workRateInputs: Record<string, WorkRateInputs>;
   selectedDate: { year: number, month: number };
-  allEmployees: Employee[];
-  attendanceTypes: AttendanceType[];
   onApprovalAction: (approval: Approval) => void;
   notifications: AppNotification[];
   deleteNotification: (notificationId: string) => void;
@@ -189,23 +187,21 @@ const formatTimestampShort = (isoString: string | null) => {
 export default function EmployeeDashboard({ 
     employeeResults, 
     allResultsForYear,
-    gradingScale, 
     activeView, 
     workRateInputs, 
     selectedDate, 
-    allEmployees, 
-    attendanceTypes,
     onApprovalAction,
     notifications,
     approvals,
     deleteNotification
 }: EmployeeDashboardProps) {
-  const { user, role } = useAuth();
+  const { user, role, userMap } = useAuth();
   const { toast } = useToast();
   const { addApproval } = useNotifications();
   const [isApprovalModalOpen, setIsApprovalModalOpen] = React.useState(false);
   const [selectedApproval, setSelectedApproval] = React.useState<Approval | null>(null);
   const [formData, setFormData] = React.useState<any>({});
+  const { gradingScale, attendanceTypes } = useEvaluation();
 
 
   if (!user) {
@@ -335,11 +331,11 @@ export default function EmployeeDashboard({
       case 'evaluation-details':
         return <DetailedEvaluationView allResultsForYear={allResultsForYear} gradingScale={gradingScale} />;
       case 'my-work-rate':
-        return <WorkRateManagement results={employeeResults} workRateInputs={workRateInputs} selectedDate={selectedDate} allEmployees={allEmployees} holidays={[]} setHolidays={() => {}} attendanceTypes={attendanceTypes} setAttendanceTypes={() => {}} handleResultsUpdate={() => {}} addNotification={() => {}} />;
+        return <WorkRateManagement results={employeeResults} workRateInputs={workRateInputs} selectedDate={selectedDate} holidays={[]} attendanceTypes={attendanceTypes} />;
       case 'my-shortened-work':
-        return <WorkRateDetails type="shortenedWork" data={allUsers} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} viewAs={role} onDataChange={() => {}} workRateInputs={workRateInputs}/>;
+        return <WorkRateDetails type="shortenedWork" data={Array.from(userMap.values())} selectedDate={selectedDate} attendanceTypes={attendanceTypes} viewAs={role} workRateInputs={workRateInputs}/>;
       case 'my-daily-attendance':
-        return <WorkRateDetails type="dailyAttendance" data={allUsers} selectedDate={selectedDate} allEmployees={allEmployees} attendanceTypes={attendanceTypes} viewAs={role} onDataChange={() => {}} workRateInputs={workRateInputs}/>;
+        return <WorkRateDetails type="dailyAttendance" data={Array.from(userMap.values())} selectedDate={selectedDate} attendanceTypes={attendanceTypes} viewAs={role} workRateInputs={workRateInputs}/>;
       case 'approvals': {
             const mySentApprovals = approvals.filter(a => a.requesterId === user.uniqueId).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
             return (
@@ -364,7 +360,7 @@ export default function EmployeeDashboard({
                       </TableRow></TableHeader>
                       <TableBody>
                         {mySentApprovals.map(approval => {
-                          const approver = allEmployees.find(e => e.uniqueId === approval.approverTeamId);
+                          const approver = userMap.get(approval.approverTeamId);
                           return (
                             <TableRow key={approval.id}>
                               <TableCell className="text-center text-muted-foreground">{formatTimestamp(approval.date)}</TableCell>

@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -24,6 +23,8 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { format } from 'date-fns';
 import { Input } from '../ui/input';
 import GradeManagement from './grade-management';
+import { useEvaluation } from '@/contexts/evaluation-context';
+import { useNotifications } from '@/contexts/notification-context';
 
 interface WorkRateManagementProps {
   results: (EvaluationResult | User)[];
@@ -33,8 +34,6 @@ interface WorkRateManagementProps {
   setHolidays?: React.Dispatch<React.SetStateAction<Holiday[]>>;
   attendanceTypes: AttendanceType[];
   setAttendanceTypes?: React.Dispatch<React.SetStateAction<AttendanceType[]>>;
-  handleResultsUpdate: (updatedResults: EvaluationResult[]) => void;
-  addNotification?: (notification: Omit<AppNotification, 'id' | 'date' | 'isRead'>) => void;
 }
 
 type DeductionType = 'attendance' | 'pregnancy' | 'care';
@@ -86,10 +85,10 @@ export default function WorkRateManagement({
   setHolidays,
   attendanceTypes,
   setAttendanceTypes,
-  handleResultsUpdate, 
-  addNotification 
 }: WorkRateManagementProps) {
   const { toast } = useToast();
+  const { allEvaluationResults, handleEmployeeUpload } = useEvaluation();
+  const { addNotification } = useNotifications();
   const [sortConfig, setSortConfig] = React.useState<SortConfig>({ key: 'monthlyWorkRate', direction: 'ascending' });
   const [detailDialog, setDetailDialog] = React.useState<DetailDialogInfo>({
     isOpen: false,
@@ -271,31 +270,34 @@ export default function WorkRateManagement({
       let updatedCount = 0;
       let evaluatorNotifications: Record<string, number> = {};
 
-      const updatedResults = (results as EvaluationResult[]).map(result => {
-          const newWorkRate = summariesMap.get(result.uniqueId);
-          if (newWorkRate !== undefined && newWorkRate !== result.workRate) {
+      const monthKey = `${selectedDate.year}-${selectedDate.month}`;
+      const currentMonthEmployees: Employee[] = allEvaluationResults.filter(r => r.year === selectedDate.year && r.month === selectedDate.month) as Employee[];
+
+      const updatedEmployees = currentMonthEmployees.map(employee => {
+          const newWorkRate = summariesMap.get(employee.uniqueId);
+          if (newWorkRate !== undefined && newWorkRate !== employee.workRate) {
               updatedCount++;
               const message = `${selectedDate.year}년 ${selectedDate.month}월 근무율이 ${(newWorkRate * 100).toFixed(1)}%로 반영되었습니다.`;
-              addNotification?.({ recipientId: result.uniqueId, message });
+              addNotification?.({ recipientId: employee.uniqueId, message });
               
-              if(result.evaluatorId) {
-                if (!evaluatorNotifications[result.evaluatorId]) {
-                    evaluatorNotifications[result.evaluatorId] = 0;
+              if(employee.evaluatorId) {
+                if (!evaluatorNotifications[employee.evaluatorId]) {
+                    evaluatorNotifications[employee.evaluatorId] = 0;
                 }
-                evaluatorNotifications[result.evaluatorId]++;
+                evaluatorNotifications[employee.evaluatorId]++;
               }
-              return { ...result, workRate: newWorkRate };
+              return { ...employee, workRate: newWorkRate };
           }
-          return result;
+          return employee;
       });
       
-      handleResultsUpdate(updatedResults);
+      handleEmployeeUpload(selectedDate.year, selectedDate.month, updatedEmployees);
 
       if (updatedCount > 0 && addNotification) {
         Object.entries(evaluatorNotifications).forEach(([evaluatorId, count]) => {
             addNotification({ recipientId: evaluatorId, message: `담당 직원 ${count}명의 근무율이 업데이트되었습니다.`});
         });
-        addNotification({ recipientId: '1911042', message: `총 ${updatedCount}명의 근무율이 업데이트되었습니다.`});
+        addNotification({ recipientId: 'admin', message: `총 ${updatedCount}명의 근무율이 업데이트되었습니다.`});
       }
       
       toast({
@@ -396,7 +398,7 @@ export default function WorkRateManagement({
                   <Download className="mr-2 h-4 w-4" />
                   엑셀 다운로드
                 </Button>
-                {handleResultsUpdate && (results[0] && 'grade' in results[0]) && (
+                {results.length > 0 && 'grade' in results[0] && (
                   <Button onClick={handleApplyWorkRate} size="sm">근무율 반영</Button>
                 )}
               </div>
