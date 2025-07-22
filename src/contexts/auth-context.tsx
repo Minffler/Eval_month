@@ -141,11 +141,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [router]);
 
   const handleSetRole = (role: Role) => {
-    if (user && user.roles.includes(newRole!)) {
-      setRole(newRole);
-      localStorage.setItem('role', newRole!);
+    if (user && user.roles.includes(role!)) {
+      setRole(role);
+      localStorage.setItem('role', role!);
     }
-  }
+  };
 
   const upsertUsers = (usersToUpsert: Partial<User>[]) => {
     setAllUsers(prevUsers => {
