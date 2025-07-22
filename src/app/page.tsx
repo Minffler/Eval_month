@@ -113,13 +113,13 @@ const getInitialDate = () => {
 };
 
 export default function Home() {
-  const { user, allUsers, loading: authLoading, logout, role, setRole } = useAuth();
+  const { user, allUsers, loading: authLoading, logout, role, setRole, upsertUsers } = useAuth();
   const {
       gradingScale, setGradingScale,
       attendanceTypes, setAttendanceTypes, holidays, setHolidays, evaluationStatus, 
       handleEmployeeUpload, handleEvaluationUpload, handleClearEmployeeData, handleClearEvaluationData,
       handleClearWorkRateData, handleWorkRateDataUpload, handleClearMyEvaluations,
-      allEvaluationResults, monthlyEvaluationTargets, setEvaluationStatus, workRateInputs,
+      allEvaluationResults, monthlyEvaluationTargets, setEvaluationStatus, workRateInputs, setEvaluations,
   } = useEvaluation();
   const router = useRouter();
 
@@ -224,6 +224,7 @@ export default function Home() {
                   deleteNotification={deleteNotification}
                   approvals={approvals}
                   onWorkRateDataUpload={handleWorkRateDataUpload}
+                  setEvaluations={setEvaluations}
                 />;
       case 'employee':
         if (employeeActiveView === 'personal-settings' && user) {

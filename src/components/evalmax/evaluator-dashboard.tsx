@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useAuth } from '@/contexts/auth-context';
-import type { EvaluationResult, Grade, GradeInfo, EvaluationGroupCategory, User, EvaluatorView, Employee, Holiday, AttendanceType, Approval, AppNotification, ApprovalStatus, WorkRateInputs } from '@/lib/types';
+import type { EvaluationResult, Grade, GradeInfo, EvaluationGroupCategory, User, EvaluatorView, Employee, Holiday, AttendanceType, Approval, AppNotification, ApprovalStatus, WorkRateInputs, Evaluation } from '@/lib/types';
 import {
   DndContext,
   closestCenter,
@@ -114,6 +114,7 @@ interface EvaluatorDashboardProps {
   deleteNotification: (notificationId: string) => void;
   approvals: Approval[];
   onWorkRateDataUpload: (year: number, month: number, type: keyof WorkRateInputs, data: any[], isApproved: boolean) => void;
+  setEvaluations: React.Dispatch<React.SetStateAction<Record<string, Evaluation[]>>>;
 }
 
 type SortConfig = {
@@ -234,14 +235,15 @@ const DraggableTableRow = ({ employee, gradingScale, selected, onSelect, onGrade
 };
 
 
-const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, onClearMyEvaluations }: {
+const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, onClearMyEvaluations, setEvaluations }: {
   myEmployees: EvaluationResult[];
   gradingScale: Record<NonNullable<Grade>, GradeInfo>;
   selectedDate: { year: number; month: number };
   onClearMyEvaluations: (year: number, month: number) => void;
+  setEvaluations: React.Dispatch<React.SetStateAction<Record<string, Evaluation[]>>>;
 }) => {
   const { toast } = useToast();
-  const { allEvaluationResults, setEvaluations } = useEvaluation();
+  const { allEvaluationResults } = useEvaluation();
   const [activeTab, setActiveTab] = React.useState<EvaluationGroupCategory | '전체'>('A. 정규평가');
   const [groups, setGroups] = React.useState<Groups>({});
   const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
@@ -872,7 +874,7 @@ interface AssignmentManagementViewProps {
 
 const AssignmentManagementView = ({ myEmployees, currentMonthResults, allUsers, evaluatorId, evaluatorName }: AssignmentManagementViewProps) => {
   const { toast } = useToast();
-  const { handleEvaluatorAssignmentChange } = useAuth();
+  const { upsertUsers } = useAuth();
   
   const [company, setCompany] = React.useState('');
   const [department, setDepartment] = React.useState('');
@@ -961,18 +963,15 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, allUsers, 
         return;
     }
 
-    const targetEmployees = currentMonthResults.filter(res => 
-      res.company === groupToChange.company && 
-      res.department === groupToChange.department && 
-      res.position === groupToChange.position
-    );
+    const usersToUpdate = currentMonthResults
+      .filter(res => 
+        res.company === groupToChange.company && 
+        res.department === groupToChange.department && 
+        res.position === groupToChange.position
+      )
+      .map(emp => ({ uniqueId: emp.uniqueId, evaluatorId: evaluatorId }));
 
-    targetEmployees.forEach(emp => {
-      const user = allUsers.find(u => u.uniqueId === emp.uniqueId);
-      if (user) {
-        handleEvaluatorAssignmentChange(user.id, evaluatorId);
-      }
-    });
+    upsertUsers(usersToUpdate);
     
     addNotification({ recipientId: '1911042', message: `${evaluatorName} 평가자가 ${groupToChange.department} 소속의 담당자가 되었습니다.` });
     addNotification({ recipientId: evaluatorId, message: `이제 ${groupToChange.department} 소속의 평가를 담당합니다.` });
@@ -988,18 +987,15 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, allUsers, 
 
   const handleReleaseGroup = (groupKey: string) => {
     const [company, department, position] = groupKey.split('|');
-    const targetEmployees = myEmployees.filter(res => 
+    const usersToUpdate = myEmployees
+      .filter(res => 
         res.company === company && 
         res.department === department && 
         res.position === position
-    );
+      )
+      .map(emp => ({ uniqueId: emp.uniqueId, evaluatorId: '' }));
 
-    targetEmployees.forEach(emp => {
-      const user = allUsers.find(u => u.uniqueId === emp.uniqueId);
-      if (user) {
-        handleEvaluatorAssignmentChange(user.id, '');
-      }
-    });
+    upsertUsers(usersToUpdate);
 
     toast({ title: '담당 해제 완료', description: `'${department}' 소속을 더 이상 담당하지 않습니다.` });
   };
@@ -1127,7 +1123,7 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, allUsers, 
 };
 
 
-export default function EvaluatorDashboard({ allResults, currentMonthResults, gradingScale, selectedDate, setSelectedDate, evaluatorUser, activeView, onClearMyEvaluations, workRateInputs, holidays, allUsers, attendanceTypes, onApprovalAction, notifications, addNotification, deleteNotification, approvals }: EvaluatorDashboardProps) {
+export default function EvaluatorDashboard({ allResults, currentMonthResults, gradingScale, selectedDate, setSelectedDate, evaluatorUser, activeView, onClearMyEvaluations, workRateInputs, holidays, allUsers, attendanceTypes, onApprovalAction, notifications, addNotification, deleteNotification, approvals, setEvaluations }: EvaluatorDashboardProps) {
   const { user: authUser } = useAuth();
   const { toast } = useToast();
   const [effectiveUser, setEffectiveUser] = React.useState<User | null>(null);
@@ -1254,6 +1250,7 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
                   gradingScale={gradingScale}
                   selectedDate={selectedDate}
                   onClearMyEvaluations={(year, month) => onClearMyEvaluations(year, month, effectiveUser!.uniqueId)}
+                  setEvaluations={setEvaluations}
                 />;
       case 'all-results':
         return <AllResultsView currentMonthResults={currentMonthResults} gradingScale={gradingScale} />;
