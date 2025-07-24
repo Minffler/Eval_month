@@ -406,23 +406,23 @@ export default function GradeManagement({
               <TableBody>
                 {localTypes.map((type, index) => (
                   <TableRow key={type.id}>
-                    <TableCell className="py-1 px-2 text-center">
+                    <TableCell className="py-1 px-2 text-center bg-white">
                       <Input 
                         value={type.name} 
                         onChange={(e) => handleTypeInputChange(index, 'name', e.target.value)} 
-                        className="w-full h-8 mx-auto"
+                        className="w-full h-8 mx-auto bg-white"
                       />
                     </TableCell>
-                    <TableCell className="py-1 px-2 text-center">
+                    <TableCell className="py-1 px-2 text-center bg-white">
                       <Input 
                         type="number" 
                         step="0.01" 
                         value={type.deductionDays} 
                         onChange={(e) => handleTypeInputChange(index, 'deductionDays', e.target.value)} 
-                        className="w-full h-8 mx-auto"
+                        className="w-full h-8 mx-auto bg-white"
                       />
                     </TableCell>
-                    <TableCell className="py-1 px-2 text-center">
+                    <TableCell className="py-1 px-2 text-center bg-white">
                       <Button 
                         variant="ghost" 
                         size="icon" 
@@ -475,26 +475,26 @@ export default function GradeManagement({
                   const index = localHolidays.findIndex(h => h.id === holiday.id);
                   return (
                     <TableRow key={holiday.id}>
-                      <TableCell className="py-1 px-2 text-center">
+                      <TableCell className="py-1 px-2 text-center bg-white">
                         <Input 
                           value={holiday.date} 
                           onChange={(e) => handleHolidayDateChange(index, e.target.value)} 
                           onBlur={(e) => validateHolidayDate(e.target.value, holiday.id)} 
-                          className={cn("w-full h-8 mx-auto", holidayErrors[holiday.id] && "border-destructive")} 
+                          className={cn("w-full h-8 mx-auto bg-white", holidayErrors[holiday.id] && "border-destructive")} 
                           placeholder="YYYY-MM-DD"
                         />
                         {holidayErrors[holiday.id] && (
                           <p className="text-xs text-destructive mt-1">{holidayErrors[holiday.id]}</p>
                         )}
                       </TableCell>
-                      <TableCell className="py-1 px-2 text-center">
+                      <TableCell className="py-1 px-2 text-center bg-white">
                         <Input 
                           value={holiday.name} 
                           onChange={(e) => handleHolidayNameChange(index, e.target.value)} 
-                          className="w-full h-8 mx-auto"
+                          className="w-full h-8 mx-auto bg-white"
                         />
                       </TableCell>
-                      <TableCell className="py-1 px-2 text-right">
+                      <TableCell className="py-1 px-2 text-right bg-white">
                         <Button 
                           variant="ghost" 
                           size="icon" 

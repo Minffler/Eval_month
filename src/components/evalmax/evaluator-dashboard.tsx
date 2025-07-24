@@ -60,6 +60,7 @@ export default function EvaluatorDashboard({
     allEvaluationResults,
     gradingScale, 
     handleClearMyEvaluations,
+    handleEmployeeUpload,
     workRateInputs, 
     holidays,
     attendanceTypes,
@@ -106,23 +107,28 @@ export default function EvaluatorDashboard({
     
     console.log('Saving evaluations:', updatedEvaluations); // 디버깅용
     
+    // 근무율이 업데이트된 경우인지 확인
+    const hasWorkRateUpdate = updatedEvaluations.some(evaluation => 
+      evaluation.workRate !== undefined && evaluation.workRate !== currentMonthResults.find(r => r.id === evaluation.id)?.workRate
+    );
+    
     setEvaluations(prevEvals => {
         const newState = JSON.parse(JSON.stringify(prevEvals));
         const newEvalsForMonth = newState[key] ? [...newState[key]] : [];
         
-        updatedEvaluations.forEach(updatedEval => {
-            const index = newEvalsForMonth.findIndex((e: Evaluation) => e.employeeId === updatedEval.id);
+        updatedEvaluations.forEach(updatedEvaluation => {
+            const index = newEvalsForMonth.findIndex((e: Evaluation) => e.employeeId === updatedEvaluation.id);
             if (index > -1) {
-                newEvalsForMonth[index].grade = updatedEval.grade;
-                newEvalsForMonth[index].memo = updatedEval.memo;
+                newEvalsForMonth[index].grade = updatedEvaluation.grade;
+                newEvalsForMonth[index].memo = updatedEvaluation.memo;
             } else {
                  newEvalsForMonth.push({
-                    id: `eval-${updatedEval.id}-${selectedDate.year}-${selectedDate.month}`,
-                    employeeId: updatedEval.id,
+                    id: `eval-${updatedEvaluation.id}-${selectedDate.year}-${selectedDate.month}`,
+                    employeeId: updatedEvaluation.id,
                     year: selectedDate.year,
                     month: selectedDate.month,
-                    grade: updatedEval.grade,
-                    memo: updatedEval.memo,
+                    grade: updatedEvaluation.grade,
+                    memo: updatedEvaluation.memo,
                 });
             }
         });
@@ -132,12 +138,36 @@ export default function EvaluatorDashboard({
         return newState;
     });
     
+    // 근무율이 업데이트된 경우 employees 데이터도 업데이트
+    if (hasWorkRateUpdate) {
+      const updatedEmployees = updatedEvaluations.map(evaluation => ({
+        id: evaluation.id,
+        uniqueId: evaluation.uniqueId,
+        name: evaluation.name,
+        company: evaluation.company,
+        department: evaluation.department,
+        title: evaluation.title,
+        position: evaluation.position,
+        growthLevel: evaluation.growthLevel,
+        workRate: evaluation.workRate,
+        evaluatorId: evaluation.evaluatorId,
+        baseAmount: evaluation.baseAmount,
+        memo: evaluation.memo,
+      }));
+      
+      // employees 데이터 업데이트
+      handleEmployeeUpload(selectedDate.year, selectedDate.month, updatedEmployees);
+      console.log('Updating employees with new work rates:', updatedEmployees);
+    }
+    
     // 저장 완료 토스트
     toast({
-      title: '저장 완료',
-      description: '평가 데이터가 저장되었습니다.',
+      title: hasWorkRateUpdate ? '근무율 반영 완료' : '저장 완료',
+      description: hasWorkRateUpdate 
+        ? '모든 직원의 근무율이 평가 결과에 반영되었습니다.'
+        : '평가 데이터가 저장되었습니다.',
     });
-  }, [selectedDate, setEvaluations, toast]);
+  }, [selectedDate, setEvaluations, toast, currentMonthResults, handleEmployeeUpload]);
   
   const formatTimestamp = React.useCallback((isoString: string | null) => {
     return formatDateTime(isoString || undefined);
@@ -254,7 +284,13 @@ export default function EvaluatorDashboard({
             workRateInputs={workRateInputs} 
             selectedDate={selectedDate} 
             holidays={holidays} 
-            attendanceTypes={attendanceTypes} 
+            attendanceTypes={attendanceTypes}
+            gradingScale={gradingScale}
+            handleResultsUpdate={handleSave}
+            addNotification={(notification) => {
+              // 알림 추가 로직 구현
+              console.log('Add notification:', notification);
+            }}
           />
         );
       case 'shortened-work-details':

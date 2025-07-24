@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useAuth } from '@/contexts/auth-context';
-import type { EvaluationResult, Grade, GradeInfo, EvaluationGroupCategory, User, EvaluatorView, Employee, Holiday, AttendanceType, Approval, AppNotification, ApprovalStatus } from '@/lib/types';
+import type { EvaluationResult, Grade, GradeInfo, EvaluationGroupCategory, User, EvaluatorView, Employee, Holiday, AttendanceType, Approval, AppNotification, ApprovalStatus, WorkRateInputs } from '@/lib/types';
 import {
   DndContext,
   closestCenter,
@@ -105,6 +105,7 @@ interface EvaluatorDashboardProps {
   activeView: EvaluatorView;
   onClearMyEvaluations: (year: number, month: number, evaluatorId: string) => void;
   workRateDetails: WorkRateDetailsResult;
+  workRateInputs: Record<string, WorkRateInputs>;
   holidays: Holiday[];
   allUsers: User[];
   attendanceTypes: AttendanceType[];
@@ -113,6 +114,7 @@ interface EvaluatorDashboardProps {
   addNotification: (notification: Omit<AppNotification, 'id' | 'date' | 'isRead'>) => void;
   deleteNotification: (notificationId: string) => void;
   approvals: Approval[];
+  handleResultsUpdate?: (updatedResults: EvaluationResult[]) => void;
 }
 
 type SortConfig = {
@@ -550,7 +552,7 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, handleRe
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="space-y-4">
-        <Card>
+        <Card className="bg-white border-transparent shadow-none">
           <Collapsible open={isChartOpen} onOpenChange={setIsChartOpen}>
             <CardHeader className="flex flex-col sm:flex-row justify-between sm:items-start gap-4 p-4">
               <div className="flex-1"><CardTitle>평가 진행 현황</CardTitle><CardDescription>{selectedDate.year}년 {selectedDate.month}월 성과평가 ({selectedDate.month === 12 ? 1 : selectedDate.month + 1}월 급여반영)</CardDescription></div>
@@ -561,7 +563,7 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, handleRe
               </div>
             </CardHeader>
             <CollapsibleContent>
-              <CardContent className='p-4 pt-0 space-y-2'>
+              <CardContent className='p-4 pt-0 space-y-2 bg-white'>
                 <GradeHistogram 
                   data={gradeDistribution} 
                   gradingScale={gradingScale} 
@@ -1117,7 +1119,7 @@ const AssignmentManagementView = ({ myEmployees, currentMonthResults, allUsers, 
 };
 
 
-export default function EvaluatorDashboard({ allResults, currentMonthResults, gradingScale, selectedDate, setSelectedDate, handleEvaluatorAssignmentChange, evaluatorUser, activeView, onClearMyEvaluations, workRateDetails, holidays, allUsers, attendanceTypes, onApprovalAction, notifications, addNotification, deleteNotification, approvals }: EvaluatorDashboardProps) {
+export default function EvaluatorDashboard({ allResults, currentMonthResults, gradingScale, selectedDate, setSelectedDate, handleEvaluatorAssignmentChange, evaluatorUser, activeView, onClearMyEvaluations, workRateDetails, workRateInputs, holidays, allUsers, attendanceTypes, onApprovalAction, notifications, addNotification, deleteNotification, approvals, handleResultsUpdate }: EvaluatorDashboardProps) {
   const { user: authUser } = useAuth();
   const { toast } = useToast();
   const [effectiveUser, setEffectiveUser] = React.useState<User | null>(null);
@@ -1273,7 +1275,16 @@ export default function EvaluatorDashboard({ allResults, currentMonthResults, gr
                  evaluatorName={effectiveUser.name}
                />;
       case 'work-rate-view':
-          return <WorkRateManagement results={myEmployees} workRateDetails={myManagedWorkRateDetails} selectedDate={selectedDate} holidays={holidays} handleResultsUpdate={() => {}} />;
+          return <WorkRateManagement 
+            results={myEmployees} 
+            workRateInputs={workRateInputs} 
+            selectedDate={selectedDate} 
+            holidays={holidays} 
+            attendanceTypes={attendanceTypes}
+            gradingScale={gradingScale}
+            handleResultsUpdate={handleResultsUpdate}
+            addNotification={addNotification}
+          />;
       case 'shortened-work-details':
           return <WorkRateDetails type="shortenedWork" data={myManagedWorkRateDetails.shortenedWorkDetails} selectedDate={selectedDate} allEmployees={allUsers} attendanceTypes={attendanceTypes} onDataChange={()=>{}} />;
       case 'daily-attendance-details':

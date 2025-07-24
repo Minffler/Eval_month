@@ -341,11 +341,25 @@ export default function WorkRateManagement({
       return result;
     });
 
+    // 근무율이 변경된 결과만 필터링
+    const resultsWithWorkRateChanges = updatedResults.filter(result => {
+      const originalResult = allEvaluationResults.find(r => r.id === result.id);
+      return originalResult && Math.abs(result.workRate - originalResult.workRate) > 0.001;
+    });
+
+    if (resultsWithWorkRateChanges.length === 0) {
+      toast({
+        title: '알림',
+        description: '변경된 근무율이 없습니다.',
+      });
+      return;
+    }
+
     handleResultsUpdate(updatedResults);
     
     toast({
       title: '근무율 반영 완료',
-      description: '모든 직원의 근무율이 평가 결과에 반영되었습니다.',
+      description: `${resultsWithWorkRateChanges.length}명의 직원 근무율이 평가 결과에 반영되었습니다.`,
     });
 
     // Add notification if available
@@ -353,6 +367,7 @@ export default function WorkRateManagement({
     if (notificationHandler) {
       notificationHandler({
         recipientId: 'admin',
+        title: '근무율 반영 완료',
         message: `${selectedDate.year}년 ${selectedDate.month}월 근무율이 반영되었습니다.`,
         isImportant: true,
       });

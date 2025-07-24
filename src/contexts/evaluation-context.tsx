@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import type { User, Employee, Grade, Evaluation, GradeInfo, WorkRateInputs, AttendanceType, Holiday, EvaluationResult, EvaluationUploadData, ShortenedWorkType, ShortenedWorkHourRecord, DailyAttendanceRecord, Role } from '@/lib/types';
-import { mockEmployees, defaultGradingScale as initialGradingScale, mockEvaluations, initialAttendanceTypes, initialHolidays, calculateFinalAmount, getDetailedGroup1 } from '@/lib/data';
+import { mockEmployees, defaultGradingScale as initialGradingScale, mockEvaluations, calculateFinalAmount, getDetailedGroup1 } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from './auth-context';
 import { useDebouncedEffect } from '@/hooks/use-debounced-effect';
@@ -18,6 +18,32 @@ const getFromLocalStorage = (key: string, defaultValue: any) => {
   }
   return defaultValue;
 }
+
+// 근무기준 목업 데이터
+const MOCK_ATTENDANCE_TYPES = [
+  { id: '1', name: '가족돌봄휴가', deductionDays: 1 },
+  { id: '2', name: '결근', deductionDays: 1 },
+  { id: '3', name: '공가', deductionDays: 1 },
+  { id: '4', name: '연차(1년미만)', deductionDays: 1 },
+  { id: '5', name: '연차휴가', deductionDays: 1 },
+  { id: '6', name: '육아휴직', deductionDays: 1 },
+  { id: '7', name: '반반차(오후)', deductionDays: 0.5 },
+  { id: '8', name: '반차(오전)', deductionDays: 0.5 },
+  { id: '9', name: '반차(오전)(1년미만)', deductionDays: 0.5 },
+  { id: '10', name: '반차(오후)', deductionDays: 0.5 },
+  { id: '11', name: '반차(오후)(1년미만)', deductionDays: 0.5 },
+  { id: '12', name: '반반차(오전)', deductionDays: 0.25 },
+  { id: '13', name: '반반차(오후)(1년미만)', deductionDays: 0.25 },
+  { id: '14', name: '대체휴무(종일)', deductionDays: 0 },
+  { id: '15', name: '외부교육', deductionDays: 0 },
+];
+
+// 공휴일 목업 데이터
+const MOCK_HOLIDAYS = [
+  { id: 'h1', date: '2025-01-01', name: '신정', type: '공휴일' as const },
+  { id: 'h2', date: '2025-06-03', name: '대통령선거', type: '공휴일' as const },
+  { id: 'h3', date: '2025-06-06', name: '현충일', type: '공휴일' as const },
+];
 
 interface EvaluationContextType {
   gradingScale: Record<NonNullable<Grade>, GradeInfo>;
@@ -64,8 +90,8 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
   console.log('initialGradingScale:', initialGradingScale);
   console.log('==========================');
   const [workRateInputs, setWorkRateInputs] = React.useState<Record<string, WorkRateInputs>>(() => getFromLocalStorage('workRateInputs', {}));
-  const [attendanceTypes, setAttendanceTypes] = React.useState<AttendanceType[]>(() => getFromLocalStorage('attendanceTypes', initialAttendanceTypes));
-  const [holidays, setHolidays] = React.useState<Holiday[]>(() => getFromLocalStorage('holidays', initialHolidays));
+  const [attendanceTypes, setAttendanceTypes] = React.useState<AttendanceType[]>(() => MOCK_ATTENDANCE_TYPES);
+  const [holidays, setHolidays] = React.useState<Holiday[]>(() => MOCK_HOLIDAYS);
   const [evaluationStatus, setEvaluationStatus] = React.useState<Record<string, 'open' | 'closed'>>(() => getFromLocalStorage('evaluationStatus', {}));
 
   useDebouncedEffect(() => localStorage.setItem('employees', JSON.stringify(employees)), [employees], 500);

@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, LabelList } from 'recharts';
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, LabelList, CartesianGrid } from 'recharts';
 import {
   ChartContainer,
   ChartTooltip,
@@ -124,21 +124,24 @@ export function GradeHistogram({
   };
 
   return (
-    <div className="h-[250px]">
-      <ChartContainer config={chartConfig} className="w-full h-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart
-            accessibilityLayer
-            data={sortedData}
-            margin={{ top: 30, right: 10, left: 10, bottom: 20 }}
-          >
-            <XAxis
+    <div className="h-[250px] bg-white">
+      <ChartContainer config={chartConfig} className="w-full h-full !aspect-auto bg-white !flex !justify-center !text-xs [&_.recharts-cartesian-grid_line]:!stroke-transparent [&_.recharts-surface]:!outline-none [&_.recharts-cartesian-axis-tick_text]:!fill-muted-foreground [&_.recharts-curve.recharts-tooltip-cursor]:!stroke-border [&_.recharts-dot[stroke='#fff']]:!stroke-transparent [&_.recharts-layer]:!outline-none [&_.recharts-polar-grid_[stroke='#ccc']]:!stroke-border [&_.recharts-radial-bar-background-sector]:!fill-muted [&_.recharts-rectangle.recharts-tooltip-cursor]:!fill-muted [&_.recharts-reference-line_[stroke='#ccc']]:!stroke-border [&_.recharts-sector[stroke='#fff']]:!stroke-transparent [&_.recharts-sector]:!outline-none [&_.recharts-cartesian-grid_line[stroke='#ccc']]:!stroke-transparent">
+        <ResponsiveContainer width="100%" height="100%" style={{ backgroundColor: 'white', background: 'white' }}>
+                                  <BarChart
+              accessibilityLayer
+              data={sortedData}
+              margin={{ top: 30, right: 10, left: 10, bottom: 20 }}
+              style={{ backgroundColor: 'white', background: 'white' }}
+            >
+              <CartesianGrid strokeDasharray="0" stroke="transparent" />
+              <XAxis
               dataKey="name"
               tickLine={false}
               axisLine={false}
               tick={<CustomXAxisTick gradingScale={gradingScale} />}
               height={40}
               interval={0}
+              style={{ backgroundColor: 'white' }}
             />
             <YAxis
               type="number"
@@ -148,6 +151,7 @@ export function GradeHistogram({
               axisLine={false}
               tickFormatter={(value) => `${value}`}
               allowDecimals={false}
+              style={{ backgroundColor: 'white' }}
             />
             <ChartTooltip
               cursor={{ fill: 'hsl(var(--muted))' }}

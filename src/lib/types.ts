@@ -116,10 +116,10 @@ export interface Approval {
   };
   date: string;
   isRead: boolean;
-  status: 'pending' | 'approved' | 'rejected';
-  statusHR: 'pending' | 'approved' | 'rejected';
-  approvedAtTeam?: string;
-  approvedAtHR?: string;
+  status: ApprovalStatus;
+  statusHR: ApprovalStatus;
+  approvedAtTeam?: string | null;
+  approvedAtHR?: string | null;
   rejectionReason?: string;
 }
 

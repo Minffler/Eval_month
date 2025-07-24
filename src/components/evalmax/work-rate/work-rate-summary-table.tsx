@@ -73,7 +73,7 @@ export default function WorkRateSummaryTable({
     <div className="space-y-4">
       <div className="rounded-md border border-gray-200">
         <Table className="bg-white">
-          <TableHeader className="bg-gray-50">
+          <TableHeader>
             <TableRow>
               <TableHead className="w-[100px] cursor-pointer text-center" onClick={() => requestSort('uniqueId')}>
                 <div className="flex items-center justify-center">고유사번{getSortIcon('uniqueId')}</div>
