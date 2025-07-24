@@ -133,7 +133,7 @@ export default function AdminDashboardContent({
   deleteNotification,
   approvals,
 }: AdminDashboardContentProps) {
-  const { setEvaluations } = useEvaluation();
+  const { setEvaluations, handleEmployeeUpload } = useEvaluation();
   const [results, setResults] = React.useState<EvaluationResult[]>(initialResults);
   const [activeResultsTab, setActiveResultsTab] = React.useState<EvaluationGroupCategory>('전체');
   const [selectedEvaluators, setSelectedEvaluators] = React.useState<Set<string>>(new Set());
@@ -435,8 +435,57 @@ export default function AdminDashboardContent({
   }
 
   const updateAndSaveChanges = (updatedResults: EvaluationResult[]) => {
+    console.log('=== updateAndSaveChanges 호출됨 ===');
+    console.log('updatedResults:', updatedResults);
+    
     setResults(updatedResults);
     const key = `${selectedDate.year}-${selectedDate.month}`;
+    
+    // 근무율이 업데이트된 경우 employees 데이터도 업데이트
+    const hasWorkRateUpdate = updatedResults.some(result => {
+      const originalResult = initialResults.find(r => r.id === result.id);
+      return originalResult && Math.abs(result.workRate - originalResult.workRate) > 0.001;
+    });
+    
+    console.log('=== 근무율 변경 감지 디버깅 (관리자) ===');
+    console.log('hasWorkRateUpdate:', hasWorkRateUpdate);
+    console.log('initialResults.length:', initialResults.length);
+    console.log('updatedResults.length:', updatedResults.length);
+    
+    if (hasWorkRateUpdate) {
+      console.log('=== 근무율 업데이트 감지됨 (관리자) ===');
+      
+      // 업데이트된 평가 결과에서 employees 데이터 생성 (중복 제거)
+      const currentEmployees = updatedResults
+        .filter((result, index, self) => 
+          index === self.findIndex(r => r.uniqueId === result.uniqueId)
+        )
+        .map(result => ({
+          id: result.id,
+          uniqueId: result.uniqueId,
+          name: result.name,
+          company: result.company,
+          department: result.department,
+          title: result.title,
+          position: result.position,
+          growthLevel: result.growthLevel,
+          workRate: result.workRate, // 업데이트된 근무율 (엑셀 데이터 무시)
+          evaluatorId: result.evaluatorId,
+          baseAmount: result.baseAmount,
+          memo: result.memo,
+        }));
+      
+      console.log('=== employees 업데이트 전 (관리자) ===');
+      console.log('중복 제거 후 currentEmployees 길이:', currentEmployees.length);
+      console.log('currentEmployees:', currentEmployees);
+      
+      // handleEmployeeUpload를 사용하여 업데이트 (기존 데이터 완전 교체)
+      handleEmployeeUpload(selectedDate.year, selectedDate.month, currentEmployees);
+      console.log('=== handleEmployeeUpload 호출 완료 (관리자) ===');
+    } else {
+      console.log('=== 근무율 업데이트 감지되지 않음 (관리자) ===');
+    }
+    
     setEvaluations(prev => {
         const newEvals = { ...prev };
         const updatedEvalsForMonth = (newEvals[key] || []).map(ev => {
@@ -530,11 +579,11 @@ export default function AdminDashboardContent({
     const groupChar = group.charAt(0);
     switch (groupChar) {
       case 'A':
-        return <div className="mx-auto flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold text-stone-700" style={{ backgroundColor: 'hsl(25, 15%, 75%)' }}>{groupChar}</div>;
+        return <div className="mx-auto flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold text-stone-700" style={{ backgroundColor: 'hsl(25, 15%, 68%)' }}>{groupChar}</div>;
       case 'B':
-        return <div className="mx-auto flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold text-stone-800" style={{ backgroundColor: 'hsl(25, 20%, 92%)' }}>{groupChar}</div>;
+        return <div className="mx-auto flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold text-stone-700" style={{ backgroundColor: 'hsl(25, 15%, 82%)' }}>{groupChar}</div>;
       case 'C':
-        return <div className="mx-auto flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold text-stone-400" style={{ backgroundColor: 'hsl(30, 20%, 98%)' }}>{groupChar}</div>;
+        return <div className="mx-auto flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold text-stone-500" style={{ backgroundColor: 'hsl(25, 15%, 92%)' }}>{groupChar}</div>;
       default:
         return <span>{group}</span>;
     }
@@ -932,7 +981,7 @@ export default function AdminDashboardContent({
                         </TableHeader>
                         <TableBody>
                             {sortedVisibleResults.map(r => (
-                                <TableRow key={r.id}>
+                                <TableRow key={r.uniqueId}>
                                 <TableCell className="py-1 px-2 whitespace-nowrap text-center">{r.uniqueId}</TableCell>
                                 <TableCell className="py-1 px-2 whitespace-nowrap text-center">{r.company}</TableCell>
                                 <TableCell className="py-1 px-2 whitespace-nowrap text-center">{r.department}</TableCell>

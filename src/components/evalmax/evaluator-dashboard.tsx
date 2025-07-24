@@ -105,12 +105,32 @@ export default function EvaluatorDashboard({
   const handleSave = React.useCallback((updatedEvaluations: EvaluationResult[]) => {
     const key = `${selectedDate.year}-${selectedDate.month}`;
     
-    console.log('Saving evaluations:', updatedEvaluations); // 디버깅용
+    console.log('=== handleSave 호출됨 ===');
+    console.log('updatedEvaluations:', updatedEvaluations);
+    console.log('key:', key);
     
     // 근무율이 업데이트된 경우인지 확인
-    const hasWorkRateUpdate = updatedEvaluations.some(evaluation => 
-      evaluation.workRate !== undefined && evaluation.workRate !== currentMonthResults.find(r => r.id === evaluation.id)?.workRate
-    );
+    const hasWorkRateUpdate = updatedEvaluations.some(evaluation => {
+      const originalResult = currentMonthResults.find(r => r.id === evaluation.id);
+      return originalResult && Math.abs(evaluation.workRate - originalResult.workRate) > 0.001;
+    });
+    
+    console.log('=== 근무율 변경 감지 디버깅 ===');
+    console.log('updatedEvaluations.length:', updatedEvaluations.length);
+    console.log('currentMonthResults.length:', currentMonthResults.length);
+    console.log('hasWorkRateUpdate:', hasWorkRateUpdate);
+    
+    // 각 직원의 근무율 변경사항 상세 로그
+    updatedEvaluations.forEach((result, index) => {
+      const originalResult = currentMonthResults.find(r => r.id === result.id);
+      if (originalResult) {
+        const workRateDiff = Math.abs(result.workRate - originalResult.workRate);
+        if (workRateDiff > 0.001) {
+          console.log(`근무율 변경 감지: ID ${result.id} (${result.name}) - ${originalResult.workRate}% → ${result.workRate}% (차이: ${workRateDiff})`);
+        }
+      }
+    });
+    console.log('================================');
     
     setEvaluations(prevEvals => {
         const newState = JSON.parse(JSON.stringify(prevEvals));
@@ -140,24 +160,49 @@ export default function EvaluatorDashboard({
     
     // 근무율이 업데이트된 경우 employees 데이터도 업데이트
     if (hasWorkRateUpdate) {
-      const updatedEmployees = updatedEvaluations.map(evaluation => ({
-        id: evaluation.id,
-        uniqueId: evaluation.uniqueId,
-        name: evaluation.name,
-        company: evaluation.company,
-        department: evaluation.department,
-        title: evaluation.title,
-        position: evaluation.position,
-        growthLevel: evaluation.growthLevel,
-        workRate: evaluation.workRate,
-        evaluatorId: evaluation.evaluatorId,
-        baseAmount: evaluation.baseAmount,
-        memo: evaluation.memo,
-      }));
+      console.log('=== 근무율 업데이트 감지됨 ===');
+      console.log('hasWorkRateUpdate:', hasWorkRateUpdate);
       
-      // employees 데이터 업데이트
-      handleEmployeeUpload(selectedDate.year, selectedDate.month, updatedEmployees);
-      console.log('Updating employees with new work rates:', updatedEmployees);
+      // 기존 employees 데이터에서 근무율만 업데이트
+      const key = `${selectedDate.year}-${selectedDate.month}`;
+      
+      // 업데이트된 평가 결과에서 employees 데이터 생성 (중복 제거)
+      const currentEmployees = updatedEvaluations
+        .filter((result, index, self) => 
+          index === self.findIndex(r => r.uniqueId === result.uniqueId)
+        )
+        .map(result => ({
+          id: result.id,
+          uniqueId: result.uniqueId,
+          name: result.name,
+          company: result.company,
+          department: result.department,
+          title: result.title,
+          position: result.position,
+          growthLevel: result.growthLevel,
+          workRate: result.workRate, // 업데이트된 근무율 (엑셀 데이터 무시)
+          evaluatorId: result.evaluatorId,
+          baseAmount: result.baseAmount,
+          memo: result.memo,
+        }));
+      
+      console.log('=== employees 업데이트 전 ===');
+      console.log('중복 제거 후 currentEmployees 길이:', currentEmployees.length);
+      console.log('currentEmployees:', currentEmployees);
+      
+      // handleEmployeeUpload를 사용하여 업데이트 (기존 데이터 완전 교체)
+      handleEmployeeUpload(selectedDate.year, selectedDate.month, currentEmployees);
+      console.log('=== handleEmployeeUpload 호출 완료 ===');
+    } else {
+      console.log('=== 근무율 업데이트 감지되지 않음 ===');
+      console.log('hasWorkRateUpdate:', hasWorkRateUpdate);
+      console.log('updatedEvaluations workRate 변경사항:');
+      updatedEvaluations.forEach((result, index) => {
+        const originalResult = currentMonthResults.find(r => r.id === result.id);
+        if (originalResult && Math.abs(result.workRate - originalResult.workRate) > 0.001) {
+          console.log(`ID ${result.id} (${result.name}): ${originalResult.workRate}% → ${result.workRate}%`);
+        }
+      });
     }
     
     // 저장 완료 토스트

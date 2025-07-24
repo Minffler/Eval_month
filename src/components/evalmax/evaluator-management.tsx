@@ -406,23 +406,27 @@ export default function EvaluatorManagement(props: EvaluatorManagementProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredResults.map((result) => (
-                  <TableRow key={result.id} data-state={selectedIds.has(result.id) ? "selected" : ""}>
-                    <TableCell className="text-center py-1 px-2"><Checkbox checked={selectedIds.has(result.id)} onCheckedChange={(checked) => handleSelectRow(result.id, Boolean(checked))} /></TableCell>
-                    <TableCell className="text-center py-1 px-2">{result.uniqueId}</TableCell>
-                    <TableCell className="text-center py-1 px-2">{result.name}</TableCell>
-                    <TableCell className="text-center py-1 px-2">{result.company}</TableCell>
-                    <TableCell className="text-center py-1 px-2">{result.department}</TableCell>
-                    <TableCell className="text-center py-1 px-2">{result.title}</TableCell>
-                    <TableCell className="py-1 px-2 text-center">
-                       <EvaluatorSelector
-                          evaluators={evaluators}
-                          value={result.evaluatorId || ''}
-                          onSelect={(newEvaluatorId) => handleEvaluatorChange(result.id, newEvaluatorId)}
-                        />
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {filteredResults.map((result) => {
+                  // 고유한 키 생성: uniqueId + year + month 조합
+                  const uniqueKey = `${result.uniqueId}-${result.year}-${result.month}`;
+                  return (
+                    <TableRow key={uniqueKey} data-state={selectedIds.has(result.id) ? "selected" : ""}>
+                      <TableCell className="text-center py-1 px-2"><Checkbox checked={selectedIds.has(result.id)} onCheckedChange={(checked) => handleSelectRow(result.id, Boolean(checked))} /></TableCell>
+                      <TableCell className="text-center py-1 px-2">{result.uniqueId}</TableCell>
+                      <TableCell className="text-center py-1 px-2">{result.name}</TableCell>
+                      <TableCell className="text-center py-1 px-2">{result.company}</TableCell>
+                      <TableCell className="text-center py-1 px-2">{result.department}</TableCell>
+                      <TableCell className="text-center py-1 px-2">{result.title}</TableCell>
+                      <TableCell className="py-1 px-2 text-center">
+                         <EvaluatorSelector
+                            evaluators={evaluators}
+                            value={result.evaluatorId || ''}
+                            onSelect={(newEvaluatorId) => handleEvaluatorChange(result.id, newEvaluatorId)}
+                          />
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>

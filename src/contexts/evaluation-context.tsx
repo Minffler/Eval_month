@@ -104,6 +104,11 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
   
   const handleEmployeeUpload = (year: number, month: number, newEmployees: Employee[]) => {
     const key = `${year}-${month}`;
+    
+    console.log('=== handleEmployeeUpload 호출됨 ===');
+    console.log('year:', year, 'month:', month);
+    console.log('newEmployees:', newEmployees);
+    console.log('key:', key);
 
     const usersToUpsert = newEmployees.map(emp => ({
         uniqueId: emp.uniqueId,
@@ -138,7 +143,26 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
 
     upsertUsers(usersToUpsert);
 
-    setEmployees(prev => ({...prev, [key]: newEmployees}));
+    console.log('=== employees 상태 업데이트 전 ===');
+    console.log('현재 employees 상태:', employees);
+    
+    setEmployees(prev => {
+      // 중복 제거: uniqueId를 기준으로 중복된 직원 제거
+      const uniqueEmployees = newEmployees.filter((employee, index, self) => 
+        index === self.findIndex(e => e.uniqueId === employee.uniqueId)
+      );
+      
+      console.log('=== 중복 제거 전/후 ===');
+      console.log('원본 newEmployees 길이:', newEmployees.length);
+      console.log('중복 제거 후 uniqueEmployees 길이:', uniqueEmployees.length);
+      
+      // 기존 데이터를 완전히 교체 (덮어쓰기)
+      const newState = {...prev, [key]: uniqueEmployees};
+      console.log('=== employees 상태 업데이트 후 ===');
+      console.log('기존 데이터 완전 교체됨');
+      console.log('새로운 employees 상태:', newState);
+      return newState;
+    });
 
     setEvaluations(prev => {
         const currentEvalsForMonth = prev[key] || [];
@@ -153,6 +177,8 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
         });
         return {...prev, [key]: finalEvals};
     });
+    
+    console.log('=== handleEmployeeUpload 완료 ===');
   };
 
   const handleEvaluationUpload = (year: number, month: number, uploadedData: EvaluationUploadData[]) => {

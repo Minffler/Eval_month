@@ -316,11 +316,11 @@ export default function WorkRateManagement({
       return;
     }
 
-    // 근무율 조회/반영 화면에서 계산된 근무율만 사용
+    // 근무율 조회/반영 화면에서 계산된 근무율로 모든 결과 업데이트
     const updatedResults = allEvaluationResults.map(result => {
       const summary = workRateSummaries.find(s => s.uniqueId === result.uniqueId);
       if (summary) {
-        // 근무율 조회/반영 화면에서 계산된 근무율로 업데이트
+        // 근무율 조회/반영 화면에서 계산된 근무율로 업데이트 (엑셀 데이터 무시)
         const newWorkRate = summary.monthlyWorkRate;
         
         // 등급 정보가 있는 경우 최종 금액 재계산
@@ -340,9 +340,18 @@ export default function WorkRateManagement({
       }
       return result;
     });
+    
+    // 중복 제거: uniqueId를 기준으로 중복된 결과 제거
+    const uniqueUpdatedResults = updatedResults.filter((result, index, self) => 
+      index === self.findIndex(r => r.uniqueId === result.uniqueId)
+    );
+    
+    console.log('=== 중복 제거 전/후 (WorkRateManagement) ===');
+    console.log('원본 updatedResults 길이:', updatedResults.length);
+    console.log('중복 제거 후 uniqueUpdatedResults 길이:', uniqueUpdatedResults.length);
 
     // 근무율이 변경된 결과만 필터링
-    const resultsWithWorkRateChanges = updatedResults.filter(result => {
+    const resultsWithWorkRateChanges = uniqueUpdatedResults.filter(result => {
       const originalResult = allEvaluationResults.find(r => r.id === result.id);
       return originalResult && Math.abs(result.workRate - originalResult.workRate) > 0.001;
     });
@@ -355,7 +364,23 @@ export default function WorkRateManagement({
       return;
     }
 
-    handleResultsUpdate(updatedResults);
+    // 디버깅용 로그
+    console.log('=== 근무율 반영 디버깅 ===');
+    console.log('workRateSummaries:', workRateSummaries);
+    console.log('uniqueUpdatedResults:', uniqueUpdatedResults);
+    console.log('resultsWithWorkRateChanges:', resultsWithWorkRateChanges);
+    console.log('========================');
+
+    console.log('=== handleResultsUpdate 호출 전 ===');
+    console.log('handleResultsUpdate 함수 존재:', !!handleResultsUpdate);
+    console.log('uniqueUpdatedResults 길이:', uniqueUpdatedResults.length);
+    
+    if (handleResultsUpdate) {
+      handleResultsUpdate(uniqueUpdatedResults);
+      console.log('=== handleResultsUpdate 호출 완료 ===');
+    } else {
+      console.log('=== handleResultsUpdate 함수가 없음 ===');
+    }
     
     toast({
       title: '근무율 반영 완료',
