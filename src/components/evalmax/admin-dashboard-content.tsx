@@ -729,24 +729,29 @@ export default function AdminDashboardContent({
                       </div>
                     </CardHeader>
                     <CardContent className="p-4">
-                      {/* 평가 진행 현황 (위) */}
+                      {/* 평가 진행 현황 (위) - 3등분 구분 */}
                       <div className="mb-6">
-                        <div className="grid grid-cols-3 gap-16 p-6 bg-[hsl(30,30%,96%)] rounded-lg">
-                          <div className="flex items-center justify-center gap-3">
+                        <div className="grid grid-cols-3 gap-0 bg-[hsl(30,30%,96%)] rounded-lg overflow-hidden border border-[hsl(30,20%,90%)]">
+                          {/* 첫 번째 섹션: 미완료 */}
+                          <div className="flex items-center justify-center gap-3 p-6 border-r border-[hsl(30,20%,90%)]">
                             <AlertTriangleIcon className="h-6 w-6 text-[#554f4b]" />
                             <div className="text-center">
                               <div className="text-2xl font-bold text-foreground">{initialResults.filter(r => !r.grade).length}</div>
                               <div className="text-sm text-[#6a625d]">미완료</div>
                             </div>
                           </div>
-                          <div className="flex items-center justify-center gap-3">
+                          
+                          {/* 두 번째 섹션: 완료/전체 */}
+                          <div className="flex items-center justify-center gap-3 p-6 border-r border-[hsl(30,20%,90%)]">
                             <CheckCircle2Icon className="h-6 w-6 text-[#554f4b]" />
                             <div className="text-center">
                               <div className="text-2xl font-bold text-foreground">{initialResults.filter(r => r.grade).length}/{initialResults.length}</div>
                               <div className="text-sm text-[#6a625d]">완료/전체</div>
                             </div>
                           </div>
-                          <div className="flex items-center justify-center gap-3">
+                          
+                          {/* 세 번째 섹션: 평가 완료율 */}
+                          <div className="flex items-center justify-center gap-3 p-6">
                             <Percent className="h-6 w-6 text-[#554f4b]" />
                             <div className="text-center">
                               <div className="text-2xl font-bold text-foreground">
