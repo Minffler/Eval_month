@@ -276,6 +276,8 @@ export default function AdminDashboardContent({
 
     initialResults.forEach(r => {
       if (!r.evaluatorId || !statsByUniqueId[r.evaluatorId]) return;
+      // C. 미평가는 평가 대상에서 제외
+      if (r.evaluationGroup === 'C. 미평가') return;
       statsByUniqueId[r.evaluatorId].total++;
       if (r.grade) {
         statsByUniqueId[r.evaluatorId].completed++;
@@ -729,33 +731,32 @@ export default function AdminDashboardContent({
                       </div>
                     </CardHeader>
                     <CardContent className="p-4">
-                      {/* 평가 진행 현황 (위) - 3등분 구분 */}
+                      {/* 평가 진행 현황 (위) */}
                       <div className="mb-6">
-                        <div className="grid grid-cols-3 gap-0 bg-[hsl(30,30%,96%)] rounded-lg overflow-hidden border border-[hsl(30,20%,90%)]">
-                          {/* 첫 번째 섹션: 미완료 */}
-                          <div className="flex items-center justify-center gap-3 p-6 border-r border-[hsl(30,20%,90%)]">
-                            <AlertTriangleIcon className="h-6 w-6 text-[#554f4b]" />
+                        <div className="grid grid-cols-3 gap-4">
+                          <div className="flex items-center justify-center gap-3 p-4 bg-[hsl(30,30%,96%)] rounded-lg">
+                            <AlertTriangleIcon className="h-6 w-6 text-[#6a625d]" />
                             <div className="text-center">
-                              <div className="text-2xl font-bold text-foreground">{initialResults.filter(r => !r.grade).length}</div>
+                              <div className="text-2xl font-bold text-foreground">{initialResults.filter(r => !r.grade && r.evaluationGroup !== 'C. 미평가').length}</div>
                               <div className="text-sm text-[#6a625d]">미완료</div>
                             </div>
                           </div>
-                          
-                          {/* 두 번째 섹션: 완료/전체 */}
-                          <div className="flex items-center justify-center gap-3 p-6 border-r border-[hsl(30,20%,90%)]">
-                            <CheckCircle2Icon className="h-6 w-6 text-[#554f4b]" />
+                          <div className="flex items-center justify-center gap-3 p-4 bg-[hsl(30,30%,96%)] rounded-lg">
+                            <CheckCircle2Icon className="h-6 w-6 text-[#6a625d]" />
                             <div className="text-center">
-                              <div className="text-2xl font-bold text-foreground">{initialResults.filter(r => r.grade).length}/{initialResults.length}</div>
+                              <div className="text-2xl font-bold text-foreground">{initialResults.filter(r => r.grade && r.evaluationGroup !== 'C. 미평가').length}/{initialResults.filter(r => r.evaluationGroup !== 'C. 미평가').length}</div>
                               <div className="text-sm text-[#6a625d]">완료/전체</div>
                             </div>
                           </div>
-                          
-                          {/* 세 번째 섹션: 평가 완료율 */}
-                          <div className="flex items-center justify-center gap-3 p-6">
-                            <Percent className="h-6 w-6 text-[#554f4b]" />
+                          <div className="flex items-center justify-center gap-3 p-4 bg-[hsl(30,30%,96%)] rounded-lg">
+                            <Percent className="h-6 w-6 text-[#6a625d]" />
                             <div className="text-center">
                               <div className="text-2xl font-bold text-foreground">
-                                {initialResults.length > 0 ? ((initialResults.filter(r => r.grade).length / initialResults.length) * 100).toFixed(1) : 0}%
+                                {(() => {
+                                  const evaluationTargets = initialResults.filter(r => r.evaluationGroup !== 'C. 미평가');
+                                  const completed = evaluationTargets.filter(r => r.grade).length;
+                                  return evaluationTargets.length > 0 ? ((completed / evaluationTargets.length) * 100).toFixed(1) : 0;
+                                })()}%
                               </div>
                               <div className="text-sm text-[#6a625d]">평가 완료율</div>
                             </div>
@@ -1127,8 +1128,8 @@ export default function AdminDashboardContent({
                               <TableCell className="text-center">{teamApprover ? `${teamApprover.name} (${teamApprover.uniqueId})` : '미지정'}</TableCell>
                               <TableCell className="text-center"><StatusBadge status={approval.status} className="scale-90" /></TableCell>
                               <TableCell className="text-center"><StatusBadge status={approval.statusHR} className="scale-90" /></TableCell>
-                              <TableCell className="text-center text-muted-foreground">{formatTimestampShort(approval.approvedAtTeam)}</TableCell>
-                              <TableCell className="text-center text-muted-foreground">{formatTimestampShort(approval.approvedAtHR)}</TableCell>
+                              <TableCell className="text-center text-muted-foreground">{formatTimestampShort(approval.approvedAtTeam || null)}</TableCell>
+                              <TableCell className="text-center text-muted-foreground">{formatTimestampShort(approval.approvedAtHR || null)}</TableCell>
                             </TableRow>
                             )
                           })}

@@ -68,7 +68,7 @@ export const initialAttendanceTypes: AttendanceType[] = [
 ];
 
 export const mockEmployees: Record<string, Partial<Employee>[]> = {
-  "2025-7": [
+  "2025-1": [
     {
       "id": "E1911042",
       "uniqueId": "1911042",
@@ -78,7 +78,7 @@ export const mockEmployees: Record<string, Partial<Employee>[]> = {
       "title": "팀원",
       "position": "팀원",
       "growthLevel": "Lv.5",
-      "workRate": 1,
+      "workRate": 0.95,
       "evaluatorId": "1911042",
       "baseAmount": 8000000,
       "memo": ""
@@ -92,7 +92,157 @@ export const mockEmployees: Record<string, Partial<Employee>[]> = {
       "title": "팀원",
       "position": "팀원",
       "growthLevel": "Lv.5",
-      "workRate": 1,
+      "workRate": 0.92,
+      "evaluatorId": "admin",
+      "baseAmount": 8000000,
+      "memo": ""
+    }
+  ],
+  "2025-2": [
+    {
+      "id": "E1911042",
+      "uniqueId": "1911042",
+      "name": "김민선",
+      "company": "OKH",
+      "department": "인사부",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.5",
+      "workRate": 0.88,
+      "evaluatorId": "1911042",
+      "baseAmount": 8000000,
+      "memo": ""
+    },
+    {
+      "id": "Eadmin",
+      "uniqueId": "admin",
+      "name": "김관리",
+      "company": "OKH",
+      "department": "인사부",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.5",
+      "workRate": 0.90,
+      "evaluatorId": "admin",
+      "baseAmount": 8000000,
+      "memo": ""
+    }
+  ],
+  "2025-3": [
+    {
+      "id": "E1911042",
+      "uniqueId": "1911042",
+      "name": "김민선",
+      "company": "OKH",
+      "department": "인사부",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.5",
+      "workRate": 0.92,
+      "evaluatorId": "1911042",
+      "baseAmount": 8000000,
+      "memo": ""
+    },
+    {
+      "id": "Eadmin",
+      "uniqueId": "admin",
+      "name": "김관리",
+      "company": "OKH",
+      "department": "인사부",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.5",
+      "workRate": 0.89,
+      "evaluatorId": "admin",
+      "baseAmount": 8000000,
+      "memo": ""
+    }
+  ],
+  "2025-4": [
+    {
+      "id": "E1911042",
+      "uniqueId": "1911042",
+      "name": "김민선",
+      "company": "OKH",
+      "department": "인사부",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.5",
+      "workRate": 0.94,
+      "evaluatorId": "1911042",
+      "baseAmount": 8000000,
+      "memo": ""
+    },
+    {
+      "id": "Eadmin",
+      "uniqueId": "admin",
+      "name": "김관리",
+      "company": "OKH",
+      "department": "인사부",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.5",
+      "workRate": 0.91,
+      "evaluatorId": "admin",
+      "baseAmount": 8000000,
+      "memo": ""
+    }
+  ],
+  "2025-5": [
+    {
+      "id": "E1911042",
+      "uniqueId": "1911042",
+      "name": "김민선",
+      "company": "OKH",
+      "department": "인사부",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.5",
+      "workRate": 0.96,
+      "evaluatorId": "1911042",
+      "baseAmount": 8000000,
+      "memo": ""
+    },
+    {
+      "id": "Eadmin",
+      "uniqueId": "admin",
+      "name": "김관리",
+      "company": "OKH",
+      "department": "인사부",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.5",
+      "workRate": 0.93,
+      "evaluatorId": "admin",
+      "baseAmount": 8000000,
+      "memo": ""
+    }
+  ],
+  "2025-6": [
+    {
+      "id": "E1911042",
+      "uniqueId": "1911042",
+      "name": "김민선",
+      "company": "OKH",
+      "department": "인사부",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.5",
+      "workRate": 0.98,
+      "evaluatorId": "1911042",
+      "baseAmount": 8000000,
+      "memo": ""
+    },
+    {
+      "id": "Eadmin",
+      "uniqueId": "admin",
+      "name": "김관리",
+      "company": "OKH",
+      "department": "인사부",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.5",
+      "workRate": 0.95,
       "evaluatorId": "admin",
       "baseAmount": 8000000,
       "memo": ""
@@ -101,7 +251,114 @@ export const mockEmployees: Record<string, Partial<Employee>[]> = {
 };
 
 export const mockEvaluations: Record<string, Evaluation[]> = {
-  "2025-7": []
+  "2025-1": [
+    {
+      "id": "eval-1-1",
+      "employeeId": "E1911042",
+      "year": 2025,
+      "month": 1,
+      "grade": "A",
+      "memo": "안정적인 성과를 보여주었습니다."
+    },
+    {
+      "id": "eval-1-2", 
+      "employeeId": "Eadmin",
+      "year": 2025,
+      "month": 1,
+      "grade": "B+",
+      "memo": "양호한 성과를 보여주었습니다."
+    }
+  ],
+  "2025-2": [
+    {
+      "id": "eval-2-1",
+      "employeeId": "E1911042",
+      "year": 2025,
+      "month": 2,
+      "grade": "A+",
+      "memo": "우수한 성과를 보여주었습니다."
+    },
+    {
+      "id": "eval-2-2", 
+      "employeeId": "Eadmin",
+      "year": 2025,
+      "month": 2,
+      "grade": "A",
+      "memo": "안정적인 성과를 보여주었습니다."
+    }
+  ],
+  "2025-3": [
+    {
+      "id": "eval-3-1",
+      "employeeId": "E1911042",
+      "year": 2025,
+      "month": 3,
+      "grade": "S",
+      "memo": "최고의 성과를 보여주었습니다."
+    },
+    {
+      "id": "eval-3-2", 
+      "employeeId": "Eadmin",
+      "year": 2025,
+      "month": 3,
+      "grade": "A+",
+      "memo": "우수한 성과를 보여주었습니다."
+    }
+  ],
+  "2025-4": [
+    {
+      "id": "eval-4-1",
+      "employeeId": "E1911042",
+      "year": 2025,
+      "month": 4,
+      "grade": "A+",
+      "memo": "우수한 성과를 보여주었습니다."
+    },
+    {
+      "id": "eval-4-2", 
+      "employeeId": "Eadmin",
+      "year": 2025,
+      "month": 4,
+      "grade": "A",
+      "memo": "안정적인 성과를 보여주었습니다."
+    }
+  ],
+  "2025-5": [
+    {
+      "id": "eval-5-1",
+      "employeeId": "E1911042",
+      "year": 2025,
+      "month": 5,
+      "grade": "S",
+      "memo": "최고의 성과를 보여주었습니다."
+    },
+    {
+      "id": "eval-5-2", 
+      "employeeId": "Eadmin",
+      "year": 2025,
+      "month": 5,
+      "grade": "A+",
+      "memo": "우수한 성과를 보여주었습니다."
+    }
+  ],
+  "2025-6": [
+    {
+      "id": "eval-6-1",
+      "employeeId": "E1911042",
+      "year": 2025,
+      "month": 6,
+      "grade": "S",
+      "memo": "최고의 성과를 보여주었습니다."
+    },
+    {
+      "id": "eval-6-2", 
+      "employeeId": "Eadmin",
+      "year": 2025,
+      "month": 6,
+      "grade": "A+",
+      "memo": "우수한 성과를 보여주었습니다."
+    }
+  ]
 };
 
 export const initialHolidays: Holiday[] = [];

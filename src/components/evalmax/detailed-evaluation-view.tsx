@@ -9,17 +9,32 @@ import { Button } from '../ui/button';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
 import { useAuth } from '@/contexts/auth-context';
+import { cn } from '@/lib/utils';
 
 interface DetailedEvaluationViewProps {
   allResultsForYear: EvaluationResult[];
   gradingScale: Record<NonNullable<Grade>, GradeInfo>;
 }
 
+// 등급별 색상 정의
+const gradeToColor: Record<string, string> = {
+    'S': 'text-purple-500', 
+    'A+': 'text-yellow-500', 
+    'A': 'text-yellow-500',
+    'B+': 'text-orange-700', 
+    'B': 'text-lime-500', 
+    'B-': 'text-yellow-600',
+    'C': 'text-orange-500', 
+    'C-': 'text-red-500', 
+    'D': 'text-gray-500'
+};
+
 export default function DetailedEvaluationView({ allResultsForYear, gradingScale }: DetailedEvaluationViewProps) {
   const { user } = useAuth();
   const [isDistributionOpen, setIsDistributionOpen] = React.useState(true);
   const [isDetailsOpen, setIsDetailsOpen] = React.useState(true);
 
+  // 전체 등급 분포 데이터 생성
   const gradeDistribution = React.useMemo(() => {
     const counts = allResultsForYear.reduce((acc, result) => {
       if (result.grade) {
@@ -34,7 +49,10 @@ export default function DetailedEvaluationView({ allResultsForYear, gradingScale
     }));
   }, [allResultsForYear, gradingScale]);
 
-  const myCurrentMonthResult = allResultsForYear.sort((a,b) => b.month - a.month)[0];
+  // 내 현재 월 결과
+  const myCurrentMonthResult = React.useMemo(() => 
+    allResultsForYear.sort((a,b) => b.month - a.month)[0]
+  , [allResultsForYear]);
 
   const formatCurrency = (value: number) => {
     if (isNaN(value) || value === null) return '0';
@@ -43,6 +61,7 @@ export default function DetailedEvaluationView({ allResultsForYear, gradingScale
 
   return (
     <div className="space-y-4">
+      {/* 전체 등급 분포 */}
       <Collapsible open={isDistributionOpen} onOpenChange={setIsDistributionOpen} asChild>
         <Card className="shadow-sm border-gray-200">
           <CollapsibleTrigger asChild>
@@ -68,6 +87,7 @@ export default function DetailedEvaluationView({ allResultsForYear, gradingScale
         </Card>
       </Collapsible>
       
+      {/* 월별 상세 결과 */}
       <Collapsible open={isDetailsOpen} onOpenChange={setIsDetailsOpen} asChild>
         <Card className="shadow-sm border-gray-200">
           <CollapsibleTrigger asChild>
@@ -102,22 +122,38 @@ export default function DetailedEvaluationView({ allResultsForYear, gradingScale
                   </TableHeader>
                   <TableBody>
                     {allResultsForYear.length > 0 ? allResultsForYear.sort((a,b) => b.month - a.month).map((result) => (
-                      <TableRow key={result.month}>
-                        <TableCell className="text-center">{result.month}월</TableCell>
+                      <TableRow key={result.month} className="hover:bg-muted/50">
+                        <TableCell className="text-center font-medium">{result.month}월</TableCell>
                         <TableCell className="text-center">{result.company}</TableCell>
                         <TableCell className="text-center">{result.department}</TableCell>
                         <TableCell className="text-center">{result.title}</TableCell>
-                        <TableCell className="text-center">{(result.workRate * 100).toFixed(1)}%</TableCell>
-                        <TableCell className="text-center font-semibold">{result.grade}</TableCell>
-                        <TableCell className="text-center">{result.score}</TableCell>
-                        <TableCell className="text-right">{formatCurrency(result.baseAmount)}</TableCell>
-                        <TableCell className="text-right font-semibold">{formatCurrency(result.finalAmount)}</TableCell>
-                        <TableCell className="text-center">{result.evaluatorName}</TableCell>
-                        <TableCell>{result.memo}</TableCell>
+                        <TableCell className="text-center">
+                          <span className={cn(
+                            "px-2 py-1 rounded-full text-xs font-medium",
+                            result.workRate >= 0.9 ? "bg-green-100 text-green-800" :
+                            result.workRate >= 0.8 ? "bg-yellow-100 text-yellow-800" :
+                            "bg-red-100 text-red-800"
+                          )}>
+                            {(result.workRate * 100).toFixed(1)}%
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <span className={cn(
+                            "px-2 py-1 rounded-full text-xs font-bold",
+                            gradeToColor[result.grade || ''] || 'bg-gray-100 text-gray-800'
+                          )}>
+                            {result.grade}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-center font-semibold">{result.score}</TableCell>
+                        <TableCell className="text-right text-muted-foreground">{formatCurrency(result.baseAmount)}</TableCell>
+                        <TableCell className="text-right font-semibold text-primary">{formatCurrency(result.finalAmount)}</TableCell>
+                        <TableCell className="text-center text-sm">{result.evaluatorName}</TableCell>
+                        <TableCell className="text-center text-sm text-muted-foreground">{result.memo || '-'}</TableCell>
                       </TableRow>
                     )) : (
                       <TableRow>
-                        <TableCell colSpan={11} className="h-24 text-center">
+                        <TableCell colSpan={11} className="h-24 text-center text-muted-foreground">
                           아직 {new Date().getFullYear()}년 평가 결과가 없습니다.
                         </TableCell>
                       </TableRow>
@@ -125,6 +161,36 @@ export default function DetailedEvaluationView({ allResultsForYear, gradingScale
                   </TableBody>
                 </Table>
               </div>
+              
+              {/* 요약 정보 */}
+              {allResultsForYear.length > 0 && (
+                <div className="mt-4 p-4 bg-muted/30 rounded-lg">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div>
+                      <p className="text-muted-foreground">평가 횟수</p>
+                      <p className="font-semibold">{allResultsForYear.length}회</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">평균 점수</p>
+                      <p className="font-semibold">
+                        {Math.round(allResultsForYear.reduce((acc, curr) => acc + curr.score, 0) / allResultsForYear.length)}점
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">평균 근무율</p>
+                      <p className="font-semibold">
+                        {(allResultsForYear.reduce((acc, curr) => acc + curr.workRate, 0) / allResultsForYear.length * 100).toFixed(1)}%
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">총 지급액</p>
+                      <p className="font-semibold text-primary">
+                        {allResultsForYear.reduce((acc, curr) => acc + curr.finalAmount, 0).toLocaleString()}원
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </CollapsibleContent>
         </Card>

@@ -1,13 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, LabelList, CartesianGrid } from 'recharts';
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from '@/components/ui/chart';
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, LabelList, CartesianGrid, Cell } from 'recharts';
 import type { Grade, GradeInfo } from '@/lib/types';
 
 interface GradeHistogramProps {
@@ -15,13 +9,6 @@ interface GradeHistogramProps {
   gradingScale: Record<NonNullable<Grade>, GradeInfo>;
   highlightGrade?: Grade | null;
 }
-
-const chartConfig = {
-  value: {
-    label: '인원수',
-    color: 'hsl(var(--primary))',
-  },
-} satisfies ChartConfig;
 
 const CustomXAxisTick = (props: any) => {
     const { x, y, payload, gradingScale } = props;
@@ -55,7 +42,7 @@ export function GradeHistogram({
     return data.reduce((acc, curr) => acc + curr.value, 0);
   }, [data]);
 
-  // 핵심: 모든 등급을 포함하도록 데이터 생성 (값이 0이어도 포함)
+  // 모든 등급을 포함하도록 데이터 생성 (값이 0이어도 포함)
   const sortedData = React.useMemo(() => {
     // 1. 모든 등급에 대해 기본 데이터 생성 (값이 0이어도 포함)
     const allGradesData = Object.keys(gradingScale || {}).map(grade => {
@@ -78,8 +65,9 @@ export function GradeHistogram({
       .map(item => ({
         ...item,
         percentage: totalCount > 0 ? (item.value / totalCount) * 100 : 0,
+        isHighlighted: item.name === highlightGrade,
       }));
-  }, [data, gradingScale, totalCount]);
+  }, [data, gradingScale, totalCount, highlightGrade]);
   
   const CombinedLabel = (props: any) => {
     const { x, y, width, height, index } = props;
@@ -125,48 +113,60 @@ export function GradeHistogram({
 
   return (
     <div className="h-[250px] bg-white">
-      <ChartContainer config={chartConfig} className="w-full h-full !aspect-auto bg-white !flex !justify-center !text-xs [&_.recharts-cartesian-grid_line]:!stroke-transparent [&_.recharts-surface]:!outline-none [&_.recharts-cartesian-axis-tick_text]:!fill-muted-foreground [&_.recharts-curve.recharts-tooltip-cursor]:!stroke-border [&_.recharts-dot[stroke='#fff']]:!stroke-transparent [&_.recharts-layer]:!outline-none [&_.recharts-polar-grid_[stroke='#ccc']]:!stroke-border [&_.recharts-radial-bar-background-sector]:!fill-muted [&_.recharts-rectangle.recharts-tooltip-cursor]:!fill-muted [&_.recharts-reference-line_[stroke='#ccc']]:!stroke-border [&_.recharts-sector[stroke='#fff']]:!stroke-transparent [&_.recharts-sector]:!outline-none [&_.recharts-cartesian-grid_line[stroke='#ccc']]:!stroke-transparent">
-        <ResponsiveContainer width="100%" height="100%" style={{ backgroundColor: 'white', background: 'white' }}>
-                                  <BarChart
-              accessibilityLayer
-              data={sortedData}
-              margin={{ top: 30, right: 10, left: 10, bottom: 20 }}
-              style={{ backgroundColor: 'white', background: 'white' }}
-            >
-              <CartesianGrid strokeDasharray="0" stroke="transparent" />
-              <XAxis
-              dataKey="name"
-              tickLine={false}
-              axisLine={false}
-              tick={<CustomXAxisTick gradingScale={gradingScale} />}
-              height={40}
-              interval={0}
-              style={{ backgroundColor: 'white' }}
-            />
-            <YAxis
-              type="number"
-              stroke="hsl(var(--muted-foreground))"
-              fontSize={12}
-              tickLine={false}
-              axisLine={false}
-              tickFormatter={(value) => `${value}`}
-              allowDecimals={false}
-              style={{ backgroundColor: 'white' }}
-            />
-            <ChartTooltip
-              cursor={{ fill: 'hsl(var(--muted))' }}
-              content={<ChartTooltipContent />}
-            />
-            <Bar
-              dataKey="value"
-              fill="var(--color-value)"
-              radius={[4, 4, 0, 0]}
-            >
-              <LabelList dataKey="value" content={<CombinedLabel />} />
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
-      </ChartContainer>
+      <ResponsiveContainer width="100%" height="100%" style={{ backgroundColor: 'white', background: 'white' }}>
+        <BarChart
+          accessibilityLayer
+          data={sortedData}
+          margin={{ top: 30, right: 10, left: 10, bottom: 20 }}
+          style={{ backgroundColor: 'white', background: 'white' }}
+        >
+          <CartesianGrid strokeDasharray="0" stroke="transparent" />
+          <XAxis
+            dataKey="name"
+            tickLine={false}
+            axisLine={false}
+            tick={<CustomXAxisTick gradingScale={gradingScale} />}
+            height={40}
+            interval={0}
+            style={{ backgroundColor: 'white' }}
+          />
+          <YAxis
+            type="number"
+            stroke="hsl(var(--muted-foreground))"
+            fontSize={12}
+            tickLine={false}
+            axisLine={false}
+            tickFormatter={(value) => `${value}`}
+            allowDecimals={false}
+            style={{ backgroundColor: 'white' }}
+          />
+          <Bar
+            dataKey="value"
+            fill="hsl(var(--primary))"
+            radius={[4, 4, 0, 0]}
+          >
+            {sortedData.map((entry, index) => (
+              <Cell 
+                key={`cell-${index}`} 
+                fill={entry.isHighlighted ? "#f97316" : "hsl(var(--primary))"} 
+                stroke={entry.isHighlighted ? "#ea580c" : "transparent"}
+                strokeWidth={entry.isHighlighted ? 2 : 0}
+              />
+            ))}
+            <LabelList dataKey="value" content={<CombinedLabel />} />
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+      
+      {/* 하이라이트된 등급에 대한 설명 */}
+      {highlightGrade && (
+        <div className="mt-2 text-center">
+          <p className="text-sm text-muted-foreground">
+            <span className="inline-block w-3 h-3 bg-orange-500 rounded-full mr-2"></span>
+            주황색 막대: 내 등급 ({highlightGrade})
+          </p>
+        </div>
+      )}
     </div>
   );
 }

@@ -198,9 +198,23 @@ export default function Home() {
         }
         const myEmployeeInfo = monthlyEvaluationTargets(selectedDate).find(e => e.uniqueId === user?.uniqueId);
         const myApprovals = approvals.filter(a => a.requesterId === user?.uniqueId);
+        
+        // 현재 사용자의 모든 평가 결과를 가져옴 (연도 제한 없이)
+        const allMyResults = allEvaluationResults.filter(e => e.uniqueId === user?.uniqueId);
+        
+        // 실제 데이터가 있는 연도를 찾음
+        const availableYears = [...new Set(allMyResults.map(r => r.year))].sort((a, b) => b - a);
+        const targetYear = availableYears.length > 0 ? availableYears[0] : selectedDate.year;
+        
+        // 대상 연도의 데이터만 필터링
+        const filteredResults = allMyResults.filter(e => e.year === targetYear);
+        
+        
+        
         return <EmployeeDashboard 
                   employeeResults={myEmployeeInfo ? [myEmployeeInfo] : []}
-                  allResultsForYear={allEvaluationResults.filter(e => e.uniqueId === user?.uniqueId && e.year === selectedDate.year)}
+                  allResultsForYear={filteredResults}
+                  allResultsForMonth={monthlyEvaluationTargets(selectedDate)}
                   activeView={employeeActiveView}
                   workRateInputs={workRateInputs}
                   selectedDate={selectedDate}

@@ -85,27 +85,14 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
   const [evaluations, setEvaluations] = React.useState<Record<string, Evaluation[]>>(() => getFromLocalStorage('evaluations', mockEvaluations ));
   const [gradingScale, setGradingScale] = React.useState<Record<NonNullable<Grade>, GradeInfo>>(() => getFromLocalStorage('gradingScale', initialGradingScale));
   
-  // 디버깅용: gradingScale 값 확인
-  console.log('=== useEvaluation Debug ===');
-  console.log('gradingScale from localStorage:', getFromLocalStorage('gradingScale', initialGradingScale));
-  console.log('current gradingScale state:', gradingScale);
-  console.log('gradingScale type:', typeof gradingScale);
-  console.log('gradingScale keys:', Object.keys(gradingScale || {}));
-  console.log('gradingScale length:', Object.keys(gradingScale || {}).length);
-  console.log('initialGradingScale:', initialGradingScale);
-  console.log('==========================');
+
   const [workRateInputs, setWorkRateInputs] = React.useState<Record<string, WorkRateInputs>>(() => getFromLocalStorage('workRateInputs', {}));
   const [attendanceTypes, setAttendanceTypes] = React.useState<AttendanceType[]>(() => MOCK_ATTENDANCE_TYPES);
   const [holidays, setHolidays] = React.useState<Holiday[]>(() => MOCK_HOLIDAYS);
   const [evaluationStatus, setEvaluationStatus] = React.useState<Record<string, 'open' | 'closed'>>(() => getFromLocalStorage('evaluationStatus', {}));
 
   useDebouncedEffect(() => localStorage.setItem('employees', JSON.stringify(employees)), [employees], 500);
-  useDebouncedEffect(() => {
-    console.log('=== localStorage evaluations 저장 ===');
-    console.log('evaluations to save:', evaluations);
-    localStorage.setItem('evaluations', JSON.stringify(evaluations));
-    console.log('evaluations 저장 완료');
-  }, [evaluations], 500);
+  useDebouncedEffect(() => localStorage.setItem('evaluations', JSON.stringify(evaluations)), [evaluations], 500);
   useDebouncedEffect(() => localStorage.setItem('gradingScale', JSON.stringify(gradingScale)), [gradingScale], 500);
   useDebouncedEffect(() => localStorage.setItem('workRateInputs', JSON.stringify(workRateInputs)), [workRateInputs], 500);
   useDebouncedEffect(() => localStorage.setItem('attendanceTypes', JSON.stringify(attendanceTypes)), [attendanceTypes], 500);
@@ -601,8 +588,7 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
   }, []);
   
   const allEvaluationResults = React.useMemo(() => {
-    
-    return Object.entries(employees).flatMap(([key, monthlyEmployees]) => {
+    const results = Object.entries(employees).flatMap(([key, monthlyEmployees]) => {
         const [year, month] = key.split('-').map(Number);
         const monthlyEvaluations = evaluations[key] || [];
         const evalMap = new Map(monthlyEvaluations.map(evaluation => [evaluation.employeeId, evaluation]));
@@ -611,13 +597,18 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
           .filter(employee => {
             // userMap에 존재하는 유효한 사용자만 필터링
             const user = userMap.get(employee.uniqueId);
-            return user && user.uniqueId; // 유효한 사용자만 포함
+            const isValid = user && user.uniqueId;
+            return isValid;
           })
           .map(employee => {
             const user = userMap.get(employee.uniqueId) || {};
             const base: Employee = { ...employee, ...user };
             
-            const evaluation = evalMap.get(base.id);
+            // User 데이터에서 employeeId를 가져와서 평가 데이터와 매칭
+            const currentUser = userMap.get(base.uniqueId);
+            const employeeId = (currentUser as any)?.employeeId || base.id;
+            const evaluation = evalMap.get(employeeId);
+            
             const grade = evaluation?.grade || null;
             const gradeInfo = grade ? gradingScale[grade] : null;
             const score = gradeInfo?.score || 0;
@@ -642,7 +633,7 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
                 return '기타';
             }
             
-            return {
+            const result = {
                 ...base, year, month, grade, score, payoutRate, gradeAmount, finalAmount,
                 evaluatorId: base.evaluatorId || '',
                 evaluatorName: evaluator?.name || (base.evaluatorId ? `미지정 (${base.evaluatorId})` : '미지정'),
@@ -651,8 +642,12 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
                 detailedGroup2: getDetailedGroup2(base),
                 memo: evaluation?.memo || base.memo || ''
             };
+            
+            return result;
         });
     });
+    
+    return results;
   }, [employees, evaluations, gradingScale, userMap]);
 
   const getMonthlyEvaluationTargets = React.useCallback((selectedDate: {year: number, month: number}) => {

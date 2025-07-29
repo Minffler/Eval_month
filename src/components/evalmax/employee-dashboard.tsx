@@ -41,6 +41,7 @@ import { StatusBadge } from './status-badge';
 interface EmployeeDashboardProps {
   employeeResults: EvaluationResult[];
   allResultsForYear: EvaluationResult[];
+  allResultsForMonth: EvaluationResult[];
   activeView: EmployeeView;
   workRateInputs: Record<string, WorkRateInputs>;
   selectedDate: { year: number, month: number };
@@ -63,6 +64,7 @@ const formatTimestampShort = (isoString: string | null) => {
 export default function EmployeeDashboard({ 
     employeeResults, 
     allResultsForYear,
+    allResultsForMonth,
     activeView, 
     workRateInputs, 
     selectedDate, 
@@ -251,6 +253,7 @@ export default function EmployeeDashboard({
         return (
           <MyPerformanceReview 
             allResultsForYear={allResultsForYear} 
+            allResultsForMonth={allResultsForMonth}
             gradingScale={gradingScale} 
           />
         );
@@ -276,6 +279,7 @@ export default function EmployeeDashboard({
     deleteNotification, 
     onApprovalAction, 
     allResultsForYear, 
+    allResultsForMonth,
     gradingScale,
     approvals,
     handleApprovalModalOpen
