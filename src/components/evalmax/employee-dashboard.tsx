@@ -34,6 +34,9 @@ import MyPerformanceReview from './my-performance-review';
 import DetailedEvaluationView from './detailed-evaluation-view';
 import { useEvaluation } from '@/contexts/evaluation-context';
 import { DatePickerWithInput, TimePicker } from './employee/date-time-pickers';
+import { ApprovalList } from './approval-list';
+import { ApprovalDetailDialog } from './approval-detail-dialog';
+import { StatusBadge } from './status-badge';
 
 interface EmployeeDashboardProps {
   employeeResults: EvaluationResult[];
@@ -47,24 +50,7 @@ interface EmployeeDashboardProps {
   approvals: Approval[];
 }
 
-const StatusBadge = React.memo(({ status }: { status: ApprovalStatus }) => {
-    const styles: Record<ApprovalStatus, {bgColor: string, textColor: string}> = {
-      '결재중': { bgColor: 'hsl(30, 20%, 98%)', textColor: 'hsl(var(--muted-foreground))' }, 
-      '현업승인': { bgColor: 'hsl(25, 20%, 92%)', textColor: 'hsl(var(--secondary-foreground))' },
-      '최종승인': { bgColor: 'hsl(140, 60%, 92%)', textColor: 'hsl(140, 80%, 30%)' }, 
-      '반려': { bgColor: 'hsl(39, 94%, 94%)', textColor: 'hsl(24, 95%, 53%)'},
-  };
 
-    return (
-      <div className="flex items-center justify-center">
-        <div className={cn("flex items-center justify-center rounded-full text-xs font-semibold w-20 h-6")} style={{ backgroundColor: styles[status].bgColor, color: styles[status].textColor }}>
-            {status}
-        </div>
-      </div>
-    );
-});
-
-StatusBadge.displayName = 'StatusBadge';
 
 const formatTimestamp = (isoString: string | null) => {
     return formatDateTime(isoString || undefined);
@@ -87,7 +73,7 @@ export default function EmployeeDashboard({
 }: EmployeeDashboardProps) {
   const { user, role, userMap } = useAuth();
   const { toast } = useToast();
-  const { addApproval } = useNotifications();
+  const { addApproval, deleteApproval, resubmitApproval } = useNotifications();
   const [isApprovalModalOpen, setIsApprovalModalOpen] = React.useState(false);
   const [selectedApproval, setSelectedApproval] = React.useState<Approval | null>(null);
   const [formData, setFormData] = React.useState<any>({});
@@ -221,8 +207,8 @@ export default function EmployeeDashboard({
                     <TableHeader><TableRow>
                       <TableHead className="text-center">요청일</TableHead>
                       <TableHead className="text-center">대상자 (ID)</TableHead>
-                      <TableHead className="text-center">현업 결재자</TableHead>
                       <TableHead className="text-center">요청내용</TableHead>
+                      <TableHead className="text-center">현업 결재자</TableHead>
                       <TableHead className="text-center">현업 결재</TableHead>
                       <TableHead className="text-center">인사부 결재</TableHead>
                       <TableHead className="text-center">현업 승인일</TableHead>
@@ -235,14 +221,14 @@ export default function EmployeeDashboard({
                             <TableRow key={approval.id}>
                               <TableCell className="text-center text-muted-foreground">{formatTimestamp(approval.date)}</TableCell>
                               <TableCell className="text-center">{`${approval.payload.data.name} (${approval.payload.data.uniqueId})`}</TableCell>
-                              <TableCell className="text-center">{approver ? `${approver.name} (${approver.uniqueId})` : '미지정'}</TableCell>
                               <TableCell className="text-center">
                                  <Button variant="link" className="underline text-foreground" onClick={() => handleApprovalModalOpen(approval)}>
                                   {approval.payload.dataType === 'shortenedWorkHours' ? '단축근로' : '일근태'} 데이터 {approval.payload.action === 'add' ? '추가' : '변경'}
                                  </Button>
                               </TableCell>
-                              <TableCell className="text-center"><StatusBadge status={approval.status} /></TableCell>
-                              <TableCell className="text-center"><StatusBadge status={approval.statusHR} /></TableCell>
+                              <TableCell className="text-center">{approver ? `${approver.name} (${approver.uniqueId})` : '미지정'}</TableCell>
+                              <TableCell className="text-center"><StatusBadge status={approval.status} className="scale-90" /></TableCell>
+                              <TableCell className="text-center"><StatusBadge status={approval.statusHR} className="scale-90" /></TableCell>
                               <TableCell className="text-center text-muted-foreground">{formatTimestampShort(approval.approvedAtTeam)}</TableCell>
                               <TableCell className="text-center text-muted-foreground">{formatTimestampShort(approval.approvedAtHR)}</TableCell>
                             </TableRow>
@@ -298,104 +284,20 @@ export default function EmployeeDashboard({
   return (
     <div className="space-y-4">
       {renderContent()}
-
-      <Dialog open={isApprovalModalOpen} onOpenChange={setIsApprovalModalOpen}>
-        <DialogContent className="max-w-2xl">
-            <DialogHeader>
-                <DialogTitle>결재 상세 정보</DialogTitle>
-            <DialogDescription>
-              반려된 결재 요청의 상세 정보를 확인하고 수정할 수 있습니다.
-            </DialogDescription>
-            </DialogHeader>
-            {selectedApproval && (
-                <div className="space-y-4">
-              <div className="space-y-1 text-sm text-left">
-                        <p><strong>요청자:</strong> {selectedApproval.requesterName} ({selectedApproval.requesterId})</p>
-                        <p><strong>요청일시:</strong> {formatTimestamp(selectedApproval.date)}</p>
-                        <p><strong>요청내용:</strong> {selectedApproval.payload.dataType === 'shortenedWorkHours' ? '단축근로' : '일근태'} 데이터 {selectedApproval.payload.action === 'add' ? '추가' : '변경'}</p>
-                    </div>
-                    <Separator/>
-                    <div className="rounded-md border bg-muted p-4">
-                        {renderApprovalData()}
-                    </div>
-              {selectedApproval.status === '반려' && selectedApproval.rejectionReason && (
-                        <div>
-                            <Label htmlFor="rejectionReason" className="text-destructive mb-1 block">반려 사유</Label>
-                            <p className="text-sm text-destructive p-2 border border-destructive rounded-md">{selectedApproval.rejectionReason}</p>
-                        </div>
-                    )}
-              <Separator/>
-              <div className="space-y-4">
-                <h3 className="font-semibold">수정된 데이터</h3>
-                {selectedApproval.payload.dataType === 'shortenedWorkHours' ? (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>시작일</Label>
-                      <DatePickerWithInput
-                        value={formData.startDate || ''}
-                        onChange={(date) => handleFormChange('startDate', date)}
-                      />
-                    </div>
-                    <div>
-                      <Label>종료일</Label>
-                      <DatePickerWithInput
-                        value={formData.endDate || ''}
-                        onChange={(date) => handleFormChange('endDate', date)}
-                      />
-                    </div>
-                    <div>
-                      <Label>출근시각</Label>
-                      <TimePicker
-                        value={formData.startTime || '09:00'}
-                        onChange={(time) => handleFormChange('startTime', time)}
-                      />
-                    </div>
-                    <div>
-                      <Label>퇴근시각</Label>
-                      <TimePicker
-                        value={formData.endTime || '18:00'}
-                        onChange={(time) => handleFormChange('endTime', time)}
-                      />
-                    </div>
-                </div>
-                ) : (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>사용일자</Label>
-                      <DatePickerWithInput
-                        value={formData.date || ''}
-                        onChange={(date) => handleFormChange('date', date)}
-                      />
-                    </div>
-                    <div>
-                      <Label>근태 종류</Label>
-                      <Select value={formData.type || 'none'} onValueChange={(value) => handleFormChange('type', value)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="근태 종류 선택" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">선택하세요</SelectItem>
-                          {attendanceTypes.map(type => (
-                            <SelectItem key={type.id} value={type.name}>{type.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsApprovalModalOpen(false)}>
-              취소
-            </Button>
-            <Button onClick={handleResubmit}>
-              재상신
-            </Button>
-            </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ApprovalDetailDialog
+        approval={selectedApproval}
+        isOpen={isApprovalModalOpen}
+        onClose={() => {
+          setIsApprovalModalOpen(false);
+          setSelectedApproval(null);
+        }}
+        onApprovalAction={onApprovalAction}
+        onDeleteApproval={deleteApproval}
+        onResubmitApproval={resubmitApproval}
+        userRole="employee"
+        currentUserId={user?.uniqueId || ''}
+        userMap={userMap}
+      />
     </div>
   );
 }

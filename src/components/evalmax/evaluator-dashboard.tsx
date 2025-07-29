@@ -11,6 +11,9 @@ import WorkRateManagement from './work-rate-management';
 import WorkRateDetails from './work-rate-details';
 import EvaluatorNotifications from './evaluator-dashboard-notifications';
 import EvaluationInputView from './evaluator/evaluation-input-view';
+import { ApprovalList } from './approval-list';
+import { ApprovalDetailDialog } from './approval-detail-dialog';
+import { StatusBadge } from './status-badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Inbox, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -77,7 +80,7 @@ export default function EvaluatorDashboard({
   console.log('gradingScale is undefined:', gradingScale === undefined);
   console.log('gradingScale is empty object:', gradingScale && Object.keys(gradingScale).length === 0);
   console.log('================================');
-  const { notifications, deleteNotification, approvals, handleApprovalAction } = useNotifications();
+  const { notifications, deleteNotification, approvals, handleApprovalAction, deleteApproval, resubmitApproval } = useNotifications();
 
   const setEvaluations = setEvaluationsProp || setEvaluationsFromContext;
 
@@ -85,6 +88,9 @@ export default function EvaluatorDashboard({
   const [approvalDetailModalOpen, setApprovalDetailModalOpen] = React.useState(false);
   const [selectedApproval, setSelectedApproval] = React.useState<Approval | null>(null);
   const [rejectionReason, setRejectionReason] = React.useState('');
+  
+  // 평가자별 그룹 정보 관리 (평가자 변경 시에도 유지)
+  const [evaluatorCustomGroups, setEvaluatorCustomGroups] = React.useState<Record<string, Record<string, string[]>>>({});
   
   React.useEffect(() => {
     if (evaluatorUser) {
@@ -106,8 +112,21 @@ export default function EvaluatorDashboard({
     const key = `${selectedDate.year}-${selectedDate.month}`;
     
     console.log('=== handleSave 호출됨 ===');
-    console.log('updatedEvaluations:', updatedEvaluations);
+    console.log('selectedDate:', selectedDate);
     console.log('key:', key);
+    console.log('updatedEvaluations.length:', updatedEvaluations.length);
+    console.log('updatedEvaluations sample:', updatedEvaluations.slice(0, 2));
+    
+    // 각 평가 데이터의 memo와 detailedGroup2 확인
+    updatedEvaluations.forEach((evaluation, index) => {
+      console.log(`Evaluation ${index}:`, {
+        id: evaluation.id,
+        name: evaluation.name,
+        memo: evaluation.memo,
+        detailedGroup2: evaluation.detailedGroup2,
+        grade: evaluation.grade
+      });
+    });
     
     // 근무율이 업데이트된 경우인지 확인
     const hasWorkRateUpdate = updatedEvaluations.some(evaluation => {
@@ -136,12 +155,19 @@ export default function EvaluatorDashboard({
         const newState = JSON.parse(JSON.stringify(prevEvals));
         const newEvalsForMonth = newState[key] ? [...newState[key]] : [];
         
+        console.log('=== handleSave - 저장 전 상태 ===');
+        console.log('newEvalsForMonth before update:', newEvalsForMonth);
+        
         updatedEvaluations.forEach(updatedEvaluation => {
             const index = newEvalsForMonth.findIndex((e: Evaluation) => e.employeeId === updatedEvaluation.id);
             if (index > -1) {
+                console.log(`업데이트: ID ${updatedEvaluation.id}, memo: "${updatedEvaluation.memo}", detailedGroup2: "${updatedEvaluation.detailedGroup2}"`);
                 newEvalsForMonth[index].grade = updatedEvaluation.grade;
                 newEvalsForMonth[index].memo = updatedEvaluation.memo;
+                // 그룹명도 저장
+                newEvalsForMonth[index].detailedGroup2 = updatedEvaluation.detailedGroup2 || '';
             } else {
+                console.log(`새로 추가: ID ${updatedEvaluation.id}, memo: "${updatedEvaluation.memo}", detailedGroup2: "${updatedEvaluation.detailedGroup2}"`);
                  newEvalsForMonth.push({
                     id: `eval-${updatedEvaluation.id}-${selectedDate.year}-${selectedDate.month}`,
                     employeeId: updatedEvaluation.id,
@@ -149,12 +175,26 @@ export default function EvaluatorDashboard({
                     month: selectedDate.month,
                     grade: updatedEvaluation.grade,
                     memo: updatedEvaluation.memo,
+                    detailedGroup2: updatedEvaluation.detailedGroup2 || '',
                 });
             }
         });
         
         newState[key] = newEvalsForMonth;
-        console.log('Updated evaluations state:', newState); // 디버깅용
+        console.log('=== handleSave - 저장 후 상태 ===');
+        console.log('Updated evaluations state:', newState);
+        console.log(`Saved ${newEvalsForMonth.length} evaluations for key: ${key}`);
+        
+        // 저장된 데이터의 memo와 detailedGroup2 확인
+        newEvalsForMonth.forEach((evaluation, index) => {
+          console.log(`Saved Evaluation ${index}:`, {
+            id: evaluation.employeeId,
+            memo: evaluation.memo,
+            detailedGroup2: evaluation.detailedGroup2,
+            grade: evaluation.grade
+          });
+        });
+        
         return newState;
     });
     
@@ -222,50 +262,14 @@ export default function EvaluatorDashboard({
     return formatDateTime(isoString || undefined);
   }, []);
 
-  const StatusBadge = React.useCallback(({ status }: { status: ApprovalStatus }) => {
-    const variants: Record<ApprovalStatus, string> = {
-      '결재중': 'bg-yellow-100 text-yellow-800',
-      '현업승인': 'bg-green-100 text-green-800',
-      '최종승인': 'bg-green-100 text-green-800',
-      '반려': 'bg-red-100 text-red-800',
-    };
-        return (
-      <span className={cn('px-2 py-1 rounded-full text-xs font-medium', variants[status])}>
-                {status}
-      </span>
-        );
-  }, []);
+
     
   const handleApprovalModal = React.useCallback((approval: Approval) => {
         setSelectedApproval(approval);
         setApprovalDetailModalOpen(true);
   }, []);
 
-  const handleApprovalDecision = React.useCallback((decision: 'approved' | 'rejected') => {
-        if (!selectedApproval) return;
-
-    const updatedApproval: Approval = {
-            ...selectedApproval,
-      status: decision === 'approved' ? '현업승인' : '반려',
-      statusHR: decision === 'approved' ? '최종승인' : '반려',
-      approvedAtTeam: decision === 'approved' ? new Date().toISOString() : null,
-      approvedAtHR: decision === 'approved' ? new Date().toISOString() : null,
-      rejectionReason: decision === 'rejected' ? rejectionReason : '',
-      isRead: false,
-    };
-
-    handleApprovalAction(updatedApproval);
-    setApprovalDetailModalOpen(false);
-    setSelectedApproval(null);
-    setRejectionReason('');
-
-    toast({
-      title: decision === 'approved' ? '승인 완료' : '반려 완료',
-      description: decision === 'approved' 
-        ? '결재가 승인되었습니다.' 
-        : '결재가 반려되었습니다.',
-    });
-  }, [selectedApproval, rejectionReason, handleApprovalAction, toast]);
+  // handleApprovalDecision 함수 제거 - useApproval 훅에서 처리
 
   const renderApprovalData = React.useCallback((approval: Approval) => {
     if (!approval.payload?.data) return <p>데이터가 없습니다.</p>;
@@ -293,6 +297,14 @@ export default function EvaluatorDashboard({
                   selectedDate={selectedDate}
                   onClearMyEvaluations={(year, month) => handleClearMyEvaluations(year, month, effectiveUser!.uniqueId)}
                   onSave={handleSave}
+                  evaluatorId={effectiveUser?.uniqueId ?? ''}
+                  customGroups={evaluatorCustomGroups[effectiveUser?.uniqueId ?? ''] || {}}
+                  onCustomGroupsChange={(newCustomGroups) => {
+                    setEvaluatorCustomGroups(prev => ({
+                      ...prev,
+                      [effectiveUser?.uniqueId ?? '']: newCustomGroups
+                    }));
+                  }}
           />
         );
       case 'all-results':
@@ -314,7 +326,7 @@ export default function EvaluatorDashboard({
                    // 평가자 할당 변경 로직 구현
                    console.log('Evaluator assignment change:', userId, newEvaluatorId);
                  }}
-                 evaluatorId={effectiveUser?.uniqueId || ''}
+                                             evaluatorId={effectiveUser?.uniqueId ?? ''}
                  evaluatorName={effectiveUser?.name || ''}
                  addNotification={(notification) => {
                    // 알림 추가 로직 구현
@@ -374,7 +386,7 @@ export default function EvaluatorDashboard({
           />
         );
       case 'approvals': {
-        const myApprovals = approvals.filter(a => a.approverTeamId === effectiveUser?.uniqueId).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        const myApprovals = approvals.filter(a => a.approverTeamId === effectiveUser?.uniqueId || null).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         return (
           <Card>
             <CardHeader>
@@ -388,8 +400,8 @@ export default function EvaluatorDashboard({
                     <TableHeader><TableRow>
                       <TableHead className="text-center">요청일</TableHead>
                       <TableHead className="text-center">대상자 (ID)</TableHead>
-                      <TableHead className="text-center">현업 결재자</TableHead>
                       <TableHead className="text-center">요청내용</TableHead>
+                      <TableHead className="text-center">현업 결재자</TableHead>
                       <TableHead className="text-center">현업 결재</TableHead>
                       <TableHead className="text-center">인사부 결재</TableHead>
                       <TableHead className="text-center">현업 승인일</TableHead>
@@ -402,16 +414,16 @@ export default function EvaluatorDashboard({
                             <TableRow key={approval.id}>
                               <TableCell className="text-center text-muted-foreground">{formatTimestamp(approval.date)}</TableCell>
                               <TableCell className="text-center">{`${approval.payload.data.name} (${approval.payload.data.uniqueId})`}</TableCell>
-                              <TableCell className="text-center">{approver ? `${approver.name} (${approver.uniqueId})` : '미지정'}</TableCell>
                               <TableCell className="text-center">
                                  <Button variant="link" className="underline text-foreground" onClick={() => handleApprovalModal(approval)}>
                                   {approval.payload.dataType === 'shortenedWorkHours' ? '단축근로' : '일근태'} 데이터 {approval.payload.action === 'add' ? '추가' : '변경'}
                                  </Button>
                               </TableCell>
-                              <TableCell className="text-center"><StatusBadge status={approval.status} /></TableCell>
-                              <TableCell className="text-center"><StatusBadge status={approval.statusHR} /></TableCell>
-                              <TableCell className="text-center text-muted-foreground">{formatTimestampShort(approval.approvedAtTeam)}</TableCell>
-                              <TableCell className="text-center text-muted-foreground">{formatTimestampShort(approval.approvedAtHR)}</TableCell>
+                              <TableCell className="text-center">{approver ? `${approver.name} (${approver.uniqueId})` : '미지정'}</TableCell>
+                              <TableCell className="text-center"><StatusBadge status={approval.status} className="scale-90" /></TableCell>
+                              <TableCell className="text-center"><StatusBadge status={approval.statusHR} className="scale-90" /></TableCell>
+                              <TableCell className="text-center text-muted-foreground">{formatTimestampShort(approval.approvedAtTeam || null)}</TableCell>
+                              <TableCell className="text-center text-muted-foreground">{formatTimestampShort(approval.approvedAtHR || null)}</TableCell>
                             </TableRow>
                           )
                       })}
@@ -460,68 +472,20 @@ export default function EvaluatorDashboard({
     <div className="space-y-4">
       {renderContent()}
 
-      <Dialog open={approvalDetailModalOpen} onOpenChange={setApprovalDetailModalOpen}>
-        <DialogContent className="max-w-2xl">
-            <DialogHeader>
-            <DialogTitle>결재 상세</DialogTitle>
-            </DialogHeader>
-            {selectedApproval && (
-                <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm font-medium">요청자</p>
-                  <p className="text-sm text-muted-foreground">{selectedApproval.requesterName}</p>
-                    </div>
-                        <div>
-                  <p className="text-sm font-medium">요청일</p>
-                  <p className="text-sm text-muted-foreground">{formatTimestamp(selectedApproval.date)}</p>
-                        </div>
-                        <div>
-                  <p className="text-sm font-medium">상태</p>
-                  <StatusBadge status={selectedApproval.status} />
-                        </div>
-                         <div>
-                  <p className="text-sm font-medium">결재 유형</p>
-                  <p className="text-sm text-muted-foreground">{selectedApproval.payload.dataType}</p>
-                </div>
-              </div>
-              <Separator />
-              <div>
-                <p className="text-sm font-medium mb-2">요청 내용</p>
-                <div className="p-4 bg-muted rounded-lg">
-                  {renderApprovalData(selectedApproval)}
-                </div>
-              </div>
-              {selectedApproval.status === '결재중' && (
-                <>
-                  <Separator />
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-sm font-medium mb-2">반려 사유 (선택사항)</p>
-                      <Input
-                        placeholder="반려 사유를 입력하세요..."
-                        value={rejectionReason}
-                        onChange={(e) => setRejectionReason(e.target.value)}
-                      />
-                    </div>
-                    <DialogFooter>
-                      <Button
-                        variant="outline"
-                        onClick={() => handleApprovalDecision('rejected')}
-                      >
-                        반려
-                      </Button>
-                      <Button onClick={() => handleApprovalDecision('approved')}>
-                        승인
-                      </Button>
-                    </DialogFooter>
-                  </div>
-                </>
-              )}
-            </div>
-                )}
-        </DialogContent>
-      </Dialog>
+      <ApprovalDetailDialog
+        approval={selectedApproval}
+        isOpen={approvalDetailModalOpen}
+        onClose={() => {
+          setApprovalDetailModalOpen(false);
+          setSelectedApproval(null);
+        }}
+        onApprovalAction={handleApprovalAction}
+        onDeleteApproval={deleteApproval}
+        onResubmitApproval={resubmitApproval}
+        userRole="evaluator"
+        currentUserId={effectiveUser?.uniqueId || ''}
+        userMap={userMap}
+      />
     </div>
   );
 }

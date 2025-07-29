@@ -12,7 +12,7 @@ import {
   TableFooter
 } from '@/components/ui/table';
 import { Input } from '../ui/input';
-import { Search, ArrowUpDown, ArrowUp, ArrowDown, Download, PlusCircle, Edit, ChevronsUpDown, CalendarIcon } from 'lucide-react';
+import { Search, ArrowUpDown, ArrowUp, ArrowDown, Download, PlusCircle, Edit, ChevronsUpDown, CalendarIcon, FileText as Document } from 'lucide-react';
 
 import type { Employee, AttendanceType, Role, Approval, DailyAttendanceRecord, ShortenedWorkHourRecord, WorkRateInputs } from '@/lib/types';
 import { calculateWorkRateDetails, type ShortenedWorkDetail, type DailyAttendanceDetail } from '@/lib/work-rate-calculator';
@@ -32,6 +32,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Label } from '../ui/label';
+import { Separator } from '../ui/separator';
 import {
   Select,
   SelectContent,
@@ -213,7 +214,7 @@ const TimePicker = ({ value, onChange }: { value: string, onChange: (time: strin
 }
 
 export default function WorkRateDetails({ type, data, workRateInputs, selectedDate, allEmployees, attendanceTypes, viewAs = 'admin', onDataChange, addApproval }: WorkRateDetailsProps) {
-  const { user } = useAuth();
+  const { user, userMap } = useAuth();
   const { addApproval: addNotificationApproval } = useNotifications();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = React.useState('');
@@ -223,6 +224,15 @@ export default function WorkRateDetails({ type, data, workRateInputs, selectedDa
   const [dialogMode, setDialogMode] = React.useState<'add' | 'edit'>('add');
   const [formData, setFormData] = React.useState<any>({});
   const [selectedRowIds, setSelectedRowIds] = React.useState<Set<string>>(new Set());
+  
+  // 화면별 독립적인 선택 상태 관리
+  const getSelectedRowIdsKey = () => `selectedRowIds_${type}`;
+  const [shortenedSelectedIds, setShortenedSelectedIds] = React.useState<Set<string>>(new Set());
+  const [dailySelectedIds, setDailySelectedIds] = React.useState<Set<string>>(new Set());
+  
+  // 현재 화면에 맞는 선택 상태 가져오기
+  const currentSelectedIds = type === 'shortenedWork' ? shortenedSelectedIds : dailySelectedIds;
+  const setCurrentSelectedIds = type === 'shortenedWork' ? setShortenedSelectedIds : setDailySelectedIds;
 
   const [employeeSearchOpen, setEmployeeSearchOpen] = React.useState(false);
   const [attendanceTypeSearchOpen, setAttendanceTypeSearchOpen] = React.useState(false);
@@ -332,7 +342,7 @@ export default function WorkRateDetails({ type, data, workRateInputs, selectedDa
   };
   
   const openEditDialog = () => {
-    if (selectedRowIds.size !== 1) {
+    if (currentSelectedIds.size !== 1) {
         toast({
             variant: 'destructive',
             title: '오류',
@@ -342,7 +352,7 @@ export default function WorkRateDetails({ type, data, workRateInputs, selectedDa
     }
     
     setDialogMode('edit');
-    const selectedId = Array.from(selectedRowIds)[0];
+    const selectedId = Array.from(currentSelectedIds)[0];
     const selectedRecord = tableData.find((item: any) => {
         return item.rowId === selectedId;
     });
@@ -381,8 +391,15 @@ export default function WorkRateDetails({ type, data, workRateInputs, selectedDa
     
     const dataType: 'shortenedWorkHours' | 'dailyAttendance' = type === 'shortenedWork' ? 'shortenedWorkHours' : 'dailyAttendance';
     const action = dialogMode;
-    const teamApproverId = employee.evaluatorId || '1911042'; // Default to admin if no evaluator
-    const hrApproverId = '1911042'; // Admin ID
+    const teamApproverId = employee.evaluatorId || 'admin'; // Default to admin if no evaluator
+    const hrApproverId = 'admin'; // Admin ID
+
+    console.log('결재 생성 정보:', {
+      employee,
+      teamApproverId,
+      hrApproverId,
+      user: user.uniqueId
+    });
 
     const approvalData: Omit<Approval, 'id' | 'date' | 'isRead' | 'status' | 'statusHR' | 'approvedAtTeam' | 'approvedAtHR' | 'rejectionReason'> = {
       requesterId: user.uniqueId,
@@ -406,13 +423,45 @@ export default function WorkRateDetails({ type, data, workRateInputs, selectedDa
     setIsDialogOpen(false);
   };
   
-  const approverInfo = React.useMemo(() => {
+    const approverInfo = React.useMemo(() => {
     if (!formData.uniqueId) return '미지정';
+
+    console.log('approverInfo 계산:', {
+      formDataUniqueId: formData.uniqueId,
+      userMapSize: userMap.size,
+      targetEmployee: allEmployees.find(e => e.uniqueId === formData.uniqueId)
+    });
+    
+    // 결재함과 동일한 로직 사용
+    // 1. 직원의 평가자 ID 찾기
     const employee = allEmployees.find(e => e.uniqueId === formData.uniqueId);
-    if (!employee || !employee.evaluatorId) return '관리자 (1911042)';
-    const evaluator = allEmployees.find(e => e.uniqueId === employee.evaluatorId);
-    return evaluator ? `${evaluator.name}(${evaluator.uniqueId})` : '관리자 (1911042)';
-  }, [formData.uniqueId, allEmployees]);
+    console.log('찾은 직원:', employee);
+    
+    if (!employee) {
+      console.log('직원을 찾을 수 없음');
+      return '미지정';
+    }
+    
+    // 2. 평가자 ID 추출 (EvaluationResult 타입)
+    const evaluatorId = (employee as any).evaluatorId;
+    console.log('평가자 ID:', evaluatorId);
+    
+    if (!evaluatorId) {
+      console.log('평가자 ID가 없음');
+      return '미지정';
+    }
+    
+    // 3. userMap에서 평가자 정보 찾기 (결재함과 동일한 방식)
+    const evaluator = userMap.get(evaluatorId);
+    console.log('찾은 평가자:', evaluator);
+    
+    if (!evaluator) {
+      console.log('평가자를 찾을 수 없음, ID:', evaluatorId);
+      return '미지정';
+    }
+    
+    return `${evaluator.name} (${evaluator.uniqueId})`;
+  }, [formData.uniqueId, allEmployees, userMap]);
 
   const renderDialogContent = () => {
 
@@ -420,36 +469,36 @@ export default function WorkRateDetails({ type, data, workRateInputs, selectedDa
       // For 'add' mode, when user is evaluator or admin, show popover search.
       if (dialogMode === 'add' && (viewAs === 'admin' || viewAs === 'evaluator')) {
           return (
-              <div className="grid grid-cols-4 items-start gap-4">
-                  <Label htmlFor="employee" className="text-right pt-2">대상자</Label>
-                  <div className="col-span-3">
-                      <Popover open={employeeSearchOpen} onOpenChange={setEmployeeSearchOpen}>
-                          <PopoverTrigger asChild>
-                              <Button variant="outline" role="combobox" className="w-full justify-between">
-                                  {formData.uniqueId ? `${formData.name} (${formData.uniqueId})` : "직원 선택..."}
-                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                              </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-[300px] p-0">
-                              <Command>
-                                  <CommandInput placeholder="이름 또는 ID 검색..." />
-                                  <CommandList>
-                                      <CommandEmpty>검색 결과가 없습니다.</CommandEmpty>
-                                      <CommandGroup>
-                                          {allEmployees.map((emp) => (
-                                              <CommandItem
-                                                  key={emp.uniqueId}
-                                                  value={`${emp.name} ${emp.uniqueId}`}
-                                                  onSelect={() => handleEmployeeSelect(emp)}
-                                              >
-                                                  {emp.name} ({emp.uniqueId})
-                                              </CommandItem>
-                                          ))}
-                                      </CommandGroup>
-                                  </CommandList>
-                              </Command>
-                          </PopoverContent>
-                      </Popover>
+              <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium text-left">대상자</Label>
+                    <Popover open={employeeSearchOpen} onOpenChange={setEmployeeSearchOpen}>
+                        <PopoverTrigger asChild>
+                            <Button variant="outline" role="combobox" className="mt-1 w-full justify-between bg-white">
+                                {formData.uniqueId ? `${formData.name} (${formData.uniqueId})` : "직원 선택..."}
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[300px] p-0">
+                            <Command>
+                                <CommandInput placeholder="이름 또는 ID 검색..." />
+                                <CommandList>
+                                    <CommandEmpty>검색 결과가 없습니다.</CommandEmpty>
+                                    <CommandGroup>
+                                        {allEmployees.map((emp) => (
+                                            <CommandItem
+                                                key={emp.uniqueId}
+                                                value={`${emp.name} ${emp.uniqueId}`}
+                                                onSelect={() => handleEmployeeSelect(emp)}
+                                            >
+                                                {emp.name} ({emp.uniqueId})
+                                            </CommandItem>
+                                        ))}
+                                    </CommandGroup>
+                                </CommandList>
+                            </Command>
+                        </PopoverContent>
+                    </Popover>
                   </div>
               </div>
           );
@@ -457,13 +506,25 @@ export default function WorkRateDetails({ type, data, workRateInputs, selectedDa
       // For 'edit' mode, or when user is employee, show disabled inputs.
       return (
           <>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="uniqueId" className="text-right">ID</Label>
-                <Input id="uniqueId" value={formData.uniqueId || ''} className="col-span-3" disabled />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="name" className="text-right">이름</Label>
-                <Input id="name" value={formData.name || ''} className="col-span-3" disabled />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-medium text-left">ID</Label>
+                  <input
+                    type="text"
+                    value={formData.uniqueId || ''}
+                    className="mt-1 w-full px-3 py-2 border rounded-md text-sm bg-muted"
+                    disabled
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-left">이름</Label>
+                  <input
+                    type="text"
+                    value={formData.name || ''}
+                    className="mt-1 w-full px-3 py-2 border rounded-md text-sm bg-muted"
+                    disabled
+                  />
+                </div>
               </div>
           </>
       );
@@ -471,80 +532,90 @@ export default function WorkRateDetails({ type, data, workRateInputs, selectedDa
 
     if (type === 'shortenedWork') {
       return (
-        <div className="space-y-4">
+        <div className="space-y-3">
             <EmployeeSelector />
-            <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="type" className="text-right">구분</Label>
-                <Select value={formData.type || 'none'} onValueChange={(value) => handleFormChange('type', value === 'none' ? '' : value)}>
-                    <SelectTrigger className="col-span-3">
-                        <SelectValue placeholder="구분 선택" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="none">선택하세요</SelectItem>
-                        <SelectItem value="임신">임신</SelectItem>
-                        <SelectItem value="육아/돌봄">육아/돌봄</SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
-            <div className="grid grid-cols-4 items-start gap-4">
-              <Label htmlFor="startDate" className="text-right pt-2">시작일</Label>
-              <div className="col-span-3">
-                <DatePickerWithInput value={formData.startDate || ''} onChange={(date) => handleFormChange('startDate', date)} />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-sm font-medium">단축근로 유형</Label>
+                <select
+                  value={formData.type || ''}
+                  onChange={(e) => handleFormChange('type', e.target.value)}
+                  className="mt-1 w-full px-3 py-2 border rounded-md text-sm"
+                >
+                  <option value="">선택하세요</option>
+                  <option value="육아/돌봄">육아/돌봄</option>
+                  <option value="임신">임신</option>
+                </select>
               </div>
             </div>
-            <div className="grid grid-cols-4 items-start gap-4">
-              <Label htmlFor="endDate" className="text-right pt-2">종료일</Label>
-              <div className="col-span-3">
-                <DatePickerWithInput value={formData.endDate || ''} onChange={(date) => handleFormChange('endDate', date)} />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-sm font-medium">시작일</Label>
+                <input
+                  type="date"
+                  value={formData.startDate || ''}
+                  onChange={(e) => handleFormChange('startDate', e.target.value)}
+                  className="mt-1 w-full px-3 py-2 border rounded-md text-sm"
+                />
+              </div>
+              <div>
+                <Label className="text-sm font-medium">종료일</Label>
+                <input
+                  type="date"
+                  value={formData.endDate || ''}
+                  onChange={(e) => handleFormChange('endDate', e.target.value)}
+                  className="mt-1 w-full px-3 py-2 border rounded-md text-sm"
+                />
               </div>
             </div>
-            <div className="grid grid-cols-4 items-start gap-4">
-              <Label htmlFor="startTime" className="text-right pt-2">출근시각</Label>
-              <div className="col-span-3 relative">
-                <TimePicker value={formData.startTime || ''} onChange={(time) => handleFormChange('startTime', time)} />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-sm font-medium">출근시각</Label>
+                <input
+                  type="time"
+                  value={formData.startTime || '09:00'}
+                  onChange={(e) => handleFormChange('startTime', e.target.value)}
+                  className="mt-1 w-full px-3 py-2 border rounded-md text-sm"
+                />
               </div>
-            </div>
-            <div className="grid grid-cols-4 items-start gap-4">
-              <Label htmlFor="endTime" className="text-right pt-2">퇴근시각</Label>
-              <div className="col-span-3 relative">
-                <TimePicker value={formData.endTime || ''} onChange={(time) => handleFormChange('endTime', time)} />
+              <div>
+                <Label className="text-sm font-medium">퇴근시각</Label>
+                <input
+                  type="time"
+                  value={formData.endTime || '18:00'}
+                  onChange={(e) => handleFormChange('endTime', e.target.value)}
+                  className="mt-1 w-full px-3 py-2 border rounded-md text-sm"
+                />
               </div>
             </div>
         </div>
       );
     }
     return (
-        <div className="space-y-4">
+        <div className="space-y-3">
             <EmployeeSelector />
-            <div className="grid grid-cols-4 items-start gap-4">
-              <Label htmlFor="date" className="text-right pt-2">일자</Label>
-              <div className="col-span-3">
-                <DatePickerWithInput value={formData.date || ''} onChange={(date) => handleFormChange('date', date)} />
-              </div>
-            </div>
-            <div className="grid grid-cols-4 items-start gap-4">
-              <Label htmlFor="type" className="text-right pt-2">근태 종류</Label>
-              <div className="col-span-3">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-sm font-medium">일근태 유형</Label>
                 <Popover open={attendanceTypeSearchOpen} onOpenChange={setAttendanceTypeSearchOpen}>
                     <PopoverTrigger asChild>
-                        <Button variant="outline" role="combobox" className="w-full justify-between">
-                            {formData.type || "근태 종류를 선택해주세요."}
+                        <Button variant="outline" role="combobox" className="mt-1 w-full justify-between bg-white">
+                            {formData.type || "근태 종류를 선택해주세요"}
                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-[300px] p-0">
                         <Command>
-                            <CommandInput placeholder="근태 검색..." />
+                            <CommandInput placeholder="근태 종류를 검색하세요..." />
                             <CommandList>
                                 <CommandEmpty>검색 결과가 없습니다.</CommandEmpty>
                                 <CommandGroup>
-                                    {attendanceTypes.map(type => (
+                                    {attendanceTypes.map((type) => (
                                         <CommandItem
                                             key={type.id}
                                             value={type.name}
-                                            onSelect={(currentValue) => {
-                                                const selected = attendanceTypes.find(t => t.name.toLowerCase() === currentValue.toLowerCase());
-                                                handleFormChange('type', selected?.name || '');
+                                            onSelect={() => {
+                                                handleFormChange('type', type.name);
                                                 setAttendanceTypeSearchOpen(false);
                                             }}
                                         >
@@ -557,13 +628,22 @@ export default function WorkRateDetails({ type, data, workRateInputs, selectedDa
                     </PopoverContent>
                 </Popover>
               </div>
+              <div>
+                <Label className="text-sm font-medium">사용일자</Label>
+                <input
+                  type="date"
+                  value={formData.date || ''}
+                  onChange={(e) => handleFormChange('date', e.target.value)}
+                  className="mt-1 w-full px-3 py-2 border rounded-md text-sm"
+                />
+              </div>
             </div>
         </div>
     );
   };
   
   const handleSelectRow = (rowId: string, checked: boolean) => {
-    setSelectedRowIds(prev => {
+    setCurrentSelectedIds(prev => {
         const newSelection = new Set(prev);
         if (checked) {
             newSelection.add(rowId);
@@ -604,9 +684,9 @@ export default function WorkRateDetails({ type, data, workRateInputs, selectedDa
                 const nonWorkHours = 8 - actualWorkHours;
                 const rowId = item.rowId;
                 return (
-                    <TableRow key={rowId} data-state={selectedRowIds.has(rowId) ? 'selected' : 'unselected'}>
+                    <TableRow key={rowId} data-state={currentSelectedIds.has(rowId) ? 'selected' : 'unselected'}>
                         <TableCell className="px-2 text-center">
-                           <Checkbox checked={selectedRowIds.has(rowId)} onCheckedChange={(checked) => handleSelectRow(rowId, Boolean(checked))} />
+                           <Checkbox checked={currentSelectedIds.has(rowId)} onCheckedChange={(checked) => handleSelectRow(rowId, Boolean(checked))} />
                         </TableCell>
                         <TableCell className="text-center">{item.uniqueId}</TableCell>
                         <TableCell className="text-center">{item.name}</TableCell>
@@ -667,9 +747,9 @@ export default function WorkRateDetails({ type, data, workRateInputs, selectedDa
             {tableData.map((item, index) => {
               const rowId = item.rowId;
               return (
-              <TableRow key={rowId} data-state={selectedRowIds.has(rowId) ? 'selected' : 'unselected'}>
+              <TableRow key={rowId} data-state={currentSelectedIds.has(rowId) ? 'selected' : 'unselected'}>
                 <TableCell className="px-2 text-center">
-                   <Checkbox checked={selectedRowIds.has(rowId)} onCheckedChange={(checked) => handleSelectRow(rowId, Boolean(checked))} />
+                   <Checkbox checked={currentSelectedIds.has(rowId)} onCheckedChange={(checked) => handleSelectRow(rowId, Boolean(checked))} />
                 </TableCell>
                 <TableCell className="text-center">{item.uniqueId}</TableCell>
                 <TableCell className="text-center">{item.name}</TableCell>
@@ -730,7 +810,7 @@ export default function WorkRateDetails({ type, data, workRateInputs, selectedDa
                     <PlusCircle className="mr-2 h-4 w-4" />
                     신규 추가
                 </Button>
-                <Button onClick={openEditDialog} variant="outline" size="sm" disabled={selectedRowIds.size !== 1}>
+                <Button onClick={openEditDialog} variant="outline" size="sm" disabled={currentSelectedIds.size !== 1}>
                     <Edit className="mr-2 h-4 w-4" />
                     선택 변경
                 </Button>
@@ -751,20 +831,70 @@ export default function WorkRateDetails({ type, data, workRateInputs, selectedDa
     </Card>
 
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-            <DialogTitle>{dialogMode === 'add' ? '신규 근무 데이터 추가' : '근무 데이터 변경'}</DialogTitle>
-            <DialogDescription>
-                변경된 단축근로 / 일근태 정보를 입력하고 결재를 상신합니다.
-            </DialogDescription>
+          <DialogTitle className="flex items-center gap-2">
+            <Document className="h-5 w-5" />
+            {dialogMode === 'add' ? '신규 근무 데이터 추가' : '근무 데이터 변경'}
+          </DialogTitle>
         </DialogHeader>
-        <div className="py-4">
-            {renderDialogContent()}
-        </div>
-        <DialogFooter className="sm:justify-between items-center pt-2">
-          <div className="text-sm text-muted-foreground">
-              결재자: <span className="font-semibold text-foreground">{approverInfo}</span>
+
+        <div className="space-y-6">
+          {/* 요청 정보 */}
+          <div>
+            <div className="mb-3">
+              <h3 className="text-lg font-semibold">요청 정보</h3>
+            </div>
+            <div className="space-y-3 text-sm">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <span className="font-medium">요청자:</span> {user?.name} ({user?.uniqueId})
+                </div>
+                <div>
+                  <span className="font-medium">요청일시:</span> <span className="text-muted-foreground">{new Date().toLocaleString('ko-KR')}</span>
+                </div>
+              </div>
+              <div>
+                <span className="font-medium">요청내용:</span> {type === 'shortenedWork' ? '단축근로' : '일근태'} 데이터 {dialogMode === 'add' ? '추가' : '변경'}
+              </div>
+              <div>
+                <span className="font-medium">변경 내용:</span>
+                <div className="mt-2 p-3 bg-muted rounded-md">
+                  {renderDialogContent()}
+                </div>
+              </div>
+            </div>
           </div>
+
+          <Separator />
+
+          {/* 결재자 확인 */}
+          <div>
+            <h3 className="text-lg font-semibold mb-3">결재자 확인</h3>
+            <div className="space-y-2 text-sm">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">1차 현업 결재:</span>
+                  <span className="text-muted-foreground">{approverInfo}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground">-</span>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">2차 인사부 결재:</span>
+                  <span className="text-muted-foreground">관리자 (admin)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-muted-foreground">-</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter className="sm:justify-between items-center pt-2">
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>취소</Button>
             <Button onClick={handleSubmitForApproval}>결재상신</Button>
@@ -775,3 +905,4 @@ export default function WorkRateDetails({ type, data, workRateInputs, selectedDa
     </>
   );
 }
+

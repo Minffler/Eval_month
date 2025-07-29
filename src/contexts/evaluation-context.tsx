@@ -66,6 +66,11 @@ interface EvaluationContextType {
   handleClearWorkRateData: (year: number, month: number, type: keyof WorkRateInputs | ShortenedWorkType) => void;
   handleWorkRateDataUpload: (year: number, month: number, type: keyof WorkRateInputs, data: any[], isApproved: boolean) => void;
   handleClearMyEvaluations: (year: number, month: number, evaluatorId: string) => void;
+  
+  // 새로운 저장 액션들
+  updateEvaluationMemo: (employeeId: string, memo: string, year: number, month: number) => void;
+  updateEvaluationGroup: (employeeId: string, groupName: string, year: number, month: number) => void;
+  updateEvaluationGrade: (employeeId: string, grade: Grade | null, year: number, month: number) => void;
 
   allEvaluationResults: EvaluationResult[];
   monthlyEvaluationTargets: (selectedDate: {year: number, month: number}) => EvaluationResult[];
@@ -95,12 +100,119 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
   const [evaluationStatus, setEvaluationStatus] = React.useState<Record<string, 'open' | 'closed'>>(() => getFromLocalStorage('evaluationStatus', {}));
 
   useDebouncedEffect(() => localStorage.setItem('employees', JSON.stringify(employees)), [employees], 500);
-  useDebouncedEffect(() => localStorage.setItem('evaluations', JSON.stringify(evaluations)), [evaluations], 500);
+  useDebouncedEffect(() => {
+    console.log('=== localStorage evaluations 저장 ===');
+    console.log('evaluations to save:', evaluations);
+    localStorage.setItem('evaluations', JSON.stringify(evaluations));
+    console.log('evaluations 저장 완료');
+  }, [evaluations], 500);
   useDebouncedEffect(() => localStorage.setItem('gradingScale', JSON.stringify(gradingScale)), [gradingScale], 500);
   useDebouncedEffect(() => localStorage.setItem('workRateInputs', JSON.stringify(workRateInputs)), [workRateInputs], 500);
   useDebouncedEffect(() => localStorage.setItem('attendanceTypes', JSON.stringify(attendanceTypes)), [attendanceTypes], 500);
   useDebouncedEffect(() => localStorage.setItem('holidays', JSON.stringify(holidays)), [holidays], 500);
   useDebouncedEffect(() => localStorage.setItem('evaluationStatus', JSON.stringify(evaluationStatus)), [evaluationStatus], 500);
+
+  // 결재 승인 시 근무 데이터 업데이트 이벤트 리스너
+  React.useEffect(() => {
+    const handleWorkRateDataUpdate = (event: CustomEvent) => {
+      const { approval, dataType, action, data } = event.detail;
+      
+      console.log('근무 데이터 업데이트 이벤트 수신:', { dataType, action, data });
+      
+      // 현재 날짜 정보 추출 (approval.date에서)
+      const approvalDate = new Date(approval.date);
+      const year = approvalDate.getFullYear();
+      const month = approvalDate.getMonth() + 1;
+      const key = `${year}-${month.toString().padStart(2, '0')}`;
+      
+      setWorkRateInputs(prev => {
+        const updated = { ...prev };
+        
+        if (dataType === 'shortenedWorkHours') {
+          // 단축근로 데이터 업데이트
+          if (!updated[key]) {
+            updated[key] = { shortenedWorkHours: [], dailyAttendance: [] };
+          }
+          
+          if (action === 'add') {
+            // 새로운 단축근로 데이터 추가
+            const newRecord = {
+              id: `swh-${Date.now()}-${Math.random()}`,
+              uniqueId: data.uniqueId,
+              name: data.name,
+              type: data.type,
+              startDate: data.startDate,
+              endDate: data.endDate,
+              startTime: data.startTime,
+              endTime: data.endTime,
+              workHours: data.workHours || 0,
+              dailyDeductionHours: data.dailyDeductionHours || 0,
+              businessDays: data.businessDays || 0
+            };
+            
+            updated[key].shortenedWorkHours.push(newRecord);
+            console.log('단축근로 데이터 추가됨:', newRecord);
+          } else if (action === 'edit') {
+            // 기존 단축근로 데이터 수정
+            const existingIndex = updated[key].shortenedWorkHours.findIndex(
+              record => record.uniqueId === data.uniqueId && record.startDate === data.startDate
+            );
+            
+            if (existingIndex !== -1) {
+              updated[key].shortenedWorkHours[existingIndex] = {
+                ...updated[key].shortenedWorkHours[existingIndex],
+                ...data
+              };
+              console.log('단축근로 데이터 수정됨:', data);
+            }
+          }
+        } else if (dataType === 'dailyAttendance') {
+          // 일근태 데이터 업데이트
+          if (!updated[key]) {
+            updated[key] = { shortenedWorkHours: [], dailyAttendance: [] };
+          }
+          
+          if (action === 'add') {
+            // 새로운 일근태 데이터 추가
+            const newRecord = {
+              id: `da-${Date.now()}-${Math.random()}`,
+              uniqueId: data.uniqueId,
+              name: data.name,
+              date: data.date,
+              type: data.type,
+              isShortenedDay: data.isShortenedDay || false,
+              deductionDays: data.deductionDays || 0
+            };
+            
+            updated[key].dailyAttendance.push(newRecord);
+            console.log('일근태 데이터 추가됨:', newRecord);
+          } else if (action === 'edit') {
+            // 기존 일근태 데이터 수정
+            const existingIndex = updated[key].dailyAttendance.findIndex(
+              record => record.uniqueId === data.uniqueId && record.date === data.date
+            );
+            
+            if (existingIndex !== -1) {
+              updated[key].dailyAttendance[existingIndex] = {
+                ...updated[key].dailyAttendance[existingIndex],
+                ...data
+              };
+              console.log('일근태 데이터 수정됨:', data);
+            }
+          }
+        }
+        
+        console.log('업데이트된 workRateInputs:', updated);
+        return updated;
+      });
+    };
+
+    window.addEventListener('workRateDataUpdate', handleWorkRateDataUpdate as EventListener);
+    
+    return () => {
+      window.removeEventListener('workRateDataUpdate', handleWorkRateDataUpdate as EventListener);
+    };
+  }, [setWorkRateInputs]);
   
   const handleEmployeeUpload = (year: number, month: number, newEmployees: Employee[]) => {
     const key = `${year}-${month}`;
@@ -337,15 +449,171 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
         return { ...prev, [key]: updatedEvalsForMonth };
     });
   };
+
+  // 새로운 저장 액션들
+  const updateEvaluationMemo = React.useCallback((employeeId: string, memo: string, year: number, month: number) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.debug('=== Context: updateEvaluationMemo 시작 ===');
+      console.debug('매개변수:', { employeeId, memo, year, month });
+    }
+    
+    const key = `${year}-${month}`;
+    setEvaluations(prev => {
+      const currentEvalsForMonth = prev[key] || [];
+      
+      // 해당 직원의 기존 평가 데이터 찾기
+      let existingEvaluation = currentEvalsForMonth.find(evaluation => evaluation.employeeId === employeeId);
+      
+      let updatedEvals;
+      if (existingEvaluation) {
+        // 기존 데이터가 있으면 업데이트
+        updatedEvals = currentEvalsForMonth.map(evaluation => 
+          evaluation.employeeId === employeeId ? { ...evaluation, memo } : evaluation
+        );
+      } else {
+        // 기존 데이터가 없으면 새로 생성
+        const newEvaluation = {
+          id: `eval-${employeeId}-${year}-${month}`,
+          employeeId: employeeId,
+          year: year,
+          month: month,
+          grade: null,
+          memo: memo,
+          detailedGroup2: '',
+        };
+        updatedEvals = [...currentEvalsForMonth, newEvaluation];
+      }
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.debug('=== Context: updateEvaluationMemo ===');
+        console.debug('employeeId:', employeeId);
+        console.debug('memo:', memo);
+        console.debug('key:', key);
+        console.debug('existingEvaluation:', existingEvaluation);
+        console.debug('updatedEvals.length:', updatedEvals.length);
+      }
+      
+      const newEvaluations = { ...prev, [key]: updatedEvals };
+      
+      // localStorage에 즉시 저장
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('evaluations', JSON.stringify(newEvaluations));
+      }
+      
+      return newEvaluations;
+    });
+  }, []);
+
+  const updateEvaluationGroup = React.useCallback((employeeId: string, groupName: string, year: number, month: number) => {
+    const key = `${year}-${month}`;
+    setEvaluations(prev => {
+      const currentEvalsForMonth = prev[key] || [];
+      
+      // 해당 직원의 기존 평가 데이터 찾기
+      let existingEvaluation = currentEvalsForMonth.find(evaluation => evaluation.employeeId === employeeId);
+      
+      let updatedEvals;
+      if (existingEvaluation) {
+        // 기존 데이터가 있으면 업데이트
+        updatedEvals = currentEvalsForMonth.map(evaluation => 
+          evaluation.employeeId === employeeId ? { ...evaluation, detailedGroup2: groupName } : evaluation
+        );
+      } else {
+        // 기존 데이터가 없으면 새로 생성
+        const newEvaluation = {
+          id: `eval-${employeeId}-${year}-${month}`,
+          employeeId: employeeId,
+          year: year,
+          month: month,
+          grade: null,
+          memo: '',
+          detailedGroup2: groupName,
+        };
+        updatedEvals = [...currentEvalsForMonth, newEvaluation];
+      }
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.debug('=== Context: updateEvaluationGroup ===');
+        console.debug('employeeId:', employeeId);
+        console.debug('groupName:', groupName);
+        console.debug('key:', key);
+        console.debug('existingEvaluation:', existingEvaluation);
+        console.debug('updatedEvals.length:', updatedEvals.length);
+      }
+      
+      const newEvaluations = { ...prev, [key]: updatedEvals };
+      
+      // localStorage에 즉시 저장
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('evaluations', JSON.stringify(newEvaluations));
+      }
+      
+      return newEvaluations;
+    });
+  }, []);
+
+  const updateEvaluationGrade = React.useCallback((employeeId: string, grade: Grade | null, year: number, month: number) => {
+    const key = `${year}-${month}`;
+    setEvaluations(prev => {
+      const currentEvalsForMonth = prev[key] || [];
+      
+      // 해당 직원의 기존 평가 데이터 찾기
+      let existingEvaluation = currentEvalsForMonth.find(evaluation => evaluation.employeeId === employeeId);
+      
+      let updatedEvals;
+      if (existingEvaluation) {
+        // 기존 데이터가 있으면 업데이트
+        updatedEvals = currentEvalsForMonth.map(evaluation => 
+          evaluation.employeeId === employeeId ? { ...evaluation, grade } : evaluation
+        );
+      } else {
+        // 기존 데이터가 없으면 새로 생성
+        const newEvaluation = {
+          id: `eval-${employeeId}-${year}-${month}`,
+          employeeId: employeeId,
+          year: year,
+          month: month,
+          grade: grade,
+          memo: '',
+          detailedGroup2: '',
+        };
+        updatedEvals = [...currentEvalsForMonth, newEvaluation];
+      }
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.debug('=== Context: updateEvaluationGrade ===');
+        console.debug('employeeId:', employeeId);
+        console.debug('grade:', grade);
+        console.debug('key:', key);
+        console.debug('existingEvaluation:', existingEvaluation);
+        console.debug('updatedEvals.length:', updatedEvals.length);
+      }
+      
+      const newEvaluations = { ...prev, [key]: updatedEvals };
+      
+      // localStorage에 즉시 저장
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('evaluations', JSON.stringify(newEvaluations));
+      }
+      
+      return newEvaluations;
+    });
+  }, []);
   
   const allEvaluationResults = React.useMemo(() => {
     
     return Object.entries(employees).flatMap(([key, monthlyEmployees]) => {
         const [year, month] = key.split('-').map(Number);
         const monthlyEvaluations = evaluations[key] || [];
-        const evalMap = new Map(monthlyEvaluations.map(e => [e.employeeId, e]));
+        const evalMap = new Map(monthlyEvaluations.map(evaluation => [evaluation.employeeId, evaluation]));
 
-        return (monthlyEmployees as Employee[]).map(employee => {
+        return (monthlyEmployees as Employee[])
+          .filter(employee => {
+            // userMap에 존재하는 유효한 사용자만 필터링
+            const user = userMap.get(employee.uniqueId);
+            return user && user.uniqueId; // 유효한 사용자만 포함
+          })
+          .map(employee => {
             const user = userMap.get(employee.uniqueId) || {};
             const base: Employee = { ...employee, ...user };
             
@@ -376,6 +644,7 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
             
             return {
                 ...base, year, month, grade, score, payoutRate, gradeAmount, finalAmount,
+                evaluatorId: base.evaluatorId || '',
                 evaluatorName: evaluator?.name || (base.evaluatorId ? `미지정 (${base.evaluatorId})` : '미지정'),
                 evaluationGroup: getEvaluationGroup(base.workRate),
                 detailedGroup1: getDetailedGroup1(base.workRate),
@@ -396,6 +665,55 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
     return allEvaluationResults.filter(r => r.year === selectedDate.year && r.month === selectedDate.month && monthlyEmployeeIds.has(r.uniqueId));
   }, [allEvaluationResults, employees]);
 
+  // 성능 최적화된 쿼리 함수들
+  const getEvaluationsByMonth = React.useCallback((year: number, month: number) => {
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0);
+    
+    return allEvaluationResults.filter(evaluation => {
+      const evalDate = new Date(evaluation.year + '-' + evaluation.month + '-01');
+      return evalDate >= startDate && evalDate <= endDate;
+    });
+  }, [allEvaluationResults]);
+
+  const getMonthlyStats = React.useCallback((year: number, month: number) => {
+    const monthlyEvaluations = getEvaluationsByMonth(year, month);
+    const totalEvaluations = monthlyEvaluations.length;
+    const completedEvaluations = monthlyEvaluations.filter(evaluation => evaluation.grade !== null).length;
+    const averageScore = totalEvaluations > 0 
+      ? monthlyEvaluations.reduce((sum, evaluation) => sum + (evaluation.score || 0), 0) / totalEvaluations 
+      : 0;
+    const completionRate = totalEvaluations > 0 ? (completedEvaluations / totalEvaluations) * 100 : 0;
+    
+    return {
+      totalEvaluations,
+      completedEvaluations,
+      averageScore,
+      completionRate
+    };
+  }, [getEvaluationsByMonth]);
+
+  // 메모이제이션된 계산값들
+  const completedEvaluations = React.useMemo(() => 
+    allEvaluationResults.filter(evaluation => evaluation.grade !== null),
+    [allEvaluationResults]
+  );
+
+  const pendingEvaluations = React.useMemo(() => 
+    allEvaluationResults.filter(evaluation => evaluation.grade === null),
+    [allEvaluationResults]
+  );
+
+  const evaluationsByEmployee = React.useMemo(() => {
+    const index = new Map<string, EvaluationResult[]>();
+    allEvaluationResults.forEach(evaluation => {
+      const key = evaluation.uniqueId;
+      if (!index.has(key)) index.set(key, []);
+      index.get(key)!.push(evaluation);
+    });
+    return index;
+  }, [allEvaluationResults]);
+
 
   const value = {
     gradingScale, setGradingScale,
@@ -407,6 +725,7 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
     handleEmployeeUpload, handleEvaluationUpload, handleClearEmployeeData,
     handleClearEvaluationData, handleClearWorkRateData, handleWorkRateDataUpload,
     handleClearMyEvaluations,
+    updateEvaluationMemo, updateEvaluationGroup, updateEvaluationGrade,
     allEvaluationResults, monthlyEvaluationTargets: getMonthlyEvaluationTargets
   };
 

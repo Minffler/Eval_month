@@ -32,6 +32,88 @@ interface AddGroupDialogProps {
   onGroupCreate: (groupName: string, selectedEmployeeIds: string[]) => void;
 }
 
+// 최적화된 테이블 행 컴포넌트
+const EmployeeTableRow = React.memo(function EmployeeTableRow({
+  employee,
+  isSelected,
+  onSelect,
+}: {
+  employee: EvaluationResult;
+  isSelected: boolean;
+  onSelect: (employeeId: string, checked: boolean) => void;
+}) {
+  const handleSelect = React.useCallback((checked: boolean) => {
+    onSelect(employee.id, checked);
+  }, [employee.id, onSelect]);
+
+  return (
+    <TableRow>
+      <TableCell className="text-center">
+        <Checkbox
+          checked={isSelected}
+          onCheckedChange={handleSelect}
+        />
+      </TableCell>
+      <TableCell className="text-center font-medium">{employee.name}</TableCell>
+      <TableCell className="text-center">{employee.department}</TableCell>
+      <TableCell className="text-center">{employee.title}</TableCell>
+      <TableCell className="text-center">
+        {employee.detailedGroup2 || '미지정'}
+      </TableCell>
+    </TableRow>
+  );
+}, (prevProps, nextProps) => {
+  // 커스텀 비교 함수로 불필요한 리렌더링 방지
+  return (
+    prevProps.employee.id === nextProps.employee.id &&
+    prevProps.isSelected === nextProps.isSelected
+  );
+});
+
+EmployeeTableRow.displayName = 'EmployeeTableRow';
+
+// 최적화된 그룹 이름 입력 컴포넌트
+const GroupNameInput = React.memo(function GroupNameInput({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}) {
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  
+  // 입력 필드 포커스 최적화
+  const handleFocus = React.useCallback(() => {
+    if (inputRef.current) {
+      inputRef.current.select();
+    }
+  }, []);
+
+  return (
+    <div className="grid grid-cols-4 items-center gap-4">
+      <Label htmlFor="groupName" className="text-right">
+        그룹 이름
+      </Label>
+      <Input
+        ref={inputRef}
+        id="groupName"
+        value={value}
+        onChange={onChange}
+        onFocus={handleFocus}
+        className="col-span-3"
+        placeholder="그룹 이름을 입력하세요"
+        autoComplete="off"
+        spellCheck="false"
+        autoFocus
+      />
+    </div>
+  );
+}, (prevProps, nextProps) => {
+  return prevProps.value === nextProps.value;
+});
+
+GroupNameInput.displayName = 'GroupNameInput';
+
 export default function AddGroupDialog({
   open,
   onOpenChange,
@@ -44,7 +126,7 @@ export default function AddGroupDialog({
   const [positionFilter, setPositionFilter] = React.useState('모든 직책');
   const { toast } = useToast();
 
-  // 고유한 부서와 직책 목록 추출
+  // 고유한 부서와 직책 목록 추출 (메모이제이션)
   const departments = React.useMemo(() => {
     const depts = Array.from(new Set(availableEmployees.map(emp => emp.department)));
     return ['모든 부서', ...depts];
@@ -55,7 +137,7 @@ export default function AddGroupDialog({
     return ['모든 직책', ...pos];
   }, [availableEmployees]);
 
-  // 필터링된 직원 목록
+  // 필터링된 직원 목록 (메모이제이션)
   const filteredEmployees = React.useMemo(() => {
     return availableEmployees.filter(emp => {
       const deptMatch = departmentFilter === '모든 부서' || emp.department === departmentFilter;
@@ -64,34 +146,42 @@ export default function AddGroupDialog({
     });
   }, [availableEmployees, departmentFilter, positionFilter]);
 
-  // 전체 선택/해제
+  // 전체 선택/해제 상태 (메모이제이션)
+  const selectionState = React.useMemo(() => {
   const isAllSelected = filteredEmployees.length > 0 && 
     filteredEmployees.every(emp => selectedEmployees.has(emp.id));
   const isIndeterminate = filteredEmployees.some(emp => selectedEmployees.has(emp.id)) && !isAllSelected;
+    return { isAllSelected, isIndeterminate };
+  }, [filteredEmployees, selectedEmployees]);
 
-  const handleSelectAll = (checked: boolean) => {
+  // 전체 선택/해제 핸들러 (메모이제이션)
+  const handleSelectAll = React.useCallback((checked: boolean) => {
+    setSelectedEmployees(prev => {
+      const newSelected = new Set(prev);
     if (checked) {
-      const newSelected = new Set(selectedEmployees);
       filteredEmployees.forEach(emp => newSelected.add(emp.id));
-      setSelectedEmployees(newSelected);
     } else {
-      const newSelected = new Set(selectedEmployees);
       filteredEmployees.forEach(emp => newSelected.delete(emp.id));
-      setSelectedEmployees(newSelected);
-    }
-  };
+      }
+      return newSelected;
+    });
+  }, [filteredEmployees]);
 
-  const handleSelectEmployee = (employeeId: string, checked: boolean) => {
-    const newSelected = new Set(selectedEmployees);
+  // 개별 선택 핸들러 (메모이제이션)
+  const handleSelectEmployee = React.useCallback((employeeId: string, checked: boolean) => {
+    setSelectedEmployees(prev => {
+      const newSelected = new Set(prev);
     if (checked) {
       newSelected.add(employeeId);
     } else {
       newSelected.delete(employeeId);
     }
-    setSelectedEmployees(newSelected);
-  };
+      return newSelected;
+    });
+  }, []);
 
-  const handleCreateGroup = () => {
+  // 그룹 생성 핸들러 (메모이제이션)
+  const handleCreateGroup = React.useCallback(() => {
     if (!groupName.trim()) {
       toast({
         variant: 'destructive',
@@ -123,15 +213,54 @@ export default function AddGroupDialog({
       title: '그룹 생성 완료',
       description: `${groupName} 그룹이 생성되었습니다.`,
     });
-  };
+  }, [groupName, selectedEmployees, onGroupCreate, onOpenChange, toast]);
 
-  const handleCancel = () => {
+  // 취소 핸들러 (메모이제이션)
+  const handleCancel = React.useCallback(() => {
     setGroupName('');
     setSelectedEmployees(new Set());
     setDepartmentFilter('모든 부서');
     setPositionFilter('모든 직책');
     onOpenChange(false);
-  };
+  }, [onOpenChange]);
+
+  // 그룹 이름 변경 핸들러 (디바운싱 적용)
+  const groupNameTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  
+  const handleGroupNameChange = React.useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setGroupName(value);
+    
+    // 기존 타임아웃 정리
+    if (groupNameTimeoutRef.current) {
+      clearTimeout(groupNameTimeoutRef.current);
+    }
+    
+    // 디바운싱으로 렉 감소 (150ms 지연)
+    groupNameTimeoutRef.current = setTimeout(() => {
+      // 여기서 필요한 검증이나 추가 로직을 수행할 수 있습니다
+      console.log('Group name debounced:', value);
+    }, 150);
+  }, []);
+
+  // 부서 필터 변경 핸들러 (메모이제이션)
+  const handleDepartmentFilterChange = React.useCallback((value: string) => {
+    setDepartmentFilter(value);
+  }, []);
+
+  // 직책 필터 변경 핸들러 (메모이제이션)
+  const handlePositionFilterChange = React.useCallback((value: string) => {
+    setPositionFilter(value);
+  }, []);
+
+  // 컴포넌트 언마운트 시 타임아웃 정리
+  React.useEffect(() => {
+    return () => {
+      if (groupNameTimeoutRef.current) {
+        clearTimeout(groupNameTimeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -145,18 +274,10 @@ export default function AddGroupDialog({
 
         <div className="space-y-6">
           {/* 그룹 이름 입력 */}
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="groupName" className="text-right">
-              그룹 이름
-            </Label>
-            <Input
-              id="groupName"
+          <GroupNameInput
               value={groupName}
-              onChange={(e) => setGroupName(e.target.value)}
-              className="col-span-3"
-              placeholder="그룹 이름을 입력하세요"
+            onChange={handleGroupNameChange}
             />
-          </div>
 
           {/* 멤버 선택 섹션 */}
           <div className="space-y-4">
@@ -166,7 +287,7 @@ export default function AddGroupDialog({
             <div className="flex gap-4">
               <div className="flex-1">
                 <Label htmlFor="departmentFilter">부서</Label>
-                <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                <Select value={departmentFilter} onValueChange={handleDepartmentFilterChange}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -181,7 +302,7 @@ export default function AddGroupDialog({
               </div>
               <div className="flex-1">
                 <Label htmlFor="positionFilter">직책</Label>
-                <Select value={positionFilter} onValueChange={setPositionFilter}>
+                <Select value={positionFilter} onValueChange={handlePositionFilterChange}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -204,7 +325,7 @@ export default function AddGroupDialog({
                      <TableRow>
                        <TableHead className="w-[50px] text-center">
                          <Checkbox
-                           checked={isIndeterminate ? 'indeterminate' : isAllSelected}
+                          checked={selectionState.isIndeterminate ? 'indeterminate' : selectionState.isAllSelected}
                            onCheckedChange={handleSelectAll}
                          />
                        </TableHead>
@@ -216,22 +337,12 @@ export default function AddGroupDialog({
                    </TableHeader>
                    <TableBody>
                      {filteredEmployees.map((employee) => (
-                       <TableRow key={employee.id}>
-                         <TableCell className="text-center">
-                           <Checkbox
-                             checked={selectedEmployees.has(employee.id)}
-                             onCheckedChange={(checked) => 
-                               handleSelectEmployee(employee.id, Boolean(checked))
-                             }
-                           />
-                         </TableCell>
-                         <TableCell className="text-center font-medium">{employee.name}</TableCell>
-                         <TableCell className="text-center">{employee.department}</TableCell>
-                         <TableCell className="text-center">{employee.title}</TableCell>
-                         <TableCell className="text-center">
-                           {employee.detailedGroup2 || '미지정'}
-                         </TableCell>
-                       </TableRow>
+                      <EmployeeTableRow
+                        key={employee.id}
+                        employee={employee}
+                        isSelected={selectedEmployees.has(employee.id)}
+                        onSelect={handleSelectEmployee}
+                      />
                      ))}
                    </TableBody>
                  </Table>

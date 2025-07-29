@@ -184,9 +184,37 @@ const EvaluatorSelector = ({
 
 
 export default function EvaluatorManagement(props: EvaluatorManagementProps) {
-  const { allUsers, updateUser } = useAuth();
+  const { allUsers, upsertUsers } = useAuth();
   const { allEvaluationResults } = useEvaluation();
-  const results = allEvaluationResults;
+  
+  // 피평가자 권한이 있는 사용자만 필터링하고 중복 제거
+  const results = React.useMemo(() => {
+    const employeeUsers = allUsers.filter(user => user.roles.includes('employee'));
+    const uniqueResults = allEvaluationResults.filter(result => 
+      employeeUsers.some(user => user.uniqueId === result.uniqueId)
+    );
+    
+    // 중복 제거 (uniqueId 기준)
+    const seen = new Set();
+    const filteredResults = uniqueResults.filter(result => {
+      if (seen.has(result.uniqueId)) {
+        return false;
+      }
+      seen.add(result.uniqueId);
+      return true;
+    });
+    
+    console.log('평가자 배정 데이터 필터링:', {
+      allUsersCount: allUsers.length,
+      allEvaluationResultsCount: allEvaluationResults.length,
+      employeeUsersCount: employeeUsers.length,
+      uniqueResultsCount: uniqueResults.length,
+      filteredResultsCount: filteredResults.length,
+      sampleResults: filteredResults.slice(0, 3).map(r => ({ uniqueId: r.uniqueId, name: r.name, evaluatorId: r.evaluatorId }))
+    });
+    
+    return filteredResults;
+  }, [allEvaluationResults, allUsers]);
 
   const [filteredResults, setFilteredResults] = React.useState<EvaluationResult[]>(results);
   const [companyFilter, setCompanyFilter] = React.useState<Set<string>>(new Set());
@@ -310,7 +338,7 @@ export default function EvaluatorManagement(props: EvaluatorManagementProps) {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedIds(new Set(filteredResults.map(r => r.id)));
+      setSelectedIds(new Set(filteredResults.map(r => r.uniqueId)));
     } else {
       setSelectedIds(new Set());
     }
@@ -324,14 +352,39 @@ export default function EvaluatorManagement(props: EvaluatorManagementProps) {
   };
 
   const handleEvaluatorChange = (employeeId: string, newEvaluatorId: string) => {
-    const user = allUsers.find(u => u.employeeId === employeeId);
+    console.log('handleEvaluatorChange 호출:', { employeeId, newEvaluatorId });
+    
+    const user = allUsers.find(u => u.uniqueId === employeeId);
+    console.log('찾은 사용자:', user);
+    
     if (user) {
-        const finalEvaluatorId = newEvaluatorId === 'unassigned' ? '' : newEvaluatorId;
-        updateUser(user.id, { evaluatorId: finalEvaluatorId });
+        const finalEvaluatorId = newEvaluatorId === '' ? '' : newEvaluatorId;
+        console.log('업데이트할 데이터:', { ...user, evaluatorId: finalEvaluatorId });
+        
+        upsertUsers([{
+          ...user,
+          evaluatorId: finalEvaluatorId
+        }]);
+        
+        // 즉시 UI 업데이트를 위한 토스트 메시지
+        const evaluatorName = newEvaluatorId ? evaluators.find(e => e.uniqueId === newEvaluatorId)?.name : '미지정';
+        toast({
+          title: '평가자 변경 완료',
+          description: `${user.name}의 평가자가 ${evaluatorName}로 변경되었습니다.`,
+        });
+    } else {
+        console.error('사용자를 찾을 수 없음:', employeeId);
+        toast({
+          variant: 'destructive',
+          title: '오류',
+          description: '사용자를 찾을 수 없습니다.',
+        });
     }
   };
   
   const handleBulkAssign = () => {
+    console.log('handleBulkAssign 호출:', { selectedIds: Array.from(selectedIds), bulkEvaluatorId });
+    
     if (selectedIds.size === 0 || !bulkEvaluatorId) {
       toast({
         variant: 'destructive',
@@ -340,18 +393,29 @@ export default function EvaluatorManagement(props: EvaluatorManagementProps) {
       });
       return;
     }
-    const finalEvaluatorId = bulkEvaluatorId === 'unassigned' ? '' : bulkEvaluatorId;
+    const finalEvaluatorId = bulkEvaluatorId === '' ? '' : bulkEvaluatorId;
     
+    let updatedCount = 0;
     selectedIds.forEach(employeeId => {
-      const user = allUsers.find(u => u.employeeId === employeeId);
+      console.log('처리 중인 employeeId:', employeeId);
+      const user = allUsers.find(u => u.uniqueId === employeeId);
+      console.log('찾은 사용자:', user);
+      
       if (user) {
-        updateUser(user.id, { evaluatorId: finalEvaluatorId });
+        upsertUsers([{
+          ...user,
+          evaluatorId: finalEvaluatorId
+        }]);
+        updatedCount++;
+      } else {
+        console.error('사용자를 찾을 수 없음:', employeeId);
       }
     });
 
+    const evaluatorName = bulkEvaluatorId ? evaluators.find(e => e.uniqueId === bulkEvaluatorId)?.name : '미지정';
     toast({
       title: '일괄 반영 완료',
-      description: `${selectedIds.size}명의 직원에 대한 평가자가 변경되었습니다.`,
+      description: `${updatedCount}명의 직원에 대한 평가자가 ${evaluatorName}로 변경되었습니다.`,
     });
     setSelectedIds(new Set());
     setBulkEvaluatorId('');
@@ -410,8 +474,8 @@ export default function EvaluatorManagement(props: EvaluatorManagementProps) {
                   // 고유한 키 생성: uniqueId + year + month 조합
                   const uniqueKey = `${result.uniqueId}-${result.year}-${result.month}`;
                   return (
-                    <TableRow key={uniqueKey} data-state={selectedIds.has(result.id) ? "selected" : ""}>
-                      <TableCell className="text-center py-1 px-2"><Checkbox checked={selectedIds.has(result.id)} onCheckedChange={(checked) => handleSelectRow(result.id, Boolean(checked))} /></TableCell>
+                    <TableRow key={uniqueKey} data-state={selectedIds.has(result.uniqueId) ? "selected" : ""}>
+                      <TableCell className="text-center py-1 px-2"><Checkbox checked={selectedIds.has(result.uniqueId)} onCheckedChange={(checked) => handleSelectRow(result.uniqueId, Boolean(checked))} /></TableCell>
                       <TableCell className="text-center py-1 px-2">{result.uniqueId}</TableCell>
                       <TableCell className="text-center py-1 px-2">{result.name}</TableCell>
                       <TableCell className="text-center py-1 px-2">{result.company}</TableCell>
@@ -421,7 +485,7 @@ export default function EvaluatorManagement(props: EvaluatorManagementProps) {
                          <EvaluatorSelector
                             evaluators={evaluators}
                             value={result.evaluatorId || ''}
-                            onSelect={(newEvaluatorId) => handleEvaluatorChange(result.id, newEvaluatorId)}
+                            onSelect={(newEvaluatorId) => handleEvaluatorChange(result.uniqueId, newEvaluatorId)}
                           />
                       </TableCell>
                     </TableRow>

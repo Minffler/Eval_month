@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, FileCheck, Bot, Upload, LayoutDashboard, Settings, Download, Bell, ArrowUpDown, ArrowUp, ArrowDown, Eye, ClipboardX, ChevronUp, ChevronDown, CheckCircle2, ChevronsUpDown, Save, X, ThumbsUp, ThumbsDown, Inbox, FileText, AlertTriangle, UserCog, Settings2, Lock, Unlock, TrendingUp, BarChart3, CheckCircle } from 'lucide-react';
+import { Users, FileCheck, Bot, Upload, LayoutDashboard, Settings, Download, Bell, ArrowUpDown, ArrowUp, ArrowDown, Eye, ClipboardX, ChevronUp, ChevronDown, CheckCircle2, ChevronsUpDown, Save, X, ThumbsUp, ThumbsDown, Inbox, FileText, AlertTriangle, UserCog, Settings2, Lock, Unlock, TrendingUp, BarChart3, CheckCircle, CheckSquare, AlertTriangle as AlertTriangleIcon, CheckCircle2 as CheckCircle2Icon, Percent } from 'lucide-react';
 import { GradeHistogram } from './grade-histogram';
 import {
   Table,
@@ -67,7 +67,11 @@ import GradeManagement from './grade-management';
 import EvaluatorManagement from './evaluator-management';
 import { useEvaluation } from '@/contexts/evaluation-context';
 import { useAuth } from '@/contexts/auth-context';
+import { useNotifications } from '@/contexts/notification-context';
 import { Badge } from '../ui/badge';
+import { ApprovalList } from './approval-list';
+import { ApprovalDetailDialog } from './approval-detail-dialog';
+import { StatusBadge } from './status-badge';
 
 interface AdminDashboardContentProps {
   activeView: string;
@@ -133,6 +137,8 @@ export default function AdminDashboardContent({
   deleteNotification,
   approvals,
 }: AdminDashboardContentProps) {
+  const { user } = useAuth();
+  const { deleteApproval, resubmitApproval, handleApprovalAction } = useNotifications();
   const { setEvaluations, handleEmployeeUpload } = useEvaluation();
   const [results, setResults] = React.useState<EvaluationResult[]>(initialResults);
   const [activeResultsTab, setActiveResultsTab] = React.useState<EvaluationGroupCategory>('전체');
@@ -142,14 +148,14 @@ export default function AdminDashboardContent({
   const [isImportantNotification, setIsImportantNotification] = React.useState(false);
   const [notificationTemplates, setNotificationTemplates] = React.useState<string[]>([]);
   const [sortConfig, setSortConfig] = React.useState<SortConfig>(null);
+  const [approvalDetailModalOpen, setApprovalDetailModalOpen] = React.useState(false);
+  const [selectedApproval, setSelectedApproval] = React.useState<Approval | null>(null);
   const [evaluatorStatsSortConfig, setEvaluatorStatsSortConfig] = React.useState<EvaluatorStatsSortConfig>({ key: 'rate', direction: 'ascending' });
   const [selectedEvaluatorId, setSelectedEvaluatorId] = React.useState<string>('');
   const [isDistributionChartOpen, setIsDistributionChartOpen] = React.useState(true);
   const [isPayoutChartOpen, setIsPayoutChartOpen] = React.useState(false);
   const [dashboardFilter, setDashboardFilter] = React.useState('전체');
   const [evaluatorViewPopoverOpen, setEvaluatorViewPopoverOpen] = React.useState(false);
-  const [approvalDetailModalOpen, setApprovalDetailModalOpen] = React.useState(false);
-  const [selectedApproval, setSelectedApproval] = React.useState<Approval | null>(null);
   const [rejectionReason, setRejectionReason] = React.useState('');
   const [isGradeDialogOpen, setIsGradeDialogOpen] = React.useState(false);
 
@@ -170,6 +176,8 @@ export default function AdminDashboardContent({
       console.error('Error reading notification templates from localStorage', error);
     }
   }, []);
+
+
 
   const saveNotificationTemplates = (templates: string[]) => {
     try {
@@ -201,7 +209,7 @@ export default function AdminDashboardContent({
 
   React.useEffect(() => {
     setResults(initialResults);
-    setSelectedEvaluators(new Set());
+    // selectedEvaluators 초기화 제거 - 사용자가 선택한 상태를 유지
   }, [initialResults]);
 
   const categorizedResults = React.useMemo(() => {
@@ -238,7 +246,24 @@ export default function AdminDashboardContent({
     const statsByUniqueId: Record<string, { total: number; completed: number; evaluatorName: string; }> = {};
     const monthlyEvaluatorIds = Array.from(new Set(initialResults.map(r => r.evaluatorId).filter(Boolean)));
     
-    monthlyEvaluatorIds.forEach(evaluatorId => {
+    console.log('평가자별 진행 현황 - 모든 평가자 ID:', monthlyEvaluatorIds);
+    
+    // 실제 존재하는 평가자만 필터링
+    const validEvaluatorIds = monthlyEvaluatorIds.filter(evaluatorId => {
+      const evaluatorInfo = userMap.get(evaluatorId);
+      const isValid = evaluatorInfo && evaluatorInfo.roles && evaluatorInfo.roles.includes('evaluator');
+      console.log(`평가자 ID ${evaluatorId}:`, { 
+        exists: !!evaluatorInfo, 
+        name: evaluatorInfo?.name, 
+        roles: evaluatorInfo?.roles, 
+        isValid 
+      });
+      return isValid;
+    });
+    
+    console.log('필터링된 유효한 평가자 ID:', validEvaluatorIds);
+    
+    validEvaluatorIds.forEach(evaluatorId => {
         if (evaluatorId) {
             const evaluatorInfo = userMap.get(evaluatorId);
             statsByUniqueId[evaluatorId] = { 
@@ -382,7 +407,9 @@ export default function AdminDashboardContent({
     const incompleteEvaluatorIds = evaluatorStats
       .filter(stat => stat.rate < 100)
       .map(stat => stat.evaluatorUniqueId);
+    
     setSelectedEvaluators(new Set(incompleteEvaluatorIds));
+    
     if (incompleteEvaluatorIds.length > 0) {
       toast({
           title: "선택 완료",
@@ -414,6 +441,7 @@ export default function AdminDashboardContent({
         
         addNotification({ 
           recipientId: stat.evaluatorUniqueId, 
+          title: '평가 진행률 알림',
           message,
           isImportant: isImportantNotification,
         });
@@ -595,49 +623,9 @@ export default function AdminDashboardContent({
         setApprovalDetailModalOpen(true);
     };
 
-    const handleApprovalDecision = (decision: 'approved' | 'rejected') => {
-        if (!selectedApproval) return;
-
-        if (decision === 'rejected' && !rejectionReason.trim()) {
-            toast({ variant: 'destructive', title: '오류', description: '반려 사유를 입력해주세요.' });
-            return;
-        }
-
-        let newStatusHR = selectedApproval.statusHR;
-        if (decision === 'approved') {
-            newStatusHR = '최종승인';
-        } else { // rejected
-            newStatusHR = '반려';
-        }
-        
-        onApprovalAction({ 
-            ...selectedApproval,
-            rejectionReason,
-            status: selectedApproval.status, // 현업 상태는 변경하지 않음
-            statusHR: newStatusHR,
-        });
-        
-        toast({ title: '처리 완료', description: `결재 요청이 ${decision === 'approved' ? '승인' : '반려'}되었습니다.` });
-        setApprovalDetailModalOpen(false);
-        setSelectedApproval(null);
-    };
+    // handleApprovalDecision 함수 제거 - useApproval 훅에서 처리
     
-    const StatusBadge = ({ status }: { status: ApprovalStatus }) => {
-        const styles: Record<ApprovalStatus, {bgColor: string, textColor: string}> = {
-          '결재중': { bgColor: 'hsl(30, 20%, 98%)', textColor: 'hsl(var(--muted-foreground))' }, 
-          '현업승인': { bgColor: 'hsl(25, 20%, 92%)', textColor: 'hsl(var(--secondary-foreground))' },
-          '최종승인': { bgColor: 'hsl(140, 60%, 92%)', textColor: 'hsl(140, 80%, 30%)' }, 
-          '반려': { bgColor: 'hsl(39, 94%, 94%)', textColor: 'hsl(24, 95%, 53%)'},
-        }
 
-        return (
-          <div className="flex items-center justify-center">
-            <div className={cn("flex items-center justify-center rounded-full text-xs font-semibold w-20 h-6")} style={{ backgroundColor: styles[status].bgColor, color: styles[status].textColor }}>
-                {status}
-            </div>
-          </div>
-        );
-    };
     
     const formatTimestamp = (isoString: string | null) => {
         return formatDateTime(isoString || undefined);
@@ -720,14 +708,14 @@ export default function AdminDashboardContent({
 
                   <Card className="shadow-sm border-gray-200">
                     <CardHeader className="flex flex-row items-center justify-between p-4">
-                      <CardTitle>평가 입력</CardTitle>
+                      <CardTitle>평가 진행 현황</CardTitle>
                       <div className="flex gap-2">
                         <Button
                           variant="outline"
                           onClick={handleSelectIncompleteEvaluators}
                           size="sm"
                         >
-                          <ClipboardX className="mr-2 h-4 w-4" />
+                          <CheckSquare className="mr-2 h-4 w-4" />
                           미완료 평가자 선택
                         </Button>
                         <Button
@@ -741,6 +729,36 @@ export default function AdminDashboardContent({
                       </div>
                     </CardHeader>
                     <CardContent className="p-4">
+                      {/* 평가 진행 현황 (위) */}
+                      <div className="mb-6">
+                        <div className="grid grid-cols-3 gap-16 p-6 bg-[hsl(30,30%,96%)] rounded-lg">
+                          <div className="flex items-center justify-center gap-3">
+                            <AlertTriangleIcon className="h-6 w-6 text-[#554f4b]" />
+                            <div className="text-center">
+                              <div className="text-2xl font-bold text-foreground">{initialResults.filter(r => !r.grade).length}</div>
+                              <div className="text-sm text-[#6a625d]">미완료</div>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-center gap-3">
+                            <CheckCircle2Icon className="h-6 w-6 text-[#554f4b]" />
+                            <div className="text-center">
+                              <div className="text-2xl font-bold text-foreground">{initialResults.filter(r => r.grade).length}/{initialResults.length}</div>
+                              <div className="text-sm text-[#6a625d]">완료/전체</div>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-center gap-3">
+                            <Percent className="h-6 w-6 text-[#554f4b]" />
+                            <div className="text-center">
+                              <div className="text-2xl font-bold text-foreground">
+                                {initialResults.length > 0 ? ((initialResults.filter(r => r.grade).length / initialResults.length) * 100).toFixed(1) : 0}%
+                              </div>
+                              <div className="text-sm text-[#6a625d]">평가 완료율</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 평가자별 현황 (아래) */}
                       <div className="border border-gray-200 rounded-lg overflow-x-auto">
                         <Table>
                           <TableHeader>
@@ -752,28 +770,29 @@ export default function AdminDashboardContent({
                                   aria-label="모든 평가자 선택"
                                 />
                               </TableHead>
-                              <TableHead className="whitespace-nowrap cursor-pointer text-center" onClick={() => requestEvaluatorStatsSort('evaluatorUniqueId')}>
-                                <div className="flex items-center justify-center">평가자 ID{getEvaluatorStatsSortIcon('evaluatorUniqueId')}</div>
-                              </TableHead>
                               <TableHead className="whitespace-nowrap cursor-pointer text-center" onClick={() => requestEvaluatorStatsSort('evaluatorName')}>
-                                <div className="flex items-center justify-center">평가자{getEvaluatorStatsSortIcon('evaluatorName')}</div>
-                              </TableHead>
-                              <TableHead className="whitespace-nowrap text-center cursor-pointer" onClick={() => requestEvaluatorStatsSort('total')}>
-                                <div className="flex items-center justify-center">대상 인원{getEvaluatorStatsSortIcon('total')}</div>
-                              </TableHead>
-                              <TableHead className="whitespace-nowrap text-center cursor-pointer" onClick={() => requestEvaluatorStatsSort('completed')}>
-                                <div className="flex items-center justify-center">완료{getEvaluatorStatsSortIcon('completed')}</div>
+                                <div className="flex items-center justify-center">평가자 (ID){getEvaluatorStatsSortIcon('evaluatorName')}</div>
                               </TableHead>
                               <TableHead className="whitespace-nowrap text-center cursor-pointer" onClick={() => requestEvaluatorStatsSort('pending')}>
                                 <div className="flex items-center justify-center">미입력{getEvaluatorStatsSortIcon('pending')}</div>
                               </TableHead>
-                              <TableHead className="whitespace-nowrap text-center w-[200px] cursor-pointer" onClick={() => requestEvaluatorStatsSort('rate')}>
-                                <div className="flex items-center justify-center">완료율{getEvaluatorStatsSortIcon('rate')}</div>
+                              <TableHead className="whitespace-nowrap text-center cursor-pointer" onClick={() => requestEvaluatorStatsSort('completed')}>
+                                <div className="flex items-center justify-center">평가현황{getEvaluatorStatsSortIcon('completed')}</div>
                               </TableHead>
+                              <TableHead className="whitespace-nowrap text-center">A. 정규평가</TableHead>
+                              <TableHead className="whitespace-nowrap text-center">B. 별도평가</TableHead>
+                              <TableHead className="whitespace-nowrap text-center">C. 미평가</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {sortedEvaluatorStats.map(stat => (
+                            {sortedEvaluatorStats.map(stat => {
+                              // 평가 그룹별 통계 계산
+                              const evaluatorResults = initialResults.filter(r => r.evaluatorId === stat.evaluatorUniqueId);
+                              const regularEvaluation = evaluatorResults.filter(r => r.evaluationGroup === 'A. 정규평가');
+                              const separateEvaluation = evaluatorResults.filter(r => r.evaluationGroup === 'B. 별도평가');
+                              const noEvaluation = evaluatorResults.filter(r => r.evaluationGroup === 'C. 미평가');
+                              
+                              return (
                               <TableRow key={stat.evaluatorUniqueId} className="border-b border-gray-100">
                                 <TableCell className="text-center">
                                   <Checkbox
@@ -782,23 +801,27 @@ export default function AdminDashboardContent({
                                     aria-label={`${stat.evaluatorName} 선택`}
                                   />
                                 </TableCell>
-                                <TableCell className="whitespace-nowrap font-mono text-xs text-center">{stat.evaluatorUniqueId}</TableCell>
-                                <TableCell className="font-medium whitespace-nowrap text-center">{stat.evaluatorName}</TableCell>
-                                <TableCell className="text-center whitespace-nowrap">{stat.total || '-'}</TableCell>
-                                <TableCell className="text-center whitespace-nowrap">{stat.completed || '-'}</TableCell>
+                                                                  <TableCell className="font-medium whitespace-nowrap text-center">{stat.evaluatorName} ({stat.evaluatorUniqueId})</TableCell>
                                 <TableCell className={cn("text-center whitespace-nowrap", stat.pending > 0 && "text-orange-600")}>{stat.pending || '-'}</TableCell>
-                                <TableCell className="text-center whitespace-nowrap">
-                                  <div className="flex items-center justify-center gap-2">
-                                    <Progress
-                                      value={stat.rate}
-                                      indicatorClassName={cn(stat.rate < 100 ? "bg-orange-500" : "bg-orange-200")}
-                                      className="w-full h-2"
-                                    />
-                                    <span className={cn("text-xs w-16 text-right", stat.rate < 100 ? "text-orange-600" : "text-gray-500")}>{stat.rate.toFixed(1)}%</span>
-                                  </div>
-                                </TableCell>
+                                                                  <TableCell className="text-center whitespace-nowrap">
+                                    <div className="flex items-center justify-end gap-2 w-full">
+                                      <span className="text-sm min-w-[40px] text-right">{stat.completed}/{stat.total}</span>
+                                      <div className="flex-1 flex justify-center">
+                                        <Progress
+                                          value={stat.rate}
+                                          indicatorClassName={cn(stat.rate < 100 ? "bg-orange-500" : "bg-orange-200")}
+                                          className="w-full max-w-[120px] h-2"
+                                        />
+                                      </div>
+                                      <span className={cn("text-xs min-w-[40px] text-left", stat.rate < 100 ? "text-orange-600" : "text-gray-500")}>{stat.rate.toFixed(1)}%</span>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-center whitespace-nowrap">{regularEvaluation.filter(r => r.grade).length}/{regularEvaluation.length}</TableCell>
+                                  <TableCell className="text-center whitespace-nowrap">{separateEvaluation.filter(r => r.grade).length}/{separateEvaluation.length}</TableCell>
+                                  <TableCell className="text-center whitespace-nowrap">{noEvaluation.length}</TableCell>
                               </TableRow>
-                            ))}
+                              );
+                            })}
                           </TableBody>
                         </Table>
                       </div>
@@ -818,72 +841,9 @@ export default function AdminDashboardContent({
                     </CardFooter>
                   </Card>
 
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>평가 통계</CardTitle>
-                      <CardDescription>전체 평가 현황 및 통계 정보입니다.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div className="flex flex-col space-y-2">
-                          <div className="text-2xl font-bold">{initialResults.length}</div>
-                          <div className="text-sm text-muted-foreground">전체 대상자</div>
-                        </div>
-                        <div className="flex flex-col space-y-2">
-                          <div className="text-2xl font-bold">{initialResults.filter(r => r.grade).length}</div>
-                          <div className="text-sm text-muted-foreground">평가 완료</div>
-                        </div>
-                        <div className="flex flex-col space-y-2">
-                          <div className="text-2xl font-bold">{initialResults.filter(r => !r.grade).length}</div>
-                          <div className="text-sm text-muted-foreground">평가 미완료</div>
-                        </div>
-                        <div className="flex flex-col space-y-2">
-                          <div className="text-2xl font-bold">
-                            {initialResults.length > 0 ? ((initialResults.filter(r => r.grade).length / initialResults.length) * 100).toFixed(1) : 0}%
-                          </div>
-                          <div className="text-sm text-muted-foreground">평가 완료율</div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
 
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>평가자별 상세 현황</CardTitle>
-                      <CardDescription>각 평가자별 평가 진행 상황을 확인할 수 있습니다.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        {evaluatorsForView.map(evaluator => {
-                          const evaluatorResults = initialResults.filter(r => r.evaluatorId === evaluator.uniqueId);
-                          const completedCount = evaluatorResults.filter(r => r.grade).length;
-                          const totalCount = evaluatorResults.length;
-                          const completionRate = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
-                          
-                          return (
-                            <div key={evaluator.uniqueId} className="flex items-center justify-between p-4 border rounded-lg">
-                              <div className="flex items-center space-x-4">
-                                <div className="flex flex-col">
-                                  <div className="font-medium">{evaluator.name}</div>
-                                  <div className="text-sm text-muted-foreground">{evaluator.uniqueId}</div>
-                                </div>
-                              </div>
-                              <div className="flex items-center space-x-4">
-                                <div className="text-right">
-                                  <div className="text-sm font-medium">{completedCount}/{totalCount}</div>
-                                  <div className="text-xs text-muted-foreground">완료/전체</div>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                  <Progress value={completionRate} className="w-20" />
-                                  <span className="text-sm">{completionRate.toFixed(1)}%</span>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </CardContent>
-                  </Card>
+
+
                 </div>
             );
         case 'all-results':
@@ -939,7 +899,7 @@ export default function AdminDashboardContent({
                         <div className="border rounded-lg overflow-x-auto">
                         <Table>
                         <TableHeader>
-                            <TableRow>
+                            <TableRow style={{ backgroundColor: 'hsl(30, 30%, 96%)' }}>
                             <TableHead className="whitespace-nowrap cursor-pointer text-center" onClick={() => requestSort('uniqueId')}>
                                 <div className="flex items-center justify-center">ID{getSortIcon('uniqueId')}</div>
                             </TableHead>
@@ -1001,12 +961,9 @@ export default function AdminDashboardContent({
                                 <TableCell className="py-1 px-2 whitespace-nowrap text-right">{formatCurrency(r.finalAmount)}</TableCell>
                                 <TableCell className="py-1 px-2 whitespace-nowrap text-center">{r.evaluatorName}</TableCell>
                                 <TableCell className="py-1 px-2 whitespace-nowrap text-center">
-                                    <Input
-                                    defaultValue={r.memo || ''}
-                                    onBlur={(e) => handleMemoChange(r.id, e.target.value)}
-                                    className="w-full h-8"
-                                    placeholder=''
-                                    />
+                                    <div className="w-full h-8 px-3 py-1 text-sm text-muted-foreground">
+                                        {r.memo || '-'}
+                                    </div>
                                 </TableCell>
                                 </TableRow>
                             )
@@ -1143,8 +1100,8 @@ export default function AdminDashboardContent({
                         <TableHeader><TableRow>
                           <TableHead className="text-center">요청일</TableHead>
                           <TableHead className="text-center">대상자 (ID)</TableHead>
-                          <TableHead className="text-center">현업 결재자</TableHead>
                           <TableHead className="text-center">요청내용</TableHead>
+                          <TableHead className="text-center">현업 결재자</TableHead>
                           <TableHead className="text-center">현업 결재</TableHead>
                           <TableHead className="text-center">인사부 결재</TableHead>
                           <TableHead className="text-center">현업 승인일</TableHead>
@@ -1157,14 +1114,14 @@ export default function AdminDashboardContent({
                             <TableRow key={approval.id}>
                               <TableCell className="text-center text-muted-foreground">{formatTimestamp(approval.date)}</TableCell>
                               <TableCell className="text-center">{`${approval.payload.data.name} (${approval.payload.data.uniqueId})`}</TableCell>
-                              <TableCell className="text-center">{teamApprover ? `${teamApprover.name} (${teamApprover.uniqueId})` : '미지정'}</TableCell>
                               <TableCell className="text-center">
                                  <Button variant="link" className="underline text-foreground" onClick={() => handleApprovalModal(approval)}>
                                   {approval.payload.dataType === 'shortenedWorkHours' ? '단축근로' : '일근태'} 데이터 {approval.payload.action === 'add' ? '추가' : '변경'}
                                  </Button>
                               </TableCell>
-                              <TableCell className="text-center"><StatusBadge status={approval.status} /></TableCell>
-                              <TableCell className="text-center"><StatusBadge status={approval.statusHR} /></TableCell>
+                              <TableCell className="text-center">{teamApprover ? `${teamApprover.name} (${teamApprover.uniqueId})` : '미지정'}</TableCell>
+                              <TableCell className="text-center"><StatusBadge status={approval.status} className="scale-90" /></TableCell>
+                              <TableCell className="text-center"><StatusBadge status={approval.statusHR} className="scale-90" /></TableCell>
                               <TableCell className="text-center text-muted-foreground">{formatTimestampShort(approval.approvedAtTeam)}</TableCell>
                               <TableCell className="text-center text-muted-foreground">{formatTimestampShort(approval.approvedAtHR)}</TableCell>
                             </TableRow>
@@ -1195,64 +1152,118 @@ export default function AdminDashboardContent({
   return (
     <div className="space-y-4">
       {renderContent()}
+      <ApprovalDetailDialog
+        approval={selectedApproval}
+        isOpen={approvalDetailModalOpen}
+        onClose={() => {
+          setApprovalDetailModalOpen(false);
+          setSelectedApproval(null);
+        }}
+        onApprovalAction={handleApprovalAction}
+        onDeleteApproval={deleteApproval}
+        onResubmitApproval={resubmitApproval}
+        userRole="admin"
+        currentUserId={user?.uniqueId || ''}
+        userMap={userMap}
+      />
        <Dialog open={isNotificationDialogOpen} onOpenChange={setIsNotificationDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>알림 상세</DialogTitle>
-          </DialogHeader>
-          {/* The original code had a DialogContent for notification details, but the new_code removed it.
-              Assuming the intent was to remove the notification detail dialog as it's not directly related
-              to the admin dashboard content. */}
-        </DialogContent>
-      </Dialog>
-      <Dialog open={approvalDetailModalOpen} onOpenChange={setApprovalDetailModalOpen}>
         <DialogContent className="sm:max-w-xl">
-            <DialogHeader>
-                <DialogTitle>결재 상세 정보</DialogTitle>
-            </DialogHeader>
-            {selectedApproval && (
-                <div className="space-y-4">
-                    <div className='space-y-1 text-sm text-left'>
-                        <p><strong>요청자:</strong> {selectedApproval.requesterName} ({selectedApproval.requesterId})</p>
-                        <p><strong>요청일시:</strong> {formatTimestamp(selectedApproval.date)}</p>
-                        <p><strong>요청내용:</strong> {selectedApproval.payload.dataType === 'shortenedWorkHours' ? '단축근로' : '일근태'} 데이터 {selectedApproval.payload.action === 'add' ? '추가' : '변경'}</p>
+          <DialogHeader>
+            <DialogTitle>알림 메시지 설정</DialogTitle>
+            <DialogDescription>
+              평가자에게 보낼 메시지를 입력하세요. 아래 플레이스홀더를 사용하면 해당 정보로 자동 변경됩니다.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {/* 플레이스홀더 설명 */}
+          <div className="space-y-2">
+            <p className="text-sm font-medium">사용 가능한 플레이스홀더:</p>
+            <ul className="list-disc pl-5 text-sm text-muted-foreground/80 space-y-1">
+              <li><code className="bg-muted px-1 rounded-sm">_평가자이름_</code> - 평가자 이름</li>
+              <li><code className="bg-muted px-1 rounded-sm">_평가년월_</code> - 현재 평가 년월</li>
+              <li><code className="bg-muted px-1 rounded-sm">_%_</code> - 현재 진행률</li>
+            </ul>
+          </div>
+          
+          {/* 메시지 입력창 */}
+          <div className="space-y-2">
+            <Label htmlFor="notification-message">알림 메시지</Label>
+            <Textarea
+              id="notification-message"
+              value={notificationMessage}
+              onChange={(e) => setNotificationMessage(e.target.value)}
+              className="h-32"
+              placeholder="예: _평가자이름_님, _평가년월_ 평가 마감 3일 전입니다. (현재 진행률: _%_)"
+            />
+          </div>
+          
+          {/* 중요 알림 체크박스 */}
+          <div className="flex items-center space-x-2">
+            <Checkbox 
+              id="is-important" 
+              checked={isImportantNotification} 
+              onCheckedChange={(c) => setIsImportantNotification(Boolean(c))} 
+            />
+            <Label htmlFor="is-important" className="text-sm">
+              [중요] 이 알림은 삭제할 수 없으며, 항상 상단에 고정됩니다.
+            </Label>
+          </div>
+          
+          {/* 템플릿 관리 */}
+          {notificationTemplates.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-sm font-medium">저장된 템플릿:</p>
+              <div className="space-y-2">
+                {notificationTemplates.map((template, index) => (
+                  <div key={index} className="flex items-center justify-between p-2 border rounded-md">
+                    <span className="text-sm flex-1">{template}</span>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setNotificationMessage(template)}
+                      >
+                        사용
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteTemplate(template)}
+                      >
+                        삭제
+                      </Button>
                     </div>
-                    <Separator/>
-                    <div className="rounded-md border bg-muted p-4">
-                        {renderApprovalData(selectedApproval)}
-                    </div>
-                    {selectedApproval.statusHR === '반려' && selectedApproval.rejectionReason && (
-                        <div>
-                            <Label htmlFor="rejectionReason" className="text-destructive mb-1 block">인사부 반려 사유</Label>
-                            <p className="text-sm text-destructive p-2 border border-destructive rounded-md">{selectedApproval.rejectionReason}</p>
-                        </div>
-                    )}
-                    {selectedApproval.status === '반려' && selectedApproval.rejectionReason && (
-                        <div>
-                            <Label htmlFor="rejectionReason" className="text-destructive mb-1 block">현업 반려 사유</Label>
-                            <p className="text-sm text-destructive p-2 border border-destructive rounded-md">{selectedApproval.rejectionReason}</p>
-                        </div>
-                    )}
-                    {(selectedApproval.statusHR === '결재중') && (
-                         <div>
-                            <Label htmlFor="rejectionReason" className="mb-1 block">반려 사유 (반려 시 필수)</Label>
-                            <Textarea id="rejectionReason" value={rejectionReason} onChange={(e) => setRejectionReason(e.target.value)} />
-                        </div>
-                    )}
-                </div>
-            )}
-            <DialogFooter className="sm:justify-between items-center pt-2">
-                 <div className="text-sm text-muted-foreground">
-                    {teamApproverInfo && <p>현업 결재자: <span className="font-semibold text-foreground">{teamApproverInfo}</span></p>}
-                </div>
-                {selectedApproval && selectedApproval.statusHR === '결재중' ? (
-                  <div className="flex gap-2">
-                    <Button variant="destructive" onClick={() => handleApprovalDecision('rejected')}>반려</Button>
-                    <Button onClick={() => handleApprovalDecision('approved')}>승인</Button>
                   </div>
-                ) : (
-                    <Button variant="outline" className="w-full sm:w-auto" onClick={() => setApprovalDetailModalOpen(false)}>닫기</Button>
-                )}
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* 템플릿 저장 */}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSaveTemplate}
+              disabled={!notificationMessage.trim() || notificationTemplates.includes(notificationMessage)}
+            >
+              템플릿 저장
+            </Button>
+            <span className="text-xs text-muted-foreground">
+              현재 메시지를 템플릿으로 저장합니다 (최대 5개)
+            </span>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsNotificationDialogOpen(false)}>
+              취소
+            </Button>
+            <Button 
+              onClick={handleSendNotifications}
+              disabled={!notificationMessage.trim() || selectedEvaluators.size === 0}
+            >
+              발송 ({selectedEvaluators.size}명)
+            </Button>
             </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -66,14 +66,14 @@ export function GradeHistogram({
       };
     });
 
-    // 2. 점수 기준으로 정렬
+    // 2. 점수 기준으로 정렬 (D → S 순서)
     return allGradesData
       .sort((a, b) => {
         const gradeA = a.name as Grade;
         const gradeB = b.name as Grade;
         const scoreA = (gradingScale && gradeA && gradingScale[gradeA]?.score) ?? -1;
         const scoreB = (gradingScale && gradeB && gradingScale[gradeB]?.score) ?? -1;
-        return scoreB - scoreA;
+        return scoreA - scoreB; // 낮은 점수부터 높은 점수 순서로 변경
       })
       .map(item => ({
         ...item,

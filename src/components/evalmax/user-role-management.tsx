@@ -61,6 +61,7 @@ export default function UserRoleManagement() {
   // State for adding a new user
   const [newUserName, setNewUserName] = React.useState('');
   const [newUserId, setNewUserId] = React.useState('');
+  const [newUserCompany, setNewUserCompany] = React.useState('');
   const [newUserDepartment, setNewUserDepartment] = React.useState('');
   const [newUserTitle, setNewUserTitle] = React.useState('');
   const [newUserRoles, setNewUserRoles] = React.useState<Role[]>(['employee']);
@@ -68,6 +69,7 @@ export default function UserRoleManagement() {
   // State for editing an existing user
   const [editUserName, setEditUserName] = React.useState('');
   const [editUserId, setEditUserId] = React.useState('');
+  const [editUserCompany, setEditUserCompany] = React.useState('');
   const [editUserDepartment, setEditUserDepartment] = React.useState('');
   const [editUserTitle, setEditUserTitle] = React.useState('');
 
@@ -135,6 +137,7 @@ export default function UserRoleManagement() {
     upsertUsers([{
       uniqueId: newUserId,
       name: newUserName,
+      company: newUserCompany,
       department: newUserDepartment,
       title: newUserTitle,
       roles: newUserRoles,
@@ -144,6 +147,7 @@ export default function UserRoleManagement() {
     setIsAddUserDialogOpen(false);
     setNewUserName('');
     setNewUserId('');
+    setNewUserCompany('');
     setNewUserDepartment('');
     setNewUserTitle('');
     setNewUserRoles(['employee']);
@@ -163,6 +167,7 @@ export default function UserRoleManagement() {
     setSelectedUser(user);
     setEditUserId(user.uniqueId);
     setEditUserName(user.name);
+    setEditUserCompany(user.company || '');
     setEditUserDepartment(user.department);
     setEditUserTitle(user.title);
     setIsEditUserDialogOpen(true);
@@ -173,6 +178,7 @@ export default function UserRoleManagement() {
     upsertUsers([{
         uniqueId: editUserId,
         name: editUserName,
+        company: editUserCompany,
         department: editUserDepartment,
         title: editUserTitle
     }]);
@@ -337,8 +343,9 @@ export default function UserRoleManagement() {
                         aria-label="모두 선택"
                     />
                   </TableHead>
-                  <TableHead className="text-center">ID (고유사번)</TableHead>
+                                    <TableHead className="text-center">ID (고유사번)</TableHead>  
                   <TableHead className="text-center">이름</TableHead>
+                  <TableHead className="text-center">회사</TableHead>
                   <TableHead className="text-center">부서</TableHead>
                   <TableHead className="text-center">직책</TableHead>
                   <TableHead className="w-[100px] text-center">피평가자</TableHead>
@@ -360,6 +367,7 @@ export default function UserRoleManagement() {
                     </TableCell>
                     <TableCell className="text-center font-mono">{user.uniqueId}</TableCell>
                     <TableCell className="text-center font-semibold">{user.name}</TableCell>
+                    <TableCell className="text-center">{user.company}</TableCell>
                     <TableCell className="text-center">{user.department}</TableCell>
                     <TableCell className="text-center">{user.title}</TableCell>
                      <TableCell className="text-center">
@@ -419,6 +427,10 @@ export default function UserRoleManagement() {
               <Label htmlFor="new-user-name" className="text-right">이름</Label>
               <Input id="new-user-name" value={newUserName} onChange={(e) => setNewUserName(e.target.value)} className="col-span-3" />
             </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="new-user-company" className="text-right">회사</Label>
+              <Input id="new-user-company" value={newUserCompany} onChange={(e) => setNewUserCompany(e.target.value)} className="col-span-3" />
+            </div>
              <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="new-user-department" className="text-right">부서</Label>
               <Input id="new-user-department" value={newUserDepartment} onChange={(e) => setNewUserDepartment(e.target.value)} className="col-span-3" />
@@ -465,6 +477,10 @@ export default function UserRoleManagement() {
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-user-name" className="text-right">이름</Label>
               <Input id="edit-user-name" value={editUserName} onChange={(e) => setEditUserName(e.target.value)} className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-user-company" className="text-right">회사</Label>
+              <Input id="edit-user-company" value={editUserCompany} onChange={(e) => setEditUserCompany(e.target.value)} className="col-span-3" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-user-department" className="text-right">부서</Label>

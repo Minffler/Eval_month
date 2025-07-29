@@ -47,6 +47,7 @@ export type Evaluation = {
   month: number;
   grade: Grade;
   memo?: string;
+  detailedGroup2?: string; // 그룹명 저장을 위한 필드 추가
 };
 
 export type EvaluationGroupCategory = '전체' | 'A. 정규평가' | 'B. 별도평가' | 'C. 미평가';

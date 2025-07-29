@@ -42,16 +42,14 @@ export default function AdminNotifications({ notifications, deleteNotification }
                                     </p>
                                 </div>
                             </div>
-                            {!notification.isImportant && (
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    onClick={() => deleteNotification(notification.id)}
-                                >
-                                    <X className="h-4 w-4 text-red-600" />
-                                </Button>
-                            )}
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => deleteNotification(notification.id)}
+                            >
+                                <X className="h-4 w-4 text-red-600" />
+                            </Button>
                         </li>
                     ))}
                     </ul>

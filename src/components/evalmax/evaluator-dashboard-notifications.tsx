@@ -45,7 +45,6 @@ export default function EvaluatorNotifications({ notifications, deleteNotificati
                                     </p>
                                 </div>
                             </div>
-                            {!notification.isImportant && (
                                 <Button
                                     variant="ghost"
                                     size="icon"
@@ -54,7 +53,6 @@ export default function EvaluatorNotifications({ notifications, deleteNotificati
                                 >
                                     <X className="h-4 w-4 text-red-600" />
                                 </Button>
-                            )}
                         </li>
                     ))}
                     </ul>
