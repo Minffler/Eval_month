@@ -129,7 +129,7 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
         const gradeB = b.grade as Grade;
         const scoreA = gradeA && gradingScale[gradeA] ? gradingScale[gradeA].score : -1;
         const scoreB = gradeB && gradingScale[gradeB] ? gradingScale[gradeB].score : -1;
-        return scoreB - scoreA;
+        return scoreA - scoreB; // D(0점) → S(150점) 순서로 변경
     })
     .map(item => ({
         name: item.grade,
