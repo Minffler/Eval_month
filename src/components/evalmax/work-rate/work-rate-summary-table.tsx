@@ -72,7 +72,7 @@ export default function WorkRateSummaryTable({
   return (
     <div className="space-y-4">
       <div className="rounded-md border border-gray-200">
-        <Table className="bg-white">
+                    <Table className="bg-[hsl(30,30%,98%)]">
           <TableHeader>
             <TableRow>
               <TableHead className="w-[100px] cursor-pointer text-center" onClick={() => requestSort('uniqueId')}>

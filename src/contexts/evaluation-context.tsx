@@ -6,6 +6,7 @@ import { mockEmployees, defaultGradingScale as initialGradingScale, mockEvaluati
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from './auth-context';
 import { useDebouncedEffect } from '@/hooks/use-debounced-effect';
+import { log } from '@/lib/logger';
 
 const getFromLocalStorage = (key: string, defaultValue: any) => {
   if (typeof window === 'undefined') return defaultValue;
@@ -74,6 +75,7 @@ interface EvaluationContextType {
 
   allEvaluationResults: EvaluationResult[];
   monthlyEvaluationTargets: (selectedDate: {year: number, month: number}) => EvaluationResult[];
+  monthlyEvaluationTargetsByEvaluator: (selectedDate: {year: number, month: number}, evaluatorId: string) => EvaluationResult[];
 }
 
 const EvaluationContext = React.createContext<EvaluationContextType | undefined>(undefined);
@@ -83,7 +85,12 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
   
   const [employees, setEmployees] = React.useState<Record<string, Employee[]>>(() => getFromLocalStorage('employees', mockEmployees ));
   const [evaluations, setEvaluations] = React.useState<Record<string, Evaluation[]>>(() => getFromLocalStorage('evaluations', mockEvaluations ));
-  const [gradingScale, setGradingScale] = React.useState<Record<NonNullable<Grade>, GradeInfo>>(() => getFromLocalStorage('gradingScale', initialGradingScale));
+  // 등급 정보는 거의 안 바뀌므로 캐싱
+  const [gradingScale, setGradingScale] = React.useState<Record<NonNullable<Grade>, GradeInfo>>(() => {
+    const cached = getFromLocalStorage('gradingScale', initialGradingScale);
+    log.debug('Grading scale loaded:', Object.keys(cached));
+    return cached;
+  });
   
 
   const [workRateInputs, setWorkRateInputs] = React.useState<Record<string, WorkRateInputs>>(() => getFromLocalStorage('workRateInputs', {}));
@@ -266,10 +273,10 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
     setEvaluations(prev => {
         const currentEvalsForMonth = prev[key] || [];
         const finalEvals = newEmployees.map(emp => {
-            const existingEval = currentEvalsForMonth.find(e => e.employeeId === emp.id);
+            const existingEval = currentEvalsForMonth.find(e => e.employeeId === emp.uniqueId);
             return {
-              id: existingEval?.id || `eval-${emp.id}-${year}-${month}`,
-              employeeId: emp.id, year, month,
+              id: existingEval?.id || `eval-${emp.uniqueId}-${year}-${month}`,
+              employeeId: emp.uniqueId, year, month,
               grade: existingEval?.grade || null,
               memo: existingEval?.memo || emp.memo || '',
             };
@@ -316,9 +323,8 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
           });
         }
         
-        const employeeId = `E${uniqueId}`;
+        const employeeId = uniqueId;
         employeeData.push({
-            id: employeeId,
             uniqueId: uniqueId,
             name: item.name || '',
             company: item.company || 'N/A',
@@ -439,10 +445,6 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
 
   // 새로운 저장 액션들
   const updateEvaluationMemo = React.useCallback((employeeId: string, memo: string, year: number, month: number) => {
-    if (process.env.NODE_ENV === 'development') {
-      console.debug('=== Context: updateEvaluationMemo 시작 ===');
-      console.debug('매개변수:', { employeeId, memo, year, month });
-    }
     
     const key = `${year}-${month}`;
     setEvaluations(prev => {
@@ -471,14 +473,7 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
         updatedEvals = [...currentEvalsForMonth, newEvaluation];
       }
       
-      if (process.env.NODE_ENV === 'development') {
-        console.debug('=== Context: updateEvaluationMemo ===');
-        console.debug('employeeId:', employeeId);
-        console.debug('memo:', memo);
-        console.debug('key:', key);
-        console.debug('existingEvaluation:', existingEvaluation);
-        console.debug('updatedEvals.length:', updatedEvals.length);
-      }
+
       
       const newEvaluations = { ...prev, [key]: updatedEvals };
       
@@ -519,14 +514,7 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
         updatedEvals = [...currentEvalsForMonth, newEvaluation];
       }
       
-      if (process.env.NODE_ENV === 'development') {
-        console.debug('=== Context: updateEvaluationGroup ===');
-        console.debug('employeeId:', employeeId);
-        console.debug('groupName:', groupName);
-        console.debug('key:', key);
-        console.debug('existingEvaluation:', existingEvaluation);
-        console.debug('updatedEvals.length:', updatedEvals.length);
-      }
+
       
       const newEvaluations = { ...prev, [key]: updatedEvals };
       
@@ -540,19 +528,37 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
   }, []);
 
   const updateEvaluationGrade = React.useCallback((employeeId: string, grade: Grade | null, year: number, month: number) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.debug('=== Context: updateEvaluationGrade 시작 ===');
+      console.debug('매개변수:', { employeeId, grade, year, month });
+    }
+    
     const key = `${year}-${month}`;
     setEvaluations(prev => {
       const currentEvalsForMonth = prev[key] || [];
       
+      if (process.env.NODE_ENV === 'development') {
+        console.debug('현재 평가 데이터:', currentEvalsForMonth);
+        console.debug('찾으려는 employeeId:', employeeId);
+        console.debug('기존 평가 데이터의 employeeId들:', currentEvalsForMonth.map(e => e.employeeId));
+      }
+      
       // 해당 직원의 기존 평가 데이터 찾기
       let existingEvaluation = currentEvalsForMonth.find(evaluation => evaluation.employeeId === employeeId);
+      
+      // 등급에 따른 점수 계산
+      const gradeInfo = grade ? gradingScale[grade] : null;
+      const score = gradeInfo ? gradeInfo.score : 0;
       
       let updatedEvals;
       if (existingEvaluation) {
         // 기존 데이터가 있으면 업데이트
         updatedEvals = currentEvalsForMonth.map(evaluation => 
-          evaluation.employeeId === employeeId ? { ...evaluation, grade } : evaluation
+          evaluation.employeeId === employeeId ? { ...evaluation, grade, score } : evaluation
         );
+        if (process.env.NODE_ENV === 'development') {
+          console.debug('기존 평가 데이터 업데이트됨');
+        }
       } else {
         // 기존 데이터가 없으면 새로 생성
         const newEvaluation = {
@@ -561,19 +567,18 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
           year: year,
           month: month,
           grade: grade,
+          score: score,
           memo: '',
           detailedGroup2: '',
         };
         updatedEvals = [...currentEvalsForMonth, newEvaluation];
+        if (process.env.NODE_ENV === 'development') {
+          console.debug('새 평가 데이터 생성됨:', newEvaluation);
+        }
       }
       
       if (process.env.NODE_ENV === 'development') {
-        console.debug('=== Context: updateEvaluationGrade ===');
-        console.debug('employeeId:', employeeId);
-        console.debug('grade:', grade);
-        console.debug('key:', key);
-        console.debug('existingEvaluation:', existingEvaluation);
-        console.debug('updatedEvals.length:', updatedEvals.length);
+        console.debug('업데이트된 평가 데이터:', updatedEvals);
       }
       
       const newEvaluations = { ...prev, [key]: updatedEvals };
@@ -585,9 +590,15 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
       
       return newEvaluations;
     });
-  }, []);
+  }, [gradingScale]);
   
   const allEvaluationResults = React.useMemo(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.debug('=== allEvaluationResults 재계산 ===');
+      console.debug('evaluations 변경됨:', evaluations);
+      console.debug('employees 변경됨:', employees);
+    }
+    
     const results = Object.entries(employees).flatMap(([key, monthlyEmployees]) => {
         const [year, month] = key.split('-').map(Number);
         const monthlyEvaluations = evaluations[key] || [];
@@ -604,14 +615,23 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
             const user = userMap.get(employee.uniqueId) || {};
             const base: Employee = { ...employee, ...user };
             
-            // User 데이터에서 employeeId를 가져와서 평가 데이터와 매칭
-            const currentUser = userMap.get(base.uniqueId);
-            const employeeId = (currentUser as any)?.employeeId || base.id;
-            const evaluation = evalMap.get(employeeId);
+            // uniqueId로 평가 데이터와 매칭 (단순화)
+            const evaluation = evalMap.get(employee.uniqueId);
+            
+            // 디버깅 로그
+            if (process.env.NODE_ENV === 'development' && employee.uniqueId === '0000584') {
+              console.debug('=== uniqueId 매칭 디버깅 ===');
+              console.debug('employee.uniqueId:', employee.uniqueId);
+              console.debug('evaluation 찾음:', !!evaluation);
+              console.debug('evaluation 데이터:', evaluation);
+              console.debug('===============================');
+            }
             
             const grade = evaluation?.grade || null;
             const gradeInfo = grade ? gradingScale[grade] : null;
-            const score = gradeInfo?.score || 0;
+            // 저장된 점수가 있으면 사용하고, 없으면 등급 기준 점수 사용
+            const score = evaluation?.score !== undefined ? evaluation.score : (gradeInfo?.score || 0);
+            
             const payoutRate = gradeInfo ? gradeInfo.payoutRate / 100 : 0;
             const gradeAmount = (base.baseAmount || 0) * payoutRate;
             const finalAmount = calculateFinalAmount(gradeAmount, base.workRate);
@@ -634,7 +654,8 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
             }
             
             const result = {
-                ...base, year, month, grade, score, payoutRate, gradeAmount, finalAmount,
+                ...base, 
+                year, month, grade, score, payoutRate, gradeAmount, finalAmount,
                 evaluatorId: base.evaluatorId || '',
                 evaluatorName: evaluator?.name || (base.evaluatorId ? `미지정 (${base.evaluatorId})` : '미지정'),
                 evaluationGroup: getEvaluationGroup(base.workRate),
@@ -647,8 +668,19 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
         });
     });
     
+    if (process.env.NODE_ENV === 'development') {
+      console.debug('계산된 결과 수:', results.length);
+      console.debug('등급이 있는 결과들:', results.filter(r => r.grade).map(r => ({ uniqueId: r.uniqueId, name: r.name, grade: r.grade, score: r.score })));
+    }
+    
     return results;
-  }, [employees, evaluations, gradingScale, userMap]);
+  }, [
+    // evaluations 의존성 추가
+    evaluations,
+    employees,
+    gradingScale,
+    userMap
+  ]);
 
   const getMonthlyEvaluationTargets = React.useCallback((selectedDate: {year: number, month: number}) => {
     const monthKey = `${selectedDate.year}-${selectedDate.month}`;
@@ -658,6 +690,44 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
 
     const monthlyEmployeeIds = new Set(monthlyEmployeeList.map(e => e.uniqueId));
     return allEvaluationResults.filter(r => r.year === selectedDate.year && r.month === selectedDate.month && monthlyEmployeeIds.has(r.uniqueId));
+  }, [allEvaluationResults, employees]);
+
+  // 평가자별 피평가자 조회 함수 추가
+  const getMonthlyEvaluationTargetsByEvaluator = React.useCallback((selectedDate: {year: number, month: number}, evaluatorId: string) => {
+    const monthKey = `${selectedDate.year}-${selectedDate.month}`;
+    const monthlyEmployeeList = employees[monthKey] || [];
+    
+    if (!Array.isArray(monthlyEmployeeList)) return [];
+
+    const monthlyEmployeeIds = new Set(monthlyEmployeeList.map(e => e.uniqueId));
+    
+    // 해당 평가자가 담당하는 피평가자만 필터링
+    const filteredResults = allEvaluationResults.filter(r => 
+      r.year === selectedDate.year && 
+      r.month === selectedDate.month && 
+      monthlyEmployeeIds.has(r.uniqueId) &&
+      r.evaluatorId === evaluatorId // 평가자 ID로 필터링
+    );
+    
+    // 디버깅 로그
+    if (process.env.NODE_ENV === 'development') {
+      console.debug('=== Context: 평가자별 필터링 디버그 ===');
+      console.debug('evaluatorId:', evaluatorId);
+      console.debug('selectedDate:', selectedDate);
+      console.debug('monthlyEmployeeList.length:', monthlyEmployeeList.length);
+      console.debug('allEvaluationResults.length:', allEvaluationResults.length);
+      console.debug('필터링 조건:', {
+        year: selectedDate.year,
+        month: selectedDate.month,
+        monthlyEmployeeIdsSize: monthlyEmployeeIds.size,
+        evaluatorId
+      });
+      console.debug('필터링된 결과 수:', filteredResults.length);
+      console.debug('필터링된 결과들:', filteredResults.map(r => ({ uniqueId: r.uniqueId, name: r.name, evaluatorId: r.evaluatorId })));
+      console.debug('==========================================');
+    }
+    
+    return filteredResults;
   }, [allEvaluationResults, employees]);
 
   // 성능 최적화된 쿼리 함수들
@@ -721,7 +791,9 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
     handleClearEvaluationData, handleClearWorkRateData, handleWorkRateDataUpload,
     handleClearMyEvaluations,
     updateEvaluationMemo, updateEvaluationGroup, updateEvaluationGrade,
-    allEvaluationResults, monthlyEvaluationTargets: getMonthlyEvaluationTargets
+    allEvaluationResults, 
+    monthlyEvaluationTargets: getMonthlyEvaluationTargets,
+    monthlyEvaluationTargetsByEvaluator: getMonthlyEvaluationTargetsByEvaluator
   };
 
   return <EvaluationContext.Provider value={value}>{children}</EvaluationContext.Provider>;

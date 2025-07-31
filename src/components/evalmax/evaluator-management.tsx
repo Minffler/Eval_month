@@ -25,7 +25,7 @@ import { ArrowUpDown, ArrowUp, ArrowDown, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
 import { Label } from '@/components/ui/label';
 import {
   Command,
@@ -105,7 +105,7 @@ const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
             />
           </div>
         )}
-        <ScrollArea className="h-64">
+        <div className="h-64 overflow-auto">
           <div className="p-2 space-y-1">
              <div
                 className="flex items-center gap-2 p-2 rounded-md cursor-pointer hover:bg-accent"
@@ -125,7 +125,7 @@ const MultiSelectFilter: React.FC<MultiSelectFilterProps> = ({
               </div>
             ))}
           </div>
-        </ScrollArea>
+        </div>
       </PopoverContent>
     </Popover>
   );

@@ -805,7 +805,7 @@ export default function EvaluationInputView({
                           <SortableContext items={group.members.map(m => m.id)} strategy={verticalListSortingStrategy}>
                             <Table>
                               <TableHeader>
-                                <TableRow className="bg-white border-b border-border">
+                                <TableRow className="bg-[hsl(30,30%,98%)] border-b border-border">
                                   <TableHead className="w-[80px] p-2 text-center">
                                     <Checkbox 
                                       checked={isIndeterminate ? 'indeterminate' : allSelectedInGroup} 

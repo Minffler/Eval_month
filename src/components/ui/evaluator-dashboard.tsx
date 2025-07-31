@@ -552,7 +552,7 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, handleRe
   return (
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className="space-y-4">
-        <Card className="bg-white border-transparent shadow-none">
+        <Card className="bg-[hsl(30,30%,98%)] border-transparent shadow-none">
           <Collapsible open={isChartOpen} onOpenChange={setIsChartOpen}>
             <CardHeader className="flex flex-col sm:flex-row justify-between sm:items-start gap-4 p-4">
               <div className="flex-1"><CardTitle>평가 진행 현황</CardTitle><CardDescription>{selectedDate.year}년 {selectedDate.month}월 성과평가 ({selectedDate.month === 12 ? 1 : selectedDate.month + 1}월 급여반영)</CardDescription></div>
@@ -563,7 +563,7 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, handleRe
               </div>
             </CardHeader>
             <CollapsibleContent>
-              <CardContent className='p-4 pt-0 space-y-2 bg-white'>
+              <CardContent className='p-4 pt-0 space-y-2 bg-[hsl(30,30%,98%)]'>
                 <GradeHistogram 
                   data={gradeDistribution} 
                   gradingScale={gradingScale} 

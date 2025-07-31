@@ -10,8 +10,7 @@ const MockMemoizedMemoInput = ({ value, employeeId, onMemoChange }: {
   const [inputValue, setInputValue] = React.useState(value || '');
   
   React.useEffect(() => {
-    const cleanValue = value && !value.includes('user-') ? value : '';
-    setInputValue(cleanValue);
+    setInputValue(value || '');
   }, [value]);
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -53,7 +52,7 @@ describe('Memo Input Component', () => {
     expect(input).toHaveValue('테스트 메모');
   });
 
-  it('잘못된 데이터(user-)가 필터링된다', () => {
+  it('user- 접두사가 포함된 데이터도 그대로 표시된다', () => {
     render(
       <MockMemoizedMemoInput
         value="user-0000584"
@@ -63,7 +62,7 @@ describe('Memo Input Component', () => {
     );
 
     const input = screen.getByTestId('memo-input');
-    expect(input).toHaveValue('');
+    expect(input).toHaveValue('user-0000584');
   });
 
   it('입력값이 변경되면 상태가 업데이트된다', () => {

@@ -36,7 +36,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
-import { ScrollArea } from '../ui/scroll-area';
+
 import { Label } from '../ui/label';
 import { cn } from '@/lib/utils';
 import { backupData, type BackupDataInput } from '@/ai/flows/backup-data-flow';
@@ -292,12 +292,11 @@ export default function ManageData({
           const uniqueId = String(row['uniqueId'] || '');
           if (!uniqueId) throw new Error(`${index + 2}번째 행에 ID가 없습니다.`);
           return {
-            id: `E${uniqueId}`, uniqueId, name: String(row['name'] || ''),
+            uniqueId, name: String(row['name'] || ''),
             company: String(row['company'] || ''), department: String(row['department'] || ''),
             title: String(row['title'] || '팀원'), position: String(row['title'] || '팀원'),
-            growthLevel: String(row['growthLevel'] || ''), workRate: 1, // 엑셀 업로드한 근무율 무시하고 기본값 1로 설정
-            evaluatorId: String(row['evaluatorId'] || ''), baseAmount: Number(String(row['baseAmount'] || '0').replace(/,/g, '')),
-            memo: String(row['memo'] || ''),
+            growthLevel: String(row['growthLevel'] || ''), workRate: Number(row['workRate'] || 1),
+            evaluatorId: String(row['evaluatorId'] || ''), baseAmount: Number(row['baseAmount'] || 0),
           };
         });
         handleEmployeeUpload(selectedDate.year, selectedDate.month, newEmployees);
@@ -581,7 +580,7 @@ export default function ManageData({
               <span className="text-destructive">*</span> 표시된 필드는 업로드를 위해 필수적으로 매핑되어야 합니다.
             </DialogDescription2>
           </DialogHeader2>
-          <ScrollArea className="h-[60vh] p-1">
+          <div className="h-[60vh] p-1 overflow-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -622,8 +621,8 @@ export default function ManageData({
                   );
                 })}
               </TableBody>
-            </Table>
-          </ScrollArea>
+                          </Table>
+            </div>
            <div className="flex justify-between items-center pt-2">
             <Label className="text-xs text-muted-foreground">
                 <span className="text-destructive">*</span> {requiredFields.join(', ')} 필드는 반드시 매핑되어야 합니다.

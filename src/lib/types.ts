@@ -2,7 +2,7 @@ export type Role = 'admin' | 'evaluator' | 'employee' | null;
 
 export type User = {
   id: string; // 내부 시스템용 ID (페이지 키 등으로 사용)
-  employeeId: string; // Employee.id와 연결
+  employeeId: string; // Employee.id와 연결 (uniqueId와 동일)
   uniqueId: string; // 사용자 ID (고유사번)
   name: string;
   roles: Role[];
@@ -17,7 +17,6 @@ export type User = {
 export type Company = 'OK' | 'OC' | 'OCI' | 'OFI' | 'EX' | 'OKDS' | 'OKH' | 'OKIP' | 'OKV' | 'OT';
 
 export interface Employee {
-  id: string; // 내부 시스템용 ID (E + uniqueId)
   uniqueId: string; // 사용자 ID (고유사번)
   name: string; // 이름
   company: string; // 회사
@@ -42,10 +41,11 @@ export type GradeInfo = {
 
 export type Evaluation = {
   id:string;
-  employeeId: string;
+  employeeId: string; // uniqueId로 사용 (예: "0000584")
   year: number;
   month: number;
   grade: Grade;
+  score?: number; // 점수 필드 추가
   memo?: string;
   detailedGroup2?: string; // 그룹명 저장을 위한 필드 추가
 };
@@ -86,7 +86,7 @@ export type EvaluatorView = 'evaluation-input' | 'all-results' | 'assignment-man
 export type EmployeeView = 'my-review' | 'evaluation-details' | 'my-work-rate' | 'my-shortened-work' | 'my-daily-attendance' | 'notifications' | 'approvals' | 'personal-settings';
 
 
-export type EvaluationUploadData = Partial<Omit<Employee, 'id' | 'uniqueId'>> & Partial<Pick<Evaluation, 'grade' | 'memo'>> & {
+export type EvaluationUploadData = Partial<Omit<Employee, 'uniqueId'>> & Partial<Pick<Evaluation, 'grade' | 'memo'>> & {
   uniqueId: string;
   evaluatorName?: string;
 };

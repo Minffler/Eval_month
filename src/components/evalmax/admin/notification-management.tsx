@@ -171,7 +171,7 @@ export default function NotificationManagement({
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-white border-b border-border">
+                  <TableRow className="bg-[hsl(30,30%,98%)] border-b border-border">
                     <TableHead className="text-center">제목</TableHead>
                     <TableHead className="text-center">내용</TableHead>
                     <TableHead className="text-center">발송일</TableHead>
@@ -224,7 +224,7 @@ export default function NotificationManagement({
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-white border-b border-border">
+                  <TableRow className="bg-[hsl(30,30%,98%)] border-b border-border">
                     <TableHead className="text-center">요청자</TableHead>
                     <TableHead className="text-center">요청 유형</TableHead>
                     <TableHead className="text-center">요청일</TableHead>

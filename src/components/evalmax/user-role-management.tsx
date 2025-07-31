@@ -111,7 +111,7 @@ export default function UserRoleManagement() {
   }, [allUsers, searchTerm, roleFilter]);
 
   const handleToggleRole = (userId: string, role: 'admin' | 'evaluator' | 'employee') => {
-    const user = allUsers.find(u => u.id === userId);
+    const user = allUsers.find(u => u.uniqueId === userId);
     if (!user) return;
 
     const newRoles = new Set(user.roles);
@@ -190,9 +190,9 @@ export default function UserRoleManagement() {
   const openConfirmDialog = (user: User | null, type: 'resetPassword' | 'delete' | 'bulkDelete') => {
     if (type === 'bulkDelete') {
         const adminUser = allUsers.find(u => u.uniqueId === 'admin');
-        if (adminUser && selectedIds.has(adminUser.id)) {
+        if (adminUser && selectedIds.has(adminUser.uniqueId)) {
             const newSelection = new Set(selectedIds);
-            newSelection.delete(adminUser.id);
+            newSelection.delete(adminUser.uniqueId);
             if (newSelection.size === 0) {
                  toast({ title: '정보', description: '관리자 계정은 삭제할 수 없습니다. 다른 사용자들을 선택 해제했습니다.' });
                  setSelectedIds(newSelection);

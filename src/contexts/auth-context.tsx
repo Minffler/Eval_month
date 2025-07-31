@@ -163,8 +163,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           updatedUserMap.set(userToUpsert.uniqueId, { ...existingUser, ...userToUpsert, roles: updatedRoles });
         } else {
           const newUser: User = {
-            id: `user-${userToUpsert.uniqueId}`,
-            employeeId: `E${userToUpsert.uniqueId}`,
+            id: userToUpsert.uniqueId,
+            employeeId: userToUpsert.uniqueId,
             uniqueId: userToUpsert.uniqueId,
             name: userToUpsert.name || `사용자(${userToUpsert.uniqueId})`,
             department: userToUpsert.department || '미지정',
@@ -191,7 +191,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateUserRoles = (userId: string, newRoles: Role[]) => {
-    setAllUsers(prev => prev.map(u => u.id === userId ? { ...u, roles: newRoles } : u));
+    setAllUsers(prev => prev.map(u => u.uniqueId === userId ? { ...u, roles: newRoles } : u));
   };
 
 

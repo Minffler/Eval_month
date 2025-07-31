@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format } from 'date-fns';
 import { cn, formatDateTime } from '@/lib/utils';
+import { log } from '@/lib/logger';
 import {
   Dialog,
   DialogContent,
@@ -29,6 +30,7 @@ import {
 } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
+import { usePerformanceMonitor } from '@/hooks/use-performance-monitor';
 import {
   Select,
   SelectContent,
@@ -56,6 +58,7 @@ export default function EvaluatorDashboard({
   userMap, 
   setEvaluations: setEvaluationsProp 
 }: EvaluatorDashboardProps) {
+  usePerformanceMonitor('EvaluatorDashboard');
   const { user: authUser, allUsers } = useAuth();
   const { toast } = useToast();
   const { 
@@ -71,15 +74,15 @@ export default function EvaluatorDashboard({
   } = useEvaluation();
   
   // 디버깅용: gradingScale 값 확인
-  console.log('=== EvaluatorDashboard Debug ===');
-  console.log('gradingScale:', gradingScale);
-  console.log('gradingScale type:', typeof gradingScale);
-  console.log('gradingScale keys:', Object.keys(gradingScale || {}));
-  console.log('gradingScale length:', Object.keys(gradingScale || {}).length);
-  console.log('gradingScale is null:', gradingScale === null);
-  console.log('gradingScale is undefined:', gradingScale === undefined);
-  console.log('gradingScale is empty object:', gradingScale && Object.keys(gradingScale).length === 0);
-  console.log('================================');
+  log.group('EvaluatorDashboard Debug');
+  log.debug('gradingScale:', gradingScale);
+  log.debug('gradingScale type:', typeof gradingScale);
+  log.debug('gradingScale keys:', Object.keys(gradingScale || {}));
+  log.debug('gradingScale length:', Object.keys(gradingScale || {}).length);
+  log.debug('gradingScale is null:', gradingScale === null);
+  log.debug('gradingScale is undefined:', gradingScale === undefined);
+  log.debug('gradingScale is empty object:', gradingScale && Object.keys(gradingScale).length === 0);
+  log.groupEnd();
   const { notifications, deleteNotification, approvals, handleApprovalAction, deleteApproval, resubmitApproval } = useNotifications();
 
   const setEvaluations = setEvaluationsProp || setEvaluationsFromContext;
@@ -101,158 +104,83 @@ export default function EvaluatorDashboard({
   }, [evaluatorUser, authUser]);
   
   const myEmployees = React.useMemo(() => {
-    if (!effectiveUser) return [];
+    log.time('myEmployees 계산');
+    
+    if (!effectiveUser?.uniqueId) {
+      log.debug('effectiveUser가 없음, 빈 배열 반환');
+      log.timeEnd('myEmployees 계산');
+      return [];
+    }
+    
     const targets = monthlyEvaluationTargets(selectedDate);
-    return targets.filter(r => r.evaluatorId === effectiveUser.uniqueId);
-  }, [effectiveUser, monthlyEvaluationTargets, selectedDate]);
+    log.debug('monthlyEvaluationTargets 결과:', targets.length);
+    
+    const filtered = targets.filter(r => r.evaluatorId === effectiveUser.uniqueId);
+    log.debug('필터링 후 결과:', filtered.length);
+    
+    log.timeEnd('myEmployees 계산');
+    return filtered;
+  }, [
+    effectiveUser?.uniqueId, // 객체 대신 ID만
+    selectedDate.year,       // 객체 대신 개별 값
+    selectedDate.month
+  ]);
   
+  // 통계 계산 최적화
+  const statistics = React.useMemo(() => {
+    log.time('통계 계산');
+    
+    const total = myEmployees.length;
+    const completed = myEmployees.filter(e => e.grade).length;
+    const rate = total > 0 ? (completed / total) * 100 : 0;
+    
+    const result = { total, completed, rate };
+    log.timeEnd('통계 계산');
+    log.debug('통계 결과:', result);
+    
+    return result;
+  }, [myEmployees]);
+
   const currentMonthResults = monthlyEvaluationTargets(selectedDate);
 
   const handleSave = React.useCallback((updatedEvaluations: EvaluationResult[]) => {
     const key = `${selectedDate.year}-${selectedDate.month}`;
     
-    console.log('=== handleSave 호출됨 ===');
-    console.log('selectedDate:', selectedDate);
-    console.log('key:', key);
-    console.log('updatedEvaluations.length:', updatedEvaluations.length);
-    console.log('updatedEvaluations sample:', updatedEvaluations.slice(0, 2));
-    
-    // 각 평가 데이터의 memo와 detailedGroup2 확인
-    updatedEvaluations.forEach((evaluation, index) => {
-      console.log(`Evaluation ${index}:`, {
-        id: evaluation.id,
-        name: evaluation.name,
-        memo: evaluation.memo,
-        detailedGroup2: evaluation.detailedGroup2,
-        grade: evaluation.grade
-      });
+    log.debug('handleSave 호출됨:', {
+      key,
+      evaluationsCount: updatedEvaluations.length,
+      date: selectedDate
     });
-    
-    // 근무율이 업데이트된 경우인지 확인
-    const hasWorkRateUpdate = updatedEvaluations.some(evaluation => {
-      const originalResult = currentMonthResults.find(r => r.id === evaluation.id);
-      return originalResult && Math.abs(evaluation.workRate - originalResult.workRate) > 0.001;
-    });
-    
-    console.log('=== 근무율 변경 감지 디버깅 ===');
-    console.log('updatedEvaluations.length:', updatedEvaluations.length);
-    console.log('currentMonthResults.length:', currentMonthResults.length);
-    console.log('hasWorkRateUpdate:', hasWorkRateUpdate);
-    
-    // 각 직원의 근무율 변경사항 상세 로그
-    updatedEvaluations.forEach((result, index) => {
-      const originalResult = currentMonthResults.find(r => r.id === result.id);
-      if (originalResult) {
-        const workRateDiff = Math.abs(result.workRate - originalResult.workRate);
-        if (workRateDiff > 0.001) {
-          console.log(`근무율 변경 감지: ID ${result.id} (${result.name}) - ${originalResult.workRate}% → ${result.workRate}% (차이: ${workRateDiff})`);
-        }
-      }
-    });
-    console.log('================================');
     
     setEvaluations(prevEvals => {
         const newState = JSON.parse(JSON.stringify(prevEvals));
         const newEvalsForMonth = newState[key] ? [...newState[key]] : [];
         
-        console.log('=== handleSave - 저장 전 상태 ===');
-        console.log('newEvalsForMonth before update:', newEvalsForMonth);
-        
         updatedEvaluations.forEach(updatedEvaluation => {
-            const index = newEvalsForMonth.findIndex((e: Evaluation) => e.employeeId === updatedEvaluation.id);
+            const index = newEvalsForMonth.findIndex((e: Evaluation) => e.employeeId === updatedEvaluation.uniqueId);
             if (index > -1) {
-                console.log(`업데이트: ID ${updatedEvaluation.id}, memo: "${updatedEvaluation.memo}", detailedGroup2: "${updatedEvaluation.detailedGroup2}"`);
                 newEvalsForMonth[index].grade = updatedEvaluation.grade;
                 newEvalsForMonth[index].memo = updatedEvaluation.memo;
-                // 그룹명도 저장
+                newEvalsForMonth[index].score = updatedEvaluation.score;
                 newEvalsForMonth[index].detailedGroup2 = updatedEvaluation.detailedGroup2 || '';
             } else {
-                console.log(`새로 추가: ID ${updatedEvaluation.id}, memo: "${updatedEvaluation.memo}", detailedGroup2: "${updatedEvaluation.detailedGroup2}"`);
                  newEvalsForMonth.push({
-                    id: `eval-${updatedEvaluation.id}-${selectedDate.year}-${selectedDate.month}`,
-                    employeeId: updatedEvaluation.id,
+                    id: `eval-${updatedEvaluation.uniqueId}-${selectedDate.year}-${selectedDate.month}`,
+                    employeeId: updatedEvaluation.uniqueId,
                     year: selectedDate.year,
                     month: selectedDate.month,
                     grade: updatedEvaluation.grade,
                     memo: updatedEvaluation.memo,
+                    score: updatedEvaluation.score,
                     detailedGroup2: updatedEvaluation.detailedGroup2 || '',
                 });
             }
         });
         
         newState[key] = newEvalsForMonth;
-        console.log('=== handleSave - 저장 후 상태 ===');
-        console.log('Updated evaluations state:', newState);
-        console.log(`Saved ${newEvalsForMonth.length} evaluations for key: ${key}`);
-        
-        // 저장된 데이터의 memo와 detailedGroup2 확인
-        newEvalsForMonth.forEach((evaluation, index) => {
-          console.log(`Saved Evaluation ${index}:`, {
-            id: evaluation.employeeId,
-            memo: evaluation.memo,
-            detailedGroup2: evaluation.detailedGroup2,
-            grade: evaluation.grade
-          });
-        });
-        
         return newState;
     });
-    
-    // 근무율이 업데이트된 경우 employees 데이터도 업데이트
-    if (hasWorkRateUpdate) {
-      console.log('=== 근무율 업데이트 감지됨 ===');
-      console.log('hasWorkRateUpdate:', hasWorkRateUpdate);
-      
-      // 기존 employees 데이터에서 근무율만 업데이트
-      const key = `${selectedDate.year}-${selectedDate.month}`;
-      
-      // 업데이트된 평가 결과에서 employees 데이터 생성 (중복 제거)
-      const currentEmployees = updatedEvaluations
-        .filter((result, index, self) => 
-          index === self.findIndex(r => r.uniqueId === result.uniqueId)
-        )
-        .map(result => ({
-          id: result.id,
-          uniqueId: result.uniqueId,
-          name: result.name,
-          company: result.company,
-          department: result.department,
-          title: result.title,
-          position: result.position,
-          growthLevel: result.growthLevel,
-          workRate: result.workRate, // 업데이트된 근무율 (엑셀 데이터 무시)
-          evaluatorId: result.evaluatorId,
-          baseAmount: result.baseAmount,
-          memo: result.memo,
-        }));
-      
-      console.log('=== employees 업데이트 전 ===');
-      console.log('중복 제거 후 currentEmployees 길이:', currentEmployees.length);
-      console.log('currentEmployees:', currentEmployees);
-      
-      // handleEmployeeUpload를 사용하여 업데이트 (기존 데이터 완전 교체)
-      handleEmployeeUpload(selectedDate.year, selectedDate.month, currentEmployees);
-      console.log('=== handleEmployeeUpload 호출 완료 ===');
-    } else {
-      console.log('=== 근무율 업데이트 감지되지 않음 ===');
-      console.log('hasWorkRateUpdate:', hasWorkRateUpdate);
-      console.log('updatedEvaluations workRate 변경사항:');
-      updatedEvaluations.forEach((result, index) => {
-        const originalResult = currentMonthResults.find(r => r.id === result.id);
-        if (originalResult && Math.abs(result.workRate - originalResult.workRate) > 0.001) {
-          console.log(`ID ${result.id} (${result.name}): ${originalResult.workRate}% → ${result.workRate}%`);
-        }
-      });
-    }
-    
-    // 저장 완료 토스트
-    toast({
-      title: hasWorkRateUpdate ? '근무율 반영 완료' : '저장 완료',
-      description: hasWorkRateUpdate 
-        ? '모든 직원의 근무율이 평가 결과에 반영되었습니다.'
-        : '평가 데이터가 저장되었습니다.',
-    });
-  }, [selectedDate, setEvaluations, toast, currentMonthResults, handleEmployeeUpload]);
+  }, [selectedDate, setEvaluations]);
   
   const formatTimestamp = React.useCallback((isoString: string | null) => {
     return formatDateTime(isoString || undefined);

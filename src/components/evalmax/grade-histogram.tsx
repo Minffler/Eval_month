@@ -112,39 +112,39 @@ export function GradeHistogram({
   };
 
   return (
-    <div className="h-[250px] bg-white">
-      <ResponsiveContainer width="100%" height="100%" style={{ backgroundColor: 'white', background: 'white' }}>
-        <BarChart
-          accessibilityLayer
-          data={sortedData}
-          margin={{ top: 30, right: 10, left: 10, bottom: 20 }}
-          style={{ backgroundColor: 'white', background: 'white' }}
-        >
-          <CartesianGrid strokeDasharray="0" stroke="transparent" />
-          <XAxis
-            dataKey="name"
-            tickLine={false}
-            axisLine={false}
-            tick={<CustomXAxisTick gradingScale={gradingScale} />}
-            height={40}
-            interval={0}
-            style={{ backgroundColor: 'white' }}
-          />
-          <YAxis
-            type="number"
-            stroke="hsl(var(--muted-foreground))"
-            fontSize={12}
-            tickLine={false}
-            axisLine={false}
-            tickFormatter={(value) => `${value}`}
-            allowDecimals={false}
-            style={{ backgroundColor: 'white' }}
-          />
-          <Bar
-            dataKey="value"
+            <div className="h-[250px] bg-[hsl(30,30%,98%)]">
+        <ResponsiveContainer width="100%" height="100%" style={{ backgroundColor: 'white', background: 'white' }}>
+                                  <BarChart
+              accessibilityLayer
+              data={sortedData}
+              margin={{ top: 30, right: 10, left: 10, bottom: 20 }}
+              style={{ backgroundColor: 'white', background: 'white' }}
+            >
+              <CartesianGrid strokeDasharray="0" stroke="transparent" />
+              <XAxis
+              dataKey="name"
+              tickLine={false}
+              axisLine={false}
+              tick={<CustomXAxisTick gradingScale={gradingScale} />}
+              height={40}
+              interval={0}
+              style={{ backgroundColor: 'white' }}
+            />
+            <YAxis
+              type="number"
+              stroke="hsl(var(--muted-foreground))"
+              fontSize={12}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={(value) => `${value}`}
+              allowDecimals={false}
+              style={{ backgroundColor: 'white' }}
+            />
+            <Bar
+              dataKey="value"
             fill="hsl(var(--primary))"
-            radius={[4, 4, 0, 0]}
-          >
+              radius={[4, 4, 0, 0]}
+            >
             {sortedData.map((entry, index) => (
               <Cell 
                 key={`cell-${index}`} 
@@ -153,10 +153,10 @@ export function GradeHistogram({
                 strokeWidth={entry.isHighlighted ? 2 : 0}
               />
             ))}
-            <LabelList dataKey="value" content={<CombinedLabel />} />
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
+              <LabelList dataKey="value" content={<CombinedLabel />} />
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
       
       {/* 하이라이트된 등급에 대한 설명 */}
       {highlightGrade && (

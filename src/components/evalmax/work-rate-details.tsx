@@ -239,11 +239,21 @@ export default function WorkRateDetails({ type, data, workRateInputs, selectedDa
 
   const tableData = React.useMemo(() => {
     const details = calculateWorkRateDetails(workRateInputs, attendanceTypes, [], selectedDate.year, selectedDate.month);
+    let filteredDetails;
+    
     if (type === 'shortenedWork') {
-        return details.shortenedWorkDetails;
+        filteredDetails = details.shortenedWorkDetails;
+    } else {
+        filteredDetails = details.dailyAttendanceDetails;
     }
-    return details.dailyAttendanceDetails;
-  }, [workRateInputs, attendanceTypes, selectedDate, type]);
+    
+    // 피평가자 페이지에서는 본인의 데이터만 필터링
+    if (viewAs === 'employee' && user) {
+        filteredDetails = filteredDetails.filter(item => item.uniqueId === user.uniqueId);
+    }
+    
+    return filteredDetails;
+  }, [workRateInputs, attendanceTypes, selectedDate, type, viewAs, user]);
 
 
   const filteredData = React.useMemo(() => {
@@ -474,7 +484,7 @@ export default function WorkRateDetails({ type, data, workRateInputs, selectedDa
                     <Label className="text-sm font-medium text-left">대상자</Label>
                     <Popover open={employeeSearchOpen} onOpenChange={setEmployeeSearchOpen}>
                         <PopoverTrigger asChild>
-                            <Button variant="outline" role="combobox" className="mt-1 w-full justify-between bg-white">
+                            <Button variant="outline" role="combobox" className="mt-1 w-full justify-between bg-[hsl(30,30%,98%)]">
                                 {formData.uniqueId ? `${formData.name} (${formData.uniqueId})` : "직원 선택..."}
                                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                             </Button>
@@ -599,7 +609,7 @@ export default function WorkRateDetails({ type, data, workRateInputs, selectedDa
                 <Label className="text-sm font-medium">일근태 유형</Label>
                 <Popover open={attendanceTypeSearchOpen} onOpenChange={setAttendanceTypeSearchOpen}>
                     <PopoverTrigger asChild>
-                        <Button variant="outline" role="combobox" className="mt-1 w-full justify-between bg-white">
+                        <Button variant="outline" role="combobox" className="mt-1 w-full justify-between bg-[hsl(30,30%,98%)]">
                             {formData.type || "근태 종류를 선택해주세요"}
                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>

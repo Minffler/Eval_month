@@ -165,7 +165,7 @@ export default function EmployeeDashboard({
         return (
           <WorkRateDetails 
             type="shortenedWork" 
-            data={Array.from(userMap.values())} 
+            data={employeeResults} 
             selectedDate={selectedDate} 
             attendanceTypes={attendanceTypes} 
             viewAs={role} 
@@ -178,7 +178,7 @@ export default function EmployeeDashboard({
             return (
           <WorkRateDetails 
             type="dailyAttendance" 
-            data={Array.from(userMap.values())} 
+            data={employeeResults} 
             selectedDate={selectedDate} 
             attendanceTypes={attendanceTypes} 
             viewAs={role} 

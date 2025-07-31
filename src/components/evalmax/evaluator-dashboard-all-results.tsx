@@ -469,7 +469,7 @@ export default function AllResultsView({
               <TableBody>
                 {sortedFilteredResults.length > 0 ? (
                   sortedFilteredResults.map(result => (
-                    <TableRow key={`${result.year}-${result.month}-${result.id}`}>
+                    <TableRow key={`${result.year}-${result.month}-${result.uniqueId}`}>
                       <TableCell className="text-center">{result.company}</TableCell>
                       <TableCell className="text-center">{result.department}</TableCell>
                       <TableCell className="text-center">{result.name}</TableCell>

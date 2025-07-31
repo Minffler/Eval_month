@@ -306,18 +306,11 @@ export default function GradeManagement({
 
   // Grade Card 렌더링 (기존 기능 유지)
   const renderGradeCard = () => (
-    <Card>
-      <CardHeader>
-        <CardTitle>등급/점수 관리</CardTitle>
-        <CardDescription>
-          등급별 점수와 지급률을 관리합니다.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="border rounded-lg">
-          <Table>
-            <TableHeader>
-              <TableRow>
+    <div>
+      <div className="border rounded-lg">
+        <Table>
+                      <TableHeader>
+              <TableRow className="bg-[hsl(30,30%,96%)]">
                 <TableHead className="py-2 px-3 text-center">등급</TableHead>
                 <TableHead className="py-2 px-3 text-center">점수</TableHead>
                 <TableHead className="py-2 px-3 text-center">지급률 (%)</TableHead>
@@ -325,64 +318,63 @@ export default function GradeManagement({
                 <TableHead></TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
-              {(localGrades || []).map((grade, index) => (
-                <TableRow key={`grade-${index}-${grade.grade}`}>
-                  <TableCell className="py-1 px-2 text-center">
-                    <Input 
-                      value={grade.grade || ''} 
-                      onChange={(e) => handleGradeInputChange(index, 'grade', e.target.value)} 
-                      className="w-full h-8 mx-auto"
-                    />
-                  </TableCell>
-                  <TableCell className="py-1 px-2 text-center">
-                    <Input 
-                      type="number" 
-                      value={grade.score} 
-                      onChange={(e) => handleGradeInputChange(index, 'score', e.target.value)} 
-                      className="w-full h-8 mx-auto"
-                    />
-                  </TableCell>
-                  <TableCell className="py-1 px-2 text-center">
-                    <Input 
-                      type="number" 
-                      value={grade.payoutRate} 
-                      onChange={(e) => handleGradeInputChange(index, 'payoutRate', e.target.value)} 
-                      className="w-full h-8 mx-auto"
-                    />
-                  </TableCell>
-                  <TableCell className="py-1 px-2 text-center">
-                    <Input 
-                      value={grade.description || ''} 
-                      onChange={(e) => handleGradeInputChange(index, 'description', e.target.value)} 
-                      className="w-full h-8 mx-auto"
-                    />
-                  </TableCell>
-                  <TableCell className="py-1 px-2 text-center">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={() => handleRemoveGrade(index)} 
-                      className="h-8 w-8"
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-        <div className="flex justify-between mt-4">
-          <Button variant="outline" onClick={handleAddNewGrade}>
-            <PlusCircle className="mr-2 h-4 w-4" />새 등급 추가
-          </Button>
-          <Button onClick={handleSaveGrades}>
-            <Save className="mr-2 h-4 w-4" />등급/점수 저장
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+          <TableBody>
+            {(localGrades || []).map((grade, index) => (
+              <TableRow key={`grade-${index}-${grade.grade}`}>
+                <TableCell className="py-1 px-2 text-center">
+                  <Input 
+                    value={grade.grade || ''} 
+                    onChange={(e) => handleGradeInputChange(index, 'grade', e.target.value)} 
+                    className="w-full h-8 mx-auto"
+                  />
+                </TableCell>
+                <TableCell className="py-1 px-2 text-center">
+                  <Input 
+                    type="number" 
+                    value={grade.score} 
+                    onChange={(e) => handleGradeInputChange(index, 'score', e.target.value)} 
+                    className="w-full h-8 mx-auto"
+                  />
+                </TableCell>
+                <TableCell className="py-1 px-2 text-center">
+                  <Input 
+                    type="number" 
+                    value={grade.payoutRate} 
+                    onChange={(e) => handleGradeInputChange(index, 'payoutRate', e.target.value)} 
+                    className="w-full h-8 mx-auto"
+                  />
+                </TableCell>
+                <TableCell className="py-1 px-2 text-center">
+                  <Input 
+                    value={grade.description || ''} 
+                    onChange={(e) => handleGradeInputChange(index, 'description', e.target.value)} 
+                    className="w-full h-8 mx-auto"
+                  />
+                </TableCell>
+                <TableCell className="py-1 px-2 text-center">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => handleRemoveGrade(index)} 
+                    className="h-8 w-8"
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+      <div className="flex justify-between mt-4">
+        <Button variant="outline" onClick={handleAddNewGrade}>
+          <PlusCircle className="mr-2 h-4 w-4" />새 등급 추가
+        </Button>
+        <Button onClick={handleSaveGrades}>
+          <Save className="mr-2 h-4 w-4" />등급/점수 저장
+        </Button>
+      </div>
+    </div>
   );
 
   // 근태 관리 탭 렌더링
@@ -396,33 +388,33 @@ export default function GradeManagement({
         <TabsContent value="types" className="pt-4">
           <div className="border rounded-lg">
             <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="py-2 px-3 text-center">근태명</TableHead>
-                  <TableHead className="py-2 px-3 text-center w-1/3">차감 일수</TableHead>
-                  <TableHead></TableHead>
-                </TableRow>
-              </TableHeader>
+                          <TableHeader>
+              <TableRow className="bg-[hsl(30,30%,96%)]">
+                <TableHead className="py-2 px-3 text-center">근태명</TableHead>
+                <TableHead className="py-2 px-3 text-center w-1/3">차감 일수</TableHead>
+                <TableHead></TableHead>
+              </TableRow>
+            </TableHeader>
               <TableBody>
                 {localTypes.map((type, index) => (
                   <TableRow key={type.id}>
-                    <TableCell className="py-1 px-2 text-center bg-white">
+                    <TableCell className="py-1 px-2 text-center bg-[hsl(30,30%,98%)]">
                       <Input 
                         value={type.name} 
                         onChange={(e) => handleTypeInputChange(index, 'name', e.target.value)} 
-                        className="w-full h-8 mx-auto bg-white"
+                        className="w-full h-8 mx-auto bg-[hsl(30,30%,98%)]"
                       />
                     </TableCell>
-                    <TableCell className="py-1 px-2 text-center bg-white">
+                    <TableCell className="py-1 px-2 text-center bg-[hsl(30,30%,98%)]">
                       <Input 
                         type="number" 
                         step="0.01" 
                         value={type.deductionDays} 
                         onChange={(e) => handleTypeInputChange(index, 'deductionDays', e.target.value)} 
-                        className="w-full h-8 mx-auto bg-white"
+                        className="w-3/5 h-8 mx-auto bg-[hsl(30,30%,98%)]"
                       />
                     </TableCell>
-                    <TableCell className="py-1 px-2 text-center bg-white">
+                    <TableCell className="py-1 px-2 text-center bg-[hsl(30,30%,98%)]">
                       <Button 
                         variant="ghost" 
                         size="icon" 
@@ -463,38 +455,38 @@ export default function GradeManagement({
           </div>
           <div className="border rounded-lg">
             <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="py-2 px-3 text-center">날짜</TableHead>
-                  <TableHead className="py-2 px-3 text-center">공휴일명</TableHead>
-                  <TableHead></TableHead>
-                </TableRow>
-              </TableHeader>
+                          <TableHeader>
+              <TableRow className="bg-[hsl(30,30%,96%)]">
+                <TableHead className="py-2 px-3 text-center">날짜</TableHead>
+                <TableHead className="py-2 px-3 text-center">공휴일명</TableHead>
+                <TableHead></TableHead>
+              </TableRow>
+            </TableHeader>
               <TableBody>
                 {filteredHolidays.map((holiday) => {
                   const index = localHolidays.findIndex(h => h.id === holiday.id);
                   return (
                     <TableRow key={holiday.id}>
-                      <TableCell className="py-1 px-2 text-center bg-white">
+                      <TableCell className="py-1 px-2 text-center bg-[hsl(30,30%,98%)]">
                         <Input 
                           value={holiday.date} 
                           onChange={(e) => handleHolidayDateChange(index, e.target.value)} 
                           onBlur={(e) => validateHolidayDate(e.target.value, holiday.id)} 
-                          className={cn("w-full h-8 mx-auto bg-white", holidayErrors[holiday.id] && "border-destructive")} 
+                          className={cn("w-full h-8 mx-auto bg-[hsl(30,30%,98%)]", holidayErrors[holiday.id] && "border-destructive")} 
                           placeholder="YYYY-MM-DD"
                         />
                         {holidayErrors[holiday.id] && (
                           <p className="text-xs text-destructive mt-1">{holidayErrors[holiday.id]}</p>
                         )}
                       </TableCell>
-                      <TableCell className="py-1 px-2 text-center bg-white">
+                      <TableCell className="py-1 px-2 text-center bg-[hsl(30,30%,98%)]">
                         <Input 
                           value={holiday.name} 
                           onChange={(e) => handleHolidayNameChange(index, e.target.value)} 
-                          className="w-full h-8 mx-auto bg-white"
+                          className="w-full h-8 mx-auto bg-[hsl(30,30%,98%)]"
                         />
                       </TableCell>
-                      <TableCell className="py-1 px-2 text-right bg-white">
+                      <TableCell className="py-1 px-2 text-right bg-[hsl(30,30%,98%)]">
                         <Button 
                           variant="ghost" 
                           size="icon" 

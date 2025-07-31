@@ -15,7 +15,7 @@ import {
   ChevronLeft,
   LogOut,
 } from 'lucide-react';
-import { ScrollArea } from '../ui/scroll-area';
+
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import type { User } from '@/lib/types';
 import { Separator } from '../ui/separator';
@@ -119,7 +119,7 @@ export function Sidebar({ navItems, activeView, setActiveView, isOpen, setIsOpen
         <div className={cn("flex h-16 items-center border-b px-4", isOpen ? "justify-between" : "justify-center")}>
           {isOpen && <h2 className="text-lg font-bold truncate">PL월성과평가</h2>}
         </div>
-        <ScrollArea className="flex-1">
+        <div className="flex-1 overflow-auto">
           <nav className="flex-1 space-y-1 p-2">
               {navItems.map((item) => {
                 if (!item.children) {
@@ -184,7 +184,7 @@ export function Sidebar({ navItems, activeView, setActiveView, isOpen, setIsOpen
                 }
               })}
           </nav>
-        </ScrollArea>
+        </div>
         <div className="mt-auto border-t">
              <div className={cn("p-2 flex", isOpen ? "flex-row space-x-1" : "flex-col space-y-1")}>
               <BottomNavLink item={approvalItem} unreadCount={unreadApprovalCount} />

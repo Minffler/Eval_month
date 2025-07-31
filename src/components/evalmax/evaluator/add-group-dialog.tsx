@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
 import { useToast } from '@/hooks/use-toast';
 import type { EvaluationResult } from '@/lib/types';
 
@@ -319,7 +319,7 @@ export default function AddGroupDialog({
 
             {/* 멤버 목록 테이블 */}
             <div className="border rounded-lg">
-              <ScrollArea className="h-[300px]">
+              <div className="h-[300px] overflow-auto">
                                  <Table>
                    <TableHeader>
                      <TableRow>
@@ -346,7 +346,7 @@ export default function AddGroupDialog({
                      ))}
                    </TableBody>
                  </Table>
-              </ScrollArea>
+              </div>
             </div>
 
             {/* 선택된 멤버 수 표시 */}

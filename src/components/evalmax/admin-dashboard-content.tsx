@@ -1279,7 +1279,14 @@ export default function AdminDashboardContent({
             <DialogTitle>평가등급 관리</DialogTitle>
             <DialogDescription>평가 등급, 점수, 지급률을 관리합니다.</DialogDescription>
           </DialogHeader>
-          <GradeManagement gradingScale={gradingScale} setGradingScale={setGradingScale} />
+          <GradeManagement 
+            gradingScale={gradingScale} 
+            setGradingScale={setGradingScale}
+            attendanceTypes={attendanceTypes}
+            setAttendanceTypes={setAttendanceTypes}
+            holidays={holidays}
+            setHolidays={setHolidays}
+          />
         </DialogContent>
       </Dialog>
     </div>

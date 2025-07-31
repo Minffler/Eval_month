@@ -4,7 +4,7 @@ import * as React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Download, Settings2, Search, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Download, Settings2, Search, ArrowUpDown, ArrowUp, ArrowDown, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -55,6 +55,30 @@ type DetailDialogInfo = {
   title: string;
   data: (ShortenedWorkDetail | DailyAttendanceDetail)[];
   type: 'attendance' | 'shortened';
+}
+
+interface StatsCardProps {
+  title: string;
+  value: string | number;
+  description?: string;
+  icon: React.ReactNode;
+}
+
+function StatsCard({ title, value, description, icon }: StatsCardProps) {
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <div className="text-muted-foreground">{icon}</div>
+      </CardHeader>
+      <CardContent>
+        <div className="text-2xl font-bold">{value}</div>
+        <p className={cn("text-xs text-muted-foreground", description?.includes('상승') && 'text-green-500', description?.includes('하락') && 'text-destructive')}>
+          {description}
+        </p>
+      </CardContent>
+    </Card>
+  );
 }
 
 function countBusinessDaysForMonth(year: number, month: number, holidays: Set<string>): number {
@@ -178,6 +202,92 @@ export default function WorkRateManagement({
 
     return Object.values(summaries);
   }, [results, workRateDetails, monthlyStandardHours]);
+
+  // 평균 근무율 통계 계산
+  const averageWorkRateStats = React.useMemo(() => {
+    // 현재 월 평균 근무율 계산
+    const avgWorkRate = workRateSummaries.length > 0 
+      ? workRateSummaries.reduce((sum, summary) => sum + summary.monthlyWorkRate, 0) / workRateSummaries.length 
+      : 0;
+
+    // 전월 날짜 계산
+    const prevMonth = selectedDate.month === 1 
+      ? { year: selectedDate.year - 1, month: 12 }
+      : { year: selectedDate.year, month: selectedDate.month - 1 };
+
+    // 전월 데이터 계산
+    const prevMonthKey = `${prevMonth.year}-${prevMonth.month.toString().padStart(2, '0')}`;
+    const prevMonthWorkRateInputs = workRateInputs[prevMonthKey] || { shortenedWorkHours: [], dailyAttendance: [] };
+    
+    // 전월 근무율 상세 계산
+    const prevMonthHolidaysSet = new Set(holidays.map(h => h.date));
+    const prevMonthBusinessDays = countBusinessDaysForMonth(prevMonth.year, prevMonth.month, prevMonthHolidaysSet);
+    const prevMonthStandardHours = prevMonthBusinessDays * 8;
+    
+    const prevMonthWorkRateDetails = calculateWorkRateDetails(
+      workRateInputs,
+      attendanceTypes,
+      holidays,
+      prevMonth.year,
+      prevMonth.month
+    );
+
+    // 전월 근무율 요약 계산
+    const prevMonthSummaries: WorkRateSummary[] = results.map(result => {
+      const summary: WorkRateSummary = {
+        uniqueId: result.uniqueId,
+        name: result.name || 'Unknown',
+        deductionHoursAttendance: 0,
+        deductionHoursPregnancy: 0,
+        deductionHoursCare: 0,
+        totalDeductionHours: 0,
+        totalWorkHours: prevMonthStandardHours,
+        monthlyWorkRate: 1,
+      };
+
+      // 전월 근태 데이터 처리
+      prevMonthWorkRateDetails.dailyAttendanceDetails.forEach(detail => {
+        if (detail.uniqueId === result.uniqueId) {
+          summary.deductionHoursAttendance += detail.totalDeductionHours;
+          summary.totalDeductionHours += detail.totalDeductionHours;
+        }
+      });
+
+      // 전월 단축근로 데이터 처리
+      prevMonthWorkRateDetails.shortenedWorkDetails.forEach(detail => {
+        if (detail.uniqueId === result.uniqueId) {
+          if (detail.type === '임신') {
+            summary.deductionHoursPregnancy += detail.totalDeductionHours;
+          } else if (detail.type === '육아/돌봄') {
+            summary.deductionHoursCare += detail.totalDeductionHours;
+          }
+          summary.totalDeductionHours += detail.totalDeductionHours;
+        }
+      });
+
+      // 전월 최종 근무율 계산
+      summary.totalWorkHours = prevMonthStandardHours - summary.totalDeductionHours;
+      summary.monthlyWorkRate = summary.totalWorkHours / prevMonthStandardHours;
+
+      return summary;
+    });
+
+    // 전월 평균 근무율 계산
+    const prevAvgWorkRate = prevMonthSummaries.length > 0 
+      ? prevMonthSummaries.reduce((sum, summary) => sum + summary.monthlyWorkRate, 0) / prevMonthSummaries.length 
+      : 0;
+
+    // 변화율 계산 (퍼센트 포인트)
+    const rateChange = prevAvgWorkRate > 0 
+      ? avgWorkRate - prevAvgWorkRate 
+      : 0;
+
+    return {
+      avgWorkRate,
+      prevAvgWorkRate,
+      rateChange
+    };
+  }, [workRateSummaries, selectedDate, workRateInputs, results, holidays, attendanceTypes]);
 
   // Filter and sort data
   const filteredAndSortedData = React.useMemo(() => {
@@ -352,7 +462,7 @@ export default function WorkRateManagement({
 
     // 근무율이 변경된 결과만 필터링
     const resultsWithWorkRateChanges = uniqueUpdatedResults.filter(result => {
-      const originalResult = allEvaluationResults.find(r => r.id === result.id);
+      const originalResult = allEvaluationResults.find(r => r.uniqueId === result.uniqueId);
       return originalResult && Math.abs(result.workRate - originalResult.workRate) > 0.001;
     });
 
@@ -418,6 +528,30 @@ export default function WorkRateManagement({
 
   return (
     <div className="space-y-4">
+      {/* 평균 근무율 통계 카드 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <StatsCard 
+          title="평균 근무율"
+          value={`${(averageWorkRateStats.avgWorkRate * 100).toFixed(1)}%`}
+          description={
+            averageWorkRateStats.prevAvgWorkRate > 0 ?
+            `전월 대비 ${(averageWorkRateStats.rateChange * 100).toFixed(1)}%p` :
+            '전월 데이터 없음'
+          }
+          icon={
+            averageWorkRateStats.rateChange > 0.001 ? <TrendingUp className="text-green-500"/> :
+            averageWorkRateStats.rateChange < -0.001 ? <TrendingDown className="text-destructive" /> :
+            <Minus />
+          }
+        />
+        <StatsCard 
+          title="월 소정근로시간"
+          value={`${monthlyStandardHours} 시간`}
+          description={`${businessDays}일(영업일) * 8시간`}
+          icon={<div className="font-bold text-sm text-muted-foreground">8h</div>}
+        />
+      </div>
+
       <Card>
         <CardHeader>
           {/* 제목 및 액션 버튼 */}
