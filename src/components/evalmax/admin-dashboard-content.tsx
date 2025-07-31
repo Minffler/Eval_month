@@ -659,9 +659,9 @@ export default function AdminDashboardContent({
         case 'dashboard':
             return (
                 <div className="space-y-4">
-                  <Card className="shadow-sm border-gray-200">
+                  <Card>
                     <Collapsible open={isDistributionChartOpen} onOpenChange={setIsDistributionChartOpen}>
-                      <CardHeader className="flex flex-row items-center justify-between p-4">
+                      <CardHeader>
                           <CardTitle>등급 분포</CardTitle>
                            <Tabs defaultValue="전체" onValueChange={(val) => setDashboardFilter(val)}>
                                 <TabsList>
@@ -674,18 +674,18 @@ export default function AdminDashboardContent({
                             </Tabs>
                       </CardHeader>
                       <CollapsibleContent>
-                        <CardContent className="pt-0 p-4">
+                        <CardContent className="pt-0">
                           <GradeHistogram data={overallGradeDistribution} gradingScale={gradingScale} highlightAll={true} />
                         </CardContent>
                       </CollapsibleContent>
-                      <CollapsibleTrigger asChild>
-                        <div className="border-t border-gray-100 w-full text-center p-2 text-sm text-gray-500 cursor-pointer hover:bg-gray-50 rounded-b-lg transition-colors">
-                            <div className="flex items-center justify-center">
-                                {isDistributionChartOpen ? "숨기기" : "보기"}
-                                {isDistributionChartOpen ? <ChevronUp className="h-4 w-4 ml-1" /> : <ChevronDown className="h-4 w-4 ml-1" />}
+                       <CollapsibleTrigger asChild>
+                            <div className="border-t w-full text-center p-2 text-sm text-muted-foreground cursor-pointer hover:bg-muted/50 rounded-b-lg">
+                                <div className="flex items-center justify-center">
+                                    {isDistributionChartOpen ? "숨기기" : "보기"}
+                                    {isDistributionChartOpen ? <ChevronUp className="h-4 w-4 ml-1" /> : <ChevronDown className="h-4 w-4 ml-1" />}
+                                </div>
                             </div>
-                        </div>
-                      </CollapsibleTrigger>
+                        </CollapsibleTrigger>
                     </Collapsible>
                   </Card>
 
@@ -884,13 +884,7 @@ export default function AdminDashboardContent({
                                     엑셀 다운로드
                                 </Button>
                             </div>
-                            <Button onClick={() => {
-                                updateAndSaveChanges(results);
-                                toast({ title: '저장 완료', description: '등급 및 기준금액이 성공적으로 저장되었습니다.' });
-                            }} variant="default">
-                                <Save className="mr-2 h-4 w-4" />
-                                저장
-                            </Button>
+
                         </div>
                         <div className="border rounded-lg overflow-x-auto">
                         <Table>

@@ -10,6 +10,7 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
 import { useAuth } from '@/contexts/auth-context';
 import { cn } from '@/lib/utils';
+import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 
 interface DetailedEvaluationViewProps {
   allResultsForYear: EvaluationResult[];
@@ -32,23 +33,10 @@ const gradeToColor: Record<string, string> = {
 
 export default function DetailedEvaluationView({ allResultsForYear, gradingScale, selectedDate }: DetailedEvaluationViewProps) {
   const { user } = useAuth();
-  const [isDistributionOpen, setIsDistributionOpen] = React.useState(true);
   const [isDetailsOpen, setIsDetailsOpen] = React.useState(true);
+  const [isAnnualHistoryOpen, setIsAnnualHistoryOpen] = React.useState(true);
 
-  // 전체 등급 분포 데이터 생성
-  const gradeDistribution = React.useMemo(() => {
-    const counts = allResultsForYear.reduce((acc, result) => {
-      if (result.grade) {
-        acc[result.grade] = (acc[result.grade] || 0) + 1;
-      }
-      return acc;
-    }, {} as Record<string, number>);
 
-    return Object.keys(gradingScale || {}).map((grade) => ({
-      name: grade,
-      value: counts[grade] || 0,
-    }));
-  }, [allResultsForYear, gradingScale]);
 
   // 내 현재 월 결과
   const myCurrentMonthResult = React.useMemo(() => 
@@ -60,33 +48,90 @@ export default function DetailedEvaluationView({ allResultsForYear, gradingScale
     return new Intl.NumberFormat('ko-KR').format(value);
   }
 
+  // 연간 성과 히스토리 차트 데이터 생성
+  const chartData = React.useMemo(() => {
+    const targetYear = selectedDate?.year || new Date().getFullYear();
+    const targetMonth = selectedDate?.month || 12;
+    
+    const yearData = allResultsForYear.filter(r => r.year === targetYear);
+    
+    return Array.from({ length: 12 }, (_, i) => {
+      const month = i + 1;
+      
+      if (month > targetMonth) {
+        return {
+          month: `${month}월`,
+          score: null,
+          grade: null
+        };
+      }
+      
+      const result = yearData.find(r => r.month === month);
+      return {
+        month: `${month}월`,
+        score: result?.score ?? null,
+        grade: result?.grade ?? null
+      };
+    });
+  }, [allResultsForYear, selectedDate]);
+
   return (
     <div className="space-y-4">
-      {/* 전체 등급 분포 */}
-      <Collapsible open={isDistributionOpen} onOpenChange={setIsDistributionOpen} asChild>
-        <Card className="shadow-sm border-gray-200">
+      {/* 연간 성과 히스토리 */}
+      <Collapsible open={isAnnualHistoryOpen} onOpenChange={setIsAnnualHistoryOpen} asChild>
+        <Card className="overflow-hidden">
           <CollapsibleTrigger asChild>
-            <CardHeader className="flex flex-row items-center justify-between cursor-pointer p-4">
+            <CardHeader className="flex flex-row items-center justify-between cursor-pointer">
               <div>
-                <CardTitle>전체 등급 분포</CardTitle>
-                <CardDescription>전체 평가 대상자 중 나의 등급 위치를 확인합니다.</CardDescription>
+                <CardTitle>연간 성과 히스토리</CardTitle>
+                <CardDescription>지난 1년간의 월별 성과 추이입니다.</CardDescription>
               </div>
               <Button variant="ghost" size="icon">
-                {isDistributionOpen ? <ChevronUp /> : <ChevronDown />}
+                {isAnnualHistoryOpen ? <ChevronUp /> : <ChevronDown />}
               </Button>
             </CardHeader>
           </CollapsibleTrigger>
           <CollapsibleContent>
-            <CardContent className="p-4">
-              <GradeHistogram 
-                data={gradeDistribution} 
-                gradingScale={gradingScale}
-                highlightAll={true}
-              />
+            <CardContent className="space-y-6">
+              {/* 라인차트 */}
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData} margin={{ top: 5, right: 20, left: -10, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" fontSize={12} />
+                    <YAxis domain={[0, 150]} fontSize={12} />
+                    <Tooltip content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        const data = payload[0].payload;
+                        return (
+                          <div className="rounded-lg border bg-background p-2 shadow-sm">
+                            <div className="grid grid-cols-2 gap-2">
+                              <div className="flex flex-col">
+                                <span className="text-[0.70rem] uppercase text-muted-foreground">월</span>
+                                <span className="font-bold text-muted-foreground">{data.month}</span>
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-[0.70rem] uppercase text-muted-foreground">등급/점수</span>
+                                <span className={cn("font-bold", gradeToColor[data.grade] || 'text-foreground')}>
+                                  {data.grade ? `${data.grade} (${data.score})` : '-'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}/>
+                    <Line type="monotone" dataKey="score" stroke="hsl(var(--primary))" strokeWidth={2} connectNulls />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
             </CardContent>
           </CollapsibleContent>
         </Card>
       </Collapsible>
+
+
       
       {/* 월별 상세 결과 */}
       <Collapsible open={isDetailsOpen} onOpenChange={setIsDetailsOpen} asChild>
@@ -104,6 +149,47 @@ export default function DetailedEvaluationView({ allResultsForYear, gradingScale
           </CollapsibleTrigger>
           <CollapsibleContent>
             <CardContent className="p-4">
+              {/* 요약 정보 */}
+              {(() => {
+                // 실제 데이터가 있는 월만 필터링 (등급이 있는 데이터만)
+                const filteredResults = allResultsForYear
+                  .filter(result => result.grade !== null)
+                  .sort((a,b) => b.month - a.month);
+                
+                if (filteredResults.length > 0) {
+                  return (
+                <div className="mb-4 p-4 bg-muted/30 rounded-lg">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div>
+                      <p className="text-muted-foreground">평가 횟수</p>
+                          <p className="font-semibold">{filteredResults.length}회</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">평균 점수</p>
+                      <p className="font-semibold">
+                            {Math.round(filteredResults.reduce((acc, curr) => acc + curr.score, 0) / filteredResults.length)}점
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">평균 근무율</p>
+                      <p className="font-semibold">
+                            {(filteredResults.reduce((acc, curr) => acc + curr.workRate, 0) / filteredResults.length * 100).toFixed(1)}%
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">총 지급액</p>
+                      <p className="font-semibold text-primary">
+                            {filteredResults.reduce((acc, curr) => acc + curr.finalAmount, 0).toLocaleString()}원
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                  );
+                } else {
+                  return null;
+                }
+              })()}
+              
               <div className="border border-gray-200 rounded-lg overflow-x-auto">
                 <Table>
                   <TableHeader>
@@ -173,47 +259,6 @@ export default function DetailedEvaluationView({ allResultsForYear, gradingScale
                   </TableBody>
                 </Table>
               </div>
-              
-              {/* 요약 정보 */}
-              {(() => {
-                // 실제 데이터가 있는 월만 필터링 (등급이 있는 데이터만)
-                const filteredResults = allResultsForYear
-                  .filter(result => result.grade !== null)
-                  .sort((a,b) => b.month - a.month);
-                
-                if (filteredResults.length > 0) {
-                  return (
-                <div className="mt-4 p-4 bg-muted/30 rounded-lg">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                    <div>
-                      <p className="text-muted-foreground">평가 횟수</p>
-                          <p className="font-semibold">{filteredResults.length}회</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">평균 점수</p>
-                      <p className="font-semibold">
-                            {Math.round(filteredResults.reduce((acc, curr) => acc + curr.score, 0) / filteredResults.length)}점
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">평균 근무율</p>
-                      <p className="font-semibold">
-                            {(filteredResults.reduce((acc, curr) => acc + curr.workRate, 0) / filteredResults.length * 100).toFixed(1)}%
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">총 지급액</p>
-                      <p className="font-semibold text-primary">
-                            {filteredResults.reduce((acc, curr) => acc + curr.finalAmount, 0).toLocaleString()}원
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                  );
-                } else {
-                  return null;
-                }
-              })()}
             </CardContent>
           </CollapsibleContent>
         </Card>

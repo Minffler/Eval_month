@@ -126,13 +126,13 @@ export function GradeHistogram({
 
 
   return (
-    <div className="h-[280px]">
+    <div className="h-[250px]">
       <ChartContainer config={chartConfig} className="w-full h-full">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             accessibilityLayer
             data={sortedData}
-            margin={{ top: 30, right: 10, left: 10, bottom: 80 }}
+            margin={{ top: 30, right: 10, left: 10, bottom: 0 }}
           >
             <XAxis
               dataKey="name"

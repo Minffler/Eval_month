@@ -244,7 +244,7 @@ export default function MyPerformanceReview({
               {/* 6월 평가 결과와 등급분포차트 */}
                             <AnimatePresence>
                 {latestResult && (
-                  <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-2">
                     {/* 좌측: 등급 표시 영역 (음영 적용) */}
                                     <motion.div
                                         initial={{ opacity: 0, y: 10 }}
@@ -272,7 +272,7 @@ export default function MyPerformanceReview({
                     
                     {/* 우측: 등급분포차트 (음영 없음) */}
                     {gradingScale && (
-                      <div className="flex-1 h-56">
+                      <div className="flex-1 h-79">
                         <GradeHistogram 
                           data={gradeDistribution} 
                           gradingScale={gradingScale}

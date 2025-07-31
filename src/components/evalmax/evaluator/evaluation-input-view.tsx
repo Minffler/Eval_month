@@ -730,14 +730,6 @@ export default function EvaluationInputView({
               <CardDescription className="text-sm text-muted-foreground">
                 {selectedDate.year}년 {selectedDate.month}월 성과평가 ({selectedDate.month === 12 ? 1 : selectedDate.month + 1}월 급여반영)
               </CardDescription>
-              {/* 변경사항 표시 */}
-              {changedEvaluationsSize > 0 && (
-                <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
-                  <p className="text-sm text-blue-700 font-medium">
-                    📝 {changedEvaluationsSize}개의 평가가 변경되었습니다
-                  </p>
-                </div>
-              )}
             </div>
             
             {/* 진행률 영역 - CSS 변수 사용 */}
