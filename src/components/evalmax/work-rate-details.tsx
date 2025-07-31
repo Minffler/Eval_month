@@ -70,6 +70,7 @@ interface WorkRateDetailsProps {
   viewAs?: Role;
   onDataChange: (data: any[], type: 'shortenedWork' | 'dailyAttendance') => void;
   addApproval?: (approval: Omit<Approval, 'id' | 'date' | 'isRead' | 'status' | 'statusHR' | 'approvedAtTeam' | 'approvedAtHR' | 'rejectionReason'>) => void;
+  currentEvaluatorId?: string; // 현재 로그인한 평가자 ID
 }
 
 const ShortenedWorkTypeIcon = ({ type }: { type: '임신' | '육아/돌봄' }) => {
@@ -213,7 +214,7 @@ const TimePicker = ({ value, onChange }: { value: string, onChange: (time: strin
     )
 }
 
-export default function WorkRateDetails({ type, data, workRateInputs, selectedDate, allEmployees, attendanceTypes, viewAs = 'admin', onDataChange, addApproval }: WorkRateDetailsProps) {
+export default function WorkRateDetails({ type, data, workRateInputs, selectedDate, allEmployees, attendanceTypes, viewAs = 'admin', onDataChange, addApproval, currentEvaluatorId }: WorkRateDetailsProps) {
   const { user, userMap } = useAuth();
   const { addApproval: addNotificationApproval } = useNotifications();
   const { toast } = useToast();
@@ -252,8 +253,17 @@ export default function WorkRateDetails({ type, data, workRateInputs, selectedDa
         filteredDetails = filteredDetails.filter(item => item.uniqueId === user.uniqueId);
     }
     
+    // 평가자 페이지에서는 현재 평가자가 담당하는 피평가자만 필터링
+    if (viewAs === 'evaluator' && currentEvaluatorId) {
+        filteredDetails = filteredDetails.filter(item => {
+            // allEmployees에서 해당 피평가자의 평가자 정보를 찾아서 필터링
+            const employee = allEmployees.find(emp => emp.uniqueId === item.uniqueId);
+            return employee && employee.evaluatorId === currentEvaluatorId;
+        });
+    }
+    
     return filteredDetails;
-  }, [workRateInputs, attendanceTypes, selectedDate, type, viewAs, user]);
+  }, [workRateInputs, attendanceTypes, selectedDate, type, viewAs, user, currentEvaluatorId, allEmployees]);
 
 
   const filteredData = React.useMemo(() => {

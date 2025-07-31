@@ -17,13 +17,15 @@ interface AllResultsViewProps {
   allEmployees: EvaluationResult[];
   gradingScale: Record<NonNullable<Grade>, GradeInfo>;
   handleResultsUpdate: (updatedResults: EvaluationResult[]) => void;
+  currentEvaluatorId?: string; // 현재 로그인한 평가자 ID
 }
 
 export default function AllResultsView({ 
   currentMonthResults, 
   allEmployees, 
   gradingScale, 
-  handleResultsUpdate 
+  handleResultsUpdate,
+  currentEvaluatorId
 }: AllResultsViewProps) {
   // 상태 관리
   const [sortConfig, setSortConfig] = React.useState<SortConfig>(null);
@@ -76,9 +78,13 @@ export default function AllResultsView({
       const companyMatch = effectiveCompanies.includes(r.company);
       const departmentMatch = effectiveDepartments.includes(r.department);
       const positionMatch = effectivePositions.includes(r.title);
-      return companyMatch && departmentMatch && positionMatch;
+      
+      // 현재 로그인한 평가자가 담당하는 피평가자만 필터링
+      const evaluatorMatch = currentEvaluatorId ? r.evaluatorId === currentEvaluatorId : true;
+      
+      return companyMatch && departmentMatch && positionMatch && evaluatorMatch;
     });
-  }, [currentMonthResults, effectiveCompanies, effectiveDepartments, effectivePositions]);
+  }, [currentMonthResults, effectiveCompanies, effectiveDepartments, effectivePositions, currentEvaluatorId]);
 
   // 정렬된 결과
   const sortedFilteredResults = React.useMemo(() => {

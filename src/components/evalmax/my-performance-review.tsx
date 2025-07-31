@@ -47,6 +47,36 @@ const gradeToBgColor: Record<string, string> = {
   'D': 'bg-gray-50 border-gray-200'
 };
 
+// 등급별 응원 문구 매핑
+const gradeToMessage: Record<string, string> = {
+  'S': `🎉 압도적 성과! 
+누구보다 빛나요!`,
+
+  'A+': `🌟 기대 그 이상, 
+멋지게 해냈어요!`,
+
+  'A': `✨ 한결같은 실력, 
+탁월한 결과입니다!`,
+ 
+  'B+': `👍 성실한 꾸준함이 
+빛나는 순간이에요!`,
+
+  'B': `🌱 안정감 있는 퍼포먼스, 
+계속 좋아지고 있어요!`,
+
+  'B-': `🛠 보이지 않는 노력이 있어요, 
+응원합니다!`,
+
+  'C': `🔁 아직은 성장 중! 
+더 좋아질 수 있어요!`,
+
+  'C-': `💡 작은 변화가 
+큰 성장을 만듭니다!`,
+
+  'D': `🌱 누구나 어려운 때가 있죠.
+다음 달을 기대할게요!`,
+};
+
 export default function MyPerformanceReview({ 
   allResultsForYear, 
   selectedDate,
@@ -257,8 +287,14 @@ export default function MyPerformanceReview({
                         <p className={cn("text-5xl font-bold", gradeToColor[latestResult.grade!] || 'text-foreground')}>
                           {latestResult.grade}
                         </p>
-                        {isTopTier && <p className="mt-1 font-semibold text-primary">훌륭해요! 최고의 성과입니다!</p>}
-                        {isLowTier && <p className="mt-1 font-semibold text-muted-foreground">다음 달엔 더 잘할 수 있어요!</p>}
+                        {latestResult.grade && gradeToMessage[latestResult.grade] && (
+                          <p className={cn(
+                            "mt-1 font-semibold whitespace-pre-line",
+                            isTopTier ? "text-primary" : "text-muted-foreground"
+                          )}>
+                            {gradeToMessage[latestResult.grade]}
+                          </p>
+                        )}
                         
                         {/* 위치 정보 */}
                         {myPosition && (

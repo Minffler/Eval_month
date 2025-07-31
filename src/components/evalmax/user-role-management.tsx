@@ -107,7 +107,16 @@ export default function UserRoleManagement() {
       );
     }
 
-    return users.sort((a,b) => a.name.localeCompare(b.name));
+    // admin 사용자를 분리하여 상단에 고정
+    const adminUser = users.find(user => user.uniqueId === 'admin');
+    const otherUsers = users.filter(user => user.uniqueId !== 'admin');
+    
+    // admin 사용자가 있고 필터에 포함되어 있다면 상단에 배치
+    if (adminUser) {
+      return [adminUser, ...otherUsers.sort((a,b) => a.name.localeCompare(b.name))];
+    }
+    
+    return otherUsers.sort((a,b) => a.name.localeCompare(b.name));
   }, [allUsers, searchTerm, roleFilter]);
 
   const handleToggleRole = (userId: string, role: 'admin' | 'evaluator' | 'employee') => {

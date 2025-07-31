@@ -242,6 +242,7 @@ export default function EvaluatorDashboard({
             allEmployees={currentMonthResults}
             gradingScale={gradingScale} 
             handleResultsUpdate={handleSave}
+            currentEvaluatorId={effectiveUser?.uniqueId}
           />
         );
       case 'assignment-management':
@@ -287,6 +288,7 @@ export default function EvaluatorDashboard({
             workRateInputs={workRateInputs}
             allEmployees={myEmployees}
             onDataChange={() => {}}
+            currentEvaluatorId={effectiveUser?.uniqueId}
           />
         );
       case 'daily-attendance-details':
@@ -300,6 +302,7 @@ export default function EvaluatorDashboard({
             workRateInputs={workRateInputs}
             allEmployees={myEmployees}
             onDataChange={() => {}}
+            currentEvaluatorId={effectiveUser?.uniqueId}
           />
         );
       case 'notifications':
