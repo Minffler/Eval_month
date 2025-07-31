@@ -27,11 +27,11 @@ const gradeToColor: Record<string, string> = {
     'A+': 'text-yellow-500', 
     'A': 'text-yellow-500',
     'B+': 'text-orange-700', 
-    'B': 'text-lime-500', 
-    'B-': 'text-yellow-600',
-    'C': 'text-orange-500', 
-    'C-': 'text-red-500', 
-    'D': 'text-gray-500'
+    'B': 'text-black', 
+    'B-': 'text-black',
+    'C': 'text-gray-500', 
+    'C-': 'text-gray-500', 
+    'D': 'text-red-500'
 };
 
 // 등급별 배경색 정의
@@ -90,25 +90,14 @@ export default function MyPerformanceReview({
 
     // 데이터 가공: 원본 데이터를 차트 라이브러리가 사용할 수 있는 형태로 변환
   // 1월~12월까지 모두 표시하되, 데이터가 없는 월은 null로 처리
-  // selectedDate의 월까지만 표시하도록 제한
   const chartData = React.useMemo(() => {
     const targetYear = selectedDate?.year || new Date().getFullYear();
-    const targetMonth = selectedDate?.month || 12; // 기본값은 12월
     
-    // 해당 연도의 데이터만 필터링하고, 선택된 월까지만 표시
+    // 해당 연도의 데이터만 필터링
     const yearData = (allResultsForYear || []).filter(r => r.year === targetYear);
     
     return Array.from({ length: 12 }, (_, i) => {
             const month = i + 1;
-      
-      // 선택된 월을 초과하는 경우 null로 처리
-      if (month > targetMonth) {
-        return {
-          month: `${month}월`,
-          score: null,
-          grade: null
-        };
-      }
       
       const result = yearData.find(r => r.month === month);
             return {
