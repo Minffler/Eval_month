@@ -73,6 +73,55 @@ import { ApprovalList } from './approval-list';
 import { ApprovalDetailDialog } from './approval-detail-dialog';
 import { StatusBadge } from './status-badge';
 
+// 슬롯머신 애니메이션 컴포넌트
+const SlotMachineNumber: React.FC<{ value: number; duration?: number }> = ({ value, duration = 2000 }) => {
+  const [displayValue, setDisplayValue] = React.useState(0);
+  const [isAnimating, setIsAnimating] = React.useState(false);
+
+  React.useEffect(() => {
+    if (value === 0) {
+      setDisplayValue(0);
+      return;
+    }
+
+    setIsAnimating(true);
+    const startTime = Date.now();
+    const startValue = displayValue;
+    const endValue = value;
+
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      // 이징 함수 (부드러운 감속)
+      const easeOut = 1 - Math.pow(1 - progress, 3);
+      
+      const currentValue = Math.floor(startValue + (endValue - startValue) * easeOut);
+      setDisplayValue(currentValue);
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        setDisplayValue(endValue);
+        setIsAnimating(false);
+      }
+    };
+
+    requestAnimationFrame(animate);
+  }, [value, duration]);
+
+  const formatCurrency = (value: number) => {
+    if (isNaN(value) || value === null) return '0';
+    return new Intl.NumberFormat('ko-KR').format(value);
+  };
+
+  return (
+    <span className={isAnimating ? 'animate-pulse' : ''}>
+      {value > 0 ? `${formatCurrency(displayValue)}원` : '- 원'}
+    </span>
+  );
+};
+
 interface AdminDashboardContentProps {
   activeView: string;
   selectedDate: { year: number; month: number };
@@ -848,12 +897,46 @@ export default function AdminDashboardContent({
                     <Card>
                       <Collapsible open={isPayoutChartOpen} onOpenChange={setIsPayoutChartOpen}>
                         <CardHeader>
-                            <CardTitle>성과급 분포</CardTitle>
+                            <CardTitle>{selectedDate.year}년 {selectedDate.month}월 성과급 분포</CardTitle>
                             <CardDescription>평가그룹별 성과급 금액대 분포입니다.</CardDescription>
                         </CardHeader>
                         <CollapsibleContent>
                           <CardContent className="pt-0">
-                              <AmountDistributionChart data={visibleResults} />
+                            {/* 성과급 요약 정보와 차트를 좌우로 배치 */}
+                            {(() => {
+                              const validResults = visibleResults.filter(r => r.finalAmount > 0);
+                              const averageAmount = validResults.length > 0 
+                                ? validResults.reduce((acc, curr) => acc + curr.finalAmount, 0) / validResults.length 
+                                : 0;
+                              const totalAmount = visibleResults.reduce((acc, curr) => acc + curr.finalAmount, 0);
+                              
+                              return (
+                                <div className="flex items-center gap-2">
+                                  {/* 좌측: 성과급 요약 정보 (음영 적용) */}
+                                  <div className="relative p-4 rounded-lg bg-muted/50 overflow-hidden min-w-[200px]">
+                                    <div className="text-center">
+                                      <div className="mb-3">
+                                        <p className="text-sm text-muted-foreground">평균 성과급 금액</p>
+                                        <p className="font-semibold text-[135%]">
+                                          {validResults.length > 0 ? `${formatCurrency(Math.round(averageAmount))}원` : '- 원'}
+                                        </p>
+                                      </div>
+                                                                              <div>
+                                          <p className="text-sm text-muted-foreground">총 성과급 지급액</p>
+                                          <p className="font-semibold text-primary text-[135%]">
+                                            <SlotMachineNumber value={totalAmount} duration={2500} />
+                                          </p>
+                                        </div>
+                                    </div>
+                                  </div>
+                                  
+                                  {/* 우측: 성과급 분포 차트 (음영 없음) */}
+                                  <div className="flex-1">
+                                    <AmountDistributionChart data={visibleResults} />
+                                  </div>
+                                </div>
+                              );
+                            })()}
                           </CardContent>
                         </CollapsibleContent>
                          <CollapsibleTrigger asChild>

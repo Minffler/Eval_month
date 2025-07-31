@@ -12,6 +12,55 @@ import { useAuth } from '@/contexts/auth-context';
 import { cn } from '@/lib/utils';
 import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 
+// 슬롯머신 애니메이션 컴포넌트
+const SlotMachineNumber: React.FC<{ value: number; duration?: number }> = ({ value, duration = 2000 }) => {
+  const [displayValue, setDisplayValue] = React.useState(0);
+  const [isAnimating, setIsAnimating] = React.useState(false);
+
+  React.useEffect(() => {
+    if (value === 0) {
+      setDisplayValue(0);
+      return;
+    }
+
+    setIsAnimating(true);
+    const startTime = Date.now();
+    const startValue = displayValue;
+    const endValue = value;
+
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      // 이징 함수 (부드러운 감속)
+      const easeOut = 1 - Math.pow(1 - progress, 3);
+      
+      const currentValue = Math.floor(startValue + (endValue - startValue) * easeOut);
+      setDisplayValue(currentValue);
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      } else {
+        setDisplayValue(endValue);
+        setIsAnimating(false);
+      }
+    };
+
+    requestAnimationFrame(animate);
+  }, [value, duration]);
+
+  const formatCurrency = (value: number) => {
+    if (isNaN(value) || value === null) return '0';
+    return new Intl.NumberFormat('ko-KR').format(value);
+  };
+
+  return (
+    <span className={isAnimating ? 'animate-pulse' : ''}>
+      {value > 0 ? `${formatCurrency(displayValue)}원` : '- 원'}
+    </span>
+  );
+};
+
 interface DetailedEvaluationViewProps {
   allResultsForYear: EvaluationResult[];
   gradingScale: Record<NonNullable<Grade>, GradeInfo>;
@@ -162,24 +211,24 @@ export default function DetailedEvaluationView({ allResultsForYear, gradingScale
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div>
                       <p className="text-muted-foreground">평가 횟수</p>
-                          <p className="font-semibold">{filteredResults.length}회</p>
+                          <p className="font-semibold text-[135%]">{filteredResults.length}회</p>
                     </div>
                     <div>
                       <p className="text-muted-foreground">평균 점수</p>
-                      <p className="font-semibold">
+                      <p className="font-semibold text-[135%]">
                             {Math.round(filteredResults.reduce((acc, curr) => acc + curr.score, 0) / filteredResults.length)}점
                       </p>
                     </div>
                     <div>
                       <p className="text-muted-foreground">평균 근무율</p>
-                      <p className="font-semibold">
+                      <p className="font-semibold text-[135%]">
                             {(filteredResults.reduce((acc, curr) => acc + curr.workRate, 0) / filteredResults.length * 100).toFixed(1)}%
                       </p>
                     </div>
                     <div>
                       <p className="text-muted-foreground">총 지급액</p>
-                      <p className="font-semibold text-primary">
-                            {filteredResults.reduce((acc, curr) => acc + curr.finalAmount, 0).toLocaleString()}원
+                      <p className="font-semibold text-primary text-[135%]">
+                        <SlotMachineNumber value={filteredResults.reduce((acc, curr) => acc + curr.finalAmount, 0)} duration={2500} />
                       </p>
                     </div>
                   </div>

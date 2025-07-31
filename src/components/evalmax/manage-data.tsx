@@ -153,7 +153,7 @@ export default function ManageData({
     workRateInputs
   } = useEvaluation();
   const { toast } = useToast();
-  const [dialogOpen, setDialogOpen] = React.useState<{ type: 'deleteEmployees' | 'resetEvaluations' | 'resetWorkData' | 'backupData' | 'restoreData', workDataType?: keyof WorkRateInputs | ShortenedWorkType } | null>(null);
+  const [dialogOpen, setDialogOpen] = React.useState<{ type: 'deleteEmployees' | 'resetEvaluations' | 'resetWorkData' | 'backupData' | 'restoreData' | 'resetToMockData', workDataType?: keyof WorkRateInputs | ShortenedWorkType } | null>(null);
   const [isProcessing, setIsProcessing] = React.useState(false);
 
   const [isMappingDialogOpen, setIsMappingDialogOpen] = React.useState(false);
@@ -236,6 +236,227 @@ export default function ManageData({
     } catch (error) {
         toast({ variant: 'destructive', title: '복원 실패', description: '초기 데이터를 불러오는 중 오류가 발생했습니다.' });
         console.error("Restore failed", error);
+    } finally {
+        setIsProcessing(false);
+        setDialogOpen(null);
+    }
+  };
+
+  const handleResetToMockData = () => {
+    setIsProcessing(true);
+    try {
+        // localStorage 완전 초기화
+        localStorage.clear();
+        
+        // 목업 데이터로 다시 설정
+        localStorage.setItem('users', JSON.stringify([
+          {
+            "id": "user-admin",
+            "employeeId": "Eadmin",
+            "uniqueId": "admin",
+            "name": "관리자",
+            "roles": ["admin", "evaluator", "employee"],
+            "avatar": "https://placehold.co/100x100.png?text=A",
+            "title": "팀원",
+            "department": "인사부"
+          }
+        ]));
+        
+        localStorage.setItem('employees', JSON.stringify({
+          "2025-1": [
+            {
+              "id": "Eadmin",
+              "uniqueId": "admin",
+              "name": "관리자",
+              "company": "OKH",
+              "department": "인사부",
+              "title": "팀원",
+              "position": "팀원",
+              "growthLevel": "Lv.5",
+              "workRate": 0.95,
+              "evaluatorId": "admin",
+              "baseAmount": 570000,
+              "memo": ""
+            }
+          ],
+          "2025-2": [
+            {
+              "id": "Eadmin",
+              "uniqueId": "admin",
+              "name": "관리자",
+              "company": "OKH",
+              "department": "인사부",
+              "title": "팀원",
+              "position": "팀원",
+              "growthLevel": "Lv.5",
+              "workRate": 0.95,
+              "evaluatorId": "admin",
+              "baseAmount": 570000,
+              "memo": ""
+            }
+          ],
+          "2025-3": [
+            {
+              "id": "Eadmin",
+              "uniqueId": "admin",
+              "name": "관리자",
+              "company": "OKH",
+              "department": "인사부",
+              "title": "팀원",
+              "position": "팀원",
+              "growthLevel": "Lv.5",
+              "workRate": 0.95,
+              "evaluatorId": "admin",
+              "baseAmount": 570000,
+              "memo": ""
+            }
+          ],
+          "2025-4": [
+            {
+              "id": "Eadmin",
+              "uniqueId": "admin",
+              "name": "관리자",
+              "company": "OKH",
+              "department": "인사부",
+              "title": "팀원",
+              "position": "팀원",
+              "growthLevel": "Lv.5",
+              "workRate": 0.95,
+              "evaluatorId": "admin",
+              "baseAmount": 570000,
+              "memo": ""
+            }
+          ],
+          "2025-5": [
+            {
+              "id": "Eadmin",
+              "uniqueId": "admin",
+              "name": "관리자",
+              "company": "OKH",
+              "department": "인사부",
+              "title": "팀원",
+              "position": "팀원",
+              "growthLevel": "Lv.5",
+              "workRate": 0.95,
+              "evaluatorId": "admin",
+              "baseAmount": 570000,
+              "memo": ""
+            }
+          ],
+          "2025-6": [
+            {
+              "id": "Eadmin",
+              "uniqueId": "admin",
+              "name": "관리자",
+              "company": "OKH",
+              "department": "인사부",
+              "title": "팀원",
+              "position": "팀원",
+              "growthLevel": "Lv.5",
+              "workRate": 0.95,
+              "evaluatorId": "admin",
+              "baseAmount": 570000,
+              "memo": ""
+            }
+          ]
+        }));
+        
+        localStorage.setItem('evaluations', JSON.stringify({
+          "2025-1": [
+            {
+              "id": "eval-user-admin-2025-1",
+              "employeeId": "user-admin",
+              "year": 2025,
+              "month": 1,
+              "grade": "S",
+              "memo": "admin",
+              "detailedGroup2": "기타",
+              "score": 150
+            }
+          ],
+          "2025-2": [
+            {
+              "id": "eval-user-admin-2025-2",
+              "employeeId": "user-admin",
+              "year": 2025,
+              "month": 2,
+              "grade": "S",
+              "memo": "admin",
+              "detailedGroup2": "기타",
+              "score": 150
+            }
+          ],
+          "2025-3": [
+            {
+              "id": "eval-user-admin-2025-3",
+              "employeeId": "user-admin",
+              "year": 2025,
+              "month": 3,
+              "grade": "S",
+              "memo": "admin",
+              "detailedGroup2": "기타",
+              "score": 150
+            }
+          ],
+          "2025-4": [
+            {
+              "id": "eval-user-admin-2025-4",
+              "employeeId": "user-admin",
+              "year": 2025,
+              "month": 4,
+              "grade": "S",
+              "memo": "admin",
+              "detailedGroup2": "기타",
+              "score": 150
+            }
+          ],
+          "2025-5": [
+            {
+              "id": "eval-user-admin-2025-5",
+              "employeeId": "user-admin",
+              "year": 2025,
+              "month": 5,
+              "grade": "S",
+              "memo": "admin",
+              "detailedGroup2": "기타",
+              "score": 150
+            }
+          ],
+          "2025-6": [
+            {
+              "id": "eval-user-admin-2025-6",
+              "employeeId": "user-admin",
+              "year": 2025,
+              "month": 6,
+              "grade": "S",
+              "memo": "admin",
+              "detailedGroup2": "기타",
+              "score": 150
+            }
+          ]
+        }));
+        
+        localStorage.setItem('gradingScale', JSON.stringify({
+          'S': { score: 150, payoutRate: 150, amount: 0, description: '최우수' },
+          'A+': { score: 130, payoutRate: 130, amount: 0, description: '우수+' },
+          'A': { score: 115, payoutRate: 115, amount: 0, description: '우수' },
+          'B+': { score: 105, payoutRate: 105, amount: 0, description: '양호+' },
+          'B': { score: 100, payoutRate: 100, amount: 0, description: '양호' },
+          'B-': { score: 95, payoutRate: 95, amount: 0, description: '양호-' },
+          'C': { score: 85, payoutRate: 85, amount: 0, description: '보통' },
+          'C-': { score: 70, payoutRate: 70, amount: 0, description: '보통-' },
+          'D': { score: 0, payoutRate: 0, amount: 0, description: '미흡' }
+        }));
+        
+        toast({ title: '초기화 완료', description: '목업 데이터로 초기화되었습니다. 페이지를 새로고침합니다.' });
+        
+        setTimeout(() => {
+            window.location.reload();
+        }, 1500);
+
+    } catch (error) {
+        toast({ variant: 'destructive', title: '초기화 실패', description: '목업 데이터 초기화 중 오류가 발생했습니다.' });
+        console.error("Reset to mock data failed", error);
     } finally {
         setIsProcessing(false);
         setDialogOpen(null);
@@ -494,6 +715,10 @@ export default function ManageData({
                       <RefreshCw className="mr-2 h-4 w-4"/>
                       초기 데이터로 덮어쓰기
                   </Button>
+                  <Button variant="outline" className="w-full" onClick={() => setDialogOpen({ type: 'resetToMockData'})}>
+                      <RefreshCw className="mr-2 h-4 w-4"/>
+                      목업 데이터로 초기화
+                  </Button>
                 </div>
             </div>
         </CardContent>
@@ -549,6 +774,7 @@ export default function ManageData({
                       {dialogOpen?.type === 'resetWorkData' && `선택한 근무 데이터를 초기화합니다. 이 작업은 되돌릴 수 없습니다.`}
                       {dialogOpen?.type === 'backupData' && `현재 브라우저에 저장된 모든 데이터를 시스템의 초기 데이터로 덮어씁니다. 이 작업은 되돌릴 수 없습니다.`}
                       {dialogOpen?.type === 'restoreData' && `현재 브라우저의 모든 데이터를 서버의 최신 초기 데이터로 덮어씁니다. 저장하지 않은 변경사항은 사라지며, 이 작업은 되돌릴 수 없습니다.`}
+                      {dialogOpen?.type === 'resetToMockData' && `현재 브라우저의 모든 데이터를 목업 데이터로 초기화합니다. 저장하지 않은 변경사항은 사라지며, 이 작업은 되돌릴 수 없습니다.`}
                   </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -560,6 +786,7 @@ export default function ManageData({
                         else if (dialogOpen?.type === 'resetWorkData') handleResetWorkData();
                         else if (dialogOpen?.type === 'backupData') handleBackupData();
                         else if (dialogOpen?.type === 'restoreData') handleRestoreData();
+                        else if (dialogOpen?.type === 'resetToMockData') handleResetToMockData();
                     }}
                     disabled={isProcessing}
                   >

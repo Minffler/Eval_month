@@ -289,9 +289,11 @@ export default function MyPerformanceReview({
                         {myPosition && (
                           <div className="mt-3 text-center">
                             <p className="text-sm text-muted-foreground">총 평가 인원 {myPosition.totalCount}명 중</p>
-                            <p className="text-sm text-muted-foreground">상위 {myPosition.topPercent.toFixed(1)}%</p>
-                                            </div>
-                                            )}
+                            <p className="text-sm text-muted-foreground">
+                              {myPosition.totalCount > 0 ? `상위 ${myPosition.topPercent.toFixed(1)}%` : '상위 - %'}
+                            </p>
+                          </div>
+                        )}
                                         </div>
                                     </motion.div>
                     

@@ -13,7 +13,280 @@ export const mockUsers: User[] = [
     ],
     "avatar": "https://placehold.co/100x100.png?text=A",
     "title": "팀원",
-    "department": "인사부"
+    "department": "인사부",
+    "company": "-",
+    "evaluatorId": "admin"
+  },
+  {
+    "id": "user-0000198",
+    "employeeId": "E0000198",
+    "uniqueId": "0000198",
+    "name": "김O섭",
+    "department": "일산PL팀",
+    "title": "팀장",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=김",
+    "password": "1",
+    "company": "OK",
+    "evaluatorId": "0000011"
+  },
+  {
+    "id": "user-0000245",
+    "employeeId": "E0000245",
+    "uniqueId": "0000245",
+    "name": "신O원",
+    "department": "일산PL팀",
+    "title": "팀원",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=신",
+    "password": "1",
+    "company": "OK",
+    "evaluatorId": "0000011"
+  },
+  {
+    "id": "user-0000246",
+    "employeeId": "E0000246",
+    "uniqueId": "0000246",
+    "name": "김O정",
+    "department": "일산PL팀",
+    "title": "팀원",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=김",
+    "password": "1",
+    "company": "OK",
+    "evaluatorId": "0000011"
+  },
+  {
+    "id": "user-0000247",
+    "employeeId": "E0000247",
+    "uniqueId": "0000247",
+    "name": "강O화",
+    "department": "일산PL팀",
+    "title": "팀원",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=강",
+    "password": "1",
+    "company": "OK",
+    "evaluatorId": "0000011"
+  },
+  {
+    "id": "user-0000298",
+    "employeeId": "E0000298",
+    "uniqueId": "0000298",
+    "name": "김O철c",
+    "department": "일산PL팀",
+    "title": "팀원",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=김",
+    "password": "1",
+    "company": "OK",
+    "evaluatorId": "0000011"
+  },
+  {
+    "id": "user-0000299",
+    "employeeId": "E0000299",
+    "uniqueId": "0000299",
+    "name": "엄O호",
+    "department": "일산PL팀",
+    "title": "팀원",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=엄",
+    "password": "1",
+    "company": "OK",
+    "evaluatorId": "0000011"
+  },
+  {
+    "id": "user-0000300",
+    "employeeId": "E0000300",
+    "uniqueId": "0000300",
+    "name": "홍O환",
+    "department": "일산PL팀",
+    "title": "팀원",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=홍",
+    "password": "1",
+    "company": "OK",
+    "evaluatorId": "0000011"
+  },
+  {
+    "id": "user-0000195",
+    "employeeId": "E0000195",
+    "uniqueId": "0000195",
+    "name": "김O균",
+    "department": "대전PL팀",
+    "title": "팀장",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=김",
+    "password": "1",
+    "company": "OK",
+    "evaluatorId": "0000011"
+  },
+  {
+    "id": "user-0000231",
+    "employeeId": "E0000231",
+    "uniqueId": "0000231",
+    "name": "노O호",
+    "department": "대전PL팀",
+    "title": "팀원",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=노",
+    "password": "1",
+    "company": "OK",
+    "evaluatorId": "0000011"
+  },
+  {
+    "id": "user-0000232",
+    "employeeId": "E0000232",
+    "uniqueId": "0000232",
+    "name": "김O주b",
+    "department": "대전PL팀",
+    "title": "팀원",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=김",
+    "password": "1",
+    "company": "OK",
+    "evaluatorId": "0000011"
+  },
+  {
+    "id": "user-0000281",
+    "employeeId": "E0000281",
+    "uniqueId": "0000281",
+    "name": "김O진b",
+    "department": "대전PL팀",
+    "title": "팀원",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=김",
+    "password": "1",
+    "company": "OK",
+    "evaluatorId": "0000011"
+  },
+  {
+    "id": "user-0000282",
+    "employeeId": "E0000282",
+    "uniqueId": "0000282",
+    "name": "신O섭",
+    "department": "대전PL팀",
+    "title": "팀원",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=신",
+    "password": "1",
+    "company": "OK",
+    "evaluatorId": "0000011"
+  },
+  {
+    "id": "user-0000287",
+    "employeeId": "E0000287",
+    "uniqueId": "0000287",
+    "name": "송O훈",
+    "department": "대전PL팀",
+    "title": "팀원",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=송",
+    "password": "1",
+    "company": "OK",
+    "evaluatorId": "0000011"
+  },
+  {
+    "id": "user-0000584",
+    "employeeId": "E0000584",
+    "uniqueId": "0000584",
+    "name": "김O미",
+    "department": "경영관리팀",
+    "title": "팀원",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=김",
+    "password": "1",
+    "company": "OCI",
+    "evaluatorId": "admin"
+  },
+  {
+    "id": "user-0000586",
+    "employeeId": "E0000586",
+    "uniqueId": "0000586",
+    "name": "조O진",
+    "department": "경영관리팀",
+    "title": "팀원",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=조",
+    "password": "1",
+    "company": "OFI",
+    "evaluatorId": "admin"
+  },
+  {
+    "id": "user-0000609",
+    "employeeId": "E0000609",
+    "uniqueId": "0000609",
+    "name": "정O석b",
+    "department": "경영관리팀",
+    "title": "팀원",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=정",
+    "password": "1",
+    "company": "OC",
+    "evaluatorId": "admin"
+  },
+  {
+    "id": "user-0000610",
+    "employeeId": "E0000610",
+    "uniqueId": "0000610",
+    "name": "김O희",
+    "department": "경영관리팀",
+    "title": "팀원",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=김",
+    "password": "1",
+    "company": "OC",
+    "evaluatorId": "admin"
+  },
+  {
+    "id": "user-0000011",
+    "employeeId": "E0000011",
+    "uniqueId": "0000011",
+    "name": "이O권",
+    "department": "콜렉션센터",
+    "title": "센터장",
+    "roles": [
+      "evaluator",
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=평",
+    "password": "1",
+    "company": "N/A",
+    "evaluatorId": ""
   }
 ];
 
@@ -31,205 +304,3017 @@ export const defaultGradingScale: Record<NonNullable<Grade>, GradeInfo> = {
 
 export const initialAttendanceTypes: AttendanceType[] = [
   {
-    "id": "att-1",
-    "name": "연차",
+    "id": "1",
+    "name": "가족돌봄휴가",
     "deductionDays": 1
   },
   {
-    "id": "att-2",
-    "name": "오전반차",
-    "deductionDays": 0.5
-  },
-  {
-    "id": "att-3",
-    "name": "오후반차",
-    "deductionDays": 0.5
-  },
-  {
-    "id": "att-4",
-    "name": "오전반반차",
-    "deductionDays": 0.25
-  },
-  {
-    "id": "att-5",
-    "name": "오후반반차",
-    "deductionDays": 0.25
-  },
-  {
-    "id": "att-6",
-    "name": "병가",
+    "id": "2",
+    "name": "결근",
     "deductionDays": 1
   },
   {
-    "id": "att-7",
+    "id": "3",
     "name": "공가",
     "deductionDays": 1
+  },
+  {
+    "id": "4",
+    "name": "연차(1년미만)",
+    "deductionDays": 1
+  },
+  {
+    "id": "5",
+    "name": "연차휴가",
+    "deductionDays": 1
+  },
+  {
+    "id": "6",
+    "name": "육아휴직",
+    "deductionDays": 1
+  },
+  {
+    "id": "7",
+    "name": "반반차(오후)",
+    "deductionDays": 0.5
+  },
+  {
+    "id": "8",
+    "name": "반차(오전)",
+    "deductionDays": 0.5
+  },
+  {
+    "id": "9",
+    "name": "반차(오전)(1년미만)",
+    "deductionDays": 0.5
+  },
+  {
+    "id": "10",
+    "name": "반차(오후)",
+    "deductionDays": 0.5
+  },
+  {
+    "id": "11",
+    "name": "반차(오후)(1년미만)",
+    "deductionDays": 0.5
+  },
+  {
+    "id": "12",
+    "name": "반반차(오전)",
+    "deductionDays": 0.25
+  },
+  {
+    "id": "13",
+    "name": "반반차(오후)(1년미만)",
+    "deductionDays": 0.25
+  },
+  {
+    "id": "14",
+    "name": "대체휴무(종일)",
+    "deductionDays": 0
+  },
+  {
+    "id": "15",
+    "name": "외부교육",
+    "deductionDays": 0
   }
 ];
 
 export const mockEmployees: Record<string, Partial<Employee>[]> = {
-  "2025-1": [
+  "2025-7": [
     {
-      "id": "Eadmin",
-      "uniqueId": "admin",
-      "name": "관리자",
+      "id": "E1911042",
+      "uniqueId": "1911042",
+      "name": "김민선",
       "company": "OKH",
       "department": "인사부",
       "title": "팀원",
       "position": "팀원",
       "growthLevel": "Lv.5",
-      "workRate": 0.92,
+      "workRate": 1,
+      "evaluatorId": "1911042",
+      "baseAmount": 8000000,
+      "memo": ""
+    },
+    {
+      "id": "Eadmin",
+      "uniqueId": "admin",
+      "name": "김관리",
+      "company": "OKH",
+      "department": "인사부",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.5",
+      "workRate": 1,
       "evaluatorId": "admin",
+      "baseAmount": 8000000,
+      "memo": ""
+    }
+  ],
+  "2025-1": [
+    {
+      "id": "E0000198",
+      "uniqueId": "0000198",
+      "name": "김O섭",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀장",
+      "position": "팀장",
+      "growthLevel": "Lv.3",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 730000,
+      "memo": ""
+    },
+    {
+      "id": "E0000245",
+      "uniqueId": "0000245",
+      "name": "신O원",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 480000,
+      "memo": ""
+    },
+    {
+      "id": "E0000246",
+      "uniqueId": "0000246",
+      "name": "김O정",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 1,
+      "evaluatorId": "0000011",
       "baseAmount": 570000,
       "memo": ""
+    },
+    {
+      "id": "E0000247",
+      "uniqueId": "0000247",
+      "name": "강O화",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 570000,
+      "memo": ""
+    },
+    {
+      "id": "E0000298",
+      "uniqueId": "0000298",
+      "name": "김O철c",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000,
+      "memo": ""
+    },
+    {
+      "id": "E0000299",
+      "uniqueId": "0000299",
+      "name": "엄O호",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000,
+      "memo": ""
+    },
+    {
+      "id": "E0000300",
+      "uniqueId": "0000300",
+      "name": "홍O환",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000,
+      "memo": ""
+    },
+    {
+      "id": "E0000195",
+      "uniqueId": "0000195",
+      "name": "김O균",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀장",
+      "position": "팀장",
+      "growthLevel": "Lv.3",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 730000,
+      "memo": ""
+    },
+    {
+      "id": "E0000231",
+      "uniqueId": "0000231",
+      "name": "노O호",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.3",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 570000,
+      "memo": ""
+    },
+    {
+      "id": "E0000232",
+      "uniqueId": "0000232",
+      "name": "김O주b",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 480000,
+      "memo": ""
+    },
+    {
+      "id": "E0000281",
+      "uniqueId": "0000281",
+      "name": "김O진b",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000,
+      "memo": ""
+    },
+    {
+      "id": "E0000282",
+      "uniqueId": "0000282",
+      "name": "신O섭",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000,
+      "memo": ""
+    },
+    {
+      "id": "E0000287",
+      "uniqueId": "0000287",
+      "name": "송O훈",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000,
+      "memo": ""
+    },
+    {
+      "id": "E0000584",
+      "uniqueId": "0000584",
+      "name": "김O미",
+      "company": "OCI",
+      "department": "경영관리팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 1,
+      "evaluatorId": "admin",
+      "baseAmount": 620000,
+      "memo": "B"
+    },
+    {
+      "id": "E0000586",
+      "uniqueId": "0000586",
+      "name": "조O진",
+      "company": "OFI",
+      "department": "경영관리팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 1,
+      "evaluatorId": "admin",
+      "baseAmount": 570000,
+      "memo": "B"
+    },
+    {
+      "id": "E0000609",
+      "uniqueId": "0000609",
+      "name": "정O석b",
+      "company": "OC",
+      "department": "경영관리팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "admin",
+      "baseAmount": 390000,
+      "memo": "B"
+    },
+    {
+      "id": "E0000610",
+      "uniqueId": "0000610",
+      "name": "김O희",
+      "company": "OC",
+      "department": "경영관리팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "admin",
+      "baseAmount": 390000,
+      "memo": "B"
     }
   ],
   "2025-2": [
     {
-      "id": "Eadmin",
-      "uniqueId": "admin",
-      "name": "관리자",
-      "company": "OKH",
-      "department": "인사부",
+      "id": "E0000198",
+      "uniqueId": "0000198",
+      "name": "김O섭",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀장",
+      "position": "팀장",
+      "growthLevel": "Lv.3",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 730000,
+      "memo": ""
+    },
+    {
+      "id": "E0000245",
+      "uniqueId": "0000245",
+      "name": "신O원",
+      "company": "OK",
+      "department": "일산PL팀",
       "title": "팀원",
       "position": "팀원",
-      "growthLevel": "Lv.5",
-      "workRate": 0.90,
-      "evaluatorId": "admin",
+      "growthLevel": "Lv.2",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 480000,
+      "memo": ""
+    },
+    {
+      "id": "E0000246",
+      "uniqueId": "0000246",
+      "name": "김O정",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 1,
+      "evaluatorId": "0000011",
       "baseAmount": 570000,
       "memo": ""
+    },
+    {
+      "id": "E0000247",
+      "uniqueId": "0000247",
+      "name": "강O화",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 570000,
+      "memo": ""
+    },
+    {
+      "id": "E0000298",
+      "uniqueId": "0000298",
+      "name": "김O철c",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000,
+      "memo": ""
+    },
+    {
+      "id": "E0000299",
+      "uniqueId": "0000299",
+      "name": "엄O호",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000,
+      "memo": ""
+    },
+    {
+      "id": "E0000300",
+      "uniqueId": "0000300",
+      "name": "홍O환",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000,
+      "memo": ""
+    },
+    {
+      "id": "E0000195",
+      "uniqueId": "0000195",
+      "name": "김O균",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀장",
+      "position": "팀장",
+      "growthLevel": "Lv.3",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 730000,
+      "memo": ""
+    },
+    {
+      "id": "E0000231",
+      "uniqueId": "0000231",
+      "name": "노O호",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.3",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 570000,
+      "memo": ""
+    },
+    {
+      "id": "E0000232",
+      "uniqueId": "0000232",
+      "name": "김O주b",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 480000,
+      "memo": ""
+    },
+    {
+      "id": "E0000281",
+      "uniqueId": "0000281",
+      "name": "김O진b",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000,
+      "memo": ""
+    },
+    {
+      "id": "E0000282",
+      "uniqueId": "0000282",
+      "name": "신O섭",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000,
+      "memo": ""
+    },
+    {
+      "id": "E0000287",
+      "uniqueId": "0000287",
+      "name": "송O훈",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000,
+      "memo": ""
+    },
+    {
+      "id": "E0000584",
+      "uniqueId": "0000584",
+      "name": "김O미",
+      "company": "OCI",
+      "department": "경영관리팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 1,
+      "evaluatorId": "admin",
+      "baseAmount": 620000,
+      "memo": "B"
+    },
+    {
+      "id": "E0000586",
+      "uniqueId": "0000586",
+      "name": "조O진",
+      "company": "OFI",
+      "department": "경영관리팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 1,
+      "evaluatorId": "admin",
+      "baseAmount": 570000,
+      "memo": "B"
+    },
+    {
+      "id": "E0000609",
+      "uniqueId": "0000609",
+      "name": "정O석b",
+      "company": "OC",
+      "department": "경영관리팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "admin",
+      "baseAmount": 390000,
+      "memo": "B"
+    },
+    {
+      "id": "E0000610",
+      "uniqueId": "0000610",
+      "name": "김O희",
+      "company": "OC",
+      "department": "경영관리팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "admin",
+      "baseAmount": 390000,
+      "memo": "B"
     }
   ],
   "2025-3": [
     {
-      "id": "Eadmin",
-      "uniqueId": "admin",
-      "name": "관리자",
-      "company": "OKH",
-      "department": "인사부",
+      "id": "E0000198",
+      "uniqueId": "0000198",
+      "name": "김O섭",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀장",
+      "position": "팀장",
+      "growthLevel": "Lv.3",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 730000,
+      "memo": ""
+    },
+    {
+      "id": "E0000245",
+      "uniqueId": "0000245",
+      "name": "신O원",
+      "company": "OK",
+      "department": "일산PL팀",
       "title": "팀원",
       "position": "팀원",
-      "growthLevel": "Lv.5",
-      "workRate": 0.89,
-      "evaluatorId": "admin",
+      "growthLevel": "Lv.2",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 480000,
+      "memo": ""
+    },
+    {
+      "id": "E0000246",
+      "uniqueId": "0000246",
+      "name": "김O정",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 1,
+      "evaluatorId": "0000011",
       "baseAmount": 570000,
       "memo": ""
+    },
+    {
+      "id": "E0000247",
+      "uniqueId": "0000247",
+      "name": "강O화",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 570000,
+      "memo": ""
+    },
+    {
+      "id": "E0000298",
+      "uniqueId": "0000298",
+      "name": "김O철c",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000,
+      "memo": ""
+    },
+    {
+      "id": "E0000299",
+      "uniqueId": "0000299",
+      "name": "엄O호",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000,
+      "memo": ""
+    },
+    {
+      "id": "E0000300",
+      "uniqueId": "0000300",
+      "name": "홍O환",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000,
+      "memo": ""
+    },
+    {
+      "id": "E0000195",
+      "uniqueId": "0000195",
+      "name": "김O균",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀장",
+      "position": "팀장",
+      "growthLevel": "Lv.3",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 730000,
+      "memo": ""
+    },
+    {
+      "id": "E0000231",
+      "uniqueId": "0000231",
+      "name": "노O호",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.3",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 570000,
+      "memo": ""
+    },
+    {
+      "id": "E0000232",
+      "uniqueId": "0000232",
+      "name": "김O주b",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 480000,
+      "memo": ""
+    },
+    {
+      "id": "E0000281",
+      "uniqueId": "0000281",
+      "name": "김O진b",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000,
+      "memo": ""
+    },
+    {
+      "id": "E0000282",
+      "uniqueId": "0000282",
+      "name": "신O섭",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000,
+      "memo": ""
+    },
+    {
+      "id": "E0000287",
+      "uniqueId": "0000287",
+      "name": "송O훈",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000,
+      "memo": ""
+    },
+    {
+      "id": "E0000584",
+      "uniqueId": "0000584",
+      "name": "김O미",
+      "company": "OCI",
+      "department": "경영관리팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 1,
+      "evaluatorId": "admin",
+      "baseAmount": 620000,
+      "memo": "B"
+    },
+    {
+      "id": "E0000586",
+      "uniqueId": "0000586",
+      "name": "조O진",
+      "company": "OFI",
+      "department": "경영관리팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 1,
+      "evaluatorId": "admin",
+      "baseAmount": 570000,
+      "memo": "B"
+    },
+    {
+      "id": "E0000609",
+      "uniqueId": "0000609",
+      "name": "정O석b",
+      "company": "OC",
+      "department": "경영관리팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "admin",
+      "baseAmount": 390000,
+      "memo": "B"
+    },
+    {
+      "id": "E0000610",
+      "uniqueId": "0000610",
+      "name": "김O희",
+      "company": "OC",
+      "department": "경영관리팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "admin",
+      "baseAmount": 390000,
+      "memo": "B"
     }
   ],
   "2025-4": [
     {
-      "id": "Eadmin",
-      "uniqueId": "admin",
-      "name": "관리자",
-      "company": "OKH",
-      "department": "인사부",
+      "id": "E0000198",
+      "uniqueId": "0000198",
+      "name": "김O섭",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀장",
+      "position": "팀장",
+      "growthLevel": "Lv.3",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 730000,
+      "memo": ""
+    },
+    {
+      "id": "E0000245",
+      "uniqueId": "0000245",
+      "name": "신O원",
+      "company": "OK",
+      "department": "일산PL팀",
       "title": "팀원",
       "position": "팀원",
-      "growthLevel": "Lv.5",
-      "workRate": 0.91,
-      "evaluatorId": "admin",
+      "growthLevel": "Lv.2",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 480000,
+      "memo": ""
+    },
+    {
+      "id": "E0000246",
+      "uniqueId": "0000246",
+      "name": "김O정",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 1,
+      "evaluatorId": "0000011",
       "baseAmount": 570000,
       "memo": ""
+    },
+    {
+      "id": "E0000247",
+      "uniqueId": "0000247",
+      "name": "강O화",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 570000,
+      "memo": ""
+    },
+    {
+      "id": "E0000298",
+      "uniqueId": "0000298",
+      "name": "김O철c",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000,
+      "memo": ""
+    },
+    {
+      "id": "E0000299",
+      "uniqueId": "0000299",
+      "name": "엄O호",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000,
+      "memo": ""
+    },
+    {
+      "id": "E0000300",
+      "uniqueId": "0000300",
+      "name": "홍O환",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000,
+      "memo": ""
+    },
+    {
+      "id": "E0000195",
+      "uniqueId": "0000195",
+      "name": "김O균",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀장",
+      "position": "팀장",
+      "growthLevel": "Lv.3",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 730000,
+      "memo": ""
+    },
+    {
+      "id": "E0000231",
+      "uniqueId": "0000231",
+      "name": "노O호",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.3",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 570000,
+      "memo": ""
+    },
+    {
+      "id": "E0000232",
+      "uniqueId": "0000232",
+      "name": "김O주b",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 480000,
+      "memo": ""
+    },
+    {
+      "id": "E0000281",
+      "uniqueId": "0000281",
+      "name": "김O진b",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000,
+      "memo": ""
+    },
+    {
+      "id": "E0000282",
+      "uniqueId": "0000282",
+      "name": "신O섭",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000,
+      "memo": ""
+    },
+    {
+      "id": "E0000287",
+      "uniqueId": "0000287",
+      "name": "송O훈",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000,
+      "memo": ""
+    },
+    {
+      "id": "E0000584",
+      "uniqueId": "0000584",
+      "name": "김O미",
+      "company": "OCI",
+      "department": "경영관리팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 1,
+      "evaluatorId": "admin",
+      "baseAmount": 620000,
+      "memo": "B"
+    },
+    {
+      "id": "E0000586",
+      "uniqueId": "0000586",
+      "name": "조O진",
+      "company": "OFI",
+      "department": "경영관리팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 1,
+      "evaluatorId": "admin",
+      "baseAmount": 570000,
+      "memo": "B"
+    },
+    {
+      "id": "E0000609",
+      "uniqueId": "0000609",
+      "name": "정O석b",
+      "company": "OC",
+      "department": "경영관리팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "admin",
+      "baseAmount": 390000,
+      "memo": "B"
+    },
+    {
+      "id": "E0000610",
+      "uniqueId": "0000610",
+      "name": "김O희",
+      "company": "OC",
+      "department": "경영관리팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "admin",
+      "baseAmount": 390000,
+      "memo": "B"
     }
   ],
   "2025-5": [
     {
-      "id": "Eadmin",
-      "uniqueId": "admin",
-      "name": "관리자",
-      "company": "OKH",
-      "department": "인사부",
+      "id": "E0000198",
+      "uniqueId": "0000198",
+      "name": "김O섭",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀장",
+      "position": "팀장",
+      "growthLevel": "Lv.3",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 730000,
+      "memo": ""
+    },
+    {
+      "id": "E0000245",
+      "uniqueId": "0000245",
+      "name": "신O원",
+      "company": "OK",
+      "department": "일산PL팀",
       "title": "팀원",
       "position": "팀원",
-      "growthLevel": "Lv.5",
-      "workRate": 0.93,
-      "evaluatorId": "admin",
+      "growthLevel": "Lv.2",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 480000,
+      "memo": ""
+    },
+    {
+      "id": "E0000246",
+      "uniqueId": "0000246",
+      "name": "김O정",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 1,
+      "evaluatorId": "0000011",
       "baseAmount": 570000,
       "memo": ""
+    },
+    {
+      "id": "E0000247",
+      "uniqueId": "0000247",
+      "name": "강O화",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 570000,
+      "memo": ""
+    },
+    {
+      "id": "E0000298",
+      "uniqueId": "0000298",
+      "name": "김O철c",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000,
+      "memo": ""
+    },
+    {
+      "id": "E0000299",
+      "uniqueId": "0000299",
+      "name": "엄O호",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000,
+      "memo": ""
+    },
+    {
+      "id": "E0000300",
+      "uniqueId": "0000300",
+      "name": "홍O환",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000,
+      "memo": ""
+    },
+    {
+      "id": "E0000195",
+      "uniqueId": "0000195",
+      "name": "김O균",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀장",
+      "position": "팀장",
+      "growthLevel": "Lv.3",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 730000,
+      "memo": ""
+    },
+    {
+      "id": "E0000231",
+      "uniqueId": "0000231",
+      "name": "노O호",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.3",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 570000,
+      "memo": ""
+    },
+    {
+      "id": "E0000232",
+      "uniqueId": "0000232",
+      "name": "김O주b",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 480000,
+      "memo": ""
+    },
+    {
+      "id": "E0000281",
+      "uniqueId": "0000281",
+      "name": "김O진b",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000,
+      "memo": ""
+    },
+    {
+      "id": "E0000282",
+      "uniqueId": "0000282",
+      "name": "신O섭",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000,
+      "memo": ""
+    },
+    {
+      "id": "E0000287",
+      "uniqueId": "0000287",
+      "name": "송O훈",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000,
+      "memo": ""
+    },
+    {
+      "id": "E0000584",
+      "uniqueId": "0000584",
+      "name": "김O미",
+      "company": "OCI",
+      "department": "경영관리팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 1,
+      "evaluatorId": "admin",
+      "baseAmount": 620000,
+      "memo": "B"
+    },
+    {
+      "id": "E0000586",
+      "uniqueId": "0000586",
+      "name": "조O진",
+      "company": "OFI",
+      "department": "경영관리팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 1,
+      "evaluatorId": "admin",
+      "baseAmount": 570000,
+      "memo": "B"
+    },
+    {
+      "id": "E0000609",
+      "uniqueId": "0000609",
+      "name": "정O석b",
+      "company": "OC",
+      "department": "경영관리팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "admin",
+      "baseAmount": 390000,
+      "memo": "B"
+    },
+    {
+      "id": "E0000610",
+      "uniqueId": "0000610",
+      "name": "김O희",
+      "company": "OC",
+      "department": "경영관리팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "admin",
+      "baseAmount": 390000,
+      "memo": "B"
+    }
+  ],
+  "2025-0": [
+    {
+      "id": "E0000198",
+      "uniqueId": "0000198",
+      "name": "김O섭",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀장",
+      "position": "팀장",
+      "growthLevel": "Lv.3",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 730000
+    },
+    {
+      "id": "E0000245",
+      "uniqueId": "0000245",
+      "name": "신O원",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 480000
+    },
+    {
+      "id": "E0000246",
+      "uniqueId": "0000246",
+      "name": "김O정",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 570000
+    },
+    {
+      "id": "E0000247",
+      "uniqueId": "0000247",
+      "name": "강O화",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 570000
+    },
+    {
+      "id": "E0000298",
+      "uniqueId": "0000298",
+      "name": "김O철c",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000
+    },
+    {
+      "id": "E0000299",
+      "uniqueId": "0000299",
+      "name": "엄O호",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000
+    },
+    {
+      "id": "E0000300",
+      "uniqueId": "0000300",
+      "name": "홍O환",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000
+    },
+    {
+      "id": "E0000195",
+      "uniqueId": "0000195",
+      "name": "김O균",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀장",
+      "position": "팀장",
+      "growthLevel": "Lv.3",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 730000
+    },
+    {
+      "id": "E0000231",
+      "uniqueId": "0000231",
+      "name": "노O호",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.3",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 570000
+    },
+    {
+      "id": "E0000232",
+      "uniqueId": "0000232",
+      "name": "김O주b",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 480000
+    },
+    {
+      "id": "E0000281",
+      "uniqueId": "0000281",
+      "name": "김O진b",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000
+    },
+    {
+      "id": "E0000282",
+      "uniqueId": "0000282",
+      "name": "신O섭",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000
+    },
+    {
+      "id": "E0000287",
+      "uniqueId": "0000287",
+      "name": "송O훈",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000
+    },
+    {
+      "id": "E0000584",
+      "uniqueId": "0000584",
+      "name": "김O미",
+      "company": "OCI",
+      "department": "경영관리팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 1,
+      "evaluatorId": "admin",
+      "baseAmount": 620000
+    },
+    {
+      "id": "E0000586",
+      "uniqueId": "0000586",
+      "name": "조O진",
+      "company": "OFI",
+      "department": "경영관리팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 1,
+      "evaluatorId": "admin",
+      "baseAmount": 570000
+    },
+    {
+      "id": "E0000609",
+      "uniqueId": "0000609",
+      "name": "정O석b",
+      "company": "OC",
+      "department": "경영관리팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "admin",
+      "baseAmount": 390000
+    },
+    {
+      "id": "E0000610",
+      "uniqueId": "0000610",
+      "name": "김O희",
+      "company": "OC",
+      "department": "경영관리팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "admin",
+      "baseAmount": 390000
     }
   ],
   "2025-6": [
     {
-      "id": "Eadmin",
-      "uniqueId": "admin",
-      "name": "관리자",
+      "id": "E1911042",
+      "uniqueId": "1911042",
+      "name": "김민선",
       "company": "OKH",
       "department": "인사부",
       "title": "팀원",
       "position": "팀원",
       "growthLevel": "Lv.5",
-      "workRate": 0.95,
-      "evaluatorId": "admin",
+      "workRate": 1,
+      "evaluatorId": "1911042",
+      "baseAmount": 8000000,
+      "memo": ""
+    },
+    {
+      "id": "user-admin",
+      "uniqueId": "admin",
+      "name": "관리자",
+      "company": "N/A",
+      "department": "인사부",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.5",
+      "workRate": 1,
+      "evaluatorId": "",
+      "baseAmount": 8000000,
+      "memo": ""
+    },
+    {
+      "id": "user-0000198",
+      "uniqueId": "0000198",
+      "name": "김O섭",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀장",
+      "position": "팀장",
+      "growthLevel": "Lv.3",
+      "workRate": 0.9,
+      "evaluatorId": "0000011",
+      "baseAmount": 730000,
+      "memo": ""
+    },
+    {
+      "id": "user-0000245",
+      "uniqueId": "0000245",
+      "name": "신O원",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 0.6875,
+      "evaluatorId": "0000011",
+      "baseAmount": 480000,
+      "memo": ""
+    },
+    {
+      "id": "user-0000246",
+      "uniqueId": "0000246",
+      "name": "김O정",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 1,
+      "evaluatorId": "0000011",
       "baseAmount": 570000,
       "memo": ""
+    },
+    {
+      "id": "user-0000247",
+      "uniqueId": "0000247",
+      "name": "강O화",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 0.15,
+      "evaluatorId": "0000011",
+      "baseAmount": 570000,
+      "memo": ""
+    },
+    {
+      "id": "user-0000298",
+      "uniqueId": "0000298",
+      "name": "김O철c",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 0.95,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000,
+      "memo": ""
+    },
+    {
+      "id": "user-0000299",
+      "uniqueId": "0000299",
+      "name": "엄O호",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 0.95,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000,
+      "memo": ""
+    },
+    {
+      "id": "user-0000300",
+      "uniqueId": "0000300",
+      "name": "홍O환",
+      "company": "OK",
+      "department": "일산PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000,
+      "memo": ""
+    },
+    {
+      "id": "user-0000195",
+      "uniqueId": "0000195",
+      "name": "김O균",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀장",
+      "position": "팀장",
+      "growthLevel": "Lv.3",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 730000,
+      "memo": ""
+    },
+    {
+      "id": "user-0000231",
+      "uniqueId": "0000231",
+      "name": "노O호",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.3",
+      "workRate": 0.875,
+      "evaluatorId": "0000011",
+      "baseAmount": 570000,
+      "memo": ""
+    },
+    {
+      "id": "user-0000232",
+      "uniqueId": "0000232",
+      "name": "김O주b",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 0.975,
+      "evaluatorId": "0000011",
+      "baseAmount": 480000,
+      "memo": ""
+    },
+    {
+      "id": "user-0000281",
+      "uniqueId": "0000281",
+      "name": "김O진b",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000,
+      "memo": ""
+    },
+    {
+      "id": "user-0000282",
+      "uniqueId": "0000282",
+      "name": "신O섭",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000,
+      "memo": ""
+    },
+    {
+      "id": "user-0000287",
+      "uniqueId": "0000287",
+      "name": "송O훈",
+      "company": "OK",
+      "department": "대전PL팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "0000011",
+      "baseAmount": 390000,
+      "memo": ""
+    },
+    {
+      "id": "user-0000584",
+      "uniqueId": "0000584",
+      "name": "김O미",
+      "company": "OCI",
+      "department": "경영관리팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 1,
+      "evaluatorId": "admin",
+      "baseAmount": 620000,
+      "memo": "B"
+    },
+    {
+      "id": "user-0000586",
+      "uniqueId": "0000586",
+      "name": "조O진",
+      "company": "OFI",
+      "department": "경영관리팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.2",
+      "workRate": 1,
+      "evaluatorId": "admin",
+      "baseAmount": 570000,
+      "memo": "B"
+    },
+    {
+      "id": "user-0000609",
+      "uniqueId": "0000609",
+      "name": "정O석b",
+      "company": "OC",
+      "department": "경영관리팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "admin",
+      "baseAmount": 390000,
+      "memo": "B"
+    },
+    {
+      "id": "user-0000610",
+      "uniqueId": "0000610",
+      "name": "김O희",
+      "company": "OC",
+      "department": "경영관리팀",
+      "title": "팀원",
+      "position": "팀원",
+      "growthLevel": "Lv.1",
+      "workRate": 1,
+      "evaluatorId": "admin",
+      "baseAmount": 390000,
+      "memo": "B"
     }
   ]
 };
 
 export const mockEvaluations: Record<string, Evaluation[]> = {
+  "2025-7": [],
   "2025-1": [
     {
-      "id": "eval-1-1", 
-      "employeeId": "Eadmin",
+      "id": "eval-E0000198-2025-1",
+      "employeeId": "E0000198",
       "year": 2025,
       "month": 1,
-      "grade": "B+",
-      "memo": "양호한 성과를 보여주었습니다."
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000245-2025-1",
+      "employeeId": "E0000245",
+      "year": 2025,
+      "month": 1,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000246-2025-1",
+      "employeeId": "E0000246",
+      "year": 2025,
+      "month": 1,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000247-2025-1",
+      "employeeId": "E0000247",
+      "year": 2025,
+      "month": 1,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000298-2025-1",
+      "employeeId": "E0000298",
+      "year": 2025,
+      "month": 1,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000299-2025-1",
+      "employeeId": "E0000299",
+      "year": 2025,
+      "month": 1,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000300-2025-1",
+      "employeeId": "E0000300",
+      "year": 2025,
+      "month": 1,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000195-2025-1",
+      "employeeId": "E0000195",
+      "year": 2025,
+      "month": 1,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000231-2025-1",
+      "employeeId": "E0000231",
+      "year": 2025,
+      "month": 1,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000232-2025-1",
+      "employeeId": "E0000232",
+      "year": 2025,
+      "month": 1,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000281-2025-1",
+      "employeeId": "E0000281",
+      "year": 2025,
+      "month": 1,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000282-2025-1",
+      "employeeId": "E0000282",
+      "year": 2025,
+      "month": 1,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000287-2025-1",
+      "employeeId": "E0000287",
+      "year": 2025,
+      "month": 1,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000584-2025-1",
+      "employeeId": "E0000584",
+      "year": 2025,
+      "month": 1,
+      "grade": null,
+      "memo": "B"
+    },
+    {
+      "id": "eval-E0000586-2025-1",
+      "employeeId": "E0000586",
+      "year": 2025,
+      "month": 1,
+      "grade": null,
+      "memo": "B"
+    },
+    {
+      "id": "eval-E0000609-2025-1",
+      "employeeId": "E0000609",
+      "year": 2025,
+      "month": 1,
+      "grade": null,
+      "memo": "B"
+    },
+    {
+      "id": "eval-E0000610-2025-1",
+      "employeeId": "E0000610",
+      "year": 2025,
+      "month": 1,
+      "grade": null,
+      "memo": "B"
     }
   ],
   "2025-2": [
     {
-      "id": "eval-2-1", 
-      "employeeId": "Eadmin",
+      "id": "eval-E0000198-2025-2",
+      "employeeId": "E0000198",
       "year": 2025,
       "month": 2,
-      "grade": "A",
-      "memo": "안정적인 성과를 보여주었습니다."
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000245-2025-2",
+      "employeeId": "E0000245",
+      "year": 2025,
+      "month": 2,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000246-2025-2",
+      "employeeId": "E0000246",
+      "year": 2025,
+      "month": 2,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000247-2025-2",
+      "employeeId": "E0000247",
+      "year": 2025,
+      "month": 2,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000298-2025-2",
+      "employeeId": "E0000298",
+      "year": 2025,
+      "month": 2,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000299-2025-2",
+      "employeeId": "E0000299",
+      "year": 2025,
+      "month": 2,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000300-2025-2",
+      "employeeId": "E0000300",
+      "year": 2025,
+      "month": 2,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000195-2025-2",
+      "employeeId": "E0000195",
+      "year": 2025,
+      "month": 2,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000231-2025-2",
+      "employeeId": "E0000231",
+      "year": 2025,
+      "month": 2,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000232-2025-2",
+      "employeeId": "E0000232",
+      "year": 2025,
+      "month": 2,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000281-2025-2",
+      "employeeId": "E0000281",
+      "year": 2025,
+      "month": 2,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000282-2025-2",
+      "employeeId": "E0000282",
+      "year": 2025,
+      "month": 2,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000287-2025-2",
+      "employeeId": "E0000287",
+      "year": 2025,
+      "month": 2,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000584-2025-2",
+      "employeeId": "E0000584",
+      "year": 2025,
+      "month": 2,
+      "grade": null,
+      "memo": "B"
+    },
+    {
+      "id": "eval-E0000586-2025-2",
+      "employeeId": "E0000586",
+      "year": 2025,
+      "month": 2,
+      "grade": null,
+      "memo": "B"
+    },
+    {
+      "id": "eval-E0000609-2025-2",
+      "employeeId": "E0000609",
+      "year": 2025,
+      "month": 2,
+      "grade": null,
+      "memo": "B"
+    },
+    {
+      "id": "eval-E0000610-2025-2",
+      "employeeId": "E0000610",
+      "year": 2025,
+      "month": 2,
+      "grade": null,
+      "memo": "B"
     }
   ],
   "2025-3": [
     {
-      "id": "eval-3-1", 
-      "employeeId": "Eadmin",
+      "id": "eval-E0000198-2025-3",
+      "employeeId": "E0000198",
       "year": 2025,
       "month": 3,
-      "grade": "A+",
-      "memo": "우수한 성과를 보여주었습니다."
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000245-2025-3",
+      "employeeId": "E0000245",
+      "year": 2025,
+      "month": 3,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000246-2025-3",
+      "employeeId": "E0000246",
+      "year": 2025,
+      "month": 3,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000247-2025-3",
+      "employeeId": "E0000247",
+      "year": 2025,
+      "month": 3,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000298-2025-3",
+      "employeeId": "E0000298",
+      "year": 2025,
+      "month": 3,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000299-2025-3",
+      "employeeId": "E0000299",
+      "year": 2025,
+      "month": 3,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000300-2025-3",
+      "employeeId": "E0000300",
+      "year": 2025,
+      "month": 3,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000195-2025-3",
+      "employeeId": "E0000195",
+      "year": 2025,
+      "month": 3,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000231-2025-3",
+      "employeeId": "E0000231",
+      "year": 2025,
+      "month": 3,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000232-2025-3",
+      "employeeId": "E0000232",
+      "year": 2025,
+      "month": 3,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000281-2025-3",
+      "employeeId": "E0000281",
+      "year": 2025,
+      "month": 3,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000282-2025-3",
+      "employeeId": "E0000282",
+      "year": 2025,
+      "month": 3,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000287-2025-3",
+      "employeeId": "E0000287",
+      "year": 2025,
+      "month": 3,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000584-2025-3",
+      "employeeId": "E0000584",
+      "year": 2025,
+      "month": 3,
+      "grade": null,
+      "memo": "B"
+    },
+    {
+      "id": "eval-E0000586-2025-3",
+      "employeeId": "E0000586",
+      "year": 2025,
+      "month": 3,
+      "grade": null,
+      "memo": "B"
+    },
+    {
+      "id": "eval-E0000609-2025-3",
+      "employeeId": "E0000609",
+      "year": 2025,
+      "month": 3,
+      "grade": null,
+      "memo": "B"
+    },
+    {
+      "id": "eval-E0000610-2025-3",
+      "employeeId": "E0000610",
+      "year": 2025,
+      "month": 3,
+      "grade": null,
+      "memo": "B"
     }
   ],
   "2025-4": [
     {
-      "id": "eval-4-1", 
-      "employeeId": "Eadmin",
+      "id": "eval-E0000198-2025-4",
+      "employeeId": "E0000198",
       "year": 2025,
       "month": 4,
-      "grade": "A",
-      "memo": "안정적인 성과를 보여주었습니다."
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000245-2025-4",
+      "employeeId": "E0000245",
+      "year": 2025,
+      "month": 4,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000246-2025-4",
+      "employeeId": "E0000246",
+      "year": 2025,
+      "month": 4,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000247-2025-4",
+      "employeeId": "E0000247",
+      "year": 2025,
+      "month": 4,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000298-2025-4",
+      "employeeId": "E0000298",
+      "year": 2025,
+      "month": 4,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000299-2025-4",
+      "employeeId": "E0000299",
+      "year": 2025,
+      "month": 4,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000300-2025-4",
+      "employeeId": "E0000300",
+      "year": 2025,
+      "month": 4,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000195-2025-4",
+      "employeeId": "E0000195",
+      "year": 2025,
+      "month": 4,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000231-2025-4",
+      "employeeId": "E0000231",
+      "year": 2025,
+      "month": 4,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000232-2025-4",
+      "employeeId": "E0000232",
+      "year": 2025,
+      "month": 4,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000281-2025-4",
+      "employeeId": "E0000281",
+      "year": 2025,
+      "month": 4,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000282-2025-4",
+      "employeeId": "E0000282",
+      "year": 2025,
+      "month": 4,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000287-2025-4",
+      "employeeId": "E0000287",
+      "year": 2025,
+      "month": 4,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000584-2025-4",
+      "employeeId": "E0000584",
+      "year": 2025,
+      "month": 4,
+      "grade": null,
+      "memo": "B"
+    },
+    {
+      "id": "eval-E0000586-2025-4",
+      "employeeId": "E0000586",
+      "year": 2025,
+      "month": 4,
+      "grade": null,
+      "memo": "B"
+    },
+    {
+      "id": "eval-E0000609-2025-4",
+      "employeeId": "E0000609",
+      "year": 2025,
+      "month": 4,
+      "grade": null,
+      "memo": "B"
+    },
+    {
+      "id": "eval-E0000610-2025-4",
+      "employeeId": "E0000610",
+      "year": 2025,
+      "month": 4,
+      "grade": null,
+      "memo": "B"
     }
   ],
   "2025-5": [
     {
-      "id": "eval-5-1", 
-      "employeeId": "Eadmin",
+      "id": "eval-E0000198-2025-5",
+      "employeeId": "E0000198",
       "year": 2025,
       "month": 5,
-      "grade": "A+",
-      "memo": "우수한 성과를 보여주었습니다."
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000245-2025-5",
+      "employeeId": "E0000245",
+      "year": 2025,
+      "month": 5,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000246-2025-5",
+      "employeeId": "E0000246",
+      "year": 2025,
+      "month": 5,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000247-2025-5",
+      "employeeId": "E0000247",
+      "year": 2025,
+      "month": 5,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000298-2025-5",
+      "employeeId": "E0000298",
+      "year": 2025,
+      "month": 5,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000299-2025-5",
+      "employeeId": "E0000299",
+      "year": 2025,
+      "month": 5,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000300-2025-5",
+      "employeeId": "E0000300",
+      "year": 2025,
+      "month": 5,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000195-2025-5",
+      "employeeId": "E0000195",
+      "year": 2025,
+      "month": 5,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000231-2025-5",
+      "employeeId": "E0000231",
+      "year": 2025,
+      "month": 5,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000232-2025-5",
+      "employeeId": "E0000232",
+      "year": 2025,
+      "month": 5,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000281-2025-5",
+      "employeeId": "E0000281",
+      "year": 2025,
+      "month": 5,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000282-2025-5",
+      "employeeId": "E0000282",
+      "year": 2025,
+      "month": 5,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000287-2025-5",
+      "employeeId": "E0000287",
+      "year": 2025,
+      "month": 5,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000584-2025-5",
+      "employeeId": "E0000584",
+      "year": 2025,
+      "month": 5,
+      "grade": null,
+      "memo": "B"
+    },
+    {
+      "id": "eval-E0000586-2025-5",
+      "employeeId": "E0000586",
+      "year": 2025,
+      "month": 5,
+      "grade": null,
+      "memo": "B"
+    },
+    {
+      "id": "eval-E0000609-2025-5",
+      "employeeId": "E0000609",
+      "year": 2025,
+      "month": 5,
+      "grade": null,
+      "memo": "B"
+    },
+    {
+      "id": "eval-E0000610-2025-5",
+      "employeeId": "E0000610",
+      "year": 2025,
+      "month": 5,
+      "grade": null,
+      "memo": "B"
+    }
+  ],
+  "2025-0": [
+    {
+      "id": "eval-E0000198-2025-0",
+      "employeeId": "E0000198",
+      "year": 2025,
+      "month": 0,
+      "grade": "C",
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000245-2025-0",
+      "employeeId": "E0000245",
+      "year": 2025,
+      "month": 0,
+      "grade": "B",
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000246-2025-0",
+      "employeeId": "E0000246",
+      "year": 2025,
+      "month": 0,
+      "grade": "A",
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000247-2025-0",
+      "employeeId": "E0000247",
+      "year": 2025,
+      "month": 0,
+      "grade": "C",
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000298-2025-0",
+      "employeeId": "E0000298",
+      "year": 2025,
+      "month": 0,
+      "grade": "B",
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000299-2025-0",
+      "employeeId": "E0000299",
+      "year": 2025,
+      "month": 0,
+      "grade": "C",
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000300-2025-0",
+      "employeeId": "E0000300",
+      "year": 2025,
+      "month": 0,
+      "grade": "A",
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000195-2025-0",
+      "employeeId": "E0000195",
+      "year": 2025,
+      "month": 0,
+      "grade": "B",
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000231-2025-0",
+      "employeeId": "E0000231",
+      "year": 2025,
+      "month": 0,
+      "grade": "B",
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000232-2025-0",
+      "employeeId": "E0000232",
+      "year": 2025,
+      "month": 0,
+      "grade": "B",
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000281-2025-0",
+      "employeeId": "E0000281",
+      "year": 2025,
+      "month": 0,
+      "grade": "A",
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000282-2025-0",
+      "employeeId": "E0000282",
+      "year": 2025,
+      "month": 0,
+      "grade": "B",
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000287-2025-0",
+      "employeeId": "E0000287",
+      "year": 2025,
+      "month": 0,
+      "grade": "B",
+      "memo": ""
+    },
+    {
+      "id": "eval-E0000584-2025-0",
+      "employeeId": "E0000584",
+      "year": 2025,
+      "month": 0,
+      "grade": "B",
+      "memo": "B"
+    },
+    {
+      "id": "eval-E0000586-2025-0",
+      "employeeId": "E0000586",
+      "year": 2025,
+      "month": 0,
+      "grade": "B",
+      "memo": "B"
+    },
+    {
+      "id": "eval-E0000609-2025-0",
+      "employeeId": "E0000609",
+      "year": 2025,
+      "month": 0,
+      "grade": "B",
+      "memo": "B"
+    },
+    {
+      "id": "eval-E0000610-2025-0",
+      "employeeId": "E0000610",
+      "year": 2025,
+      "month": 0,
+      "grade": "B",
+      "memo": "B"
     }
   ],
   "2025-6": [
     {
-      "id": "eval-6-1", 
-      "employeeId": "Eadmin",
+      "id": "eval-E1911042-2025-6",
+      "employeeId": "E1911042",
+      "year": 2025,
+      "month": 6,
+      "grade": null,
+      "memo": ""
+    },
+    {
+      "id": "eval-user-admin-2025-6",
+      "employeeId": "user-admin",
+      "year": 2025,
+      "month": 6,
+      "grade": "S",
+      "memo": "admin",
+      "detailedGroup2": "기타",
+      "score": 150
+    },
+    {
+      "id": "eval-user-0000198-2025-6",
+      "employeeId": "user-0000198",
+      "year": 2025,
+      "month": 6,
+      "grade": null,
+      "memo": "",
+      "detailedGroup2": "팀장/지점장",
+      "score": 0
+    },
+    {
+      "id": "eval-user-0000245-2025-6",
+      "employeeId": "user-0000245",
+      "year": 2025,
+      "month": 6,
+      "grade": null,
+      "memo": "",
+      "score": 0,
+      "detailedGroup2": "Lv.2~3"
+    },
+    {
+      "id": "eval-user-0000246-2025-6",
+      "employeeId": "user-0000246",
+      "year": 2025,
+      "month": 6,
+      "grade": null,
+      "memo": "",
+      "score": 0,
+      "detailedGroup2": "Lv.2~3"
+    },
+    {
+      "id": "eval-user-0000247-2025-6",
+      "employeeId": "user-0000247",
+      "year": 2025,
+      "month": 6,
+      "grade": null,
+      "memo": "",
+      "score": 0,
+      "detailedGroup2": "Lv.2~3"
+    },
+    {
+      "id": "eval-user-0000298-2025-6",
+      "employeeId": "user-0000298",
+      "year": 2025,
+      "month": 6,
+      "grade": null,
+      "memo": "",
+      "score": 0,
+      "detailedGroup2": "Lv.1"
+    },
+    {
+      "id": "eval-user-0000299-2025-6",
+      "employeeId": "user-0000299",
+      "year": 2025,
+      "month": 6,
+      "grade": null,
+      "memo": "",
+      "score": 0,
+      "detailedGroup2": "Lv.1"
+    },
+    {
+      "id": "eval-user-0000300-2025-6",
+      "employeeId": "user-0000300",
+      "year": 2025,
+      "month": 6,
+      "grade": null,
+      "memo": "",
+      "score": 0,
+      "detailedGroup2": "Lv.1"
+    },
+    {
+      "id": "eval-user-0000195-2025-6",
+      "employeeId": "user-0000195",
+      "year": 2025,
+      "month": 6,
+      "grade": null,
+      "memo": "",
+      "score": 0,
+      "detailedGroup2": "팀장/지점장"
+    },
+    {
+      "id": "eval-user-0000231-2025-6",
+      "employeeId": "user-0000231",
+      "year": 2025,
+      "month": 6,
+      "grade": null,
+      "memo": "",
+      "score": 0,
+      "detailedGroup2": "Lv.2~3"
+    },
+    {
+      "id": "eval-user-0000232-2025-6",
+      "employeeId": "user-0000232",
+      "year": 2025,
+      "month": 6,
+      "grade": null,
+      "memo": "",
+      "score": 0,
+      "detailedGroup2": "Lv.2~3"
+    },
+    {
+      "id": "eval-user-0000281-2025-6",
+      "employeeId": "user-0000281",
+      "year": 2025,
+      "month": 6,
+      "grade": null,
+      "memo": "",
+      "score": 0,
+      "detailedGroup2": "Lv.1"
+    },
+    {
+      "id": "eval-user-0000282-2025-6",
+      "employeeId": "user-0000282",
+      "year": 2025,
+      "month": 6,
+      "grade": null,
+      "memo": "",
+      "score": 0,
+      "detailedGroup2": "Lv.1"
+    },
+    {
+      "id": "eval-user-0000287-2025-6",
+      "employeeId": "user-0000287",
+      "year": 2025,
+      "month": 6,
+      "grade": null,
+      "memo": "",
+      "score": 0,
+      "detailedGroup2": "Lv.1"
+    },
+    {
+      "id": "eval-user-0000584-2025-6",
+      "employeeId": "user-0000584",
+      "year": 2025,
+      "month": 6,
+      "grade": "S",
+      "memo": "B",
+      "detailedGroup2": "Lv.2~3",
+      "score": 150
+    },
+    {
+      "id": "eval-user-0000586-2025-6",
+      "employeeId": "user-0000586",
+      "year": 2025,
+      "month": 6,
+      "grade": "S",
+      "memo": "B",
+      "detailedGroup2": "Lv.2~3",
+      "score": 150
+    },
+    {
+      "id": "eval-user-0000609-2025-6",
+      "employeeId": "user-0000609",
+      "year": 2025,
+      "month": 6,
+      "grade": "S",
+      "memo": "B",
+      "detailedGroup2": "Lv.1",
+      "score": 0
+    },
+    {
+      "id": "eval-user-0000610-2025-6",
+      "employeeId": "user-0000610",
+      "year": 2025,
+      "month": 6,
+      "grade": "S",
+      "memo": "0000610",
+      "detailedGroup2": "Lv.1",
+      "score": 0
+    },
+    {
+      "id": "eval-ㅇ-2025-6",
+      "employeeId": "ㅇ",
+      "year": 2025,
+      "month": 6,
+      "grade": null,
+      "memo": "",
+      "detailedGroup2": ""
+    },
+    {
+      "id": "eval-0000584-2025-6",
+      "employeeId": "0000584",
+      "year": 2025,
+      "month": 6,
+      "grade": "B",
+      "score": 100,
+      "memo": "주어진 바를 성실히 이행함.",
+      "detailedGroup2": ""
+    },
+    {
+      "id": "eval-0000586-2025-6",
+      "employeeId": "0000586",
+      "year": 2025,
+      "month": 6,
+      "grade": "B-",
+      "score": 95,
+      "memo": "주어진 바를 성실히 이행함.",
+      "detailedGroup2": ""
+    },
+    {
+      "id": "eval-0000609-2025-6",
+      "employeeId": "0000609",
+      "year": 2025,
+      "month": 6,
+      "grade": "B",
+      "score": 100,
+      "memo": "주어진 바를 성실히 이행함.",
+      "detailedGroup2": ""
+    },
+    {
+      "id": "eval-0000610-2025-6",
+      "employeeId": "0000610",
+      "year": 2025,
+      "month": 6,
+      "grade": "B+",
+      "score": 105,
+      "memo": "주어진 바를 성실히 이행함.",
+      "detailedGroup2": ""
+    },
+    {
+      "id": "eval-admin-2025-6",
+      "employeeId": "admin",
+      "year": 2025,
+      "month": 6,
+      "grade": "S",
+      "memo": "admin",
+      "detailedGroup2": "",
+      "score": 150
+    },
+    {
+      "id": "eval-0000198-2025-6",
+      "employeeId": "0000198",
+      "year": 2025,
+      "month": 6,
+      "grade": "S",
+      "score": 150,
+      "memo": "완벽합니다.",
+      "detailedGroup2": "Lv.2~3"
+    },
+    {
+      "id": "eval-0000195-2025-6",
+      "employeeId": "0000195",
+      "year": 2025,
+      "month": 6,
+      "grade": "C-",
+      "score": 70,
+      "memo": "노력하세요.",
+      "detailedGroup2": ""
+    },
+    {
+      "id": "eval-0000246-2025-6",
+      "employeeId": "0000246",
+      "year": 2025,
+      "month": 6,
+      "grade": "S",
+      "score": 150,
+      "memo": "아주좋습니다.",
+      "detailedGroup2": ""
+    },
+    {
+      "id": "eval-0000231-2025-6",
+      "employeeId": "0000231",
+      "year": 2025,
+      "month": 6,
+      "grade": "C",
+      "score": 85,
+      "memo": "노력이 필요합니다.",
+      "detailedGroup2": ""
+    },
+    {
+      "id": "eval-0000232-2025-6",
+      "employeeId": "0000232",
+      "year": 2025,
+      "month": 6,
+      "grade": "C-",
+      "score": 70,
+      "memo": "노력이 필요합니다.",
+      "detailedGroup2": ""
+    },
+    {
+      "id": "eval-0000298-2025-6",
+      "employeeId": "0000298",
       "year": 2025,
       "month": 6,
       "grade": "A+",
-      "memo": "우수한 성과를 보여주었습니다."
+      "score": 130,
+      "memo": "성과가 우수합니다",
+      "detailedGroup2": ""
+    },
+    {
+      "id": "eval-0000299-2025-6",
+      "employeeId": "0000299",
+      "year": 2025,
+      "month": 6,
+      "grade": "A",
+      "score": 115,
+      "memo": "성과가 우수합니다.",
+      "detailedGroup2": ""
+    },
+    {
+      "id": "eval-0000300-2025-6",
+      "employeeId": "0000300",
+      "year": 2025,
+      "month": 6,
+      "grade": "B+",
+      "score": 105,
+      "memo": "성과를 달성하였습니다.",
+      "detailedGroup2": ""
+    },
+    {
+      "id": "eval-0000281-2025-6",
+      "employeeId": "0000281",
+      "year": 2025,
+      "month": 6,
+      "grade": "C",
+      "score": 85,
+      "memo": "미달성. 노력하세요",
+      "detailedGroup2": ""
+    },
+    {
+      "id": "eval-0000282-2025-6",
+      "employeeId": "0000282",
+      "year": 2025,
+      "month": 6,
+      "grade": "C",
+      "score": 85,
+      "memo": "미달성. 노력하세요",
+      "detailedGroup2": ""
+    },
+    {
+      "id": "eval-0000287-2025-6",
+      "employeeId": "0000287",
+      "year": 2025,
+      "month": 6,
+      "grade": "B-",
+      "score": 95,
+      "memo": "다소 아쉽습니다.",
+      "detailedGroup2": ""
     }
   ]
 };
 
-export const initialHolidays: Holiday[] = [];
+export const initialHolidays: Holiday[] = [
+  {
+    "id": "h1",
+    "date": "2025-01-01",
+    "name": "신정",
+    "type": "공휴일"
+  },
+  {
+    "id": "h2",
+    "date": "2025-06-03",
+    "name": "대통령선거",
+    "type": "공휴일"
+  },
+  {
+    "id": "h3",
+    "date": "2025-06-06",
+    "name": "현충일",
+    "type": "공휴일"
+  }
+];
 
 export const excelHeaderMapping: Record<string, string> = {
     // 공통 ID
