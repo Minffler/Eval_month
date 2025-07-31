@@ -632,8 +632,11 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
             // 저장된 점수가 있으면 사용하고, 없으면 등급 기준 점수 사용
             const score = evaluation?.score !== undefined ? evaluation.score : (gradeInfo?.score || 0);
             
+            // admin 사용자의 기준금액을 570,000으로 강제 설정
+            const adjustedBaseAmount = base.uniqueId === 'admin' ? 570000 : base.baseAmount;
+            
             const payoutRate = gradeInfo ? gradeInfo.payoutRate / 100 : 0;
-            const gradeAmount = (base.baseAmount || 0) * payoutRate;
+            const gradeAmount = (adjustedBaseAmount || 0) * payoutRate;
             const finalAmount = calculateFinalAmount(gradeAmount, base.workRate);
             
             const evaluator = userMap.get(base.evaluatorId || '');
@@ -655,6 +658,7 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
             
             const result = {
                 ...base, 
+                baseAmount: adjustedBaseAmount,
                 year, month, grade, score, payoutRate, gradeAmount, finalAmount,
                 evaluatorId: base.evaluatorId || '',
                 evaluatorName: evaluator?.name || (base.evaluatorId ? `미지정 (${base.evaluatorId})` : '미지정'),

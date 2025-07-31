@@ -404,12 +404,7 @@ export default function WorkRateDetails({ type, data, workRateInputs, selectedDa
     const teamApproverId = employee.evaluatorId || 'admin'; // Default to admin if no evaluator
     const hrApproverId = 'admin'; // Admin ID
 
-    console.log('결재 생성 정보:', {
-      employee,
-      teamApproverId,
-      hrApproverId,
-      user: user.uniqueId
-    });
+
 
     const approvalData: Omit<Approval, 'id' | 'date' | 'isRead' | 'status' | 'statusHR' | 'approvedAtTeam' | 'approvedAtHR' | 'rejectionReason'> = {
       requesterId: user.uniqueId,
@@ -435,38 +430,26 @@ export default function WorkRateDetails({ type, data, workRateInputs, selectedDa
   
     const approverInfo = React.useMemo(() => {
     if (!formData.uniqueId) return '미지정';
-
-    console.log('approverInfo 계산:', {
-      formDataUniqueId: formData.uniqueId,
-      userMapSize: userMap.size,
-      targetEmployee: allEmployees.find(e => e.uniqueId === formData.uniqueId)
-    });
     
     // 결재함과 동일한 로직 사용
     // 1. 직원의 평가자 ID 찾기
     const employee = allEmployees.find(e => e.uniqueId === formData.uniqueId);
-    console.log('찾은 직원:', employee);
     
     if (!employee) {
-      console.log('직원을 찾을 수 없음');
       return '미지정';
     }
     
     // 2. 평가자 ID 추출 (EvaluationResult 타입)
     const evaluatorId = (employee as any).evaluatorId;
-    console.log('평가자 ID:', evaluatorId);
     
     if (!evaluatorId) {
-      console.log('평가자 ID가 없음');
       return '미지정';
     }
     
     // 3. userMap에서 평가자 정보 찾기 (결재함과 동일한 방식)
     const evaluator = userMap.get(evaluatorId);
-    console.log('찾은 평가자:', evaluator);
     
     if (!evaluator) {
-      console.log('평가자를 찾을 수 없음, ID:', evaluatorId);
       return '미지정';
     }
     

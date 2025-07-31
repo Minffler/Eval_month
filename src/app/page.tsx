@@ -206,10 +206,8 @@ export default function Home() {
         const availableYears = [...new Set(allMyResults.map(r => r.year))].sort((a, b) => b - a);
         const targetYear = availableYears.length > 0 ? availableYears[0] : selectedDate.year;
         
-        // 대상 연도의 데이터만 필터링
-        const filteredResults = allMyResults.filter(e => e.year === targetYear);
-        
-        
+        // 대상 연도의 데이터만 필터링하고, 등급이 있는 데이터만 포함
+        const filteredResults = allMyResults.filter(e => e.year === targetYear && e.grade !== null);
         
         return <EmployeeDashboard 
                   employeeResults={myEmployeeInfo ? [myEmployeeInfo] : []}

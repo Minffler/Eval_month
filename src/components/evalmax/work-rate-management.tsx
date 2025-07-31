@@ -456,9 +456,7 @@ export default function WorkRateManagement({
       index === self.findIndex(r => r.uniqueId === result.uniqueId)
     );
     
-    console.log('=== 중복 제거 전/후 (WorkRateManagement) ===');
-    console.log('원본 updatedResults 길이:', updatedResults.length);
-    console.log('중복 제거 후 uniqueUpdatedResults 길이:', uniqueUpdatedResults.length);
+
 
     // 근무율이 변경된 결과만 필터링
     const resultsWithWorkRateChanges = uniqueUpdatedResults.filter(result => {
@@ -475,21 +473,10 @@ export default function WorkRateManagement({
     }
 
     // 디버깅용 로그
-    console.log('=== 근무율 반영 디버깅 ===');
-    console.log('workRateSummaries:', workRateSummaries);
-    console.log('uniqueUpdatedResults:', uniqueUpdatedResults);
-    console.log('resultsWithWorkRateChanges:', resultsWithWorkRateChanges);
-    console.log('========================');
 
-    console.log('=== handleResultsUpdate 호출 전 ===');
-    console.log('handleResultsUpdate 함수 존재:', !!handleResultsUpdate);
-    console.log('uniqueUpdatedResults 길이:', uniqueUpdatedResults.length);
     
     if (handleResultsUpdate) {
       handleResultsUpdate(uniqueUpdatedResults);
-      console.log('=== handleResultsUpdate 호출 완료 ===');
-    } else {
-      console.log('=== handleResultsUpdate 함수가 없음 ===');
     }
     
     toast({

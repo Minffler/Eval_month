@@ -31,6 +31,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { useNotifications } from '@/contexts/notification-context';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import MyPerformanceReview from './my-performance-review';
+import MyHallOfFame from './my-hall-of-fame';
 import DetailedEvaluationView from './detailed-evaluation-view';
 import { useEvaluation } from '@/contexts/evaluation-context';
 import { DatePickerWithInput, TimePicker } from './employee/date-time-pickers';
@@ -251,17 +252,23 @@ export default function EmployeeDashboard({
       }
       case 'my-review':
         return (
+          <div className="space-y-6">
           <MyPerformanceReview 
-            allResultsForYear={allResultsForYear} 
-            allResultsForMonth={allResultsForMonth}
+              allResultsForYear={allResultsForMonth} 
+              selectedDate={selectedDate}
             gradingScale={gradingScale} 
           />
+            <MyHallOfFame 
+              allResultsForYear={allResultsForYear}
+            />
+          </div>
         );
       case 'evaluation-details':
         return (
           <DetailedEvaluationView 
             allResultsForYear={allResultsForYear} 
             gradingScale={gradingScale} 
+            selectedDate={selectedDate}
           />
         );
       default:

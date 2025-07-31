@@ -252,13 +252,12 @@ export default function EvaluatorDashboard({
                  allUsers={Array.from(userMap.values())}
                  handleEvaluatorAssignmentChange={(userId, newEvaluatorId) => {
                    // 평가자 할당 변경 로직 구현
-                   console.log('Evaluator assignment change:', userId, newEvaluatorId);
+               
                  }}
                                              evaluatorId={effectiveUser?.uniqueId ?? ''}
                  evaluatorName={effectiveUser?.name || ''}
                  addNotification={(notification) => {
                    // 알림 추가 로직 구현
-                   console.log('Add notification:', notification);
                  }}
           />
         );
@@ -274,7 +273,6 @@ export default function EvaluatorDashboard({
             handleResultsUpdate={handleSave}
             addNotification={(notification) => {
               // 알림 추가 로직 구현
-              console.log('Add notification:', notification);
             }}
           />
         );

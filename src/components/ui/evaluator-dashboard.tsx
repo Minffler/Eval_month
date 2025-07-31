@@ -563,10 +563,11 @@ const EvaluationInputView = ({ myEmployees, gradingScale, selectedDate, handleRe
               </div>
             </CardHeader>
             <CollapsibleContent>
-              <CardContent className='p-4 pt-0 space-y-2 bg-[hsl(30,30%,98%)]'>
+              <CardContent className='p-4 pt-0 space-y-2'>
                 <GradeHistogram 
                   data={gradeDistribution} 
                   gradingScale={gradingScale} 
+                  highlightAll={true}
                   title={`${activeTab} 등급 분포`}
                   showFilters={true}
                   onFilterChange={(filter) => {

@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 interface DetailedEvaluationViewProps {
   allResultsForYear: EvaluationResult[];
   gradingScale: Record<NonNullable<Grade>, GradeInfo>;
+  selectedDate?: { year: number; month: number };
 }
 
 // 등급별 색상 정의
@@ -29,7 +30,7 @@ const gradeToColor: Record<string, string> = {
     'D': 'text-gray-500'
 };
 
-export default function DetailedEvaluationView({ allResultsForYear, gradingScale }: DetailedEvaluationViewProps) {
+export default function DetailedEvaluationView({ allResultsForYear, gradingScale, selectedDate }: DetailedEvaluationViewProps) {
   const { user } = useAuth();
   const [isDistributionOpen, setIsDistributionOpen] = React.useState(true);
   const [isDetailsOpen, setIsDetailsOpen] = React.useState(true);
@@ -80,7 +81,7 @@ export default function DetailedEvaluationView({ allResultsForYear, gradingScale
               <GradeHistogram 
                 data={gradeDistribution} 
                 gradingScale={gradingScale}
-                highlightGrade={myCurrentMonthResult?.grade}
+                highlightAll={true}
               />
             </CardContent>
           </CollapsibleContent>
@@ -121,7 +122,14 @@ export default function DetailedEvaluationView({ allResultsForYear, gradingScale
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {allResultsForYear.length > 0 ? allResultsForYear.sort((a,b) => b.month - a.month).map((result) => (
+                    {(() => {
+                      // 실제 데이터가 있는 월만 필터링 (등급이 있는 데이터만)
+                      const filteredResults = allResultsForYear
+                        .filter(result => result.grade !== null)
+                        .sort((a,b) => b.month - a.month);
+                      
+                      if (filteredResults.length > 0) {
+                        return filteredResults.map((result) => (
                       <TableRow key={result.month} className="hover:bg-muted/50">
                         <TableCell className="text-center font-medium">{result.month}월</TableCell>
                         <TableCell className="text-center">{result.company}</TableCell>
@@ -151,46 +159,61 @@ export default function DetailedEvaluationView({ allResultsForYear, gradingScale
                         <TableCell className="text-center text-sm">{result.evaluatorName}</TableCell>
                         <TableCell className="text-center text-sm text-muted-foreground">{result.memo || '-'}</TableCell>
                       </TableRow>
-                    )) : (
+                        ));
+                      } else {
+                        return (
                       <TableRow>
                         <TableCell colSpan={11} className="h-24 text-center text-muted-foreground">
                           아직 {new Date().getFullYear()}년 평가 결과가 없습니다.
                         </TableCell>
                       </TableRow>
-                    )}
+                        );
+                      }
+                    })()}
                   </TableBody>
                 </Table>
               </div>
               
               {/* 요약 정보 */}
-              {allResultsForYear.length > 0 && (
+              {(() => {
+                // 실제 데이터가 있는 월만 필터링 (등급이 있는 데이터만)
+                const filteredResults = allResultsForYear
+                  .filter(result => result.grade !== null)
+                  .sort((a,b) => b.month - a.month);
+                
+                if (filteredResults.length > 0) {
+                  return (
                 <div className="mt-4 p-4 bg-muted/30 rounded-lg">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div>
                       <p className="text-muted-foreground">평가 횟수</p>
-                      <p className="font-semibold">{allResultsForYear.length}회</p>
+                          <p className="font-semibold">{filteredResults.length}회</p>
                     </div>
                     <div>
                       <p className="text-muted-foreground">평균 점수</p>
                       <p className="font-semibold">
-                        {Math.round(allResultsForYear.reduce((acc, curr) => acc + curr.score, 0) / allResultsForYear.length)}점
+                            {Math.round(filteredResults.reduce((acc, curr) => acc + curr.score, 0) / filteredResults.length)}점
                       </p>
                     </div>
                     <div>
                       <p className="text-muted-foreground">평균 근무율</p>
                       <p className="font-semibold">
-                        {(allResultsForYear.reduce((acc, curr) => acc + curr.workRate, 0) / allResultsForYear.length * 100).toFixed(1)}%
+                            {(filteredResults.reduce((acc, curr) => acc + curr.workRate, 0) / filteredResults.length * 100).toFixed(1)}%
                       </p>
                     </div>
                     <div>
                       <p className="text-muted-foreground">총 지급액</p>
                       <p className="font-semibold text-primary">
-                        {allResultsForYear.reduce((acc, curr) => acc + curr.finalAmount, 0).toLocaleString()}원
+                            {filteredResults.reduce((acc, curr) => acc + curr.finalAmount, 0).toLocaleString()}원
                       </p>
                     </div>
                   </div>
                 </div>
-              )}
+                  );
+                } else {
+                  return null;
+                }
+              })()}
             </CardContent>
           </CollapsibleContent>
         </Card>

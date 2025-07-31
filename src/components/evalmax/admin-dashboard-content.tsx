@@ -107,6 +107,7 @@ type EvaluatorStat = {
   completed: number;
   pending: number;
   rate: number;
+  totalAssigned: number;
 };
 type EvaluatorStatsSortConfig = {
   key: keyof EvaluatorStat;
@@ -243,25 +244,15 @@ export default function AdminDashboardContent({
   })), [filteredDashboardData, gradingScale]);
 
   const evaluatorStats = React.useMemo(() => {
-    const statsByUniqueId: Record<string, { total: number; completed: number; evaluatorName: string; }> = {};
+    const statsByUniqueId: Record<string, { total: number; completed: number; evaluatorName: string; totalAssigned: number; }> = {};
     const monthlyEvaluatorIds = Array.from(new Set(initialResults.map(r => r.evaluatorId).filter(Boolean)));
-    
-    console.log('평가자별 진행 현황 - 모든 평가자 ID:', monthlyEvaluatorIds);
     
     // 실제 존재하는 평가자만 필터링
     const validEvaluatorIds = monthlyEvaluatorIds.filter(evaluatorId => {
       const evaluatorInfo = userMap.get(evaluatorId);
       const isValid = evaluatorInfo && evaluatorInfo.roles && evaluatorInfo.roles.includes('evaluator');
-      console.log(`평가자 ID ${evaluatorId}:`, { 
-        exists: !!evaluatorInfo, 
-        name: evaluatorInfo?.name, 
-        roles: evaluatorInfo?.roles, 
-        isValid 
-      });
       return isValid;
     });
-    
-    console.log('필터링된 유효한 평가자 ID:', validEvaluatorIds);
     
     validEvaluatorIds.forEach(evaluatorId => {
         if (evaluatorId) {
@@ -269,18 +260,24 @@ export default function AdminDashboardContent({
             statsByUniqueId[evaluatorId] = { 
                 total: 0, 
                 completed: 0, 
-                evaluatorName: evaluatorInfo?.name || `미지정 (${evaluatorId})` 
+                evaluatorName: evaluatorInfo?.name || `미지정 (${evaluatorId})`,
+                totalAssigned: 0
             };
         }
     });
 
     initialResults.forEach(r => {
       if (!r.evaluatorId || !statsByUniqueId[r.evaluatorId]) return;
-      // C. 미평가는 평가 대상에서 제외
-      if (r.evaluationGroup === 'C. 미평가') return;
+      
+      // 담당인원 계산 (A, B, C 모두 포함)
+      statsByUniqueId[r.evaluatorId].totalAssigned++;
+      
+      // 평가 대상 계산 (A, B만 포함, C는 제외)
+      if (r.evaluationGroup !== 'C. 미평가') {
       statsByUniqueId[r.evaluatorId].total++;
       if (r.grade) {
         statsByUniqueId[r.evaluatorId].completed++;
+        }
       }
     });
 
@@ -291,6 +288,7 @@ export default function AdminDashboardContent({
       completed: data.completed,
       pending: data.total - data.completed,
       rate: data.total > 0 ? (data.completed / data.total) * 100 : 0,
+      totalAssigned: data.totalAssigned,
     }));
   }, [initialResults, userMap]);
 
@@ -465,9 +463,6 @@ export default function AdminDashboardContent({
   }
 
   const updateAndSaveChanges = (updatedResults: EvaluationResult[]) => {
-    console.log('=== updateAndSaveChanges 호출됨 ===');
-    console.log('updatedResults:', updatedResults);
-    
     setResults(updatedResults);
     const key = `${selectedDate.year}-${selectedDate.month}`;
     
@@ -477,13 +472,7 @@ export default function AdminDashboardContent({
       return originalResult && Math.abs(result.workRate - originalResult.workRate) > 0.001;
     });
     
-    console.log('=== 근무율 변경 감지 디버깅 (관리자) ===');
-    console.log('hasWorkRateUpdate:', hasWorkRateUpdate);
-    console.log('initialResults.length:', initialResults.length);
-    console.log('updatedResults.length:', updatedResults.length);
-    
     if (hasWorkRateUpdate) {
-      console.log('=== 근무율 업데이트 감지됨 (관리자) ===');
       
       // 업데이트된 평가 결과에서 employees 데이터 생성 (중복 제거)
       const currentEmployees = updatedResults
@@ -505,15 +494,7 @@ export default function AdminDashboardContent({
           memo: result.memo,
         }));
       
-      console.log('=== employees 업데이트 전 (관리자) ===');
-      console.log('중복 제거 후 currentEmployees 길이:', currentEmployees.length);
-      console.log('currentEmployees:', currentEmployees);
-      
-      // handleEmployeeUpload를 사용하여 업데이트 (기존 데이터 완전 교체)
       handleEmployeeUpload(selectedDate.year, selectedDate.month, currentEmployees);
-      console.log('=== handleEmployeeUpload 호출 완료 (관리자) ===');
-    } else {
-      console.log('=== 근무율 업데이트 감지되지 않음 (관리자) ===');
     }
     
     setEvaluations(prev => {
@@ -694,7 +675,7 @@ export default function AdminDashboardContent({
                       </CardHeader>
                       <CollapsibleContent>
                         <CardContent className="pt-0 p-4">
-                          <GradeHistogram data={overallGradeDistribution} gradingScale={gradingScale} highlightGrade={null} />
+                          <GradeHistogram data={overallGradeDistribution} gradingScale={gradingScale} highlightAll={true} />
                         </CardContent>
                       </CollapsibleContent>
                       <CollapsibleTrigger asChild>
@@ -779,10 +760,13 @@ export default function AdminDashboardContent({
                               <TableHead className="whitespace-nowrap cursor-pointer text-center" onClick={() => requestEvaluatorStatsSort('evaluatorName')}>
                                 <div className="flex items-center justify-center">평가자 (ID){getEvaluatorStatsSortIcon('evaluatorName')}</div>
                               </TableHead>
+                              <TableHead className="whitespace-nowrap text-center cursor-pointer" onClick={() => requestEvaluatorStatsSort('totalAssigned')}>
+                                <div className="flex items-center justify-center">담당인원{getEvaluatorStatsSortIcon('totalAssigned')}</div>
+                              </TableHead>
                               <TableHead className="whitespace-nowrap text-center cursor-pointer" onClick={() => requestEvaluatorStatsSort('pending')}>
                                 <div className="flex items-center justify-center">미입력{getEvaluatorStatsSortIcon('pending')}</div>
                               </TableHead>
-                              <TableHead className="whitespace-nowrap text-center cursor-pointer" onClick={() => requestEvaluatorStatsSort('completed')}>
+                              <TableHead className="whitespace-nowrap text-center cursor-pointer min-w-[200px] sm:min-w-[250px] md:min-w-[300px]" onClick={() => requestEvaluatorStatsSort('completed')}>
                                 <div className="flex items-center justify-center">평가현황{getEvaluatorStatsSortIcon('completed')}</div>
                               </TableHead>
                               <TableHead className="whitespace-nowrap text-center">A. 정규평가</TableHead>
@@ -798,6 +782,11 @@ export default function AdminDashboardContent({
                               const separateEvaluation = evaluatorResults.filter(r => r.evaluationGroup === 'B. 별도평가');
                               const noEvaluation = evaluatorResults.filter(r => r.evaluationGroup === 'C. 미평가');
                               
+                              // 평가현황 계산 (C.미평가는 항상 완료된 것으로 카운트)
+                              const totalForProgress = stat.total + noEvaluation.length;
+                              const completedForProgress = stat.completed + noEvaluation.length;
+                              const rateForProgress = totalForProgress > 0 ? (completedForProgress / totalForProgress) * 100 : 0;
+                              
                               return (
                               <TableRow key={stat.evaluatorUniqueId} className="border-b border-gray-100">
                                 <TableCell className="text-center">
@@ -808,18 +797,19 @@ export default function AdminDashboardContent({
                                   />
                                 </TableCell>
                                                                   <TableCell className="font-medium whitespace-nowrap text-center">{stat.evaluatorName} ({stat.evaluatorUniqueId})</TableCell>
+                                <TableCell className="text-center whitespace-nowrap">{stat.totalAssigned}</TableCell>
                                 <TableCell className={cn("text-center whitespace-nowrap", stat.pending > 0 && "text-orange-600")}>{stat.pending || '-'}</TableCell>
-                                                                  <TableCell className="text-center whitespace-nowrap">
+                                <TableCell className="text-center whitespace-nowrap min-w-[200px] sm:min-w-[250px] md:min-w-[300px]">
                                     <div className="flex items-center justify-end gap-2 w-full">
-                                      <span className="text-sm min-w-[40px] text-right">{stat.completed}/{stat.total}</span>
+                                    <span className="text-xs text-gray-500 min-w-[50px] text-right">{completedForProgress}/{totalForProgress}</span>
                                       <div className="flex-1 flex justify-center">
                                         <Progress
-                                          value={stat.rate}
-                                          indicatorClassName={cn(stat.rate < 100 ? "bg-orange-500" : "bg-orange-200")}
-                                          className="w-full max-w-[120px] h-2"
+                                        value={rateForProgress}
+                                        indicatorClassName={cn(rateForProgress < 100 ? "bg-orange-500" : "bg-orange-200")}
+                                        className="w-full max-w-[180px] sm:max-w-[220px] md:max-w-[260px] h-2"
                                         />
                                       </div>
-                                      <span className={cn("text-xs min-w-[40px] text-left", stat.rate < 100 ? "text-orange-600" : "text-gray-500")}>{stat.rate.toFixed(1)}%</span>
+                                    <span className={cn("text-xs font-bold min-w-[45px] text-left", rateForProgress < 100 ? "text-orange-600" : "text-gray-500")}>{rateForProgress.toFixed(1)}%</span>
                                     </div>
                                   </TableCell>
                                   <TableCell className="text-center whitespace-nowrap">{regularEvaluation.filter(r => r.grade).length}/{regularEvaluation.length}</TableCell>

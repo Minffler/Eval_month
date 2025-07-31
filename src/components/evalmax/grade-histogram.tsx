@@ -1,20 +1,38 @@
 'use client';
 
 import * as React from 'react';
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, LabelList, CartesianGrid, Cell } from 'recharts';
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, LabelList, Cell } from 'recharts';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from '@/components/ui/chart';
 import type { Grade, GradeInfo } from '@/lib/types';
 
 interface GradeHistogramProps {
   data: { name: string; value: number }[];
   gradingScale: Record<NonNullable<Grade>, GradeInfo>;
   highlightGrade?: Grade | null;
+  highlightAll?: boolean;
 }
+
+const chartConfig = {
+  value: {
+    label: '인원수',
+    color: '#a4a3a2',
+  },
+  highlight: {
+    label: '내 등급',
+    color: 'hsl(var(--primary))'
+  }
+} satisfies ChartConfig;
 
 const CustomXAxisTick = (props: any) => {
     const { x, y, payload, gradingScale } = props;
     const grade = payload.value as Grade;
 
-    if (!grade || !gradingScale || !gradingScale[grade]) {
+    if (!grade || !gradingScale[grade]) {
         return null;
     }
     
@@ -36,38 +54,33 @@ export function GradeHistogram({
   data,
   gradingScale,
   highlightGrade,
+  highlightAll = false
 }: GradeHistogramProps) {
 
   const totalCount = React.useMemo(() => {
     return data.reduce((acc, curr) => acc + curr.value, 0);
   }, [data]);
 
-  // 모든 등급을 포함하도록 데이터 생성 (값이 0이어도 포함)
-  const sortedData = React.useMemo(() => {
-    // 1. 모든 등급에 대해 기본 데이터 생성 (값이 0이어도 포함)
-    const allGradesData = Object.keys(gradingScale || {}).map(grade => {
-      const existingData = data.find(d => d.name === grade);
-      return {
-        name: grade,
-        value: existingData ? existingData.value : 0,
-      };
-    });
-
-    // 2. 점수 기준으로 정렬 (D → S 순서)
-    return allGradesData
-      .sort((a, b) => {
-        const gradeA = a.name as Grade;
-        const gradeB = b.name as Grade;
-        const scoreA = (gradingScale && gradeA && gradingScale[gradeA]?.score) ?? -1;
-        const scoreB = (gradingScale && gradeB && gradingScale[gradeB]?.score) ?? -1;
-        return scoreA - scoreB; // 낮은 점수부터 높은 점수 순서로 변경
-      })
-      .map(item => ({
+  const sortedData = React.useMemo(() => 
+    [...data]
+    .filter(d => {
+      const grade = d.name as Grade;
+      return grade && gradingScale[grade] !== undefined;
+    })
+    .sort((a,b) => {
+      const gradeA = a.name as Grade;
+      const gradeB = b.name as Grade;
+      if (!gradeA || !gradeB) return 0;
+      const scoreA = gradingScale[gradeA]?.score ?? -1;
+      const scoreB = gradingScale[gradeB]?.score ?? -1;
+      return scoreA - scoreB;
+    })
+    .map(item => ({
         ...item,
         percentage: totalCount > 0 ? (item.value / totalCount) * 100 : 0,
-        isHighlighted: item.name === highlightGrade,
-      }));
-  }, [data, gradingScale, totalCount, highlightGrade]);
+    })),
+    [data, gradingScale, totalCount]
+  );
   
   const CombinedLabel = (props: any) => {
     const { x, y, width, height, index } = props;
@@ -111,24 +124,23 @@ export function GradeHistogram({
     );
   };
 
+
   return (
-            <div className="h-[250px] bg-[hsl(30,30%,98%)]">
-        <ResponsiveContainer width="100%" height="100%" style={{ backgroundColor: 'white', background: 'white' }}>
-                                  <BarChart
-              accessibilityLayer
-              data={sortedData}
-              margin={{ top: 30, right: 10, left: 10, bottom: 20 }}
-              style={{ backgroundColor: 'white', background: 'white' }}
-            >
-              <CartesianGrid strokeDasharray="0" stroke="transparent" />
-              <XAxis
+    <div className="h-[280px]">
+      <ChartContainer config={chartConfig} className="w-full h-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart
+            accessibilityLayer
+            data={sortedData}
+            margin={{ top: 30, right: 10, left: 10, bottom: 80 }}
+          >
+            <XAxis
               dataKey="name"
               tickLine={false}
               axisLine={false}
               tick={<CustomXAxisTick gradingScale={gradingScale} />}
               height={40}
               interval={0}
-              style={{ backgroundColor: 'white' }}
             />
             <YAxis
               type="number"
@@ -138,35 +150,23 @@ export function GradeHistogram({
               axisLine={false}
               tickFormatter={(value) => `${value}`}
               allowDecimals={false}
-              style={{ backgroundColor: 'white' }}
+            />
+            <ChartTooltip
+              cursor={{ fill: 'hsl(var(--muted))' }}
+              content={<ChartTooltipContent />}
             />
             <Bar
               dataKey="value"
-            fill="hsl(var(--primary))"
               radius={[4, 4, 0, 0]}
             >
-            {sortedData.map((entry, index) => (
-              <Cell 
-                key={`cell-${index}`} 
-                fill={entry.isHighlighted ? "#f97316" : "hsl(var(--primary))"} 
-                stroke={entry.isHighlighted ? "#ea580c" : "transparent"}
-                strokeWidth={entry.isHighlighted ? 2 : 0}
-              />
-            ))}
+              {sortedData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={highlightAll || entry.name === highlightGrade ? "var(--color-highlight)" : "var(--color-value)"} />
+              ))}
               <LabelList dataKey="value" content={<CombinedLabel />} />
             </Bar>
           </BarChart>
         </ResponsiveContainer>
-      
-      {/* 하이라이트된 등급에 대한 설명 */}
-      {highlightGrade && (
-        <div className="mt-2 text-center">
-          <p className="text-sm text-muted-foreground">
-            <span className="inline-block w-3 h-3 bg-orange-500 rounded-full mr-2"></span>
-            주황색 막대: 내 등급 ({highlightGrade})
-          </p>
-        </div>
-      )}
+      </ChartContainer>
     </div>
   );
 }

@@ -72,11 +72,7 @@ export default function GradeManagement({
   React.useEffect(() => {
     // gradingScale이 있고 비어있지 않을 때만 업데이트
     if (gradingScale && Object.keys(gradingScale).length > 0) {
-        console.log('=== GradeManagement Load Debug ===');
-        console.log('gradingScale prop:', gradingScale);
-        console.log('gradingScale keys:', Object.keys(gradingScale));
-        console.log('gradingScale length:', Object.keys(gradingScale).length);
-        console.log('==================================');
+        
         
         const uniqueGrades = Object.entries(gradingScale).map(([grade, info]) => ({ 
           ...info, 
@@ -95,10 +91,7 @@ export default function GradeManagement({
         });
         setLocalGrades(filteredGrades);
     } else {
-        console.log('=== GradeManagement Load Debug ===');
-        console.log('gradingScale is empty or undefined');
-        console.log('gradingScale:', gradingScale);
-        console.log('==================================');
+        
     }
     // gradingScale이 비어있거나 undefined면 기본값 유지
   }, [gradingScale]);
@@ -178,12 +171,7 @@ export default function GradeManagement({
         return acc;
       }, {} as Record<NonNullable<Grade>, GradeInfo>);
       
-      console.log('=== GradeManagement Save Debug ===');
-      console.log('localGrades:', localGrades);
-      console.log('newGradingScale:', newGradingScale);
-      console.log('newGradingScale keys:', Object.keys(newGradingScale));
-      console.log('newGradingScale length:', Object.keys(newGradingScale).length);
-      console.log('==================================');
+      
       
       setGradingScale(newGradingScale);
       toast({

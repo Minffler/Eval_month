@@ -204,14 +204,7 @@ export default function EvaluatorManagement(props: EvaluatorManagementProps) {
       return true;
     });
     
-    console.log('평가자 배정 데이터 필터링:', {
-      allUsersCount: allUsers.length,
-      allEvaluationResultsCount: allEvaluationResults.length,
-      employeeUsersCount: employeeUsers.length,
-      uniqueResultsCount: uniqueResults.length,
-      filteredResultsCount: filteredResults.length,
-      sampleResults: filteredResults.slice(0, 3).map(r => ({ uniqueId: r.uniqueId, name: r.name, evaluatorId: r.evaluatorId }))
-    });
+
     
     return filteredResults;
   }, [allEvaluationResults, allUsers]);
@@ -355,11 +348,9 @@ export default function EvaluatorManagement(props: EvaluatorManagementProps) {
     console.log('handleEvaluatorChange 호출:', { employeeId, newEvaluatorId });
     
     const user = allUsers.find(u => u.uniqueId === employeeId);
-    console.log('찾은 사용자:', user);
     
     if (user) {
         const finalEvaluatorId = newEvaluatorId === '' ? '' : newEvaluatorId;
-        console.log('업데이트할 데이터:', { ...user, evaluatorId: finalEvaluatorId });
         
         upsertUsers([{
           ...user,
@@ -383,8 +374,6 @@ export default function EvaluatorManagement(props: EvaluatorManagementProps) {
   };
   
   const handleBulkAssign = () => {
-    console.log('handleBulkAssign 호출:', { selectedIds: Array.from(selectedIds), bulkEvaluatorId });
-    
     if (selectedIds.size === 0 || !bulkEvaluatorId) {
       toast({
         variant: 'destructive',
@@ -397,9 +386,7 @@ export default function EvaluatorManagement(props: EvaluatorManagementProps) {
     
     let updatedCount = 0;
     selectedIds.forEach(employeeId => {
-      console.log('처리 중인 employeeId:', employeeId);
       const user = allUsers.find(u => u.uniqueId === employeeId);
-      console.log('찾은 사용자:', user);
       
       if (user) {
         upsertUsers([{

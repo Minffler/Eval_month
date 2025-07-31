@@ -29,9 +29,8 @@ export function useApproval({
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [isEditMode, setIsEditMode] = React.useState(false);
   
-  // isEditMode 상태 변화 추적
+  // isEditMode 상태 변화 추적 로그 삭제
   React.useEffect(() => {
-    console.log('isEditMode 상태 변경:', isEditMode);
   }, [isEditMode]);
   const [editData, setEditData] = React.useState<any>(null);
 
@@ -39,39 +38,21 @@ export function useApproval({
     if (approval) {
       setRejectionReason(approval.rejectionReason || '');
       setEditData(approval.payload.data);
-      // isEditMode는 수동으로만 변경되도록 유지
-      console.log('approval 변경됨, editData 설정:', approval.payload.data);
+      // approval 변경, editData 설정 로그 삭제
     }
   }, [approval]);
 
   const actions = React.useMemo(() => {
     if (!approval) return null;
     const actions = getApprovalActions(approval, userRole, currentUserId);
-    console.log('결재 액션 권한 확인:', {
-      approval: {
-        requesterId: approval.requesterId,
-        approverHRId: approval.approverHRId,
-        status: approval.status,
-        statusHR: approval.statusHR
-      },
-      userRole,
-      currentUserId,
-      actions,
-      canResubmit: actions.canResubmit,
-      onResubmitApproval: !!onResubmitApproval
-    });
+    // 결재 액션 권한 확인 로그 삭제
     return actions;
   }, [approval, userRole, currentUserId, onResubmitApproval]);
 
   const handleApprovalDecision = React.useCallback(async (decision: 'approved' | 'rejected') => {
     if (!approval) return;
 
-    console.log('결재 처리 시작:', {
-      approval,
-      userRole,
-      currentUserId,
-      decision
-    });
+    // 결재 처리 시작 로그 삭제
 
     try {
       setIsProcessing(true);
@@ -90,23 +71,14 @@ export function useApproval({
         updatedApproval.rejectionReason = decision === 'rejected' ? rejectionReason : '';
       } else if (userRole === 'admin') {
         // admin 처리 - 요청자인지 여부에 관계없이 처리 가능
-        console.log('Admin 결재 처리:', {
-          requesterId: approval.requesterId,
-          currentUserId,
-          approverHRId: approval.approverHRId,
-          approverTeamId: approval.approverTeamId,
-          status: approval.status,
-          statusHR: approval.statusHR
-        });
+        // admin 결재 처리 로그 삭제
         
-        // 잘못된 ID가 있는 경우 수정
+        // approverHRId, approverTeamId 수정 로그 삭제
         if (approval.approverHRId === '1911042') {
           updatedApproval.approverHRId = 'admin';
-          console.log('approverHRId를 admin으로 수정');
         }
         if (approval.approverTeamId === '1911042') {
           updatedApproval.approverTeamId = 'admin';
-          console.log('approverTeamId를 admin으로 수정');
         }
         
         // 문자열 비교 문제 완전 해결
@@ -120,58 +92,19 @@ export function useApproval({
           (updatedApproval.approverHRId && currentUserId && updatedApproval.approverHRId.trim() === currentUserId.trim())
         );
         
-        console.log('Admin 결재 조건 확인:', {
-          approverHRId: approval.approverHRId,
-          updatedApproverHRId: updatedApproval.approverHRId,
-          currentUserId,
-          condition1: approval.approverHRId === currentUserId,
-          condition2: updatedApproval.approverHRId === currentUserId,
-          isAdminApprover,
-          trimmedComparison: {
-            approverHRIdTrimmed: approval.approverHRId?.trim(),
-            currentUserIdTrimmed: currentUserId?.trim(),
-            trimmedMatch: approval.approverHRId?.trim() === currentUserId?.trim()
-          },
-          typeCheck: {
-            approverHRIdType: typeof approval.approverHRId,
-            currentUserIdType: typeof currentUserId,
-            approverHRIdLength: approval.approverHRId?.length,
-            currentUserIdLength: currentUserId?.length,
-            approverHRIdCharCodes: approval.approverHRId?.split('').map(c => c.charCodeAt(0)),
-            currentUserIdCharCodes: currentUserId?.split('').map(c => c.charCodeAt(0))
-          }
-        });
-        
+        // admin 결재 조건 확인 로그 삭제
         if (isAdminApprover) {
           // admin이 2차 결재자인 경우 (일반적인 2차 결재자 처리)
-          console.log('Admin 2차 결재 처리 시작');
-          updatedApproval.statusHR = decision === 'approved' ? '최종승인' : '반려';
-          updatedApproval.approvedAtHR = decision === 'approved' ? new Date().toISOString() : null;
-          console.log('Admin 2차 결재 처리 완료:', {
-            statusHR: updatedApproval.statusHR,
-            approvedAtHR: updatedApproval.approvedAtHR
-          });
+          // admin 2차 결재 처리 시작/완료 로그 삭제
         } else {
-          console.log('Admin이지만 승인 권한이 없음:', {
-            requesterId: approval.requesterId,
-            approverHRId: approval.approverHRId,
-            currentUserId,
-            userRole
-          });
+          // admin이지만 승인 권한이 없음 로그 삭제
           return; // 승인 권한이 없으면 처리하지 않음
         }
         updatedApproval.rejectionReason = decision === 'rejected' ? rejectionReason : '';
       }
 
-      console.log('결재 처리 결과:', updatedApproval);
-      console.log('결재 상태 변경 확인:', {
-        before: { status: approval.status, statusHR: approval.statusHR },
-        after: { status: updatedApproval.status, statusHR: updatedApproval.statusHR },
-        approvedAtHR: updatedApproval.approvedAtHR
-      });
-      console.log('onApprovalAction 호출 전');
+      // 결재 처리 결과/상태 변경/액션 호출 로그 삭제
       onApprovalAction(updatedApproval);
-      console.log('onApprovalAction 호출 후');
       
       // 성공 메시지 표시
       if (typeof window !== 'undefined') {
@@ -179,7 +112,7 @@ export function useApproval({
         alert(message);
       }
     } catch (error) {
-      console.error('결재 처리 중 오류:', error);
+      // 결재 처리 중 오류 로그 삭제
     } finally {
       setIsProcessing(false);
     }
@@ -197,7 +130,7 @@ export function useApproval({
         approvedAtHR: new Date().toISOString(),
       };
 
-      console.log('1차 결재 생략 처리:', updatedApproval);
+      // 1차 결재 생략 처리 로그 삭제
       onApprovalAction(updatedApproval);
     }
   }, [approval, onApprovalAction]);
@@ -213,25 +146,15 @@ export function useApproval({
   const handleResubmit = React.useCallback(() => {
     if (!approval) return;
 
-    console.log('handleResubmit 호출됨:', {
-      isEditMode,
-      onResubmitApproval: !!onResubmitApproval,
-      approval: {
-        requesterId: approval.requesterId,
-        currentUserId,
-        status: approval.status,
-        statusHR: approval.statusHR
-      }
-    });
+    // handleResubmit 호출 로그 삭제
 
     if (!isEditMode) {
       // 수정 모드로 전환
-      console.log('수정 모드로 전환 - setIsEditMode(true) 호출');
+      // 수정 모드 전환/완료 로그 삭제
       setIsEditMode(true);
-      console.log('setIsEditMode(true) 호출 완료');
     } else {
       // 실제 재상신 처리
-      console.log('재상신 처리 시작');
+      // 재상신 처리 시작/데이터/액션 없음 로그 삭제
       if (onResubmitApproval) {
         const updatedApproval = {
           ...approval,
@@ -240,10 +163,9 @@ export function useApproval({
             data: editData
           }
         };
-        console.log('재상신 데이터:', updatedApproval);
         onResubmitApproval(updatedApproval);
       } else {
-        console.log('onResubmitApproval이 없음');
+        // 재상신 처리 시작/데이터/액션 없음 로그 삭제
       }
     }
   }, [approval, isEditMode, editData, onResubmitApproval, currentUserId]);

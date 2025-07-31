@@ -130,6 +130,9 @@ export default function EvaluationInputView({
     setBulkGrade,
   } = useEvaluationInput({ selectedDate, evaluatorId });
   
+  // Context에서 필요한 함수들 가져오기
+  const { updateEvaluationGroup } = useEvaluation();
+  
   // 기존 UI 상태들 (커스텀 훅에서 관리하지 않는 것들)
   const [isRowDragging, setIsRowDragging] = React.useState(false);
   const [draggedEmployee, setDraggedEmployee] = React.useState<EvaluationResult | null>(null);
@@ -214,13 +217,6 @@ export default function EvaluationInputView({
     return () => {
       if (dragUpdateTimeoutRef.current) {
         clearTimeout(dragUpdateTimeoutRef.current);
-      }
-      
-      // 컴포넌트 언마운트 시 변경사항이 있으면 알림
-      if (changedEvaluations.size > 0) {
-        console.log('=== 컴포넌트 언마운트 시 변경사항 알림 ===');
-        console.log('변경된 평가 수:', changedEvaluations.size);
-        console.log('변경된 평가 ID들:', Array.from(changedEvaluations));
       }
     };
   }, [changedEvaluations]);
@@ -486,16 +482,12 @@ export default function EvaluationInputView({
 
   // 그룹명 편집 시작
   const handleStartEditing = (groupId: string, currentName: string) => { 
-    console.log('=== handleStartEditing ===');
-    console.log('groupId:', groupId);
-    console.log('currentName:', currentName);
     setEditingGroupId(groupId); 
     setEditingGroupName(currentName); 
   };
 
   // 그룹명 편집 취소
   const handleCancelEditing = () => { 
-    console.log('=== handleCancelEditing ===');
     setEditingGroupId(null); 
     setEditingGroupName(''); 
   };
@@ -507,27 +499,12 @@ export default function EvaluationInputView({
       return; 
     }
     
-    if (process.env.NODE_ENV === 'development') {
-      console.debug('=== handleUpdateGroupName Debug ===');
-      console.debug('selectedDate:', selectedDate);
-      console.debug('editingGroupId:', editingGroupId);
-      console.debug('editingGroupName:', editingGroupName);
-    }
-    
     const updatedEmployees = myEmployees.map(emp => {
       if (emp.detailedGroup2 === editingGroupId) {
-        const updatedEmployee = { ...emp, detailedGroup2: editingGroupName };
-        if (process.env.NODE_ENV === 'development') {
-          console.debug('Updated employee:', updatedEmployee);
-        }
-        return updatedEmployee;
+        return { ...emp, detailedGroup2: editingGroupName };
       }
       return emp;
     });
-    
-    if (process.env.NODE_ENV === 'development') {
-      console.debug('updatedEmployees.length:', updatedEmployees.length);
-    }
     
     // setLocalEmployees(updatedEmployees); // 이 부분은 이제 Context에서 관리
     
@@ -694,8 +671,8 @@ export default function EvaluationInputView({
       else memberIds.forEach(id => newSelection.delete(id));
       return newSelection;
     });
-  }, []);
-
+    }, []);
+    
 
 
 
@@ -780,12 +757,12 @@ export default function EvaluationInputView({
           <CollapsibleContent>
             <CardContent className='p-4 pt-0 space-y-2'>
               <h3 className="font-semibold text-card-foreground">{`${activeTab} 등급 분포`}</h3>
-              <div className="border border-border rounded-lg p-2 bg-muted">
+              <div className="border border-border rounded-lg p-2">
                 {Object.keys(gradingScale || {}).length > 0 ? (
                   <GradeHistogram 
                     data={gradeDistribution} 
                     gradingScale={gradingScale} 
-                    highlightGrade={null}
+                    highlightAll={true}
                   />
                 ) : (
                   <div className="h-[250px] flex items-center justify-center text-muted-foreground">
@@ -895,16 +872,16 @@ export default function EvaluationInputView({
                       </CardHeader>
                       {/* 테이블 컨텐츠 */}
                       <CardContent className="p-0">
-                                                  <div className="overflow-x-auto">
+                        <div className="overflow-x-auto">
                               <EvaluationTable
                                 employees={group.members}
                                 selectedIds={selectedIds}
                                 gradingScale={gradingScale}
                                 onSelect={handleSelectEmployee}
-                                onGradeChange={handleGradeChange}
+                                    onGradeChange={handleGradeChange}
                                 onMemoChange={handleMemoChange}
-                              />
-                          </div>
+                                  />
+                        </div>
                       </CardContent>
                     </Card>
                   );
