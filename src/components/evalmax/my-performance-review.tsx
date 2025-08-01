@@ -72,7 +72,6 @@ interface MyPerformanceReviewProps {
   allResultsForMonth?: EvaluationResult[]; // 월별 데이터 (전체 분포용)
   selectedDate?: { year: number; month: number };
   gradingScale?: Record<NonNullable<Grade>, GradeInfo>;
-  selectedUserId?: string; // 선택된 사용자 ID (관리자 페이지에서 사용)
 }
 
 // 등급별 색상 정의
@@ -135,8 +134,7 @@ export default function MyPerformanceReview({
   allResultsForYear, 
   allResultsForMonth,
   selectedDate,
-  gradingScale,
-  selectedUserId
+  gradingScale
 }: MyPerformanceReviewProps) {
   const { user } = useAuth();
   // selectedDate가 없을 경우 기본값 설정 (대시보드 상단에서 선택된 날짜 사용)
@@ -146,14 +144,11 @@ export default function MyPerformanceReview({
     const [isAnnualHistoryOpen, setIsAnnualHistoryOpen] = React.useState(true);
     const [isDetailsOpen, setIsDetailsOpen] = React.useState(false);
     
-  // 사용할 사용자 ID 결정 (관리자 페이지에서 선택된 사용자 또는 현재 로그인한 사용자)
-  const targetUserId = selectedUserId || user?.uniqueId;
-  
   // 피평가자 ID별 데이터 필터링 (전체 연간 데이터에서)
   const myResults = React.useMemo(() => {
-    if (!targetUserId || !allResultsForYear) return [];
-    return allResultsForYear.filter(result => result.uniqueId === targetUserId);
-  }, [allResultsForYear, targetUserId]);
+    if (!user?.uniqueId || !allResultsForYear) return [];
+    return allResultsForYear.filter(result => result.uniqueId === user.uniqueId);
+  }, [allResultsForYear, user?.uniqueId]);
   
   // 전체 등급 분포 계산 - 선택된 월의 데이터만 사용 (전체 데이터)
   const gradeDistribution = React.useMemo(() => {
@@ -207,15 +202,15 @@ export default function MyPerformanceReview({
   // 필요한 데이터 추출 및 조건부 변수 설정
   // selectedDate의 월을 기준으로 해당 월의 결과를 찾음 (피평가자 ID별) - 월별 데이터에서 찾기
   const latestResult = React.useMemo(() => {
-    if (!selectedDate || !targetUserId) return null;
+    if (!selectedDate || !user?.uniqueId) return null;
     
     const targetMonth = selectedDate.month;
     const result = (allResultsForMonth || []).find(r => 
-      r.month === targetMonth && r.uniqueId === targetUserId
+      r.month === targetMonth && r.uniqueId === user.uniqueId
     );
     
     return result || null;
-  }, [allResultsForMonth, selectedDate, targetUserId]);
+  }, [allResultsForMonth, selectedDate, user?.uniqueId]);
   
   // 최고 등급 여부 확인 (S, A+, A)
   const isTopTier = latestResult?.grade && ['S', 'A+', 'A'].includes(latestResult.grade);
@@ -470,13 +465,13 @@ export default function MyPerformanceReview({
             </CardHeader>
           </CollapsibleTrigger>
           
-                        {/* 요약 정보 - 항상 표시 */}
-              <CardContent className="p-4 pb-0">
-                {(() => {
-                  // 실제 데이터가 있는 월만 필터링 (등급이 있는 데이터만) - 전체 연간 데이터에서 피평가자 ID별 필터링
-                  const filteredResults = (allResultsForYear || [])
-                    .filter(result => result.grade !== null && result.uniqueId === targetUserId)
-                    .sort((a,b) => b.month - a.month);
+          {/* 요약 정보 - 항상 표시 */}
+          <CardContent className="p-4 pb-0">
+            {(() => {
+              // 실제 데이터가 있는 월만 필터링 (등급이 있는 데이터만) - 전체 연간 데이터에서 피평가자 ID별 필터링
+              const filteredResults = (allResultsForYear || [])
+                .filter(result => result.grade !== null && result.uniqueId === user?.uniqueId)
+                .sort((a,b) => b.month - a.month);
               
               if (filteredResults.length > 0) {
                 return (
@@ -536,7 +531,7 @@ export default function MyPerformanceReview({
                     {(() => {
                       // 실제 데이터가 있는 월만 필터링 (등급이 있는 데이터만) - 전체 연간 데이터에서 피평가자 ID별 필터링
                       const filteredResults = (allResultsForYear || [])
-                        .filter(result => result.grade !== null && result.uniqueId === targetUserId)
+                        .filter(result => result.grade !== null && result.uniqueId === user?.uniqueId)
                         .sort((a,b) => b.month - a.month);
                       
                       if (filteredResults.length > 0) {

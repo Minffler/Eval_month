@@ -25,7 +25,7 @@ const adminNavItems: NavItem[] = [
     children: [
       { id: 'dashboard', label: '대시보드', icon: LayoutDashboard },
       { id: 'all-results', label: '등급/금액 상세', icon: ListChecks },
-      { id: 'individual-inquiry', label: '개인별 조회', icon: Eye },
+      { id: 'evaluator-view', label: '평가자별 조회', icon: Eye },
       { id: 'consistency-check', label: '편향 검토 (AI)', icon: Bot },
       { id: 'evaluator-management', label: '평가자 배정', icon: Users },
     ],
