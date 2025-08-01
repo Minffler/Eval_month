@@ -209,6 +209,9 @@ export default function AdminDashboardContent({
   const [evaluatorViewPopoverOpen, setEvaluatorViewPopoverOpen] = React.useState(false);
   const [rejectionReason, setRejectionReason] = React.useState('');
   const [isGradeDialogOpen, setIsGradeDialogOpen] = React.useState(false);
+  const [activeTab, setActiveTab] = React.useState<'evaluator' | 'employee'>('evaluator');
+  const [selectedEmployeeId, setSelectedEmployeeId] = React.useState<string>('');
+  const [employeeViewPopoverOpen, setEmployeeViewPopoverOpen] = React.useState(false);
 
   const { toast } = useToast();
 
@@ -1049,10 +1052,6 @@ export default function AdminDashboardContent({
                 </div>
              );
         case 'individual-inquiry': {
-            const [activeTab, setActiveTab] = React.useState<'evaluator' | 'employee'>('evaluator');
-            const [selectedEmployeeId, setSelectedEmployeeId] = React.useState<string>('');
-            const [employeeViewPopoverOpen, setEmployeeViewPopoverOpen] = React.useState(false);
-            
             // 모든 직원 목록 (관리자 제외)
             const allEmployees = Array.from(userMap.values()).filter(u => u.uniqueId !== 'admin');
             
