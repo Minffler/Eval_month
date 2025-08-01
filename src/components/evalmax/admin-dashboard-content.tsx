@@ -65,6 +65,7 @@ import AdminNotifications from './admin-dashboard-notifications';
 import { Label } from '../ui/label';
 import GradeManagement from './grade-management';
 import EvaluatorManagement from './evaluator-management';
+import MyPerformanceReview from './my-performance-review';
 import { useEvaluation } from '@/contexts/evaluation-context';
 import { useAuth } from '@/contexts/auth-context';
 import { useNotifications } from '@/contexts/notification-context';
@@ -1047,71 +1048,159 @@ export default function AdminDashboardContent({
                     </Tabs>
                 </div>
              );
-        case 'evaluator-view': {
+        case 'individual-inquiry': {
+            const [activeTab, setActiveTab] = React.useState<'evaluator' | 'employee'>('evaluator');
+            const [selectedEmployeeId, setSelectedEmployeeId] = React.useState<string>('');
+            const [employeeViewPopoverOpen, setEmployeeViewPopoverOpen] = React.useState(false);
+            
+            // 모든 직원 목록 (관리자 제외)
+            const allEmployees = Array.from(userMap.values()).filter(u => u.uniqueId !== 'admin');
+            
+            const selectedEmployee = selectedEmployeeId ? allEmployees.find(e => e.uniqueId === selectedEmployeeId) : null;
             const selectedEvaluatorName = selectedEvaluatorId ? evaluatorsForView.find(s => s.uniqueId === selectedEvaluatorId)?.name : '';
-            const triggerText = selectedEvaluatorId ? `${selectedEvaluatorName} (${selectedEvaluatorId})` : "평가자를 선택하세요";
+            const selectedEmployeeName = selectedEmployeeId ? allEmployees.find(e => e.uniqueId === selectedEmployeeId)?.name : '';
+            
+            const evaluatorTriggerText = selectedEvaluatorId ? `${selectedEvaluatorName} (${selectedEvaluatorId})` : "평가자를 선택하세요";
+            const employeeTriggerText = selectedEmployeeId ? `${selectedEmployeeName} (${selectedEmployeeId})` : "피평가자를 선택하세요";
             
             return (
                 <div className="space-y-4">
                     <Card>
                         <CardHeader className="flex flex-col sm:flex-row items-center justify-between p-4">
                             <div>
-                                <CardTitle>평가자별 조회</CardTitle>
-                                <CardDescription>특정 평가자의 대시보드를 확인합니다.</CardDescription>
+                                <CardTitle>개인별 조회</CardTitle>
+                                <CardDescription>평가자 또는 피평가자를 선택하여 대시보드 및 상세 데이터를 조회합니다.</CardDescription>
                             </div>
-                            <Popover open={evaluatorViewPopoverOpen} onOpenChange={setEvaluatorViewPopoverOpen}>
-                                <PopoverTrigger asChild>
-                                <Button
-                                    variant="outline"
-                                    role="combobox"
-                                    aria-expanded={evaluatorViewPopoverOpen}
-                                    className="w-full sm:w-[320px] justify-between mt-2 sm:mt-0"
-                                >
-                                    <span className="truncate">{triggerText}</span>
-                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-[320px] p-0">
-                                <Command>
-                                    <CommandInput placeholder="평가자 검색..." />
-                                    <CommandList>
-                                    <CommandEmpty>검색 결과가 없습니다.</CommandEmpty>
-                                    <CommandGroup>
-                                        {evaluatorsForView.map(stat => (
-                                        <CommandItem
-                                            key={stat.uniqueId}
-                                            value={`${stat.name} ${stat.uniqueId}`}
-                                            onSelect={() => {
-                                                setSelectedEvaluatorId(stat.uniqueId);
-                                                setEvaluatorViewPopoverOpen(false);
-                                            }}
-                                        >
-                                            {stat.name} ({stat.uniqueId})
-                                        </CommandItem>
-                                        ))}
-                                    </CommandGroup>
-                                    </CommandList>
-                                </Command>
-                                </PopoverContent>
-                            </Popover>
                         </CardHeader>
+                        <CardContent className="p-4">
+                            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'evaluator' | 'employee')} className="w-full">
+                                <TabsList className="grid w-full grid-cols-2">
+                                    <TabsTrigger value="evaluator">평가자별 조회</TabsTrigger>
+                                    <TabsTrigger value="employee">피평가자별 조회</TabsTrigger>
+                                </TabsList>
+                                
+                                <TabsContent value="evaluator" className="space-y-4">
+                                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                                        <div className="flex-1">
+                                            <Label className="text-sm font-medium">평가자별 조회</Label>
+                                            <Popover open={evaluatorViewPopoverOpen} onOpenChange={setEvaluatorViewPopoverOpen}>
+                                                <PopoverTrigger asChild>
+                                                <Button
+                                                    variant="outline"
+                                                    role="combobox"
+                                                    aria-expanded={evaluatorViewPopoverOpen}
+                                                    className="w-full justify-between mt-2"
+                                                >
+                                                    <span className="truncate">{evaluatorTriggerText}</span>
+                                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                </Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-[320px] p-0">
+                                                <Command>
+                                                    <CommandInput placeholder="평가자 검색..." />
+                                                    <CommandList>
+                                                    <CommandEmpty>검색 결과가 없습니다.</CommandEmpty>
+                                                    <CommandGroup>
+                                                        {evaluatorsForView.map(stat => (
+                                                        <CommandItem
+                                                            key={stat.uniqueId}
+                                                            value={`${stat.name} ${stat.uniqueId}`}
+                                                            onSelect={() => {
+                                                                setSelectedEvaluatorId(stat.uniqueId);
+                                                                setEvaluatorViewPopoverOpen(false);
+                                                            }}
+                                                        >
+                                                            {stat.name} ({stat.uniqueId})
+                                                        </CommandItem>
+                                                        ))}
+                                                    </CommandGroup>
+                                                    </CommandList>
+                                                </Command>
+                                                </PopoverContent>
+                                            </Popover>
+                                        </div>
+                                    </div>
+                                    
+                                    {selectedEvaluator ? (
+                                        <EvaluatorDashboard
+                                            selectedDate={selectedDate}
+                                            setSelectedDate={setSelectedDate} 
+                                            evaluatorUser={selectedEvaluator}
+                                            activeView='evaluation-input'
+                                            userMap={userMap}
+                                        />
+                                    ) : (
+                                        <Card className="flex items-center justify-center h-64">
+                                          <p className="text-center text-muted-foreground">
+                                            평가자를 선택하면 해당 평가자의 대시보드가 여기에 표시됩니다.
+                                          </p>
+                                        </Card>
+                                    )}
+                                </TabsContent>
+                                
+                                <TabsContent value="employee" className="space-y-4">
+                                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                                        <div className="flex-1">
+                                            <Label className="text-sm font-medium">피평가자별 조회</Label>
+                                            <Popover open={employeeViewPopoverOpen} onOpenChange={setEmployeeViewPopoverOpen}>
+                                                <PopoverTrigger asChild>
+                                                <Button
+                                                    variant="outline"
+                                                    role="combobox"
+                                                    aria-expanded={employeeViewPopoverOpen}
+                                                    className="w-full justify-between mt-2"
+                                                >
+                                                    <span className="truncate">{employeeTriggerText}</span>
+                                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                </Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-[320px] p-0">
+                                                <Command>
+                                                    <CommandInput placeholder="피평가자 검색..." />
+                                                    <CommandList>
+                                                    <CommandEmpty>검색 결과가 없습니다.</CommandEmpty>
+                                                    <CommandGroup>
+                                                        {allEmployees.map(employee => (
+                                                        <CommandItem
+                                                            key={employee.uniqueId}
+                                                            value={`${employee.name} ${employee.uniqueId}`}
+                                                            onSelect={() => {
+                                                                setSelectedEmployeeId(employee.uniqueId);
+                                                                setEmployeeViewPopoverOpen(false);
+                                                            }}
+                                                        >
+                                                            {employee.name} ({employee.uniqueId})
+                                                        </CommandItem>
+                                                        ))}
+                                                    </CommandGroup>
+                                                    </CommandList>
+                                                </Command>
+                                                </PopoverContent>
+                                            </Popover>
+                                        </div>
+                                    </div>
+                                    
+                                    {selectedEmployee ? (
+                                        <div className="space-y-6">
+                                            <MyPerformanceReview
+                                                allResultsForYear={initialResults}
+                                                allResultsForMonth={initialResults}
+                                                selectedDate={selectedDate}
+                                                gradingScale={gradingScale}
+                                                selectedUserId={selectedEmployeeId}
+                                            />
+                                        </div>
+                                    ) : (
+                                        <Card className="flex items-center justify-center h-64">
+                                          <p className="text-center text-muted-foreground">
+                                            피평가자를 선택하면 성과 리뷰 및 상세 결과가 여기에 표시됩니다.
+                                          </p>
+                                        </Card>
+                                    )}
+                                </TabsContent>
+                            </Tabs>
+                        </CardContent>
                     </Card>
-
-                    {selectedEvaluator ? (
-                        <EvaluatorDashboard
-                            selectedDate={selectedDate}
-                            setSelectedDate={setSelectedDate} 
-                            evaluatorUser={selectedEvaluator}
-                            activeView='evaluation-input'
-                            userMap={userMap}
-                        />
-                    ) : (
-                        <Card className="flex items-center justify-center h-64">
-                          <p className="text-center text-muted-foreground">
-                            평가자를 선택하면 해당 평가자의 대시보드가 여기에 표시됩니다.
-                          </p>
-                        </Card>
-                    )}
                 </div>
             );
         }
