@@ -557,9 +557,14 @@ export default function ManageData({
             const newShortenedWork = await parseExcelFileSimple<ShortenedWorkHourRecord>(file, json => json.map((row, index) => {
               const uniqueId = String(row['uniqueId'] || '');
               if (!uniqueId) throw new Error(`${index + 2}번째 행에 사번이 없습니다.`);
+              
+              // 날짜 형식 표준화: 점(.)을 하이픈(-)으로 변환
+              const startDate = String(row['startDate'] || '').replace(/\./g, '-');
+              const endDate = String(row['endDate'] || '').replace(/\./g, '-');
+              
               return {
                 uniqueId, name: String(row['name'] || ''),
-                startDate: String(row['startDate'] || ''), endDate: String(row['endDate'] || ''),
+                startDate, endDate,
                 startTime: String(row['startTime'] || ''), endTime: String(row['endTime'] || ''),
                 type: shortenedWorkType,
                 lastModified: now,
@@ -571,9 +576,13 @@ export default function ManageData({
             const newDailyAttendance = await parseExcelFileSimple<DailyAttendanceRecord>(file, json => json.map((row, index) => {
               const uniqueId = String(row['uniqueId'] || '');
               if (!uniqueId) throw new Error(`${index + 2}번째 행에 사번이 없습니다.`);
+              
+              // 날짜 형식 표준화: 점(.)을 하이픈(-)으로 변환
+              const date = String(row['date'] || '').replace(/\./g, '-');
+              
               return {
                 uniqueId, name: String(row['name'] || ''),
-                date: String(row['date'] || ''), type: String(row['type'] || ''),
+                date, type: String(row['type'] || ''),
                 lastModified: now,
               }
             }));
@@ -599,13 +608,17 @@ export default function ManageData({
                 const json = XLSX.utils.sheet_to_json<any>(worksheet);
                 
                 const simplifiedMapping: Record<string, string> = {
-                    "고유사번": "uniqueId", "사번": "uniqueId", "ID": "uniqueId",
+                    "고유사번": "uniqueId", "사번": "uniqueId", "ID": "uniqueId", "사원번호": "uniqueId",
                     "성명": "name", "이름": "name",
-                    "시작일": "startDate", "종료일": "endDate",
-                    "출근시각": "startTime", "퇴근시각": "endTime",
-                    "근태사용일": "date", "일자": "date",
-                    "근태종류": "type", "근태": "type",
+                    "시작일": "startDate", "시작일자": "startDate", "시작": "startDate", "시작일시": "startDate",
+                    "종료일": "endDate", "종료일자": "endDate", "종료": "endDate", "종료일시": "endDate",
+                    "출근시각": "startTime", "출근시간": "startTime", "시작시간": "startTime",
+                    "퇴근시각": "endTime", "퇴근시간": "endTime", "종료시간": "endTime",
+                    "근태사용일": "date", "일자": "date", "날짜": "date", "사용일": "date",
+                    "근태종류": "type", "근태": "type", "종류": "type", "근태유형": "type",
                 }
+
+                console.log('엑셀 파일 헤더:', Object.keys(json[0] || {}));
 
                 const mappedJson = json.map(row => {
                     const newRow: any = {};
@@ -613,10 +626,15 @@ export default function ManageData({
                         const systemField = simplifiedMapping[excelHeader];
                         if(systemField) {
                             newRow[systemField] = row[excelHeader];
+                            console.log(`헤더 매핑: "${excelHeader}" → "${systemField}"`);
+                        } else {
+                            console.log(`매핑되지 않은 헤더: "${excelHeader}"`);
                         }
                     }
                     return newRow;
                 });
+                
+                console.log('매핑된 데이터 샘플:', mappedJson.slice(0, 2));
                 
                 resolve(parser(mappedJson));
             } catch (error: any) {
@@ -642,7 +660,7 @@ export default function ManageData({
             fileName = `${selectedDate.year}.${String(selectedDate.month).padStart(2, '0')}_월성과데이터_양식.xlsx`;
             break;
         case 'shortenedWork':
-            headers = ['고유사번', '성명', '시작일', '종료일', '출근시각', '퇴근시각'];
+            headers = ['고유사번', '성명', '시작일자', '종료일자', '출근시각', '퇴근시각'];
             fileName = '단축근로_양식.xlsx';
             break;
         case 'dailyAttendance':

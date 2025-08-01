@@ -686,8 +686,8 @@ export default function AdminDashboardContent({
 
         return (
             <div className="text-sm space-y-4">
-                {[...commonFields, ...typeSpecificFields].map(field => (
-                     <div key={field.label} className="grid grid-cols-4 items-center">
+                {[...commonFields, ...typeSpecificFields].map((field, index) => (
+                     <div key={`${field.label}-${index}`} className="grid grid-cols-4 items-center">
                         <span className="font-semibold col-span-1">{field.label}</span>
                         <span className="col-span-3">{field.value}</span>
                     </div>
@@ -1013,8 +1013,8 @@ export default function AdminDashboardContent({
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {sortedVisibleResults.map(r => (
-                                <TableRow key={r.uniqueId}>
+                            {sortedVisibleResults.map((r, index) => (
+                                <TableRow key={`${r.id}-${index}`}>
                                 <TableCell className="py-1 px-2 whitespace-nowrap text-center">{r.uniqueId}</TableCell>
                                 <TableCell className="py-1 px-2 whitespace-nowrap text-center">{r.company}</TableCell>
                                 <TableCell className="py-1 px-2 whitespace-nowrap text-center">{r.department}</TableCell>
@@ -1302,7 +1302,7 @@ export default function AdminDashboardContent({
               <p className="text-sm font-medium">저장된 템플릿:</p>
               <div className="space-y-2">
                 {notificationTemplates.map((template, index) => (
-                  <div key={index} className="flex items-center justify-between p-2 border rounded-md">
+                  <div key={`${template}-${index}`} className="flex items-center justify-between p-2 border rounded-md">
                     <span className="text-sm flex-1">{template}</span>
                     <div className="flex gap-1">
                       <Button

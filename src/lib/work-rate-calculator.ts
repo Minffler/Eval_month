@@ -88,8 +88,9 @@ export const calculateWorkRateDetails = (
     
     // 단축근로 데이터: 기간이 선택된 월과 겹치는 모든 데이터 수집
     monthData.shortenedWorkHours.forEach(record => {
-      const startDate = new Date(record.startDate.replace(/\./g, '-'));
-      const endDate = new Date(record.endDate.replace(/\./g, '-'));
+      // 이미 표준화된 형식 사용 (YYYY-MM-DD)
+      const startDate = new Date(record.startDate);
+      const endDate = new Date(record.endDate);
       
       // 기간이 겹치는지 확인
       if (startDate <= selectedMonthEnd && endDate >= selectedMonthStart) {
@@ -98,11 +99,9 @@ export const calculateWorkRateDetails = (
       }
     });
     
-    // 일근태 데이터: 해당 월의 데이터만 수집
-    if (monthKey === selectedMonthKey) {
-      console.log(`일근태 데이터 수집:`, monthData.dailyAttendance);
-      allDailyAttendanceRecords.push(...monthData.dailyAttendance);
-    }
+    // 일근태 데이터: 모든 데이터를 수집 (바스켓 방식)
+    console.log(`일근태 데이터 수집:`, monthData.dailyAttendance);
+    allDailyAttendanceRecords.push(...monthData.dailyAttendance);
   });
   
   console.log('수집된 전체 데이터:', {
@@ -113,12 +112,9 @@ export const calculateWorkRateDetails = (
   // 1. Process shortened work details first, as they are needed for daily attendance calculation
   const shortenedWorkDetails: ShortenedWorkDetail[] = allShortenedWorkRecords
     .map((record, index) => {
-      // 날짜 형식 통일: 점(.)을 하이픈(-)으로 변환
-      const normalizedStartDate = record.startDate.replace(/\./g, '-');
-      const normalizedEndDate = record.endDate.replace(/\./g, '-');
-      
-      const startDate = new Date(normalizedStartDate);
-      const endDate = new Date(normalizedEndDate);
+      // 이미 표준화된 형식 사용 (YYYY-MM-DD)
+      const startDate = new Date(record.startDate);
+      const endDate = new Date(record.endDate);
 
       // Check for overlap with selected month
       if (endDate < selectedMonthStart || startDate > selectedMonthEnd) {
@@ -139,10 +135,10 @@ export const calculateWorkRateDetails = (
 
       return {
         ...record,
-        // 날짜 형식을 하이픈으로 통일
-        startDate: normalizedStartDate,
-        endDate: normalizedEndDate,
-        rowId: `${record.uniqueId}-${normalizedStartDate}-${normalizedEndDate}-${record.type}-${index}`,
+        // 이미 표준화된 형식 사용
+        startDate: record.startDate,
+        endDate: record.endDate,
+        rowId: `${record.uniqueId}-${record.startDate}-${record.endDate}-${record.type}-${index}`,
         type: record.type,
         workHours,
         actualWorkHours,
@@ -165,9 +161,8 @@ export const calculateWorkRateDetails = (
   // 2. Process daily attendance details
   const dailyAttendanceDetails: DailyAttendanceDetail[] = allDailyAttendanceRecords
     .map((record, index) => {
-        // 날짜 형식 통일: 점(.)을 하이픈(-)으로 변환
-        const normalizedDate = record.date.replace(/\./g, '-');
-        const recordDate = new Date(normalizedDate);
+        // 이미 표준화된 형식 사용 (YYYY-MM-DD)
+        const recordDate = new Date(record.date);
         
         if (recordDate.getFullYear() !== year || recordDate.getMonth() !== month - 1) {
             return null; // Filter out records not in the selected month
@@ -179,8 +174,8 @@ export const calculateWorkRateDetails = (
         const employeeShortenedRecords = shortenedWorkMapByEmployee.get(record.uniqueId);
         if (employeeShortenedRecords) {
             const shortenedRecordForDay = employeeShortenedRecords.find(sr => {
-                const startDate = new Date(sr.startDate.replace(/\./g, '-'));
-                const endDate = new Date(sr.endDate.replace(/\./g, '-'));
+                const startDate = new Date(sr.startDate);
+                const endDate = new Date(sr.endDate);
                 return recordDate >= startDate && recordDate <= endDate;
             });
             
@@ -195,9 +190,9 @@ export const calculateWorkRateDetails = (
         
         return {
             ...record,
-            // 날짜 형식을 하이픈으로 통일
-            date: normalizedDate,
-            rowId: `${record.uniqueId}-${normalizedDate}-${record.type}-${index}`,
+            // 이미 표준화된 형식 사용
+            date: record.date,
+            rowId: `${record.uniqueId}-${record.date}-${record.type}-${index}`,
             isShortenedDay,
             actualWorkHours,
             deductionDays,

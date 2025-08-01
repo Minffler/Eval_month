@@ -365,7 +365,7 @@ export default function UserRoleManagement() {
               </TableHeader>
               <TableBody>
                 {filteredUsers.map((user) => (
-                  <TableRow key={user.id} data-state={selectedIds.has(user.id) ? "selected" : undefined}>
+                  <TableRow key={user.uniqueId} data-state={selectedIds.has(user.id) ? "selected" : undefined}>
                     <TableCell className="text-center">
                         <Checkbox
                             checked={selectedIds.has(user.id)}

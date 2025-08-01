@@ -214,7 +214,7 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
   }, [setWorkRateInputs]);
   
   const handleEmployeeUpload = (year: number, month: number, newEmployees: Employee[]) => {
-    const key = `${year}-${month}`;
+    const key = `${year}-${month.toString().padStart(2, '0')}`;
     
     console.log('=== handleEmployeeUpload 호출됨 ===');
     console.log('year:', year, 'month:', month);
@@ -293,7 +293,7 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
   };
 
   const handleEvaluationUpload = (year: number, month: number, uploadedData: EvaluationUploadData[]) => {
-      const key = `${year}-${month}`;
+      const key = `${year}-${month.toString().padStart(2, '0')}`;
       
       const usersToUpsert: Partial<User>[] = [];
       const employeeData: Employee[] = [];
@@ -358,13 +358,13 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
   };
 
   const handleClearEmployeeData = (year: number, month: number) => {
-    const key = `${year}-${month}`;
+    const key = `${year}-${month.toString().padStart(2, '0')}`;
     setEmployees(prev => { const newState = { ...prev }; delete newState[key]; return newState; });
     setEvaluations(prev => { const newState = { ...prev }; delete newState[key]; return newState; });
   };
 
   const handleClearEvaluationData = (year: number, month: number) => {
-    const key = `${year}-${month}`;
+    const key = `${year}-${month.toString().padStart(2, '0')}`;
     setEvaluations(prev => {
         const currentEvalsForMonth = prev[key] || [];
         const resetEvals = currentEvalsForMonth.map(ev => ({ ...ev, grade: null, memo: '', }));
@@ -374,22 +374,40 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
 
   const handleWorkRateDataUpload = (year: number, month: number, type: keyof WorkRateInputs, newData: any[], isApproved: boolean) => {
       if (!isApproved) return;
-      const key = `${year}-${month}`;
+      
       setWorkRateInputs(prev => {
-          const currentMonthInputs = prev[key] || { shortenedWorkHours: [], dailyAttendance: [] };
-  
-          let combinedData;
+          // 모든 월의 데이터를 가져와서 통합
+          const allShortenedWorkHours = Object.values(prev).flatMap(inputs => inputs.shortenedWorkHours || []);
+          const allDailyAttendance = Object.values(prev).flatMap(inputs => inputs.dailyAttendance || []);
+          
+          let updatedShortenedWorkHours = allShortenedWorkHours;
+          let updatedDailyAttendance = allDailyAttendance;
+          
           if (type === 'shortenedWorkHours') {
-              const existingKeys = new Set(currentMonthInputs.shortenedWorkHours.map((r: ShortenedWorkHourRecord) => `${r.uniqueId}|${r.startDate}|${r.endDate}`));
-              const uniqueNewData = (newData as ShortenedWorkHourRecord[]).filter(r => !existingKeys.has(`${r.uniqueId}|${r.startDate}|${r.endDate}`));
-              combinedData = [...currentMonthInputs.shortenedWorkHours, ...uniqueNewData];
-          } else {
-              const existingKeys = new Set(currentMonthInputs.dailyAttendance.map((r: DailyAttendanceRecord) => `${r.uniqueId}|${r.date}`));
-              const uniqueNewData = (newData as DailyAttendanceRecord[]).filter(r => !existingKeys.has(`${r.uniqueId}|${r.date}`));
-              combinedData = [...currentMonthInputs.dailyAttendance, ...uniqueNewData];
+              // 개선된 중복 체크: uniqueId|startDate|endDate|type 조합으로 체크
+              const existingKeys = new Set(allShortenedWorkHours.map((r: ShortenedWorkHourRecord) => `${r.uniqueId}|${r.startDate}|${r.endDate}|${r.type}`));
+              const uniqueNewData = (newData as ShortenedWorkHourRecord[]).filter(r => !existingKeys.has(`${r.uniqueId}|${r.startDate}|${r.endDate}|${r.type}`));
+              updatedShortenedWorkHours = [...allShortenedWorkHours, ...uniqueNewData];
+          } else if (type === 'dailyAttendance') {
+              // 개선된 중복 체크: uniqueId|date|type 조합으로 체크 (id+사용일+근태유형)
+              const existingKeys = new Set(allDailyAttendance.map((r: DailyAttendanceRecord) => `${r.uniqueId}|${r.date}|${r.type}`));
+              const uniqueNewData = (newData as DailyAttendanceRecord[]).filter(r => !existingKeys.has(`${r.uniqueId}|${r.date}|${r.type}`));
+              updatedDailyAttendance = [...allDailyAttendance, ...uniqueNewData];
           }
-  
-          return { ...prev, [key]: { ...currentMonthInputs, [type]: combinedData, } };
+          
+          // 모든 월에 대해 동일한 데이터를 설정 (바스켓 방식)
+          const newState: Record<string, WorkRateInputs> = {};
+          for (let y = 2024; y <= 2030; y++) {
+              for (let m = 1; m <= 12; m++) {
+                  const key = `${y}-${m.toString().padStart(2, '0')}`;
+                  newState[key] = {
+                      shortenedWorkHours: updatedShortenedWorkHours,
+                      dailyAttendance: updatedDailyAttendance
+                  };
+              }
+          }
+          
+          return newState;
       });
   
       if (type === 'dailyAttendance') {
@@ -408,7 +426,7 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
   };
 
   const handleClearWorkRateData = (year: number, month: number, type: keyof WorkRateInputs | ShortenedWorkType) => {
-    const key = `${year}-${month}`;
+    const key = `${year}-${month.toString().padStart(2, '0')}`;
     setWorkRateInputs(prev => {
         const currentMonthInputs = prev[key];
         if (!currentMonthInputs) return prev;
@@ -433,7 +451,7 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
   };
 
   const handleClearMyEvaluations = (year: number, month: number, evaluatorId: string) => {
-    const key = `${year}-${month}`;
+    const key = `${year}-${month.toString().padStart(2, '0')}`;
     if (!evaluatorId) return;
 
     const myEmployeeUniqueIds = new Set(Array.from(userMap.values()).filter(u => u.evaluatorId === evaluatorId).map(u => u.uniqueId));

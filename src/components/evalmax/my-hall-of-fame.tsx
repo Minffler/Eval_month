@@ -14,12 +14,12 @@ const badgeInfo: Record<string, {label: string, icon: React.ElementType, color: 
     'S': { label: 'Platinum', icon: Award, color: 'text-purple-500' },
     'A+': { label: 'Gold', icon: Award, color: 'text-yellow-500' },
     'A': { label: 'Silver', icon: Award, color: 'text-gray-500' },
-    'B+': { label: 'Bronze', icon: Award, color: 'text-black' },
-    'B': { label: 'Standard', icon: Award, color: 'text-black' },
-    'B-': { label: 'Standard', icon: Award, color: 'text-black' },
-    'C': { label: 'Standard', icon: Award, color: 'text-black' },
-    'C-': { label: 'Standard', icon: Award, color: 'text-black' },
-    'D': { label: 'Standard', icon: Award, color: 'text-black' },
+    'B+': { label: 'Bronze', icon: Award, color: 'text-muted-foreground' },
+    'B': { label: 'Standard', icon: Award, color: 'text-muted-foreground' },
+    'B-': { label: 'Standard', icon: Award, color: 'text-muted-foreground' },
+    'C': { label: 'Standard', icon: Award, color: 'text-orange-500' },
+    'C-': { label: 'Standard', icon: Award, color: 'text-orange-500' },
+    'D': { label: 'Standard', icon: Award, color: 'text-red-500' },
 };
 
 interface MyHallOfFameProps {
