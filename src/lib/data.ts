@@ -18,11 +18,26 @@ export const mockUsers: User[] = [
     "evaluatorId": "admin"
   },
   {
-    "id": "user-0000198",
-    "employeeId": "E0000198",
-    "uniqueId": "0000198",
-    "name": "김O섭",
+    "id": "user-0000247",
+    "employeeId": "E0000247",
+    "uniqueId": "0000247",
+    "name": "강O화",
     "department": "일산PL팀",
+    "title": "팀원",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=강",
+    "password": "1",
+    "company": "OK",
+    "evaluatorId": "0000011"
+  },
+  {
+    "id": "user-0000195",
+    "employeeId": "E0000195",
+    "uniqueId": "0000195",
+    "name": "김O균",
+    "department": "대전PL팀",
     "title": "팀장",
     "roles": [
       "employee"
@@ -33,16 +48,31 @@ export const mockUsers: User[] = [
     "evaluatorId": "0000011"
   },
   {
-    "id": "user-0000245",
-    "employeeId": "E0000245",
-    "uniqueId": "0000245",
-    "name": "신O원",
-    "department": "일산PL팀",
+    "id": "user-0000584",
+    "employeeId": "E0000584",
+    "uniqueId": "0000584",
+    "name": "김O미",
+    "department": "경영관리팀",
     "title": "팀원",
     "roles": [
       "employee"
     ],
-    "avatar": "https://placehold.co/100x100.png?text=신",
+    "avatar": "https://placehold.co/100x100.png?text=김",
+    "password": "1",
+    "company": "OCI",
+    "evaluatorId": "0000011"
+  },
+  {
+    "id": "user-0000198",
+    "employeeId": "E0000198",
+    "uniqueId": "0000198",
+    "name": "김O섭",
+    "department": "일산PL팀",
+    "title": "팀장",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=김",
     "password": "1",
     "company": "OK",
     "evaluatorId": "0000011"
@@ -63,16 +93,31 @@ export const mockUsers: User[] = [
     "evaluatorId": "0000011"
   },
   {
-    "id": "user-0000247",
-    "employeeId": "E0000247",
-    "uniqueId": "0000247",
-    "name": "강O화",
-    "department": "일산PL팀",
+    "id": "user-0000232",
+    "employeeId": "E0000232",
+    "uniqueId": "0000232",
+    "name": "김O주b",
+    "department": "대전PL팀",
     "title": "팀원",
     "roles": [
       "employee"
     ],
-    "avatar": "https://placehold.co/100x100.png?text=강",
+    "avatar": "https://placehold.co/100x100.png?text=김",
+    "password": "1",
+    "company": "OK",
+    "evaluatorId": "0000011"
+  },
+  {
+    "id": "user-0000281",
+    "employeeId": "E0000281",
+    "uniqueId": "0000281",
+    "name": "김O진b",
+    "department": "대전PL팀",
+    "title": "팀원",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=김",
     "password": "1",
     "company": "OK",
     "evaluatorId": "0000011"
@@ -93,6 +138,81 @@ export const mockUsers: User[] = [
     "evaluatorId": "0000011"
   },
   {
+    "id": "user-0000610",
+    "employeeId": "E0000610",
+    "uniqueId": "0000610",
+    "name": "김O희",
+    "department": "경영관리팀",
+    "title": "팀원",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=김",
+    "password": "1",
+    "company": "OC",
+    "evaluatorId": "0000011"
+  },
+  {
+    "id": "user-0000231",
+    "employeeId": "E0000231",
+    "uniqueId": "0000231",
+    "name": "노O호",
+    "department": "대전PL팀",
+    "title": "팀원",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=노",
+    "password": "1",
+    "company": "OK",
+    "evaluatorId": "0000011"
+  },
+  {
+    "id": "user-0000287",
+    "employeeId": "E0000287",
+    "uniqueId": "0000287",
+    "name": "송O훈",
+    "department": "대전PL팀",
+    "title": "팀원",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=송",
+    "password": "1",
+    "company": "OK",
+    "evaluatorId": "0000011"
+  },
+  {
+    "id": "user-0000282",
+    "employeeId": "E0000282",
+    "uniqueId": "0000282",
+    "name": "신O섭",
+    "department": "대전PL팀",
+    "title": "팀원",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=신",
+    "password": "1",
+    "company": "OK",
+    "evaluatorId": "0000011"
+  },
+  {
+    "id": "user-0000245",
+    "employeeId": "E0000245",
+    "uniqueId": "0000245",
+    "name": "신O원",
+    "department": "일산PL팀",
+    "title": "팀원",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=신",
+    "password": "1",
+    "company": "OK",
+    "evaluatorId": "0000011"
+  },
+  {
     "id": "user-0000299",
     "employeeId": "E0000299",
     "uniqueId": "0000299",
@@ -103,6 +223,66 @@ export const mockUsers: User[] = [
       "employee"
     ],
     "avatar": "https://placehold.co/100x100.png?text=엄",
+    "password": "1",
+    "company": "OK",
+    "evaluatorId": "0000011"
+  },
+  {
+    "id": "user-0000011",
+    "employeeId": "E0000011",
+    "uniqueId": "0000011",
+    "name": "이O권",
+    "department": "콜렉션센터",
+    "title": "센터장",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=이",
+    "password": "1",
+    "company": "N/A",
+    "evaluatorId": "admin"
+  },
+  {
+    "id": "user-0000609",
+    "employeeId": "E0000609",
+    "uniqueId": "0000609",
+    "name": "정O석b",
+    "department": "경영관리팀",
+    "title": "팀원",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=정",
+    "password": "1",
+    "company": "OC",
+    "evaluatorId": "0000011"
+  },
+  {
+    "id": "user-0000586",
+    "employeeId": "E0000586",
+    "uniqueId": "0000586",
+    "name": "조O진",
+    "department": "경영관리팀",
+    "title": "팀원",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=조",
+    "password": "1",
+    "company": "OFI",
+    "evaluatorId": "0000011"
+  },
+  {
+    "id": "user-0000300",
+    "employeeId": "E0000300",
+    "uniqueId": "0000300",
+    "name": "홍O환",
+    "department": "일산PL팀",
+    "title": "팀원",
+    "roles": [
+      "employee"
+    ],
+    "avatar": "https://placehold.co/100x100.png?text=홍",
     "password": "1",
     "company": "OK",
     "evaluatorId": "0000011"
@@ -393,7 +573,7 @@ export const mockEmployees: Record<string, Partial<Employee>[]> = {
       "growthLevel": "Lv.3",
       "workRate": 1,
       "evaluatorId": "",
-      "baseAmount": 8000000,
+      "baseAmount": 570000,
       "memo": ""
     }
   ],
@@ -409,7 +589,7 @@ export const mockEmployees: Record<string, Partial<Employee>[]> = {
       "growthLevel": "Lv.3",
       "workRate": 1,
       "evaluatorId": "",
-      "baseAmount": 8000000,
+      "baseAmount": 570000,
       "memo": ""
     }
   ],
@@ -425,7 +605,7 @@ export const mockEmployees: Record<string, Partial<Employee>[]> = {
       "growthLevel": "Lv.3",
       "workRate": 1,
       "evaluatorId": "",
-      "baseAmount": 8000000,
+      "baseAmount": 570000,
       "memo": ""
     }
   ],
@@ -441,7 +621,7 @@ export const mockEmployees: Record<string, Partial<Employee>[]> = {
       "growthLevel": "Lv.3",
       "workRate": 1,
       "evaluatorId": "",
-      "baseAmount": 8000000,
+      "baseAmount": 570000,
       "memo": ""
     }
   ],
@@ -457,7 +637,7 @@ export const mockEmployees: Record<string, Partial<Employee>[]> = {
       "growthLevel": "Lv.3",
       "workRate": 1,
       "evaluatorId": "",
-      "baseAmount": 8000000,
+      "baseAmount": 570000,
       "memo": ""
     }
   ],
@@ -473,7 +653,7 @@ export const mockEmployees: Record<string, Partial<Employee>[]> = {
       "growthLevel": "Lv.5",
       "workRate": 1,
       "evaluatorId": "",
-      "baseAmount": 8000000,
+      "baseAmount": 570000,
       "memo": ""
     }
   ],
