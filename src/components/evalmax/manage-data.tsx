@@ -210,7 +210,7 @@ export default function ManageData({
             holidays: localStorage.getItem('holidays') || '[]',
         };
         await backupData(backupPayload);
-        toast({ title: '저장 완료', description: '현재 데이터를 초기 데이터로 저장했습니다. 다른 브라우저에서 [초기 데이터로 덮어쓰기]를 실행하여 동기화하세요.' });
+        toast({ title: '저장 완료', description: '현재 데이터를 임시 데이터로 저장했습니다. 다른 브라우저에서 [임시 데이터로 덮어쓰기]를 실행하여 동기화하세요.' });
     } catch (error) {
         toast({ variant: 'destructive', title: '저장 실패', description: '데이터 저장 중 오류가 발생했습니다.' });
         console.error("Backup failed", error);
@@ -296,7 +296,7 @@ export default function ManageData({
             "title": "팀원",
             "department": "경영관리팀",
             "company": "OCI",
-            "evaluatorId": "0000011"
+            "evaluatorId": "admin"
           },
           {
             "id": "user-0000198",
@@ -368,7 +368,7 @@ export default function ManageData({
             "title": "팀원",
             "department": "경영관리팀",
             "company": "OC",
-            "evaluatorId": "0000011"
+            "evaluatorId": "admin"
           },
           {
             "id": "user-0000231",
@@ -452,7 +452,7 @@ export default function ManageData({
             "title": "팀원",
             "department": "경영관리팀",
             "company": "OC",
-            "evaluatorId": "0000011"
+            "evaluatorId": "admin"
           },
           {
             "id": "user-0000586",
@@ -464,7 +464,7 @@ export default function ManageData({
             "title": "팀원",
             "department": "경영관리팀",
             "company": "OFI",
-            "evaluatorId": "0000011"
+            "evaluatorId": "admin"
           },
           {
             "id": "user-0000300",
@@ -957,11 +957,11 @@ export default function ManageData({
                 <div className="flex gap-4">
                   <Button variant="secondary" className="w-full" onClick={() => setDialogOpen({ type: 'backupData'})}>
                       <Save className="mr-2 h-4 w-4"/>
-                      현재 데이터를 초기 데이터로 저장
+                      현재 데이터를 임시 데이터로 저장
                   </Button>
                   <Button variant="outline" className="w-full" onClick={() => setDialogOpen({ type: 'restoreData'})}>
                       <RefreshCw className="mr-2 h-4 w-4"/>
-                      초기 데이터로 덮어쓰기
+                      임시 데이터로 덮어쓰기
                   </Button>
                   <Button variant="outline" className="w-full" onClick={() => setDialogOpen({ type: 'resetToMockData'})}>
                       <RefreshCw className="mr-2 h-4 w-4"/>

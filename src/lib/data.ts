@@ -60,7 +60,7 @@ export const mockUsers: User[] = [
     "avatar": "https://placehold.co/100x100.png?text=김",
     "password": "1",
     "company": "OCI",
-    "evaluatorId": "0000011"
+    "evaluatorId": "admin"
   },
   {
     "id": "user-0000198",
@@ -150,7 +150,7 @@ export const mockUsers: User[] = [
     "avatar": "https://placehold.co/100x100.png?text=김",
     "password": "1",
     "company": "OC",
-    "evaluatorId": "0000011"
+    "evaluatorId": "admin"
   },
   {
     "id": "user-0000231",
@@ -256,7 +256,7 @@ export const mockUsers: User[] = [
     "avatar": "https://placehold.co/100x100.png?text=정",
     "password": "1",
     "company": "OC",
-    "evaluatorId": "0000011"
+    "evaluatorId": "admin"
   },
   {
     "id": "user-0000586",
@@ -271,7 +271,7 @@ export const mockUsers: User[] = [
     "avatar": "https://placehold.co/100x100.png?text=조",
     "password": "1",
     "company": "OFI",
-    "evaluatorId": "0000011"
+    "evaluatorId": "admin"
   },
   {
     "id": "user-0000300",
