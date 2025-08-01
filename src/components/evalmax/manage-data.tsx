@@ -435,11 +435,11 @@ export default function ManageData({
             "employeeId": "E0000011",
             "uniqueId": "0000011",
             "name": "이O권",
-            "roles": ["employee"],
+            "roles": ["employee", "evaluator"],
             "avatar": "https://placehold.co/100x100.png?text=이",
             "title": "센터장",
             "department": "콜렉션센터",
-            "company": "N/A",
+            "company": "OK",
             "evaluatorId": "admin"
           },
           {

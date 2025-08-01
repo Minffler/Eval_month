@@ -235,11 +235,12 @@ export const mockUsers: User[] = [
     "department": "콜렉션센터",
     "title": "센터장",
     "roles": [
-      "employee"
+      "employee",
+      "evaluator"
     ],
     "avatar": "https://placehold.co/100x100.png?text=이",
     "password": "1",
-    "company": "N/A",
+    "company": "OK",
     "evaluatorId": "admin"
   },
   {
