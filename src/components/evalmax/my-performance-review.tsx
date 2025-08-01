@@ -298,7 +298,8 @@ export default function MyPerformanceReview({
   const myPosition = React.useMemo(() => {
     if (!latestResult || !gradingScale) return null;
     
-    const monthlyData = (allResultsForYear || []).filter(result => 
+    // 전체 월별 데이터에서 해당 월의 모든 평가 결과를 가져옴
+    const monthlyData = (allResultsForMonth || []).filter(result => 
       result.year === selectedDate?.year && result.month === selectedDate?.month
     );
     
@@ -318,7 +319,7 @@ export default function MyPerformanceReview({
       totalCount,
       topPercent: Math.round(topPercent * 10) / 10
     };
-  }, [latestResult, allResultsForYear, selectedDate, gradingScale]);
+  }, [latestResult, allResultsForMonth, selectedDate, gradingScale]);
 
     return (
     <div className="space-y-6">
