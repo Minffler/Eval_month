@@ -17,8 +17,8 @@ interface PerformanceChartProps {
 
 const gradeToColor: Record<string, string> = {
     'S': 'text-purple-500', 'A+': 'text-blue-500', 'A': 'text-sky-500',
-    'B+': 'text-green-500', 'B': 'text-lime-500', 'B-': 'text-yellow-500',
-    'C': 'text-orange-500', 'C-': 'text-red-500', 'D': 'text-gray-500'
+    'B+': 'text-black', 'B': 'text-black', 'B-': 'text-black',
+    'C': 'text-black', 'C-': 'text-black', 'D': 'text-black'
 };
 
 export default function PerformanceChart({ allResultsForYear, gradingScale }: PerformanceChartProps) {

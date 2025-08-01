@@ -15,7 +15,7 @@ import { ApprovalList } from './approval-list';
 import { ApprovalDetailDialog } from './approval-detail-dialog';
 import { StatusBadge } from './status-badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Inbox, FileText } from 'lucide-react';
+import { Inbox, FileText, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format } from 'date-fns';
@@ -71,6 +71,7 @@ export default function EvaluatorDashboard({
     holidays,
     attendanceTypes,
     setEvaluations: setEvaluationsFromContext,
+    handleApplyApproval,
   } = useEvaluation();
   
   // 디버깅용: gradingScale 값 확인
@@ -335,6 +336,7 @@ export default function EvaluatorDashboard({
                       <TableHead className="text-center">인사부 결재</TableHead>
                       <TableHead className="text-center">현업 승인일</TableHead>
                       <TableHead className="text-center">최종 승인일</TableHead>
+                      <TableHead className="text-center">반영</TableHead>
                     </TableRow></TableHeader>
                     <TableBody>
                       {myApprovals.map(approval => {
@@ -353,6 +355,19 @@ export default function EvaluatorDashboard({
                               <TableCell className="text-center"><StatusBadge status={approval.statusHR} className="scale-90" /></TableCell>
                               <TableCell className="text-center text-muted-foreground">{formatTimestampShort(approval.approvedAtTeam || null)}</TableCell>
                               <TableCell className="text-center text-muted-foreground">{formatTimestampShort(approval.approvedAtHR || null)}</TableCell>
+                              <TableCell className="text-center">
+                                {approval.statusHR === '최종승인' && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleApplyApproval(approval)}
+                                    className="flex items-center gap-1 text-green-600 hover:text-green-700"
+                                  >
+                                    <CheckCircle className="h-3 w-3" />
+                                    반영
+                                  </Button>
+                                )}
+                              </TableCell>
                             </TableRow>
                           )
                       })}

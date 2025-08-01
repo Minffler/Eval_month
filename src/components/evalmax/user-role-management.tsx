@@ -134,7 +134,7 @@ export default function UserRoleManagement() {
     } else {
       newRoles.add(role);
     }
-    updateUserRoles(userId, Array.from(newRoles).filter(Boolean) as Role[]);
+    updateUserRoles(user.uniqueId, Array.from(newRoles).filter(Boolean) as Role[]);
   };
 
   const handleAddUser = () => {
@@ -382,19 +382,19 @@ export default function UserRoleManagement() {
                      <TableCell className="text-center">
                       <Switch
                         checked={user.roles.includes('employee')}
-                        onCheckedChange={() => handleToggleRole(user.id, 'employee')}
+                        onCheckedChange={() => handleToggleRole(user.uniqueId, 'employee')}
                       />
                     </TableCell>
                     <TableCell className="text-center">
                       <Switch
                         checked={user.roles.includes('evaluator')}
-                        onCheckedChange={() => handleToggleRole(user.id, 'evaluator')}
+                        onCheckedChange={() => handleToggleRole(user.uniqueId, 'evaluator')}
                       />
                     </TableCell>
                     <TableCell className="text-center">
                       <Switch
                         checked={user.roles.includes('admin')}
-                        onCheckedChange={() => handleToggleRole(user.id, 'admin')}
+                        onCheckedChange={() => handleToggleRole(user.uniqueId, 'admin')}
                         disabled={user.uniqueId === 'admin'}
                       />
                     </TableCell>

@@ -1,12 +1,13 @@
 'use client';
 
 import * as React from 'react';
-import type { User, Employee, Grade, Evaluation, GradeInfo, WorkRateInputs, AttendanceType, Holiday, EvaluationResult, EvaluationUploadData, ShortenedWorkType, ShortenedWorkHourRecord, DailyAttendanceRecord, Role } from '@/lib/types';
+import type { User, Employee, Grade, Evaluation, GradeInfo, WorkRateInputs, AttendanceType, Holiday, EvaluationResult, EvaluationUploadData, ShortenedWorkType, ShortenedWorkHourRecord, DailyAttendanceRecord, Role, Approval } from '@/lib/types';
 import { mockEmployees, defaultGradingScale as initialGradingScale, mockEvaluations, calculateFinalAmount, getDetailedGroup1 } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from './auth-context';
 import { useDebouncedEffect } from '@/hooks/use-debounced-effect';
 import { log } from '@/lib/logger';
+import { applyApprovedWorkData, isApprovalAlreadyApplied } from '@/lib/approval-utils';
 
 const getFromLocalStorage = (key: string, defaultValue: any) => {
   if (typeof window === 'undefined') return defaultValue;
@@ -68,6 +69,9 @@ interface EvaluationContextType {
   handleWorkRateDataUpload: (year: number, month: number, type: keyof WorkRateInputs, data: any[], isApproved: boolean) => void;
   handleClearMyEvaluations: (year: number, month: number, evaluatorId: string) => void;
   
+  // 결재 반영 기능
+  handleApplyApproval: (approval: Approval) => void;
+  
   // 새로운 저장 액션들
   updateEvaluationMemo: (employeeId: string, memo: string, year: number, month: number) => void;
   updateEvaluationGroup: (employeeId: string, groupName: string, year: number, month: number) => void;
@@ -82,6 +86,7 @@ const EvaluationContext = React.createContext<EvaluationContextType | undefined>
 
 export function EvaluationProvider({ children }: { children: React.ReactNode }) {
   const { userMap, upsertUsers } = useAuth();
+  const { toast } = useToast();
   
   const [employees, setEmployees] = React.useState<Record<string, Employee[]>>(() => getFromLocalStorage('employees', mockEmployees ));
   const [evaluations, setEvaluations] = React.useState<Record<string, Evaluation[]>>(() => getFromLocalStorage('evaluations', mockEvaluations ));
@@ -113,91 +118,91 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
       
       console.log('근무 데이터 업데이트 이벤트 수신:', { dataType, action, data });
       
-      // 현재 날짜 정보 추출 (approval.date에서)
-      const approvalDate = new Date(approval.date);
-      const year = approvalDate.getFullYear();
-      const month = approvalDate.getMonth() + 1;
-      const key = `${year}-${month.toString().padStart(2, '0')}`;
-      
-      setWorkRateInputs(prev => {
-        const updated = { ...prev };
+      // 상태 업데이트를 다음 마이크로태스크로 지연시켜 렌더링 규칙 준수
+      queueMicrotask(() => {
+        // 현재 날짜 정보 추출 (approval.date에서)
+        const approvalDate = new Date(approval.date);
+        const year = approvalDate.getFullYear();
+        const month = approvalDate.getMonth() + 1;
+        const key = `${year}-${month.toString().padStart(2, '0')}`;
         
-        if (dataType === 'shortenedWorkHours') {
-          // 단축근로 데이터 업데이트
-          if (!updated[key]) {
-            updated[key] = { shortenedWorkHours: [], dailyAttendance: [] };
-          }
+        setWorkRateInputs(prev => {
+          const updated = { ...prev };
           
-          if (action === 'add') {
-            // 새로운 단축근로 데이터 추가
-            const newRecord = {
-              id: `swh-${Date.now()}-${Math.random()}`,
-              uniqueId: data.uniqueId,
-              name: data.name,
-              type: data.type,
-              startDate: data.startDate,
-              endDate: data.endDate,
-              startTime: data.startTime,
-              endTime: data.endTime,
-              workHours: data.workHours || 0,
-              dailyDeductionHours: data.dailyDeductionHours || 0,
-              businessDays: data.businessDays || 0
-            };
+          if (dataType === 'shortenedWorkHours') {
+            // 단축근로 데이터 업데이트
+            if (!updated[key]) {
+              updated[key] = { shortenedWorkHours: [], dailyAttendance: [] };
+            }
             
-            updated[key].shortenedWorkHours.push(newRecord);
-            console.log('단축근로 데이터 추가됨:', newRecord);
-          } else if (action === 'edit') {
-            // 기존 단축근로 데이터 수정
-            const existingIndex = updated[key].shortenedWorkHours.findIndex(
-              record => record.uniqueId === data.uniqueId && record.startDate === data.startDate
-            );
-            
-            if (existingIndex !== -1) {
-              updated[key].shortenedWorkHours[existingIndex] = {
-                ...updated[key].shortenedWorkHours[existingIndex],
-                ...data
+            if (action === 'add') {
+              // 새로운 단축근로 데이터 추가
+              const newRecord: ShortenedWorkHourRecord = {
+                uniqueId: data.uniqueId,
+                name: data.name,
+                type: data.type,
+                startDate: data.startDate,
+                endDate: data.endDate,
+                startTime: data.startTime,
+                endTime: data.endTime,
+                lastModified: new Date().toISOString()
               };
-              console.log('단축근로 데이터 수정됨:', data);
+              
+              updated[key].shortenedWorkHours.push(newRecord);
+              console.log('단축근로 데이터 추가됨:', newRecord);
+            } else if (action === 'edit') {
+              // 기존 단축근로 데이터 수정
+              const existingIndex = updated[key].shortenedWorkHours.findIndex(
+                (record: ShortenedWorkHourRecord) => record.uniqueId === data.uniqueId && record.startDate === data.startDate
+              );
+              
+              if (existingIndex !== -1) {
+                updated[key].shortenedWorkHours[existingIndex] = {
+                  ...updated[key].shortenedWorkHours[existingIndex],
+                  ...data,
+                  lastModified: new Date().toISOString()
+                };
+                console.log('단축근로 데이터 수정됨:', data);
+              }
+            }
+          } else if (dataType === 'dailyAttendance') {
+            // 일근태 데이터 업데이트
+            if (!updated[key]) {
+              updated[key] = { shortenedWorkHours: [], dailyAttendance: [] };
+            }
+            
+            if (action === 'add') {
+              // 새로운 일근태 데이터 추가
+              const newRecord: DailyAttendanceRecord = {
+                uniqueId: data.uniqueId,
+                name: data.name,
+                date: data.date,
+                type: data.type,
+                lastModified: new Date().toISOString()
+              };
+              
+              updated[key].dailyAttendance.push(newRecord);
+              console.log('일근태 데이터 추가됨:', newRecord);
+            } else if (action === 'edit') {
+              // 기존 일근태 데이터 수정
+              const existingIndex = updated[key].dailyAttendance.findIndex(
+                (record: DailyAttendanceRecord) => record.uniqueId === data.uniqueId && record.date === data.date
+              );
+              
+              if (existingIndex !== -1) {
+                updated[key].dailyAttendance[existingIndex] = {
+                  ...updated[key].dailyAttendance[existingIndex],
+                  ...data,
+                  lastModified: new Date().toISOString()
+                };
+                console.log('일근태 데이터 수정됨:', data);
+              }
             }
           }
-        } else if (dataType === 'dailyAttendance') {
-          // 일근태 데이터 업데이트
-          if (!updated[key]) {
-            updated[key] = { shortenedWorkHours: [], dailyAttendance: [] };
-          }
           
-          if (action === 'add') {
-            // 새로운 일근태 데이터 추가
-            const newRecord = {
-              id: `da-${Date.now()}-${Math.random()}`,
-              uniqueId: data.uniqueId,
-              name: data.name,
-              date: data.date,
-              type: data.type,
-              isShortenedDay: data.isShortenedDay || false,
-              deductionDays: data.deductionDays || 0
-            };
-            
-            updated[key].dailyAttendance.push(newRecord);
-            console.log('일근태 데이터 추가됨:', newRecord);
-          } else if (action === 'edit') {
-            // 기존 일근태 데이터 수정
-            const existingIndex = updated[key].dailyAttendance.findIndex(
-              record => record.uniqueId === data.uniqueId && record.date === data.date
-            );
-            
-            if (existingIndex !== -1) {
-              updated[key].dailyAttendance[existingIndex] = {
-                ...updated[key].dailyAttendance[existingIndex],
-                ...data
-              };
-              console.log('일근태 데이터 수정됨:', data);
-            }
-          }
-        }
-        
-        console.log('업데이트된 workRateInputs:', updated);
-        return updated;
+          console.log('업데이트된 workRateInputs:', updated);
+          return updated;
+        });
       });
     };
 
@@ -442,6 +447,54 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
         return { ...prev, [key]: updatedEvalsForMonth };
     });
   };
+
+  // 결재 반영 기능
+  const handleApplyApproval = React.useCallback((approval: Approval) => {
+    console.log('결재 반영 시작:', approval);
+    
+    try {
+      // 결재 날짜에서 년/월 추출
+      const approvalDate = new Date(approval.date);
+      const year = approvalDate.getFullYear();
+      const month = approvalDate.getMonth() + 1;
+      
+      console.log('결재 날짜 정보:', { year, month, approvalDate });
+      
+      // 이미 반영되었는지 확인
+      const isAlreadyApplied = isApprovalAlreadyApplied(approval, workRateInputs, year, month);
+      console.log('이미 반영되었는지 확인:', isAlreadyApplied);
+      
+      if (isAlreadyApplied) {
+        toast({
+          title: '이미 반영됨',
+          description: '이 결재는 이미 반영되었습니다.',
+        });
+        return;
+      }
+      
+      console.log('근무 데이터 반영 시작');
+      
+      // 근무 데이터에 반영
+      const updatedWorkRateInputs = applyApprovedWorkData(approval, workRateInputs, year, month);
+      console.log('업데이트된 workRateInputs:', updatedWorkRateInputs);
+      
+      setWorkRateInputs(updatedWorkRateInputs);
+      
+      toast({
+        title: '반영 완료',
+        description: '결재 내용이 성공적으로 반영되었습니다.',
+      });
+      
+      console.log('결재 반영 완료:', approval.id);
+    } catch (error) {
+      console.error('결재 반영 중 오류:', error);
+      toast({
+        variant: 'destructive',
+        title: '반영 실패',
+        description: '결재 내용 반영 중 오류가 발생했습니다.',
+      });
+    }
+  }, [workRateInputs, setWorkRateInputs, toast]);
 
   // 새로운 저장 액션들
   const updateEvaluationMemo = React.useCallback((employeeId: string, memo: string, year: number, month: number) => {
@@ -793,7 +846,7 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
     evaluationStatus, setEvaluationStatus,
     handleEmployeeUpload, handleEvaluationUpload, handleClearEmployeeData,
     handleClearEvaluationData, handleClearWorkRateData, handleWorkRateDataUpload,
-    handleClearMyEvaluations,
+    handleClearMyEvaluations, handleApplyApproval,
     updateEvaluationMemo, updateEvaluationGroup, updateEvaluationGrade,
     allEvaluationResults, 
     monthlyEvaluationTargets: getMonthlyEvaluationTargets,

@@ -6,7 +6,7 @@ import type { EvaluationResult, Grade, GradeInfo, Employee, EmployeeView, Attend
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Inbox, ChevronsUpDown, CalendarIcon, FileText } from 'lucide-react';
+import { Inbox, ChevronsUpDown, CalendarIcon, FileText, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import WorkRateManagement from './work-rate-management';
 import WorkRateDetails from './work-rate-details';
@@ -80,7 +80,7 @@ export default function EmployeeDashboard({
   const [isApprovalModalOpen, setIsApprovalModalOpen] = React.useState(false);
   const [selectedApproval, setSelectedApproval] = React.useState<Approval | null>(null);
   const [formData, setFormData] = React.useState<any>({});
-  const { gradingScale, attendanceTypes } = useEvaluation();
+  const { gradingScale, attendanceTypes, handleApplyApproval } = useEvaluation();
 
   if (!user) {
     return <div>결과를 불러오는 중입니다...</div>;
@@ -216,6 +216,7 @@ export default function EmployeeDashboard({
                       <TableHead className="text-center">인사부 결재</TableHead>
                       <TableHead className="text-center">현업 승인일</TableHead>
                       <TableHead className="text-center">최종 승인일</TableHead>
+                      <TableHead className="text-center">반영</TableHead>
                     </TableRow></TableHeader>
                     <TableBody>
                       {myApprovals.map(approval => {
@@ -234,6 +235,19 @@ export default function EmployeeDashboard({
                               <TableCell className="text-center"><StatusBadge status={approval.statusHR} className="scale-90" /></TableCell>
                               <TableCell className="text-center text-muted-foreground">{formatTimestampShort(approval.approvedAtTeam)}</TableCell>
                               <TableCell className="text-center text-muted-foreground">{formatTimestampShort(approval.approvedAtHR)}</TableCell>
+                              <TableCell className="text-center">
+                                {approval.statusHR === '최종승인' && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleApplyApproval(approval)}
+                                    className="flex items-center gap-1 text-green-600 hover:text-green-700"
+                                  >
+                                    <CheckCircle className="h-3 w-3" />
+                                    반영
+                                  </Button>
+                                )}
+                              </TableCell>
                             </TableRow>
                           )
                       })}

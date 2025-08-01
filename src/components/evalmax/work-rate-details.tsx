@@ -222,7 +222,7 @@ export default function WorkRateDetails({ type, data, workRateInputs, selectedDa
   const [sortConfig, setSortConfig] = React.useState<SortConfig<any>>(null);
   
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
-  const [dialogMode, setDialogMode] = React.useState<'add' | 'edit'>('add');
+  const [dialogMode, setDialogMode] = React.useState<'add' | 'edit' | 'delete'>('add');
   const [formData, setFormData] = React.useState<any>({});
   const [selectedRowIds, setSelectedRowIds] = React.useState<Set<string>>(new Set());
   
@@ -239,13 +239,21 @@ export default function WorkRateDetails({ type, data, workRateInputs, selectedDa
   const [attendanceTypeSearchOpen, setAttendanceTypeSearchOpen] = React.useState(false);
 
   const tableData = React.useMemo(() => {
+    console.log('work-rate-details tableData 계산 시작');
+    console.log('workRateInputs:', workRateInputs);
+    console.log('selectedDate:', selectedDate);
+    
     const details = calculateWorkRateDetails(workRateInputs, attendanceTypes, [], selectedDate.year, selectedDate.month);
+    console.log('calculateWorkRateDetails 결과:', details);
+    
     let filteredDetails;
     
     if (type === 'shortenedWork') {
         filteredDetails = details.shortenedWorkDetails;
+        console.log('단축근로 상세 데이터:', filteredDetails);
     } else {
         filteredDetails = details.dailyAttendanceDetails;
+        console.log('일근태 상세 데이터:', filteredDetails);
     }
     
     // 피평가자 페이지에서는 본인의 데이터만 필터링
@@ -262,6 +270,7 @@ export default function WorkRateDetails({ type, data, workRateInputs, selectedDa
         });
     }
     
+    console.log('최종 필터링된 데이터:', filteredDetails);
     return filteredDetails;
   }, [workRateInputs, attendanceTypes, selectedDate, type, viewAs, user, currentEvaluatorId, allEmployees]);
 
@@ -378,7 +387,29 @@ export default function WorkRateDetails({ type, data, workRateInputs, selectedDa
     });
 
     if (selectedRecord) {
-        setFormData({ ...selectedRecord });
+        setFormData({ ...selectedRecord, originalData: selectedRecord }); // 원본 데이터 저장
+        setIsDialogOpen(true);
+    }
+  };
+  
+  const openDeleteDialog = () => {
+    if (currentSelectedIds.size !== 1) {
+        toast({
+            variant: 'destructive',
+            title: '오류',
+            description: '삭제할 데이터 한 개를 선택해주세요.',
+        });
+        return;
+    }
+    
+    setDialogMode('delete');
+    const selectedId = Array.from(currentSelectedIds)[0];
+    const selectedRecord = tableData.find((item: any) => {
+        return item.rowId === selectedId;
+    });
+
+    if (selectedRecord) {
+        setFormData({ ...selectedRecord, originalData: selectedRecord }); // 원본 데이터 저장
         setIsDialogOpen(true);
     }
   };
@@ -414,7 +445,27 @@ export default function WorkRateDetails({ type, data, workRateInputs, selectedDa
     const teamApproverId = employee.evaluatorId || 'admin'; // Default to admin if no evaluator
     const hrApproverId = 'admin'; // Admin ID
 
+    // 수정 케이스에서 변경된 필드들 추적
+    let changes: Record<string, boolean> = {};
+    if (action === 'edit' && formData.originalData) {
+      if (dataType === 'shortenedWorkHours') {
+        changes = {
+          startDate: formData.startDate !== formData.originalData.startDate,
+          endDate: formData.endDate !== formData.originalData.endDate,
+          startTime: formData.startTime !== formData.originalData.startTime,
+          endTime: formData.endTime !== formData.originalData.endTime,
+          type: formData.type !== formData.originalData.type
+        };
+      } else {
+        changes = {
+          date: formData.date !== formData.originalData.date,
+          type: formData.type !== formData.originalData.type
+        };
+      }
+    }
 
+    // 삭제 케이스에서는 원본 데이터를 사용
+    const dataToSubmit = action === 'delete' ? formData.originalData : formData;
 
     const approvalData: Omit<Approval, 'id' | 'date' | 'isRead' | 'status' | 'statusHR' | 'approvedAtTeam' | 'approvedAtHR' | 'rejectionReason'> = {
       requesterId: user.uniqueId,
@@ -425,13 +476,33 @@ export default function WorkRateDetails({ type, data, workRateInputs, selectedDa
       payload: {
         dataType,
         action,
-        data: { ...formData, rowId: formData.rowId || `row-${Date.now()}`},
+        data: { ...dataToSubmit, rowId: dataToSubmit.rowId || `row-${Date.now()}`},
       }
     }
+
+    // 결재 생성 후 매핑 정보 저장
+    const handleApprovalCreated = (approvalId: string | void) => {
+      if (action === 'edit' && formData.originalData && typeof approvalId === 'string') {
+        // 매핑 정보 저장
+        const mapping = {
+          trackingId: approvalId,
+          targetTrackingId: formData.originalData.rowId,
+          changes: changes
+        };
+        
+        // localStorage에 임시 저장 (실제로는 DB 사용)
+        const mappings = JSON.parse(localStorage.getItem('trackingMappings') || '{}');
+        mappings[approvalId] = mapping;
+        localStorage.setItem('trackingMappings', JSON.stringify(mappings));
+      }
+    };
+
     if (addApproval) {
-    addApproval(approvalData);
+      const approvalId = addApproval(approvalData);
+      handleApprovalCreated(approvalId);
     } else if (addNotificationApproval) {
-      addNotificationApproval(approvalData);
+      const approvalId = addNotificationApproval(approvalData);
+      handleApprovalCreated(approvalId);
     }
     
     toast({ title: '결재 상신 완료', description: '결재함에서 처리 상태를 확인해주세요.' });

@@ -8,21 +8,26 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
-import { Clock, User, FileText, Eye } from 'lucide-react';
+import { Clock, User, FileText, Eye, CheckCircle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface ApprovalListProps {
   approvals: Approval[];
   onViewApproval: (approval: Approval) => void;
   userRole: 'admin' | 'evaluator' | 'employee';
   currentUserId: string;
+  onApplyApproval?: (approval: Approval) => void;
 }
 
 export function ApprovalList({
   approvals,
   onViewApproval,
   userRole,
-  currentUserId
+  currentUserId,
+  onApplyApproval
 }: ApprovalListProps) {
+  const { toast } = useToast();
+
   const filteredApprovals = React.useMemo(() => {
     return approvals.filter(approval => {
       // 관리자는 모든 결재를 볼 수 있음
@@ -90,6 +95,36 @@ export function ApprovalList({
     return `${dataTypeText} ${actionText}`;
   };
 
+  const handleApplyApproval = (approval: Approval) => {
+    if (!onApplyApproval) {
+      toast({
+        variant: 'destructive',
+        title: '오류',
+        description: '반영 기능을 사용할 수 없습니다.',
+      });
+      return;
+    }
+
+    try {
+      onApplyApproval(approval);
+      toast({
+        title: '반영 완료',
+        description: '결재 내용이 성공적으로 반영되었습니다.',
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: '반영 실패',
+        description: '결재 내용 반영 중 오류가 발생했습니다.',
+      });
+    }
+  };
+
+  const canApplyApproval = (approval: Approval) => {
+    // 최종승인된 결재만 반영 가능
+    return approval.statusHR === '최종승인';
+  };
+
   if (sortedApprovals.length === 0) {
     return (
       <Card>
@@ -126,11 +161,13 @@ export function ApprovalList({
                 <TableHead>2차 결재</TableHead>
                 <TableHead>상태</TableHead>
                 <TableHead>액션</TableHead>
+                <TableHead>반영</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {sortedApprovals.map((approval) => {
                 const actionRequired = getActionRequired(approval);
+                const canApply = canApplyApproval(approval);
                 
                 return (
                   <TableRow key={approval.id} className={actionRequired ? 'bg-yellow-50' : ''}>
@@ -153,7 +190,7 @@ export function ApprovalList({
                     </TableCell>
                     <TableCell>
                       <div className="space-y-1">
-                        <StatusBadge status={approval.status} size="sm" />
+                        <StatusBadge status={approval.status} />
                         {approval.approvedAtTeam && (
                           <div className="text-xs text-muted-foreground">
                             {format(new Date(approval.approvedAtTeam), 'MM-dd HH:mm')}
@@ -163,7 +200,7 @@ export function ApprovalList({
                     </TableCell>
                     <TableCell>
                       <div className="space-y-1">
-                        <StatusBadge status={approval.statusHR} size="sm" />
+                        <StatusBadge status={approval.statusHR} />
                         {approval.approvedAtHR && (
                           <div className="text-xs text-muted-foreground">
                             {format(new Date(approval.approvedAtHR), 'MM-dd HH:mm')}
@@ -195,6 +232,19 @@ export function ApprovalList({
                         <Eye className="h-3 w-3" />
                         상세보기
                       </Button>
+                    </TableCell>
+                    <TableCell>
+                      {canApply && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleApplyApproval(approval)}
+                          className="flex items-center gap-1 text-green-600 hover:text-green-700"
+                        >
+                          <CheckCircle className="h-3 w-3" />
+                          반영
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 );

@@ -26,12 +26,12 @@ const gradeToColor: Record<string, string> = {
     'S': 'text-purple-500', 
     'A+': 'text-yellow-500', 
     'A': 'text-yellow-500',
-    'B+': 'text-orange-700', 
+    'B+': 'text-black', 
     'B': 'text-black', 
     'B-': 'text-black',
-    'C': 'text-gray-500', 
-    'C-': 'text-gray-500', 
-    'D': 'text-red-500'
+    'C': 'text-black', 
+    'C-': 'text-black', 
+    'D': 'text-black'
 };
 
 // 등급별 배경색 정의

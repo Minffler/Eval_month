@@ -72,12 +72,12 @@ const gradeToColor: Record<string, string> = {
     'S': 'text-purple-500', 
     'A+': 'text-yellow-500', 
     'A': 'text-yellow-500',
-    'B+': 'text-orange-700', 
-    'B': 'text-lime-500', 
-    'B-': 'text-yellow-600',
-    'C': 'text-orange-500', 
-    'C-': 'text-red-500', 
-    'D': 'text-gray-500'
+    'B+': 'text-black', 
+    'B': 'text-black', 
+    'B-': 'text-black',
+    'C': 'text-black', 
+    'C-': 'text-black', 
+    'D': 'text-black'
 };
 
 export default function DetailedEvaluationView({ allResultsForYear, gradingScale, selectedDate }: DetailedEvaluationViewProps) {

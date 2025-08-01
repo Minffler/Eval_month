@@ -85,7 +85,12 @@ function countBusinessDaysForMonth(year: number, month: number, holidays: Set<st
   let count = 0;
   const date = new Date(year, month - 1, 1);
   while (date.getMonth() === month - 1) {
-    const dateString = date.toISOString().split('T')[0];
+    // 로컬 시간대로 날짜 문자열 생성 (YYYY-MM-DD 형식)
+    const yearStr = date.getFullYear();
+    const monthStr = String(date.getMonth() + 1).padStart(2, '0');
+    const dayStr = String(date.getDate()).padStart(2, '0');
+    const dateString = `${yearStr}-${monthStr}-${dayStr}`;
+    
     const dayOfWeek = date.getDay();
     if (dayOfWeek !== 0 && dayOfWeek !== 6 && !holidays.has(dateString)) {
       count++;

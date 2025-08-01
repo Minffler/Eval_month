@@ -47,7 +47,12 @@ function countBusinessDays(startDate: Date, endDate: Date, holidays: Set<string>
     const currentDate = new Date(startDate);
 
     while (currentDate <= endDate) {
-        const dateString = currentDate.toISOString().split('T')[0];
+        // 로컬 시간대로 날짜 문자열 생성 (YYYY-MM-DD 형식)
+        const yearStr = currentDate.getFullYear();
+        const monthStr = String(currentDate.getMonth() + 1).padStart(2, '0');
+        const dayStr = String(currentDate.getDate()).padStart(2, '0');
+        const dateString = `${yearStr}-${monthStr}-${dayStr}`;
+        
         if (!isWeekend(currentDate) && !holidays.has(dateString)) {
             count++;
         }
@@ -68,25 +73,60 @@ export const calculateWorkRateDetails = (
   const holidaySet = new Set(holidays.map(h => h.date));
   const attendanceTypeMap = new Map(attendanceTypes.map(at => [at.name, at.deductionDays]));
 
-  const monthKey = `${year}-${month}`;
-  const currentMonthInputs = allWorkRateInputs[monthKey] || { shortenedWorkHours: [], dailyAttendance: [] };
+  const selectedMonthKey = `${year}-${month.toString().padStart(2, '0')}`;
+  const selectedMonthStart = new Date(year, month - 1, 1);
+  const selectedMonthEnd = new Date(year, month, 0);
   
-  // 1. Process shortened work details first, as they are needed for daily attendance calculation
-  const shortenedWorkDetails: ShortenedWorkDetail[] = currentMonthInputs.shortenedWorkHours
-    .map((record, index) => {
+  console.log('선택된 월 정보:', { year, month, selectedMonthKey, selectedMonthStart, selectedMonthEnd });
+  
+  // 모든 월의 데이터를 순회하면서 선택된 월에 영향을 미치는 데이터 수집
+  let allShortenedWorkRecords: ShortenedWorkHourRecord[] = [];
+  let allDailyAttendanceRecords: DailyAttendanceRecord[] = [];
+  
+  Object.entries(allWorkRateInputs).forEach(([monthKey, monthData]) => {
+    console.log(`월 ${monthKey} 데이터 처리:`, monthData);
+    
+    // 단축근로 데이터: 기간이 선택된 월과 겹치는 모든 데이터 수집
+    monthData.shortenedWorkHours.forEach(record => {
       const startDate = new Date(record.startDate.replace(/\./g, '-'));
       const endDate = new Date(record.endDate.replace(/\./g, '-'));
+      
+      // 기간이 겹치는지 확인
+      if (startDate <= selectedMonthEnd && endDate >= selectedMonthStart) {
+        console.log(`단축근로 겹침 발견:`, { record, startDate, endDate });
+        allShortenedWorkRecords.push(record);
+      }
+    });
+    
+    // 일근태 데이터: 해당 월의 데이터만 수집
+    if (monthKey === selectedMonthKey) {
+      console.log(`일근태 데이터 수집:`, monthData.dailyAttendance);
+      allDailyAttendanceRecords.push(...monthData.dailyAttendance);
+    }
+  });
+  
+  console.log('수집된 전체 데이터:', {
+    shortenedWorkRecords: allShortenedWorkRecords.length,
+    dailyAttendanceRecords: allDailyAttendanceRecords.length
+  });
+  
+  // 1. Process shortened work details first, as they are needed for daily attendance calculation
+  const shortenedWorkDetails: ShortenedWorkDetail[] = allShortenedWorkRecords
+    .map((record, index) => {
+      // 날짜 형식 통일: 점(.)을 하이픈(-)으로 변환
+      const normalizedStartDate = record.startDate.replace(/\./g, '-');
+      const normalizedEndDate = record.endDate.replace(/\./g, '-');
+      
+      const startDate = new Date(normalizedStartDate);
+      const endDate = new Date(normalizedEndDate);
 
-      const startOfMonth = new Date(year, month - 1, 1);
-      const endOfMonth = new Date(year, month, 0);
-
-      // Check for overlap
-      if (endDate < startOfMonth || startDate > endOfMonth) {
+      // Check for overlap with selected month
+      if (endDate < selectedMonthStart || startDate > selectedMonthEnd) {
         return null;
       }
       
-      const effectiveStartDate = startDate < startOfMonth ? startOfMonth : startDate;
-      const effectiveEndDate = endDate > endOfMonth ? endOfMonth : endDate;
+      const effectiveStartDate = startDate < selectedMonthStart ? selectedMonthStart : startDate;
+      const effectiveEndDate = endDate > selectedMonthEnd ? selectedMonthEnd : endDate;
       
       const workHours = parseTime(record.endTime) - parseTime(record.startTime);
       let actualWorkHours = workHours;
@@ -99,7 +139,10 @@ export const calculateWorkRateDetails = (
 
       return {
         ...record,
-        rowId: `${record.uniqueId}-${record.startDate}-${record.endDate}-${record.type}-${index}`,
+        // 날짜 형식을 하이픈으로 통일
+        startDate: normalizedStartDate,
+        endDate: normalizedEndDate,
+        rowId: `${record.uniqueId}-${normalizedStartDate}-${normalizedEndDate}-${record.type}-${index}`,
         type: record.type,
         workHours,
         actualWorkHours,
@@ -120,9 +163,12 @@ export const calculateWorkRateDetails = (
 
 
   // 2. Process daily attendance details
-  const dailyAttendanceDetails: DailyAttendanceDetail[] = currentMonthInputs.dailyAttendance
+  const dailyAttendanceDetails: DailyAttendanceDetail[] = allDailyAttendanceRecords
     .map((record, index) => {
-        const recordDate = new Date(record.date.replace(/\./g, '-'));
+        // 날짜 형식 통일: 점(.)을 하이픈(-)으로 변환
+        const normalizedDate = record.date.replace(/\./g, '-');
+        const recordDate = new Date(normalizedDate);
+        
         if (recordDate.getFullYear() !== year || recordDate.getMonth() !== month - 1) {
             return null; // Filter out records not in the selected month
         }
@@ -149,7 +195,9 @@ export const calculateWorkRateDetails = (
         
         return {
             ...record,
-            rowId: `${record.uniqueId}-${record.date}-${record.type}-${index}`,
+            // 날짜 형식을 하이픈으로 통일
+            date: normalizedDate,
+            rowId: `${record.uniqueId}-${normalizedDate}-${record.type}-${index}`,
             isShortenedDay,
             actualWorkHours,
             deductionDays,

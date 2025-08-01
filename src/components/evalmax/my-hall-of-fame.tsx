@@ -14,7 +14,7 @@ const badgeInfo: Record<string, {label: string, icon: React.ElementType, color: 
     'S': { label: 'Platinum', icon: Award, color: 'text-purple-500' },
     'A+': { label: 'Gold', icon: Award, color: 'text-yellow-500' },
     'A': { label: 'Silver', icon: Award, color: 'text-gray-500' },
-    'B+': { label: 'Bronze', icon: Award, color: 'text-orange-700' },
+    'B+': { label: 'Bronze', icon: Award, color: 'text-black' },
     'B': { label: 'Standard', icon: Award, color: 'text-black' },
     'B-': { label: 'Standard', icon: Award, color: 'text-black' },
     'C': { label: 'Standard', icon: Award, color: 'text-black' },
@@ -31,11 +31,11 @@ export default function MyHallOfFame({ allResultsForYear }: MyHallOfFameProps) {
     const [isHallOfFameOpen, setIsHallOfFameOpen] = React.useState(true);
 
     // 로직: 획득한 뱃지 내역 계산
-    // 연간 평가 결과에서 badgeInfo에 정의된 등급에 해당하는 결과만 필터링합니다.
+    // 연간 평가 결과에서 S, A+, A 등급만 필터링합니다.
     // useMemo를 사용하여 성능을 최적화하고, 최신순으로 정렬합니다.
     const acquiredBadges = React.useMemo(() => 
         allResultsForYear
-            .filter(r => r.grade && badgeInfo[r.grade]) // badgeInfo에 키가 존재하는 등급만 필터링
+            .filter(r => r.grade && ['S', 'A+', 'A'].includes(r.grade)) // S, A+, A 등급만 필터링
             .map(r => ({ month: r.month, grade: r.grade! }))
             .sort((a,b) => b.month - a.month)
     , [allResultsForYear]);

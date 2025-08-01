@@ -189,7 +189,7 @@ export default function AdminDashboardContent({
 }: AdminDashboardContentProps) {
   const { user } = useAuth();
   const { deleteApproval, resubmitApproval, handleApprovalAction } = useNotifications();
-  const { setEvaluations, handleEmployeeUpload } = useEvaluation();
+  const { setEvaluations, handleEmployeeUpload, handleApplyApproval } = useEvaluation();
   const [results, setResults] = React.useState<EvaluationResult[]>(initialResults);
   const [activeResultsTab, setActiveResultsTab] = React.useState<EvaluationGroupCategory>('전체');
   const [selectedEvaluators, setSelectedEvaluators] = React.useState<Set<string>>(new Set());
@@ -1179,6 +1179,7 @@ export default function AdminDashboardContent({
                           <TableHead className="text-center">인사부 결재</TableHead>
                           <TableHead className="text-center">현업 승인일</TableHead>
                           <TableHead className="text-center">최종 승인일</TableHead>
+                          <TableHead className="text-center">반영</TableHead>
                         </TableRow></TableHeader>
                         <TableBody>
                           {sortedApprovals.map(approval => {
@@ -1197,6 +1198,19 @@ export default function AdminDashboardContent({
                               <TableCell className="text-center"><StatusBadge status={approval.statusHR} className="scale-90" /></TableCell>
                               <TableCell className="text-center text-muted-foreground">{formatTimestampShort(approval.approvedAtTeam || null)}</TableCell>
                               <TableCell className="text-center text-muted-foreground">{formatTimestampShort(approval.approvedAtHR || null)}</TableCell>
+                              <TableCell className="text-center">
+                                {approval.statusHR === '최종승인' && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleApplyApproval(approval)}
+                                    className="flex items-center gap-1 text-green-600 hover:text-green-700"
+                                  >
+                                    <CheckCircle className="h-3 w-3" />
+                                    반영
+                                  </Button>
+                                )}
+                              </TableCell>
                             </TableRow>
                             )
                           })}
