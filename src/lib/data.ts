@@ -383,14 +383,14 @@ export const initialAttendanceTypes: AttendanceType[] = [
 export const mockEmployees: Record<string, Partial<Employee>[]> = {
   "2025-7": [
     {
-      "id": "user-admin",
+      "id": "user-admin-2025-7",
       "uniqueId": "admin",
       "name": "관리자",
-      "company": "N/A",
+      "company": "-",
       "department": "인사부",
       "title": "팀원",
       "position": "팀원",
-      "growthLevel": "Lv.5",
+      "growthLevel": "Lv.3",
       "workRate": 1,
       "evaluatorId": "",
       "baseAmount": 8000000,
@@ -399,14 +399,14 @@ export const mockEmployees: Record<string, Partial<Employee>[]> = {
   ],
   "2025-1": [
     {
-      "id": "user-admin",
+      "id": "user-admin-2025-1",
       "uniqueId": "admin",
       "name": "관리자",
-      "company": "N/A",
+      "company": "-",
       "department": "인사부",
       "title": "팀원",
       "position": "팀원",
-      "growthLevel": "Lv.5",
+      "growthLevel": "Lv.3",
       "workRate": 1,
       "evaluatorId": "",
       "baseAmount": 8000000,
@@ -415,14 +415,14 @@ export const mockEmployees: Record<string, Partial<Employee>[]> = {
   ],
   "2025-2": [
     {
-      "id": "user-admin",
+      "id": "user-admin-2025-2",
       "uniqueId": "admin",
       "name": "관리자",
-      "company": "N/A",
+      "company": "-",
       "department": "인사부",
       "title": "팀원",
       "position": "팀원",
-      "growthLevel": "Lv.5",
+      "growthLevel": "Lv.3",
       "workRate": 1,
       "evaluatorId": "",
       "baseAmount": 8000000,
@@ -431,14 +431,14 @@ export const mockEmployees: Record<string, Partial<Employee>[]> = {
   ],
   "2025-3": [
     {
-      "id": "user-admin",
+      "id": "user-admin-2025-3",
       "uniqueId": "admin",
       "name": "관리자",
-      "company": "N/A",
+      "company": "-",
       "department": "인사부",
       "title": "팀원",
       "position": "팀원",
-      "growthLevel": "Lv.5",
+      "growthLevel": "Lv.3",
       "workRate": 1,
       "evaluatorId": "",
       "baseAmount": 8000000,
@@ -447,14 +447,14 @@ export const mockEmployees: Record<string, Partial<Employee>[]> = {
   ],
   "2025-4": [
     {
-      "id": "user-admin",
+      "id": "user-admin-2025-4",
       "uniqueId": "admin",
       "name": "관리자",
-      "company": "N/A",
+      "company": "-",
       "department": "인사부",
       "title": "팀원",
       "position": "팀원",
-      "growthLevel": "Lv.5",
+      "growthLevel": "Lv.3",
       "workRate": 1,
       "evaluatorId": "",
       "baseAmount": 8000000,
@@ -463,7 +463,7 @@ export const mockEmployees: Record<string, Partial<Employee>[]> = {
   ],
   "2025-5": [
     {
-      "id": "user-admin",
+      "id": "user-admin-2025-5",
       "uniqueId": "admin",
       "name": "관리자",
       "company": "N/A",
@@ -716,7 +716,7 @@ export const mockEmployees: Record<string, Partial<Employee>[]> = {
       "memo": ""
     },
     {
-      "id": "user-admin",
+      "id": "user-admin-2025-6",
       "uniqueId": "admin",
       "name": "관리자",
       "company": "N/A",
@@ -971,14 +971,24 @@ export const mockEmployees: Record<string, Partial<Employee>[]> = {
 };
 
 export const mockEvaluations: Record<string, Evaluation[]> = {
-  "2025-7": [],
+  "2025-7": [
+    {
+      "id": "eval-user-admin-2025-7",
+      "employeeId": "admin",
+      "year": 2025,
+      "month": 7,
+      "grade": "S",
+      "memo": "admin",
+      "detailedGroup2": "기타",
+      "score": 150
+    }],
   "2025-1": [
     {
       "id": "eval-E0000198-2025-1",
       "employeeId": "E0000198",
       "year": 2025,
       "month": 1,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -986,7 +996,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000245",
       "year": 2025,
       "month": 1,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -994,7 +1004,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000246",
       "year": 2025,
       "month": 1,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1002,7 +1012,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000247",
       "year": 2025,
       "month": 1,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1010,7 +1020,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000298",
       "year": 2025,
       "month": 1,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1018,7 +1028,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000299",
       "year": 2025,
       "month": 1,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1026,7 +1036,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000300",
       "year": 2025,
       "month": 1,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1034,7 +1044,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000195",
       "year": 2025,
       "month": 1,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1042,7 +1052,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000231",
       "year": 2025,
       "month": 1,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1050,7 +1060,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000232",
       "year": 2025,
       "month": 1,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1058,7 +1068,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000281",
       "year": 2025,
       "month": 1,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1066,7 +1076,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000282",
       "year": 2025,
       "month": 1,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1074,7 +1084,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000287",
       "year": 2025,
       "month": 1,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1082,32 +1092,32 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000584",
       "year": 2025,
       "month": 1,
-      "grade": null,
-      "memo": "B"
+      "grade": "B",
+      "memo": "-"
     },
     {
       "id": "eval-E0000586-2025-1",
       "employeeId": "E0000586",
       "year": 2025,
       "month": 1,
-      "grade": null,
-      "memo": "B"
+      "grade": "B",
+      "memo": "-"
     },
     {
       "id": "eval-E0000609-2025-1",
       "employeeId": "E0000609",
       "year": 2025,
       "month": 1,
-      "grade": null,
-      "memo": "B"
+      "grade": "B",
+      "memo": "-"
     },
     {
       "id": "eval-E0000610-2025-1",
       "employeeId": "E0000610",
       "year": 2025,
       "month": 1,
-      "grade": null,
-      "memo": "B"
+      "grade": "B",
+      "memo": ""
     }
   ],
   "2025-2": [
@@ -1116,7 +1126,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000198",
       "year": 2025,
       "month": 2,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1124,7 +1134,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000245",
       "year": 2025,
       "month": 2,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1132,7 +1142,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000246",
       "year": 2025,
       "month": 2,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1140,7 +1150,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000247",
       "year": 2025,
       "month": 2,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1148,7 +1158,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000298",
       "year": 2025,
       "month": 2,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1156,7 +1166,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000299",
       "year": 2025,
       "month": 2,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1164,7 +1174,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000300",
       "year": 2025,
       "month": 2,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1172,7 +1182,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000195",
       "year": 2025,
       "month": 2,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1180,7 +1190,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000231",
       "year": 2025,
       "month": 2,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1188,7 +1198,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000232",
       "year": 2025,
       "month": 2,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1196,7 +1206,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000281",
       "year": 2025,
       "month": 2,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1204,7 +1214,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000282",
       "year": 2025,
       "month": 2,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1212,7 +1222,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000287",
       "year": 2025,
       "month": 2,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1220,7 +1230,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000584",
       "year": 2025,
       "month": 2,
-      "grade": null,
+      "grade": "B",
       "memo": "B"
     },
     {
@@ -1228,7 +1238,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000586",
       "year": 2025,
       "month": 2,
-      "grade": null,
+      "grade": "B",
       "memo": "B"
     },
     {
@@ -1236,7 +1246,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000609",
       "year": 2025,
       "month": 2,
-      "grade": null,
+      "grade": "B",
       "memo": "B"
     },
     {
@@ -1244,7 +1254,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000610",
       "year": 2025,
       "month": 2,
-      "grade": null,
+      "grade": "B",
       "memo": "B"
     }
   ],
@@ -1254,7 +1264,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000198",
       "year": 2025,
       "month": 3,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1262,7 +1272,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000245",
       "year": 2025,
       "month": 3,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1270,7 +1280,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000246",
       "year": 2025,
       "month": 3,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1278,7 +1288,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000247",
       "year": 2025,
       "month": 3,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1286,7 +1296,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000298",
       "year": 2025,
       "month": 3,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1294,7 +1304,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000299",
       "year": 2025,
       "month": 3,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1302,7 +1312,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000300",
       "year": 2025,
       "month": 3,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1310,7 +1320,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000195",
       "year": 2025,
       "month": 3,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1318,7 +1328,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000231",
       "year": 2025,
       "month": 3,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1326,7 +1336,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000232",
       "year": 2025,
       "month": 3,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1334,7 +1344,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000281",
       "year": 2025,
       "month": 3,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1342,7 +1352,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000282",
       "year": 2025,
       "month": 3,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1350,7 +1360,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000287",
       "year": 2025,
       "month": 3,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1358,7 +1368,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000584",
       "year": 2025,
       "month": 3,
-      "grade": null,
+      "grade": "B",
       "memo": "B"
     },
     {
@@ -1366,7 +1376,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000586",
       "year": 2025,
       "month": 3,
-      "grade": null,
+      "grade": "B",
       "memo": "B"
     },
     {
@@ -1374,7 +1384,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000609",
       "year": 2025,
       "month": 3,
-      "grade": null,
+      "grade": "B",
       "memo": "B"
     },
     {
@@ -1382,7 +1392,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000610",
       "year": 2025,
       "month": 3,
-      "grade": null,
+      "grade": "B",
       "memo": "B"
     }
   ],
@@ -1392,7 +1402,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000198",
       "year": 2025,
       "month": 4,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1400,7 +1410,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000245",
       "year": 2025,
       "month": 4,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1408,7 +1418,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000246",
       "year": 2025,
       "month": 4,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1416,7 +1426,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000247",
       "year": 2025,
       "month": 4,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1424,7 +1434,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000298",
       "year": 2025,
       "month": 4,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1432,7 +1442,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000299",
       "year": 2025,
       "month": 4,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1440,7 +1450,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000300",
       "year": 2025,
       "month": 4,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1448,7 +1458,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000195",
       "year": 2025,
       "month": 4,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1456,7 +1466,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000231",
       "year": 2025,
       "month": 4,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1464,7 +1474,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000232",
       "year": 2025,
       "month": 4,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1472,7 +1482,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000281",
       "year": 2025,
       "month": 4,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1480,7 +1490,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000282",
       "year": 2025,
       "month": 4,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1488,7 +1498,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000287",
       "year": 2025,
       "month": 4,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1496,7 +1506,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000584",
       "year": 2025,
       "month": 4,
-      "grade": null,
+      "grade": "B",
       "memo": "B"
     },
     {
@@ -1504,7 +1514,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000586",
       "year": 2025,
       "month": 4,
-      "grade": null,
+      "grade": "B",
       "memo": "B"
     },
     {
@@ -1512,7 +1522,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000609",
       "year": 2025,
       "month": 4,
-      "grade": null,
+      "grade": "B",
       "memo": "B"
     },
     {
@@ -1520,7 +1530,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000610",
       "year": 2025,
       "month": 4,
-      "grade": null,
+      "grade": "B",
       "memo": "B"
     }
   ],
@@ -1530,7 +1540,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000198",
       "year": 2025,
       "month": 5,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1538,7 +1548,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000245",
       "year": 2025,
       "month": 5,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1546,7 +1556,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000246",
       "year": 2025,
       "month": 5,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1554,7 +1564,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000247",
       "year": 2025,
       "month": 5,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1562,7 +1572,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000298",
       "year": 2025,
       "month": 5,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1570,7 +1580,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000299",
       "year": 2025,
       "month": 5,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1578,7 +1588,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000300",
       "year": 2025,
       "month": 5,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1586,7 +1596,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000195",
       "year": 2025,
       "month": 5,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1594,7 +1604,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000231",
       "year": 2025,
       "month": 5,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1602,7 +1612,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000232",
       "year": 2025,
       "month": 5,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1610,7 +1620,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000281",
       "year": 2025,
       "month": 5,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1618,7 +1628,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000282",
       "year": 2025,
       "month": 5,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1626,7 +1636,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000287",
       "year": 2025,
       "month": 5,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
@@ -1634,7 +1644,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000584",
       "year": 2025,
       "month": 5,
-      "grade": null,
+      "grade": "B",
       "memo": "B"
     },
     {
@@ -1642,7 +1652,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000586",
       "year": 2025,
       "month": 5,
-      "grade": null,
+      "grade": "B",
       "memo": "B"
     },
     {
@@ -1650,7 +1660,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000609",
       "year": 2025,
       "month": 5,
-      "grade": null,
+      "grade": "B",
       "memo": "B"
     },
     {
@@ -1658,7 +1668,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E0000610",
       "year": 2025,
       "month": 5,
-      "grade": null,
+      "grade": "B",
       "memo": "B"
     }
   ],
@@ -1806,12 +1816,12 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "E1911042",
       "year": 2025,
       "month": 6,
-      "grade": null,
+      "grade": "B",
       "memo": ""
     },
     {
       "id": "eval-user-admin-2025-6",
-      "employeeId": "user-admin",
+      "employeeId": "admin",
       "year": 2025,
       "month": 6,
       "grade": "S",
@@ -1824,7 +1834,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "user-0000198",
       "year": 2025,
       "month": 6,
-      "grade": null,
+      "grade": "B",
       "memo": "",
       "detailedGroup2": "팀장/지점장",
       "score": 0
@@ -1834,7 +1844,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "user-0000245",
       "year": 2025,
       "month": 6,
-      "grade": null,
+      "grade": "B",
       "memo": "",
       "score": 0,
       "detailedGroup2": "Lv.2~3"
@@ -1844,7 +1854,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "user-0000246",
       "year": 2025,
       "month": 6,
-      "grade": null,
+      "grade": "B",
       "memo": "",
       "score": 0,
       "detailedGroup2": "Lv.2~3"
@@ -1854,7 +1864,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "user-0000247",
       "year": 2025,
       "month": 6,
-      "grade": null,
+      "grade": "B",
       "memo": "",
       "score": 0,
       "detailedGroup2": "Lv.2~3"
@@ -1864,7 +1874,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "user-0000298",
       "year": 2025,
       "month": 6,
-      "grade": null,
+      "grade": "B",
       "memo": "",
       "score": 0,
       "detailedGroup2": "Lv.1"
@@ -1874,7 +1884,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "user-0000299",
       "year": 2025,
       "month": 6,
-      "grade": null,
+      "grade": "B",
       "memo": "",
       "score": 0,
       "detailedGroup2": "Lv.1"
@@ -1884,7 +1894,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "user-0000300",
       "year": 2025,
       "month": 6,
-      "grade": null,
+      "grade": "B",
       "memo": "",
       "score": 0,
       "detailedGroup2": "Lv.1"
@@ -1894,7 +1904,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "user-0000195",
       "year": 2025,
       "month": 6,
-      "grade": null,
+      "grade": "B",
       "memo": "",
       "score": 0,
       "detailedGroup2": "팀장/지점장"
@@ -1904,7 +1914,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "user-0000231",
       "year": 2025,
       "month": 6,
-      "grade": null,
+      "grade": "B",
       "memo": "",
       "score": 0,
       "detailedGroup2": "Lv.2~3"
@@ -1914,7 +1924,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "user-0000232",
       "year": 2025,
       "month": 6,
-      "grade": null,
+      "grade": "B",
       "memo": "",
       "score": 0,
       "detailedGroup2": "Lv.2~3"
@@ -1924,7 +1934,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "user-0000281",
       "year": 2025,
       "month": 6,
-      "grade": null,
+      "grade": "B",
       "memo": "",
       "score": 0,
       "detailedGroup2": "Lv.1"
@@ -1934,7 +1944,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "user-0000282",
       "year": 2025,
       "month": 6,
-      "grade": null,
+      "grade": "B",
       "memo": "",
       "score": 0,
       "detailedGroup2": "Lv.1"
@@ -1944,7 +1954,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "user-0000287",
       "year": 2025,
       "month": 6,
-      "grade": null,
+      "grade": "B",
       "memo": "",
       "score": 0,
       "detailedGroup2": "Lv.1"
@@ -1994,7 +2004,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "employeeId": "ㅇ",
       "year": 2025,
       "month": 6,
-      "grade": null,
+      "grade": "B",
       "memo": "",
       "detailedGroup2": ""
     },

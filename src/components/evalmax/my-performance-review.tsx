@@ -142,7 +142,7 @@ export default function MyPerformanceReview({
   // 컴포넌트 상태: 카드의 열림/닫힘 상태 관리
     const [isMonthlyReviewOpen, setIsMonthlyReviewOpen] = React.useState(true);
     const [isAnnualHistoryOpen, setIsAnnualHistoryOpen] = React.useState(true);
-    const [isDetailsOpen, setIsDetailsOpen] = React.useState(true);
+    const [isDetailsOpen, setIsDetailsOpen] = React.useState(false);
     
   // 피평가자 ID별 데이터 필터링 (전체 연간 데이터에서)
   const myResults = React.useMemo(() => {
@@ -464,49 +464,52 @@ export default function MyPerformanceReview({
               </Button>
             </CardHeader>
           </CollapsibleTrigger>
-          <CollapsibleContent>
-            <CardContent className="p-4">
-              {/* 요약 정보 */}
-              {(() => {
-                // 실제 데이터가 있는 월만 필터링 (등급이 있는 데이터만) - 전체 연간 데이터에서 피평가자 ID별 필터링
-                const filteredResults = (allResultsForYear || [])
-                  .filter(result => result.grade !== null && result.uniqueId === user?.uniqueId)
-                  .sort((a,b) => b.month - a.month);
-                
-                if (filteredResults.length > 0) {
-                  return (
-                <div className="mb-4 p-4 bg-muted/30 rounded-lg">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                    <div>
-                      <p className="text-muted-foreground">평가 횟수</p>
-                          <p className="font-semibold text-[135%]">{filteredResults.length}회</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">평균 점수</p>
-                      <p className="font-semibold text-[135%]">
-                            {Math.round(filteredResults.reduce((acc, curr) => acc + curr.score, 0) / filteredResults.length)}점
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">평균 근무율</p>
-                      <p className="font-semibold text-[135%]">
-                            {(filteredResults.reduce((acc, curr) => acc + curr.workRate, 0) / filteredResults.length * 100).toFixed(1)}%
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">총 지급액</p>
-                      <p className="font-semibold text-primary text-[135%]">
-                        <SlotMachineNumber value={filteredResults.reduce((acc, curr) => acc + curr.finalAmount, 0)} duration={2500} />
-                      </p>
-                    </div>
+          
+          {/* 요약 정보 - 항상 표시 */}
+          <CardContent className="p-4 pb-0">
+            {(() => {
+              // 실제 데이터가 있는 월만 필터링 (등급이 있는 데이터만) - 전체 연간 데이터에서 피평가자 ID별 필터링
+              const filteredResults = (allResultsForYear || [])
+                .filter(result => result.grade !== null && result.uniqueId === user?.uniqueId)
+                .sort((a,b) => b.month - a.month);
+              
+              if (filteredResults.length > 0) {
+                return (
+              <div className="mb-4 p-4 bg-muted/30 rounded-lg">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <p className="text-muted-foreground">평가 횟수</p>
+                        <p className="font-semibold text-[135%]">{filteredResults.length}회</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">평균 점수</p>
+                    <p className="font-semibold text-[135%]">
+                          {Math.round(filteredResults.reduce((acc, curr) => acc + curr.score, 0) / filteredResults.length)}점
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">평균 근무율</p>
+                    <p className="font-semibold text-[135%]">
+                          {(filteredResults.reduce((acc, curr) => acc + curr.workRate, 0) / filteredResults.length * 100).toFixed(1)}%
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">총 지급액</p>
+                    <p className="font-semibold text-primary text-[135%]">
+                      <SlotMachineNumber value={filteredResults.reduce((acc, curr) => acc + curr.finalAmount, 0)} duration={2500} />
+                    </p>
                   </div>
                 </div>
-                  );
-                } else {
-                  return null;
-                }
-              })()}
-              
+              </div>
+                );
+              } else {
+                return null;
+              }
+            })()}
+          </CardContent>
+          
+          <CollapsibleContent>
+            <CardContent className="p-4 pt-0">
               <div className="border border-gray-200 rounded-lg overflow-x-auto">
                 <Table>
                   <TableHeader>
@@ -533,7 +536,7 @@ export default function MyPerformanceReview({
                       
                       if (filteredResults.length > 0) {
                         return filteredResults.map((result) => (
-                      <TableRow key={result.id} className="hover:bg-muted/50">
+                      <TableRow key={`${result.uniqueId}-${result.year}-${result.month}`} className="hover:bg-muted/50">
                         <TableCell className="text-center font-medium">{result.month}월</TableCell>
                         <TableCell className="text-center">{result.company}</TableCell>
                         <TableCell className="text-center">{result.department}</TableCell>

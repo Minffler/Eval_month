@@ -265,7 +265,7 @@ export default function ManageData({
         localStorage.setItem('employees', JSON.stringify({
           "2025-1": [
             {
-              "id": "Eadmin",
+              "id": "Eadmin-2025-1",
               "uniqueId": "admin",
               "name": "관리자",
               "company": "OKH",
@@ -281,7 +281,7 @@ export default function ManageData({
           ],
           "2025-2": [
             {
-              "id": "Eadmin",
+              "id": "Eadmin-2025-2",
               "uniqueId": "admin",
               "name": "관리자",
               "company": "OKH",
@@ -297,7 +297,7 @@ export default function ManageData({
           ],
           "2025-3": [
             {
-              "id": "Eadmin",
+              "id": "Eadmin-2025-3",
               "uniqueId": "admin",
               "name": "관리자",
               "company": "OKH",
@@ -313,7 +313,7 @@ export default function ManageData({
           ],
           "2025-4": [
             {
-              "id": "Eadmin",
+              "id": "Eadmin-2025-4",
               "uniqueId": "admin",
               "name": "관리자",
               "company": "OKH",
@@ -329,7 +329,7 @@ export default function ManageData({
           ],
           "2025-5": [
             {
-              "id": "Eadmin",
+              "id": "Eadmin-2025-5",
               "uniqueId": "admin",
               "name": "관리자",
               "company": "OKH",
@@ -345,7 +345,7 @@ export default function ManageData({
           ],
           "2025-6": [
             {
-              "id": "Eadmin",
+              "id": "Eadmin-2025-6",
               "uniqueId": "admin",
               "name": "관리자",
               "company": "OKH",
@@ -365,7 +365,7 @@ export default function ManageData({
           "2025-1": [
             {
               "id": "eval-user-admin-2025-1",
-              "employeeId": "user-admin",
+              "employeeId": "admin",
               "year": 2025,
               "month": 1,
               "grade": "S",
@@ -377,7 +377,7 @@ export default function ManageData({
           "2025-2": [
             {
               "id": "eval-user-admin-2025-2",
-              "employeeId": "user-admin",
+              "employeeId": "admin",
               "year": 2025,
               "month": 2,
               "grade": "S",
@@ -389,7 +389,7 @@ export default function ManageData({
           "2025-3": [
             {
               "id": "eval-user-admin-2025-3",
-              "employeeId": "user-admin",
+              "employeeId": "admin",
               "year": 2025,
               "month": 3,
               "grade": "S",
@@ -401,7 +401,7 @@ export default function ManageData({
           "2025-4": [
             {
               "id": "eval-user-admin-2025-4",
-              "employeeId": "user-admin",
+              "employeeId": "admin",
               "year": 2025,
               "month": 4,
               "grade": "S",
@@ -413,7 +413,7 @@ export default function ManageData({
           "2025-5": [
             {
               "id": "eval-user-admin-2025-5",
-              "employeeId": "user-admin",
+              "employeeId": "admin",
               "year": 2025,
               "month": 5,
               "grade": "S",
@@ -425,7 +425,7 @@ export default function ManageData({
           "2025-6": [
             {
               "id": "eval-user-admin-2025-6",
-              "employeeId": "user-admin",
+              "employeeId": "admin",
               "year": 2025,
               "month": 6,
               "grade": "S",
