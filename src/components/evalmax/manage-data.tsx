@@ -586,10 +586,10 @@ export default function ManageData({
               "employeeId": "admin",
               "year": 2025,
               "month": 1,
-              "grade": "S",
+              "grade": "A",
               "memo": "admin",
               "detailedGroup2": "기타",
-              "score": 150
+              "score": 115
             }
           ],
           "2025-2": [
@@ -598,10 +598,10 @@ export default function ManageData({
               "employeeId": "admin",
               "year": 2025,
               "month": 2,
-              "grade": "S",
+              "grade": "B+",
               "memo": "admin",
               "detailedGroup2": "기타",
-              "score": 150
+              "score": 105
             }
           ],
           "2025-3": [
@@ -610,10 +610,10 @@ export default function ManageData({
               "employeeId": "admin",
               "year": 2025,
               "month": 3,
-              "grade": "S",
+              "grade": "C",
               "memo": "admin",
               "detailedGroup2": "기타",
-              "score": 150
+              "score": 85
             }
           ],
           "2025-4": [
@@ -622,10 +622,10 @@ export default function ManageData({
               "employeeId": "admin",
               "year": 2025,
               "month": 4,
-              "grade": "S",
+              "grade": "B",
               "memo": "admin",
               "detailedGroup2": "기타",
-              "score": 150
+              "score": 100
             }
           ],
           "2025-5": [
@@ -634,10 +634,10 @@ export default function ManageData({
               "employeeId": "admin",
               "year": 2025,
               "month": 5,
-              "grade": "S",
+              "grade": "A+",
               "memo": "admin",
               "detailedGroup2": "기타",
-              "score": 150
+              "score": 130
             }
           ],
           "2025-6": [
@@ -650,6 +650,18 @@ export default function ManageData({
               "memo": "admin",
               "detailedGroup2": "기타",
               "score": 150
+            }
+          ],
+          "2025-7": [
+            {
+              "id": "eval-user-admin-2025-7",
+              "employeeId": "admin",
+              "year": 2025,
+              "month": 7,
+              "grade": "A",
+              "memo": "admin",
+              "detailedGroup2": "기타",
+              "score": 115
             }
           ]
         }));

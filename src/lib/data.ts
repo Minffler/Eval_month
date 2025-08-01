@@ -1165,6 +1165,16 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
     }],
   "2025-1": [
     {
+      "id": "eval-admin-2025-1",
+      "employeeId": "admin",
+      "year": 2025,
+      "month": 1,
+      "grade": "A",
+      "memo": "admin",
+      "detailedGroup2": "기타",
+      "score": 115
+    },
+    {
       "id": "eval-E0000198-2025-1",
       "employeeId": "E0000198",
       "year": 2025,
@@ -1302,6 +1312,16 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
     }
   ],
   "2025-2": [
+    {
+      "id": "eval-admin-2025-2",
+      "employeeId": "admin",
+      "year": 2025,
+      "month": 2,
+      "grade": "B+",
+      "memo": "admin",
+      "detailedGroup2": "기타",
+      "score": 105
+    },
     {
       "id": "eval-E0000198-2025-2",
       "employeeId": "E0000198",
@@ -1441,6 +1461,16 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
   ],
   "2025-3": [
     {
+      "id": "eval-admin-2025-3",
+      "employeeId": "admin",
+      "year": 2025,
+      "month": 3,
+      "grade": "C",
+      "memo": "admin",
+      "detailedGroup2": "기타",
+      "score": 85
+    },
+    {
       "id": "eval-E0000198-2025-3",
       "employeeId": "E0000198",
       "year": 2025,
@@ -1579,6 +1609,16 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
   ],
   "2025-4": [
     {
+      "id": "eval-admin-2025-4",
+      "employeeId": "admin",
+      "year": 2025,
+      "month": 4,
+      "grade": "B",
+      "memo": "admin",
+      "detailedGroup2": "기타",
+      "score": 100
+    },
+    {
       "id": "eval-E0000198-2025-4",
       "employeeId": "E0000198",
       "year": 2025,
@@ -1716,6 +1756,16 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
     }
   ],
   "2025-5": [
+    {
+      "id": "eval-admin-2025-5",
+      "employeeId": "admin",
+      "year": 2025,
+      "month": 5,
+      "grade": "A+",
+      "memo": "admin",
+      "detailedGroup2": "기타",
+      "score": 130
+    },
     {
       "id": "eval-E0000198-2025-5",
       "employeeId": "E0000198",
