@@ -46,150 +46,23 @@ export type ValidateGradeConsistencyOutput = z.infer<
   typeof ValidateGradeConsistencyOutputSchema
 >;
 
-// 대체 분석 함수 (AI 모델이 실패할 경우 사용)
-function generateFallbackAnalysis(gradeData: string): ValidateGradeConsistencyOutput {
-  // 간단한 통계 분석
-  const gradeCounts: Record<string, number> = {};
-  const evaluatorCounts: Record<string, Record<string, number>> = {};
-  
-  // 데이터 파싱
-  const lines = gradeData.split('\n');
-  let totalCount = 0;
-  
-  lines.forEach(line => {
-    const [evaluator, gradesStr] = line.split(': ');
-    if (evaluator && gradesStr) {
-      const grades = gradesStr.split(', ').filter(g => g.trim());
-      evaluatorCounts[evaluator] = {};
-      
-      grades.forEach(grade => {
-        const cleanGrade = grade.trim();
-        if (cleanGrade) {
-          gradeCounts[cleanGrade] = (gradeCounts[cleanGrade] || 0) + 1;
-          evaluatorCounts[evaluator][cleanGrade] = (evaluatorCounts[evaluator][cleanGrade] || 0) + 1;
-          totalCount++;
-        }
-      });
-    }
-  });
-
-  // 전체 분포 계산
-  const overallDistribution = Object.entries(gradeCounts).map(([grade, count]) => ({
-    grade,
-    count,
-    percentage: totalCount > 0 ? Math.round((count / totalCount) * 100 * 10) / 10 : 0,
-  }));
-
-  // 편향 분석
-  const findings: Array<{
-    type: '편향' | '불일치' | '긍정적 발견';
-    description: string;
-    evidence: string;
-  }> = [];
-
-  // 평가자별 편향 검사
-  Object.entries(evaluatorCounts).forEach(([evaluator, grades]) => {
-    const evaluatorTotal = Object.values(grades).reduce((sum, count) => sum + count, 0);
-    const highGrades = ['S', 'A+', 'A'].reduce((sum, grade) => sum + (grades[grade] || 0), 0);
-    const lowGrades = ['C', 'C-', 'D'].reduce((sum, grade) => sum + (grades[grade] || 0), 0);
-    
-    const highGradeRatio = evaluatorTotal > 0 ? (highGrades / evaluatorTotal) * 100 : 0;
-    const lowGradeRatio = evaluatorTotal > 0 ? (lowGrades / evaluatorTotal) * 100 : 0;
-    
-    if (highGradeRatio > 60) {
-      findings.push({
-        type: '편향',
-        description: `${evaluator} 평가자가 높은 등급을 과도하게 부여하는 경향이 있습니다.`,
-        evidence: `높은 등급(S, A+, A) 비율: ${highGradeRatio.toFixed(1)}% (평가 대상: ${evaluatorTotal}명)`
-      });
-    }
-    
-    if (lowGradeRatio > 30) {
-      findings.push({
-        type: '편향',
-        description: `${evaluator} 평가자가 낮은 등급을 과도하게 부여하는 경향이 있습니다.`,
-        evidence: `낮은 등급(C, C-, D) 비율: ${lowGradeRatio.toFixed(1)}% (평가 대상: ${evaluatorTotal}명)`
-      });
-    }
-  });
-
-  // 긍정적 발견 추가
-  if (findings.length === 0) {
-    findings.push({
-      type: '긍정적 발견',
-      description: '평가자 간 등급 부여가 비교적 균형잡혀 있습니다.',
-      evidence: `전체 ${totalCount}명의 평가 데이터에서 특별한 편향이 발견되지 않았습니다.`
-    });
-  }
-
-  return {
-    summary: `총 ${totalCount}명의 평가 데이터를 분석한 결과, ${findings.length}개의 주요 발견사항이 있습니다.`,
-    overallDistribution,
-    findings,
-  };
-}
-
-// AI 서비스 연결 상태 확인
-async function checkAIServiceStatus(): Promise<boolean> {
-  try {
-    // 간단한 테스트 요청으로 연결 상태 확인
-    const testPrompt = ai.definePrompt({
-      name: 'testPrompt',
-      input: {schema: z.object({test: z.string()})},
-      output: {schema: z.object({result: z.string()})},
-      prompt: '테스트입니다. "OK"라고 응답하세요.',
-    });
-    
-    await testPrompt({test: 'test'});
-    return true;
-  } catch (error) {
-    console.error('AI 서비스 연결 실패:', error);
-    return false;
-  }
-}
-
 export async function validateGradeConsistency(
   input: ValidateGradeConsistencyInput
 ): Promise<ValidateGradeConsistencyOutput> {
   try {
-    // AI 서비스 연결 상태 확인
-    const isAIServiceAvailable = await checkAIServiceStatus();
+    console.log("validateGradeConsistency 시작");
+    console.log("입력:", input);
     
-    if (!isAIServiceAvailable) {
-      console.log("AI 서비스가 사용 불가능합니다. 대체 분석을 사용합니다.");
-      return generateFallbackAnalysis(input.gradeData);
-    }
-    
-    // AI 모델 시도
     const result = await validateGradeConsistencyFlow(input);
+    
+    console.log("validateGradeConsistency 성공:", result);
     return result;
   } catch (error) {
-    console.error("AI 모델 분석 실패, 대체 분석 사용:", error);
-    
-    // 오류 타입별 상세 메시지
-    let errorMessage = "AI 서비스 연결에 실패했습니다.";
-    
-    if (error instanceof Error) {
-      if (error.message.includes('fetch')) {
-        errorMessage = "네트워크 연결에 실패했습니다. 인터넷 연결을 확인하고 다시 시도해주세요.";
-      } else if (error.message.includes('API')) {
-        errorMessage = "AI 서비스 API 키가 유효하지 않습니다. 관리자에게 문의해주세요.";
-      } else if (error.message.includes('quota')) {
-        errorMessage = "AI 서비스 사용량 한도를 초과했습니다. 잠시 후 다시 시도해주세요.";
-      } else {
-        errorMessage = `AI 서비스 오류: ${error.message}`;
-      }
-    }
-    
-    // AI 모델이 실패하면 대체 분석 사용
-    try {
-      console.log("대체 분석을 사용합니다...");
-      const fallbackResult = generateFallbackAnalysis(input.gradeData);
-      return fallbackResult;
-    } catch (fallbackError) {
-      console.error("대체 분석도 실패:", fallbackError);
-      throw new Error(`${errorMessage} 대체 분석도 실패했습니다.`);
-    }
+    console.error("validateGradeConsistency 에러:", error);
+    console.error("에러 타입:", typeof error);
+    console.error("에러 메시지:", error instanceof Error ? error.message : error);
+    console.error("에러 스택:", error instanceof Error ? error.stack : "스택 없음");
+    throw error;
   }
 }
 
@@ -235,14 +108,25 @@ const validateGradeConsistencyFlow = ai.defineFlow(
   },
   async input => {
     try {
+      console.log("AI 분석 시작...");
+      console.log("입력 데이터:", input);
+      console.log("API 키 확인:", process.env.GEMINI_API_KEY ? "설정됨" : "설정되지 않음");
+      
       const {output} = await prompt(input);
+      
+      console.log("AI 응답 받음:", output);
+      
       if (!output) {
-        throw new Error("AI 모델이 응답을 생성하지 못했습니다.");
+        throw new Error("AI 모델이 유효한 분석 결과를 생성하지 못했습니다. 잠시 후 다시 시도해주세요.");
       }
+      
+      console.log("분석 완료:", output);
       return output;
     } catch (error) {
-      console.error("AI Flow 실행 중 오류:", error);
-      throw error;
+       console.error("Error in validateGradeConsistencyFlow: ", error);
+       console.error("에러 상세:", error instanceof Error ? error.message : error);
+       console.error("에러 스택:", error instanceof Error ? error.stack : "스택 없음");
+       throw new Error("AI 모델이 유효한 분석 결과를 생성하지 못했습니다. 잠시 후 다시 시도해주세요.");
     }
   }
 );

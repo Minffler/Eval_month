@@ -98,7 +98,7 @@ export function GradeHistogram({
       return (
         <g>
           {/* Count label (higher up) */}
-          <text x={x + width / 2} y={y - 20} textAnchor="middle" fontSize={12} fill="hsl(var(--foreground))">
+          <text x={x + width / 2} y={y - 20} textAnchor="middle" fontSize={12} fill="hsl(var(--muted-foreground))" fontWeight="600">
             {countText}
           </text>
           {/* Percentage label (closer to bar) */}
@@ -113,7 +113,7 @@ export function GradeHistogram({
     return (
       <g>
         {/* Count label */}
-        <text x={x + width / 2} y={y - 5} textAnchor="middle" fontSize={12} fill="hsl(var(--foreground))">
+        <text x={x + width / 2} y={y - 5} textAnchor="middle" fontSize={12} fill="hsl(var(--muted-foreground))" fontWeight="600">
           {countText}
         </text>
         {/* Percentage label */}

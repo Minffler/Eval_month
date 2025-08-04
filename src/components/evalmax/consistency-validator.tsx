@@ -3,10 +3,11 @@
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Sparkles } from 'lucide-react';
+import { Loader2, Sparkles, BarChart3, Eye } from 'lucide-react';
 import { validateGradeConsistency, type ValidateGradeConsistencyOutput } from '@/ai/flows/grade-consistency-validation';
 import { Badge } from '../ui/badge';
-import type { EvaluationResult, Grade, GradeInfo } from '@/lib/types';
+import type { EvaluationResult, Grade, GradeInfo, User } from '@/lib/types';
+import { mockUsers } from '@/lib/data';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, LabelList } from 'recharts';
 import {
   ChartContainer,
@@ -54,6 +55,18 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
   const [loading, setLoading] = React.useState(false);
   const [report, setReport] = React.useState<ValidateGradeConsistencyOutput | null>(null);
   const [error, setError] = React.useState<string | null>(null);
+  const [highlightedEvaluator, setHighlightedEvaluator] = React.useState<string | null>(null);
+
+  // 평가자 ID로 이름을 찾는 함수
+  const getEvaluatorName = (evaluatorId: string): string => {
+    // admin의 경우 특별 처리
+    if (evaluatorId === 'admin') {
+      return '관리자';
+    }
+    
+    const user = mockUsers.find((u: User) => u.uniqueId === evaluatorId);
+    return user ? user.name : evaluatorId;
+  };
 
   async function handleAnalyze() {
     setLoading(true);
@@ -72,12 +85,16 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
       }
 
       const gradeDataByEvaluator = results.reduce((acc, result) => {
-        const evaluator = result.evaluatorName || 'N/A';
-        if (!acc[evaluator]) {
-          acc[evaluator] = [];
+        const evaluatorId = result.evaluatorId || '';
+        const evaluatorName = getEvaluatorName(evaluatorId);
+        
+        // ID를 기준으로 키 생성 (동명이인 방지)
+        const key = `${evaluatorName} (${evaluatorId})`;
+        if (!acc[key]) {
+          acc[key] = [];
         }
         if (result.grade) {
-          acc[evaluator].push(result.grade);
+          acc[key].push(result.grade);
         }
         return acc;
       }, {} as Record<string, string[]>);
@@ -95,10 +112,18 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
       const expectedDistribution =
         '대부분의 직원은 B 또는 B+ 등급을 받아야 하며, S 또는 D 등급을 받는 직원은 소수여야 합니다. 등급 분포는 평가자 간에 비교적 균등해야 하며, 특정 평가자가 유독 후하거나 박한 점수를 주는 경향이 없어야 합니다.';
       
-      const analysisResult = await validateGradeConsistency({
+      // AI 분석 실행 (300초 타임아웃 설정)
+      const analysisPromise = validateGradeConsistency({
         gradeData: gradeDataString,
         expectedDistribution,
       });
+      
+      // 300초 타임아웃으로 AI 분석 실행
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('AI 분석 시간이 초과되었습니다. 다시 시도해주세요.')), 300000)
+      );
+      
+      const analysisResult = await Promise.race([analysisPromise, timeoutPromise]);
       
       setReport(analysisResult);
     } catch (error) {
@@ -138,6 +163,37 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
     }
   };
 
+  // 평가자별 등급 분포 데이터 생성
+  const evaluatorGradeData = React.useMemo(() => {
+    if (!report) return {};
+    
+    const data: Record<string, Record<string, number>> = {};
+    const gradeDataByEvaluator = results.reduce((acc, result) => {
+      const evaluatorId = result.evaluatorId || '';
+      const evaluatorName = getEvaluatorName(evaluatorId);
+      
+      // ID를 기준으로 키 생성 (동명이인 방지)
+      const key = `${evaluatorName} (${evaluatorId})`;
+      if (!acc[key]) {
+        acc[key] = [];
+      }
+      if (result.grade) {
+        acc[key].push(result.grade);
+      }
+      return acc;
+    }, {} as Record<string, string[]>);
+
+    Object.entries(gradeDataByEvaluator).forEach(([evaluator, grades]) => {
+      const gradeCounts: Record<string, number> = {};
+      grades.forEach(grade => {
+        gradeCounts[grade] = (gradeCounts[grade] || 0) + 1;
+      });
+      data[evaluator] = gradeCounts;
+    });
+
+    return data;
+  }, [report, results]);
+
   const chartData = React.useMemo(() => {
     if (!report) return [];
     const totalCount = report.overallDistribution.reduce((acc, curr) => acc + curr.count, 0);
@@ -157,8 +213,17 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
         name: item.grade,
         value: item.count,
         percentage: totalCount > 0 ? (item.count / totalCount) * 100 : 0,
+        highlightedValue: highlightedEvaluator ? evaluatorGradeData[highlightedEvaluator]?.[item.grade] || 0 : 0,
     }));
-  }, [report, gradingScale]);
+  }, [report, gradingScale, highlightedEvaluator, evaluatorGradeData]);
+
+  const handleHighlightEvaluator = (evaluatorName: string) => {
+    setHighlightedEvaluator(highlightedEvaluator === evaluatorName ? null : evaluatorName);
+  };
+
+  const clearHighlight = () => {
+    setHighlightedEvaluator(null);
+  };
 
   const CombinedLabel = (props: any) => {
     const { x, y, width, height, index } = props;
@@ -190,6 +255,44 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
           {countText}
         </text>
         <text x={x + width / 2} y={y + 14} textAnchor="middle" fontSize={11} fill="hsl(var(--primary-foreground))">
+          {percentageText}
+        </text>
+      </g>
+    );
+  };
+
+  // 강조된 데이터용 라벨 컴포넌트
+  const HighlightedLabel = (props: any) => {
+    const { x, y, width, height, index } = props;
+    const item = chartData[index];
+
+    if (!item || item.highlightedValue <= 0) {
+      return null;
+    }
+
+    const countText = item.highlightedValue;
+    const totalHighlighted = chartData.reduce((sum, data) => sum + data.highlightedValue, 0);
+    const percentageText = totalHighlighted > 0 ? `${((countText / totalHighlighted) * 100).toFixed(1)}%` : '0%';
+
+    if (height < 30) {
+      return (
+        <g>
+          <text x={x + width / 2} y={y - 20} textAnchor="middle" fontSize={12} fill="white">
+            {countText}
+          </text>
+          <text x={x + width / 2} y={y - 5} textAnchor="middle" fontSize={11} fill="white">
+            {percentageText}
+          </text>
+        </g>
+      );
+    }
+
+    return (
+      <g>
+        <text x={x + width / 2} y={y - 5} textAnchor="middle" fontSize={12} fill="white">
+          {countText}
+        </text>
+        <text x={x + width / 2} y={y + 14} textAnchor="middle" fontSize={11} fill="white">
           {percentageText}
         </text>
       </g>
@@ -256,7 +359,9 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
               </div>
               
               <div>
-                <h3 className="font-semibold text-lg mb-2">전체 등급 분포</h3>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-semibold text-lg">전체 등급 분포</h3>
+                  </div>
                 <div className="h-[250px]">
                   <ChartContainer config={chartConfig} className="w-full h-full">
                     <ResponsiveContainer width="100%" height="100%">
@@ -286,32 +391,120 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
                           cursor={{ fill: 'hsl(var(--muted))' }}
                           content={<ChartTooltipContent />}
                         />
+                        {/* 전체 분포 (회색) */}
                         <Bar
                           dataKey="value"
-                          fill="var(--color-value)"
+                          fill={highlightedEvaluator ? "#a4a3a2" : "var(--color-value)"}
                           radius={[4, 4, 0, 0]}
+                          opacity={highlightedEvaluator ? 0.7 : 1}
                         >
                           <LabelList dataKey="value" content={<CombinedLabel />} />
                         </Bar>
+                        {/* 강조된 평가자 분포 (강조색) */}
+                        {highlightedEvaluator && (
+                          <Bar
+                            dataKey="highlightedValue"
+                            fill="hsl(var(--primary))"
+                            radius={[4, 4, 0, 0]}
+                            opacity={1}
+                          >
+                            <LabelList dataKey="highlightedValue" content={<HighlightedLabel />} />
+                          </Bar>
+                        )}
                       </BarChart>
                     </ResponsiveContainer>
                   </ChartContainer>
                 </div>
+                {highlightedEvaluator && (
+                  <div className="mt-2 text-center">
+                    <p className="text-sm text-muted-foreground">
+                      <span className="font-semibold text-primary">{highlightedEvaluator}</span> 평가자의 등급 분포가 강조 표시됩니다.
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div>
                 <h3 className="font-semibold text-lg mb-2">주요 발견 사항</h3>
                 <div className="space-y-3">
                   {report.findings.length > 0 ? (
-                    report.findings.map((finding, index) => (
+                    report.findings.map((finding, index) => {
+                      // 평가자 ID 추출 (편향 타입인 경우)
+                      let evaluatorId = null;
+                      
+                      // finding.description에서 평가자 이름 추출
+                      const evaluatorNameMatch = finding.description.match(/([^\s]+)\s+평가자/);
+                      const evaluatorName = evaluatorNameMatch ? evaluatorNameMatch[1] : null;
+                      
+                      // evaluatorGradeData에서 해당 평가자 찾기
+                      let evaluatorKey = evaluatorName ? Object.keys(evaluatorGradeData).find(key => 
+                        key.includes(evaluatorName)
+                      ) : null;
+                      
+                      // evaluatorKey에서 ID 추출
+                      if (evaluatorKey) {
+                        const idMatch = evaluatorKey.match(/\(([^)]+)\)/);
+                        evaluatorId = idMatch ? idMatch[1] : null;
+                      }
+                      
+                      // ID가 있으면 evaluatorKey 다시 찾기 (ID 기준)
+                      if (evaluatorId && !evaluatorKey) {
+                        evaluatorKey = Object.keys(evaluatorGradeData).find(key => 
+                          key.includes(`(${evaluatorId})`)
+                        );
+                      }
+                      
+                      // 새로운 형식으로 표시 텍스트 생성
+                      let displayText = finding.description;
+                      if (finding.type === '편향' && evaluatorId && evaluatorKey) {
+                        // 평가자 이름과 ID 추출 (예: "이O권 (0000011)")
+                        const evaluatorMatch = evaluatorKey.match(/^(.+?)\s*\((\d+)\)$/);
+                        const evaluatorDisplayName = evaluatorMatch ? evaluatorMatch[1].trim() : evaluatorId;
+                        const evaluatorIdFromKey = evaluatorMatch ? evaluatorMatch[2] : evaluatorId;
+                        
+                        // 편향 유형에 따른 메시지 생성
+                        let biasMessage = '';
+                        if (finding.description.includes('낮은 등급') || finding.description.includes('엄격')) {
+                          biasMessage = '낮은 등급을 과도하게 부여하는 경향이 있습니다.';
+                        } else if (finding.description.includes('높은 등급') || finding.description.includes('관대')) {
+                          biasMessage = '높은 등급을 과도하게 부여하는 경향이 있습니다.';
+                        } else {
+                          biasMessage = '편향이 있는 것으로 보입니다.';
+                        }
+                        
+                        displayText = `${evaluatorDisplayName} (${evaluatorIdFromKey}) : ${biasMessage}`;
+                      } else if (finding.type === '편향') {
+                        // evaluatorId나 evaluatorKey가 없는 경우에도 기본 형식으로 표시
+                        displayText = finding.description;
+                      }
+                      
+                      return (
                       <div key={index} className="p-3 border rounded-md bg-muted/50">
-                        <div className="flex items-center gap-2 mb-1">
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="flex items-center gap-2">
                           <Badge variant={getBadgeVariant(finding.type)} className="whitespace-nowrap">{finding.type}</Badge>
-                          <p className="font-semibold text-sm">{finding.description}</p>
+                              <p className="font-semibold text-sm">{displayText}</p>
+                            </div>
+                            {evaluatorId && evaluatorKey && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleHighlightEvaluator(evaluatorKey)}
+                                className={`h-6 w-6 p-0 ${
+                                  highlightedEvaluator === evaluatorKey 
+                                    ? 'text-primary bg-primary/10' 
+                                    : 'text-muted-foreground hover:text-white hover:bg-primary'
+                                }`}
+                                title={`${evaluatorId} 평가자의 등급 분포를 차트에서 강조 표시`}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            )}
                         </div>
                         <p className="text-xs text-muted-foreground pl-2 border-l-2 ml-1.5">{finding.evidence}</p>
                       </div>
-                    ))
+                      );
+                    })
                   ) : (
                     <p className="text-sm text-muted-foreground">특별한 발견 사항이 없습니다.</p>
                   )}
