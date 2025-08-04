@@ -146,6 +146,8 @@ export default function EvaluationInputView({
   const [activeId, setActiveId] = React.useState<string | null>(null);
   const [isDragging, setIsDragging] = React.useState(false);
   const [activeGradeFilter, setActiveGradeFilter] = React.useState("전체");
+  // 1. 그룹 점수 초과 상태를 추적하는 state 추가
+  const [overScoreGroups, setOverScoreGroups] = React.useState<Record<string, number>>({});
   
   // React StrictMode 대응을 위한 플래그
   const isFirstRender = React.useRef(true);
@@ -352,10 +354,35 @@ export default function EvaluationInputView({
     return members.reduce((total, member) => total + (member.score || 0), 0);
   };
 
+  // 2. 그룹 점수 초과 체크 함수
+  const checkGroupScoreOver = React.useCallback(() => {
+    const over: Record<string, number> = {};
+    Object.entries(groups).forEach(([groupKey, group]) => {
+      const availableScore = group.members.length * 100;
+      const usedScore = group.members.reduce((acc, curr) => acc + (curr.score || 0), 0);
+      if (usedScore > availableScore) {
+        over[groupKey] = usedScore - availableScore;
+      }
+    });
+    setOverScoreGroups(over);
+    return over;
+  }, [groups]);
 
-  
-
-  
+  // 3. 등급 변경, 일괄 적용, 그룹 이동 등 점수 변동 시 체크 및 토스트
+  React.useEffect(() => {
+    const over = checkGroupScoreOver();
+    if (Object.keys(over).length > 0) {
+      const overGroupNames = Object.keys(over).map(groupKey => groups[groupKey]?.name || groupKey);
+      const groupNamesText = overGroupNames.join(', ');
+      
+      toast({
+        title: '그룹 점수 초과',
+        description: `${groupNamesText} 그룹이 총점을 초과했습니다. 등급을 조정해주세요.`,
+        className: 'border-primary border-[3px] bg-background',
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groups]);
 
 
   // 평가 그룹 초기화 (입력한 평가등급, 비고는 그대로 유지)
@@ -824,7 +851,7 @@ export default function EvaluationInputView({
                   return (
                     <Card key={groupKey} className="shadow-sm border-border overflow-hidden">
                       {/* 카드 헤더 (droppable 제거) */}
-                      <CardHeader className="py-3 px-4 bg-muted border-b border-border">
+                      <CardHeader className="pt-4 pb-2 px-4 bg-muted border-b border-border">
                         <div className="flex justify-between items-center">
                           <div className='flex items-center gap-2'>
                             {editingGroupId === groupKey ? (
@@ -842,7 +869,9 @@ export default function EvaluationInputView({
                               </div>
                             ) : (
                               <>
-                                <CardTitle className="text-lg font-semibold text-card-foreground">{group.name}</CardTitle>
+                                <CardTitle className="text-lg font-semibold text-card-foreground">
+                                  {group.name}
+                                </CardTitle>
                                 <Button 
                                   variant="ghost" 
                                   size="icon" 
@@ -851,6 +880,9 @@ export default function EvaluationInputView({
                                 >
                                   <Edit className="h-4 w-4" />
                                 </Button>
+                                {overScoreGroups[groupKey] && (
+                                  <span className="ml-2 text-destructive text-xs font-bold">※ 총점 초과 +{overScoreGroups[groupKey]}점</span>
+                                )}
                               </>
                             )}
                           </div>

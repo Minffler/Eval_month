@@ -59,6 +59,11 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
     setLoading(true);
     setReport(null);
     setError(null);
+    
+    // 오류 상태에서 재시도하는 경우 오류를 초기화
+    if (error) {
+      setError(null);
+    }
 
     try {
       // 데이터가 충분한지 확인
@@ -80,7 +85,7 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
       // 평가자가 충분한지 확인
       const evaluators = Object.keys(gradeDataByEvaluator);
       if (evaluators.length < 2) {
-        throw new Error("분석을 위해서는 최소 2명 이상의 평가자 데이터가 필요합니다.");
+        throw new Error(`현재 ${evaluators.length}명의 평가자 데이터만 있습니다. 분석을 위해서는 최소 2명 이상의 평가자 데이터가 필요합니다.`);
       }
 
       const gradeDataString = Object.entries(gradeDataByEvaluator)
@@ -98,7 +103,24 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
       setReport(analysisResult);
     } catch (error) {
       console.error('Error validating consistency:', error);
-      setError(error instanceof Error ? error.message : '분석 중 오류가 발생했습니다.');
+      
+      let errorMessage = '분석 중 오류가 발생했습니다.';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('네트워크')) {
+          errorMessage = '네트워크 연결에 실패했습니다. 인터넷 연결을 확인하고 다시 시도해주세요.';
+        } else if (error.message.includes('API 키')) {
+          errorMessage = 'AI 서비스 API 키가 유효하지 않습니다. 관리자에게 문의해주세요.';
+        } else if (error.message.includes('사용량 한도')) {
+          errorMessage = 'AI 서비스 사용량 한도를 초과했습니다. 잠시 후 다시 시도해주세요.';
+        } else if (error.message.includes('대체 분석')) {
+          errorMessage = 'AI 서비스에 연결할 수 없어 대체 분석을 사용합니다. 일부 기능이 제한될 수 있습니다.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -195,7 +217,7 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
             )}
         </CardContent>
         <CardFooter>
-          <Button onClick={handleAnalyze} disabled={loading || results.length === 0} className="w-full">
+          <Button onClick={handleAnalyze} disabled={loading || results.length === 0 || error !== null} className="w-full">
             {loading ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
@@ -215,6 +237,17 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
         </CardHeader>
         <CardContent className="max-w-none space-y-4 rounded-md border p-4 min-h-[400px]">
           {loading && <div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>}
+          {error && (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center space-y-2">
+                <div className="text-destructive text-lg font-semibold">분석 불가</div>
+                <p className="text-sm text-muted-foreground max-w-md">{error}</p>
+                <p className="text-xs text-muted-foreground mt-2">
+                  더 많은 평가자 데이터를 추가한 후 다시 시도해주세요.
+                </p>
+              </div>
+            </div>
+          )}
           {report ? (
             <div className="space-y-6">
               <div>
@@ -285,7 +318,7 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
                 </div>
               </div>
             </div>
-          ) : !loading && <p className="text-muted-foreground text-center pt-16">리포트가 여기에 생성됩니다...</p>}
+          ) : !loading && !error && <p className="text-muted-foreground text-center pt-16">리포트가 여기에 생성됩니다...</p>}
         </CardContent>
       </Card>
     </div>

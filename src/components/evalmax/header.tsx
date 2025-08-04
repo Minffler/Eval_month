@@ -123,7 +123,6 @@ export default function Header({
                         <SelectValue placeholder="월 선택" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="0">전체 월</SelectItem>
                         {monthsForSelectedYear.map(month => (
                         <SelectItem key={month} value={String(month)}>
                             {month}월

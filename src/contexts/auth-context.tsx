@@ -107,6 +107,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } else {
             logout(); // User not found, log out
         }
+      } else {
+        // No stored user, auto-login as admin
+        const adminUser = userMap.get('admin');
+        if (adminUser) {
+          setUser(adminUser);
+          setRole('admin');
+          localStorage.setItem('user', JSON.stringify(adminUser));
+          localStorage.setItem('role', 'admin');
+        }
       }
     } catch (error) {
         console.error("Failed to parse user from localStorage", error);

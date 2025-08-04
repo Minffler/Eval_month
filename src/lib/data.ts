@@ -15,7 +15,8 @@ export const mockUsers: User[] = [
     "title": "팀원",
     "department": "인사부",
     "company": "-",
-    "evaluatorId": "admin"
+    "evaluatorId": "admin",
+    "password": "1"
   },
   {
     "id": "user-0000247",
@@ -2043,15 +2044,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
   ],
   "2025-6": [
     {
-      "id": "eval-E1911042-2025-6",
-      "employeeId": "E1911042",
-      "year": 2025,
-      "month": 6,
-      "grade": "B",
-      "memo": ""
-    },
-    {
-      "id": "eval-user-admin-2025-6",
+      "id": "eval-admin-2025-6",
       "employeeId": "admin",
       "year": 2025,
       "month": 6,
@@ -2061,243 +2054,74 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "score": 150
     },
     {
-      "id": "eval-user-0000198-2025-6",
-      "employeeId": "user-0000198",
+      "id": "eval-0000198-2025-6",
+      "employeeId": "0000198",
       "year": 2025,
       "month": 6,
       "grade": "B",
       "memo": "",
       "detailedGroup2": "팀장/지점장",
-      "score": 0
+      "score": 100
     },
     {
-      "id": "eval-user-0000245-2025-6",
-      "employeeId": "user-0000245",
+      "id": "eval-0000245-2025-6",
+      "employeeId": "0000245",
       "year": 2025,
       "month": 6,
       "grade": "B",
       "memo": "",
-      "score": 0,
-      "detailedGroup2": "Lv.2~3"
-    },
-    {
-      "id": "eval-user-0000246-2025-6",
-      "employeeId": "user-0000246",
-      "year": 2025,
-      "month": 6,
-      "grade": "B",
-      "memo": "",
-      "score": 0,
-      "detailedGroup2": "Lv.2~3"
-    },
-    {
-      "id": "eval-user-0000247-2025-6",
-      "employeeId": "user-0000247",
-      "year": 2025,
-      "month": 6,
-      "grade": "B",
-      "memo": "",
-      "score": 0,
-      "detailedGroup2": "Lv.2~3"
-    },
-    {
-      "id": "eval-user-0000298-2025-6",
-      "employeeId": "user-0000298",
-      "year": 2025,
-      "month": 6,
-      "grade": "B",
-      "memo": "",
-      "score": 0,
-      "detailedGroup2": "Lv.1"
-    },
-    {
-      "id": "eval-user-0000299-2025-6",
-      "employeeId": "user-0000299",
-      "year": 2025,
-      "month": 6,
-      "grade": "B",
-      "memo": "",
-      "score": 0,
-      "detailedGroup2": "Lv.1"
-    },
-    {
-      "id": "eval-user-0000300-2025-6",
-      "employeeId": "user-0000300",
-      "year": 2025,
-      "month": 6,
-      "grade": "B",
-      "memo": "",
-      "score": 0,
-      "detailedGroup2": "Lv.1"
-    },
-    {
-      "id": "eval-user-0000195-2025-6",
-      "employeeId": "user-0000195",
-      "year": 2025,
-      "month": 6,
-      "grade": "B",
-      "memo": "",
-      "score": 0,
-      "detailedGroup2": "팀장/지점장"
-    },
-    {
-      "id": "eval-user-0000231-2025-6",
-      "employeeId": "user-0000231",
-      "year": 2025,
-      "month": 6,
-      "grade": "B",
-      "memo": "",
-      "score": 0,
-      "detailedGroup2": "Lv.2~3"
-    },
-    {
-      "id": "eval-user-0000232-2025-6",
-      "employeeId": "user-0000232",
-      "year": 2025,
-      "month": 6,
-      "grade": "B",
-      "memo": "",
-      "score": 0,
-      "detailedGroup2": "Lv.2~3"
-    },
-    {
-      "id": "eval-user-0000281-2025-6",
-      "employeeId": "user-0000281",
-      "year": 2025,
-      "month": 6,
-      "grade": "B",
-      "memo": "",
-      "score": 0,
-      "detailedGroup2": "Lv.1"
-    },
-    {
-      "id": "eval-user-0000282-2025-6",
-      "employeeId": "user-0000282",
-      "year": 2025,
-      "month": 6,
-      "grade": "B",
-      "memo": "",
-      "score": 0,
-      "detailedGroup2": "Lv.1"
-    },
-    {
-      "id": "eval-user-0000287-2025-6",
-      "employeeId": "user-0000287",
-      "year": 2025,
-      "month": 6,
-      "grade": "B",
-      "memo": "",
-      "score": 0,
-      "detailedGroup2": "Lv.1"
-    },
-    {
-      "id": "eval-user-0000584-2025-6",
-      "employeeId": "user-0000584",
-      "year": 2025,
-      "month": 6,
-      "grade": "S",
-      "memo": "B",
-      "detailedGroup2": "Lv.2~3",
-      "score": 150
-    },
-    {
-      "id": "eval-user-0000586-2025-6",
-      "employeeId": "user-0000586",
-      "year": 2025,
-      "month": 6,
-      "grade": "S",
-      "memo": "B",
-      "detailedGroup2": "Lv.2~3",
-      "score": 150
-    },
-    {
-      "id": "eval-user-0000609-2025-6",
-      "employeeId": "user-0000609",
-      "year": 2025,
-      "month": 6,
-      "grade": "S",
-      "memo": "B",
-      "detailedGroup2": "Lv.1",
-      "score": 0
-    },
-    {
-      "id": "eval-user-0000610-2025-6",
-      "employeeId": "user-0000610",
-      "year": 2025,
-      "month": 6,
-      "grade": "S",
-      "memo": "0000610",
-      "detailedGroup2": "Lv.1",
-      "score": 0
-    },
-    {
-      "id": "eval-ㅇ-2025-6",
-      "employeeId": "ㅇ",
-      "year": 2025,
-      "month": 6,
-      "grade": "B",
-      "memo": "",
-      "detailedGroup2": ""
-    },
-    {
-      "id": "eval-0000584-2025-6",
-      "employeeId": "0000584",
-      "year": 2025,
-      "month": 6,
-      "grade": "B",
       "score": 100,
-      "memo": "주어진 바를 성실히 이행함.",
-      "detailedGroup2": ""
+      "detailedGroup2": "Lv.2~3"
     },
     {
-      "id": "eval-0000586-2025-6",
-      "employeeId": "0000586",
-      "year": 2025,
-      "month": 6,
-      "grade": "B-",
-      "score": 95,
-      "memo": "주어진 바를 성실히 이행함.",
-      "detailedGroup2": ""
-    },
-    {
-      "id": "eval-0000609-2025-6",
-      "employeeId": "0000609",
+      "id": "eval-0000246-2025-6",
+      "employeeId": "0000246",
       "year": 2025,
       "month": 6,
       "grade": "B",
+      "memo": "",
       "score": 100,
-      "memo": "주어진 바를 성실히 이행함.",
-      "detailedGroup2": ""
-    },
-    {
-      "id": "eval-0000610-2025-6",
-      "employeeId": "0000610",
-      "year": 2025,
-      "month": 6,
-      "grade": "B+",
-      "score": 105,
-      "memo": "주어진 바를 성실히 이행함.",
-      "detailedGroup2": ""
-    },
-    {
-      "id": "eval-admin-2025-6",
-      "employeeId": "admin",
-      "year": 2025,
-      "month": 6,
-      "grade": "S",
-      "memo": "admin",
-      "detailedGroup2": "",
-      "score": 150
-    },
-    {
-      "id": "eval-0000198-2025-6",
-      "employeeId": "0000198",
-      "year": 2025,
-      "month": 6,
-      "grade": "S",
-      "score": 150,
-      "memo": "완벽합니다.",
       "detailedGroup2": "Lv.2~3"
+    },
+    {
+      "id": "eval-0000247-2025-6",
+      "employeeId": "0000247",
+      "year": 2025,
+      "month": 6,
+      "grade": "B",
+      "memo": "",
+      "score": 100,
+      "detailedGroup2": "Lv.2~3"
+    },
+    {
+      "id": "eval-0000298-2025-6",
+      "employeeId": "0000298",
+      "year": 2025,
+      "month": 6,
+      "grade": "B",
+      "memo": "",
+      "score": 100,
+      "detailedGroup2": "Lv.1"
+    },
+    {
+      "id": "eval-0000299-2025-6",
+      "employeeId": "0000299",
+      "year": 2025,
+      "month": 6,
+      "grade": "B",
+      "memo": "",
+      "score": 100,
+      "detailedGroup2": "Lv.1"
+    },
+    {
+      "id": "eval-0000300-2025-6",
+      "employeeId": "0000300",
+      "year": 2025,
+      "month": 6,
+      "grade": "B",
+      "memo": "",
+      "score": 100,
+      "detailedGroup2": "Lv.1"
     },
     {
       "id": "eval-0000195-2025-6",
@@ -2307,17 +2131,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "grade": "C-",
       "score": 70,
       "memo": "노력하세요.",
-      "detailedGroup2": ""
-    },
-    {
-      "id": "eval-0000246-2025-6",
-      "employeeId": "0000246",
-      "year": 2025,
-      "month": 6,
-      "grade": "S",
-      "score": 150,
-      "memo": "아주좋습니다.",
-      "detailedGroup2": ""
+      "detailedGroup2": "팀장/지점장"
     },
     {
       "id": "eval-0000231-2025-6",
@@ -2327,7 +2141,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "grade": "C",
       "score": 85,
       "memo": "노력이 필요합니다.",
-      "detailedGroup2": ""
+      "detailedGroup2": "Lv.2~3"
     },
     {
       "id": "eval-0000232-2025-6",
@@ -2337,37 +2151,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "grade": "C-",
       "score": 70,
       "memo": "노력이 필요합니다.",
-      "detailedGroup2": ""
-    },
-    {
-      "id": "eval-0000298-2025-6",
-      "employeeId": "0000298",
-      "year": 2025,
-      "month": 6,
-      "grade": "A+",
-      "score": 130,
-      "memo": "성과가 우수합니다",
-      "detailedGroup2": ""
-    },
-    {
-      "id": "eval-0000299-2025-6",
-      "employeeId": "0000299",
-      "year": 2025,
-      "month": 6,
-      "grade": "A",
-      "score": 115,
-      "memo": "성과가 우수합니다.",
-      "detailedGroup2": ""
-    },
-    {
-      "id": "eval-0000300-2025-6",
-      "employeeId": "0000300",
-      "year": 2025,
-      "month": 6,
-      "grade": "B+",
-      "score": 105,
-      "memo": "성과를 달성하였습니다.",
-      "detailedGroup2": ""
+      "detailedGroup2": "Lv.2~3"
     },
     {
       "id": "eval-0000281-2025-6",
@@ -2377,7 +2161,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "grade": "C",
       "score": 85,
       "memo": "미달성. 노력하세요",
-      "detailedGroup2": ""
+      "detailedGroup2": "Lv.1"
     },
     {
       "id": "eval-0000282-2025-6",
@@ -2387,7 +2171,7 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "grade": "C",
       "score": 85,
       "memo": "미달성. 노력하세요",
-      "detailedGroup2": ""
+      "detailedGroup2": "Lv.1"
     },
     {
       "id": "eval-0000287-2025-6",
@@ -2397,7 +2181,47 @@ export const mockEvaluations: Record<string, Evaluation[]> = {
       "grade": "B-",
       "score": 95,
       "memo": "다소 아쉽습니다.",
-      "detailedGroup2": ""
+      "detailedGroup2": "Lv.1"
+    },
+    {
+      "id": "eval-0000584-2025-6",
+      "employeeId": "0000584",
+      "year": 2025,
+      "month": 6,
+      "grade": "B",
+      "score": 100,
+      "memo": "주어진 바를 성실히 이행함.",
+      "detailedGroup2": "Lv.2~3"
+    },
+    {
+      "id": "eval-0000586-2025-6",
+      "employeeId": "0000586",
+      "year": 2025,
+      "month": 6,
+      "grade": "B-",
+      "score": 95,
+      "memo": "주어진 바를 성실히 이행함.",
+      "detailedGroup2": "Lv.2~3"
+    },
+    {
+      "id": "eval-0000609-2025-6",
+      "employeeId": "0000609",
+      "year": 2025,
+      "month": 6,
+      "grade": "B",
+      "score": 100,
+      "memo": "주어진 바를 성실히 이행함.",
+      "detailedGroup2": "Lv.1"
+    },
+    {
+      "id": "eval-0000610-2025-6",
+      "employeeId": "0000610",
+      "year": 2025,
+      "month": 6,
+      "grade": "B+",
+      "score": 105,
+      "memo": "주어진 바를 성실히 이행함.",
+      "detailedGroup2": "Lv.1"
     }
   ]
 };

@@ -537,23 +537,23 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
               
               let updatedShortenedWorkHours = [...currentMonthData.shortenedWorkHours];
               let updatedDailyAttendance = [...currentMonthData.dailyAttendance];
-              
-              if (type === 'shortenedWorkHours') {
-                  // 개선된 중복 체크: uniqueId|startDate|endDate|type 조합으로 체크
+          
+          if (type === 'shortenedWorkHours') {
+              // 개선된 중복 체크: uniqueId|startDate|endDate|type 조합으로 체크
                   const existingKeys = new Set(currentMonthData.shortenedWorkHours.map((r: ShortenedWorkHourRecord) => `${r.uniqueId}|${r.startDate}|${r.endDate}|${r.type}`));
-                  const uniqueNewData = (newData as ShortenedWorkHourRecord[]).filter(r => !existingKeys.has(`${r.uniqueId}|${r.startDate}|${r.endDate}|${r.type}`));
+              const uniqueNewData = (newData as ShortenedWorkHourRecord[]).filter(r => !existingKeys.has(`${r.uniqueId}|${r.startDate}|${r.endDate}|${r.type}`));
                   updatedShortenedWorkHours = [...currentMonthData.shortenedWorkHours, ...uniqueNewData];
-              } else if (type === 'dailyAttendance') {
-                  // 개선된 중복 체크: uniqueId|date|type 조합으로 체크 (id+사용일+근태유형)
+          } else if (type === 'dailyAttendance') {
+              // 개선된 중복 체크: uniqueId|date|type 조합으로 체크 (id+사용일+근태유형)
                   const existingKeys = new Set(currentMonthData.dailyAttendance.map((r: DailyAttendanceRecord) => `${r.uniqueId}|${r.date}|${r.type}`));
-                  const uniqueNewData = (newData as DailyAttendanceRecord[]).filter(r => !existingKeys.has(`${r.uniqueId}|${r.date}|${r.type}`));
+              const uniqueNewData = (newData as DailyAttendanceRecord[]).filter(r => !existingKeys.has(`${r.uniqueId}|${r.date}|${r.type}`));
                   updatedDailyAttendance = [...currentMonthData.dailyAttendance, ...uniqueNewData];
-              }
-              
-              newState[key] = {
-                  shortenedWorkHours: updatedShortenedWorkHours,
-                  dailyAttendance: updatedDailyAttendance
-              };
+          }
+          
+                  newState[key] = {
+                      shortenedWorkHours: updatedShortenedWorkHours,
+                      dailyAttendance: updatedDailyAttendance
+                  };
           }
           
           return newState;
@@ -702,20 +702,29 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
     setEvaluations(prev => {
       const currentEvalsForMonth = prev[key] || [];
       
-      // 해당 직원의 기존 평가 데이터 찾기
-      let existingEvaluation = currentEvalsForMonth.find(evaluation => evaluation.employeeId === employeeId);
+      // employeeId 정규화 (user- 접두사 제거)
+      const normalizedEmployeeId = employeeId.replace(/^user-/, '');
+      
+      // 해당 직원의 기존 평가 데이터 찾기 (정규화된 ID로 매칭)
+      let existingEvaluation = currentEvalsForMonth.find(evaluation => {
+        const normalizedExistingId = evaluation.employeeId.replace(/^user-/, '');
+        return normalizedExistingId === normalizedEmployeeId;
+      });
       
       let updatedEvals;
       if (existingEvaluation) {
         // 기존 데이터가 있으면 업데이트
-        updatedEvals = currentEvalsForMonth.map(evaluation => 
-          evaluation.employeeId === employeeId ? { ...evaluation, memo } : evaluation
-        );
+        updatedEvals = currentEvalsForMonth.map(evaluation => {
+          const normalizedExistingId = evaluation.employeeId.replace(/^user-/, '');
+          return normalizedExistingId === normalizedEmployeeId 
+            ? { ...evaluation, memo } 
+            : evaluation;
+        });
       } else {
-        // 기존 데이터가 없으면 새로 생성
+        // 기존 데이터가 없으면 새로 생성 (정규화된 ID 사용)
         const newEvaluation = {
-          id: `eval-${employeeId}-${year}-${month}`,
-          employeeId: employeeId,
+          id: `eval-${normalizedEmployeeId}-${year}-${month}`,
+          employeeId: normalizedEmployeeId,
           year: year,
           month: month,
           grade: null,
@@ -743,20 +752,29 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
     setEvaluations(prev => {
       const currentEvalsForMonth = prev[key] || [];
       
-      // 해당 직원의 기존 평가 데이터 찾기
-      let existingEvaluation = currentEvalsForMonth.find(evaluation => evaluation.employeeId === employeeId);
+      // employeeId 정규화 (user- 접두사 제거)
+      const normalizedEmployeeId = employeeId.replace(/^user-/, '');
+      
+      // 해당 직원의 기존 평가 데이터 찾기 (정규화된 ID로 매칭)
+      let existingEvaluation = currentEvalsForMonth.find(evaluation => {
+        const normalizedExistingId = evaluation.employeeId.replace(/^user-/, '');
+        return normalizedExistingId === normalizedEmployeeId;
+      });
       
       let updatedEvals;
       if (existingEvaluation) {
         // 기존 데이터가 있으면 업데이트
-        updatedEvals = currentEvalsForMonth.map(evaluation => 
-          evaluation.employeeId === employeeId ? { ...evaluation, detailedGroup2: groupName } : evaluation
-        );
+        updatedEvals = currentEvalsForMonth.map(evaluation => {
+          const normalizedExistingId = evaluation.employeeId.replace(/^user-/, '');
+          return normalizedExistingId === normalizedEmployeeId 
+            ? { ...evaluation, detailedGroup2: groupName } 
+            : evaluation;
+        });
       } else {
-        // 기존 데이터가 없으면 새로 생성
+        // 기존 데이터가 없으면 새로 생성 (정규화된 ID 사용)
         const newEvaluation = {
-          id: `eval-${employeeId}-${year}-${month}`,
-          employeeId: employeeId,
+          id: `eval-${normalizedEmployeeId}-${year}-${month}`,
+          employeeId: normalizedEmployeeId,
           year: year,
           month: month,
           grade: null,
@@ -795,8 +813,14 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
         console.debug('기존 평가 데이터의 employeeId들:', currentEvalsForMonth.map(e => e.employeeId));
       }
       
-      // 해당 직원의 기존 평가 데이터 찾기
-      let existingEvaluation = currentEvalsForMonth.find(evaluation => evaluation.employeeId === employeeId);
+      // employeeId 정규화 (user- 접두사 제거)
+      const normalizedEmployeeId = employeeId.replace(/^user-/, '');
+      
+      // 해당 직원의 기존 평가 데이터 찾기 (정규화된 ID로 매칭)
+      let existingEvaluation = currentEvalsForMonth.find(evaluation => {
+        const normalizedExistingId = evaluation.employeeId.replace(/^user-/, '');
+        return normalizedExistingId === normalizedEmployeeId;
+      });
       
       // 등급에 따른 점수 계산
       const gradeInfo = grade ? gradingScale[grade] : null;
@@ -805,17 +829,20 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
       let updatedEvals;
       if (existingEvaluation) {
         // 기존 데이터가 있으면 업데이트
-        updatedEvals = currentEvalsForMonth.map(evaluation => 
-          evaluation.employeeId === employeeId ? { ...evaluation, grade, score } : evaluation
-        );
+        updatedEvals = currentEvalsForMonth.map(evaluation => {
+          const normalizedExistingId = evaluation.employeeId.replace(/^user-/, '');
+          return normalizedExistingId === normalizedEmployeeId 
+            ? { ...evaluation, grade, score } 
+            : evaluation;
+        });
         if (process.env.NODE_ENV === 'development') {
           console.debug('기존 평가 데이터 업데이트됨');
         }
       } else {
-        // 기존 데이터가 없으면 새로 생성
+        // 기존 데이터가 없으면 새로 생성 (정규화된 ID 사용)
         const newEvaluation = {
-          id: `eval-${employeeId}-${year}-${month}`,
-          employeeId: employeeId,
+          id: `eval-${normalizedEmployeeId}-${year}-${month}`,
+          employeeId: normalizedEmployeeId,
           year: year,
           month: month,
           grade: grade,

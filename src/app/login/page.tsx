@@ -28,8 +28,12 @@ export default function LoginPage() {
   React.useEffect(() => {
     if (user) {
       router.push('/');
+    } else {
+      // admin으로 자동 로그인
+      const adminUser = { uniqueId: 'admin', password: '1' };
+      login(adminUser.uniqueId, adminUser.password);
     }
-  }, [user, router]);
+  }, [user, router, login]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

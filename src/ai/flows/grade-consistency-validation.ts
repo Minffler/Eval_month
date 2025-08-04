@@ -129,23 +129,66 @@ function generateFallbackAnalysis(gradeData: string): ValidateGradeConsistencyOu
   };
 }
 
+// AI 서비스 연결 상태 확인
+async function checkAIServiceStatus(): Promise<boolean> {
+  try {
+    // 간단한 테스트 요청으로 연결 상태 확인
+    const testPrompt = ai.definePrompt({
+      name: 'testPrompt',
+      input: {schema: z.object({test: z.string()})},
+      output: {schema: z.object({result: z.string()})},
+      prompt: '테스트입니다. "OK"라고 응답하세요.',
+    });
+    
+    await testPrompt({test: 'test'});
+    return true;
+  } catch (error) {
+    console.error('AI 서비스 연결 실패:', error);
+    return false;
+  }
+}
+
 export async function validateGradeConsistency(
   input: ValidateGradeConsistencyInput
 ): Promise<ValidateGradeConsistencyOutput> {
   try {
+    // AI 서비스 연결 상태 확인
+    const isAIServiceAvailable = await checkAIServiceStatus();
+    
+    if (!isAIServiceAvailable) {
+      console.log("AI 서비스가 사용 불가능합니다. 대체 분석을 사용합니다.");
+      return generateFallbackAnalysis(input.gradeData);
+    }
+    
     // AI 모델 시도
     const result = await validateGradeConsistencyFlow(input);
     return result;
   } catch (error) {
     console.error("AI 모델 분석 실패, 대체 분석 사용:", error);
     
+    // 오류 타입별 상세 메시지
+    let errorMessage = "AI 서비스 연결에 실패했습니다.";
+    
+    if (error instanceof Error) {
+      if (error.message.includes('fetch')) {
+        errorMessage = "네트워크 연결에 실패했습니다. 인터넷 연결을 확인하고 다시 시도해주세요.";
+      } else if (error.message.includes('API')) {
+        errorMessage = "AI 서비스 API 키가 유효하지 않습니다. 관리자에게 문의해주세요.";
+      } else if (error.message.includes('quota')) {
+        errorMessage = "AI 서비스 사용량 한도를 초과했습니다. 잠시 후 다시 시도해주세요.";
+      } else {
+        errorMessage = `AI 서비스 오류: ${error.message}`;
+      }
+    }
+    
     // AI 모델이 실패하면 대체 분석 사용
     try {
+      console.log("대체 분석을 사용합니다...");
       const fallbackResult = generateFallbackAnalysis(input.gradeData);
       return fallbackResult;
     } catch (fallbackError) {
       console.error("대체 분석도 실패:", fallbackError);
-      throw new Error("분석을 수행할 수 없습니다. 데이터를 확인하고 다시 시도해주세요.");
+      throw new Error(`${errorMessage} 대체 분석도 실패했습니다.`);
     }
   }
 }

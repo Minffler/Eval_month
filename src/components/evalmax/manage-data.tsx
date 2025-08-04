@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Download, Trash2, UploadCloud, CheckCircle2, AlertCircle, Save, RefreshCw } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import * as XLSX from 'xlsx';
 import type { Employee, EvaluationResult, Grade, EvaluationUploadData, WorkRateInputs, ShortenedWorkHourRecord, DailyAttendanceRecord, ShortenedWorkType, HeaderMapping } from '@/lib/types';
 import { excelHeaderMapping } from '@/lib/data';
@@ -98,19 +99,19 @@ const UploadSection: React.FC<UploadSectionProps> = ({ title, description, id, o
     const fileInputRef = React.useRef<HTMLInputElement>(null);
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-3 lg:space-y-4">
             <div>
                 <h4 className="font-semibold">{title}</h4>
                 <p className="text-sm text-muted-foreground">{description}</p>
             </div>
-            <div className="flex flex-col sm:flex-row gap-4 items-center">
+            <div className="flex flex-col sm:flex-row gap-3 lg:gap-4 items-center">
                  <Button
                     variant="outline"
-                    className="w-full flex-grow justify-start text-left font-normal text-muted-foreground cursor-pointer"
+                    className="w-full flex-grow justify-start text-left font-normal text-muted-foreground cursor-pointer text-sm sm:text-base"
                     onClick={() => fileInputRef.current?.click()}
                 >
-                    <UploadCloud className="mr-2" />
-                    엑셀 파일 선택...
+                    <UploadCloud className="mr-2 flex-shrink-0" />
+                    <span className="truncate">엑셀 파일 선택...</span>
                 </Button>
                 <Input 
                     ref={fileInputRef}
@@ -121,17 +122,19 @@ const UploadSection: React.FC<UploadSectionProps> = ({ title, description, id, o
                     onClick={(e) => (e.currentTarget.value = '')}
                     className="hidden"
                 />
-                <div className="flex items-center gap-2 self-end sm:self-center">
-                    <Button onClick={onDownload} variant="ghost" className="text-muted-foreground">
-                        <Download className="mr-2 h-4 w-4" /> 양식
+                <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+                    <Button onClick={onDownload} variant="ghost" className="text-muted-foreground text-sm sm:text-base w-full sm:w-auto">
+                        <Download className="mr-2 h-4 w-4 flex-shrink-0" /> 
+                        <span className="truncate">양식</span>
                     </Button>
                     <Button
                         variant="ghost"
                         onClick={onReset}
                         disabled={isResetDisabled}
-                        className="text-destructive hover:text-destructive"
+                        className="text-destructive hover:text-destructive text-sm sm:text-base w-full sm:w-auto"
                     >
-                        <Trash2 className="mr-2 h-4 w-4" /> 초기화
+                        <Trash2 className="mr-2 h-4 w-4 flex-shrink-0" /> 
+                        <span className="truncate">초기화</span>
                     </Button>
                 </div>
             </div>
@@ -950,7 +953,7 @@ export default function ManageData({
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 lg:gap-6">
       <Card>
         <CardHeader>
           <CardTitle>월별 대상자 관리</CardTitle>
@@ -958,7 +961,7 @@ export default function ManageData({
             월별 대상자 및 평가자를 업로드합니다.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4 lg:space-y-6">
            <UploadSection 
               id="employees"
               title="평가 대상자"
@@ -979,25 +982,48 @@ export default function ManageData({
               isResetDisabled={results.filter(r => r.grade).length === 0}
            />
            <Separator />
-            <div className="space-y-4">
+            <div className="space-y-3 lg:space-y-4">
                 <div>
                     <h4 className="font-semibold">초기 데이터 동기화</h4>
                     <p className="text-sm text-muted-foreground">현재 시스템의 모든 데이터를 초기 목업 데이터로 덮어쓰거나, 최신 초기 데이터로 동기화합니다.</p>
                 </div>
-                <div className="flex gap-4">
-                  <Button variant="secondary" className="w-full" onClick={() => setDialogOpen({ type: 'backupData'})}>
-                      <Save className="mr-2 h-4 w-4"/>
-                      현재 데이터를 임시 데이터로 저장
-                  </Button>
-                  <Button variant="outline" className="w-full" onClick={() => setDialogOpen({ type: 'restoreData'})}>
-                      <RefreshCw className="mr-2 h-4 w-4"/>
-                      임시 데이터로 덮어쓰기
-                  </Button>
-                  <Button variant="outline" className="w-full" onClick={() => setDialogOpen({ type: 'resetToMockData'})}>
-                      <RefreshCw className="mr-2 h-4 w-4"/>
-                      목업 데이터로 초기화
-                  </Button>
-                </div>
+                <TooltipProvider>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 lg:gap-4">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="outline" className="w-full text-xs sm:text-sm h-8 sm:h-9" onClick={() => setDialogOpen({ type: 'backupData'})}>
+                            <Save className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0"/>
+                            <span className="truncate">임시 저장</span>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>현재 데이터를 임시 데이터로 저장</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="outline" className="w-full text-xs sm:text-sm h-8 sm:h-9" onClick={() => setDialogOpen({ type: 'restoreData'})}>
+                            <RefreshCw className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0"/>
+                            <span className="truncate">임시 복원</span>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>임시 데이터로 덮어쓰기</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="outline" className="w-full text-xs sm:text-sm h-8 sm:h-9" onClick={() => setDialogOpen({ type: 'resetToMockData'})}>
+                            <RefreshCw className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0"/>
+                            <span className="truncate">목업 초기화</span>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>목업 데이터로 초기화</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                </TooltipProvider>
             </div>
         </CardContent>
       </Card>
@@ -1009,7 +1035,7 @@ export default function ManageData({
                 근무율 계산에 사용되는 데이터를 관리합니다.
             </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4 lg:space-y-6">
             <UploadSection
                 id="shortenedWorkPregnancy"
                 title="임신기 단축근로"

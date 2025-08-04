@@ -91,25 +91,58 @@ ToastClose.displayName = ToastPrimitives.Close.displayName
 const ToastTitle = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Title>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Title>
->(({ className, ...props }, ref) => (
-  <ToastPrimitives.Title
-    ref={ref}
-    className={cn("text-sm font-semibold", className)}
-    {...props}
-  />
-))
+>(({ className, children, ...props }, ref) => {
+  // 그룹 점수 초과 토스트인지 확인
+  const isGroupScoreOver = typeof children === 'string' && children === '그룹 점수 초과';
+  
+  return (
+    <ToastPrimitives.Title
+      ref={ref}
+      className={cn("text-sm font-semibold", isGroupScoreOver && "text-red-600", className)}
+      {...props}
+    >
+      {children}
+    </ToastPrimitives.Title>
+  );
+})
 ToastTitle.displayName = ToastPrimitives.Title.displayName
 
 const ToastDescription = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Description>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Description>
->(({ className, ...props }, ref) => (
-  <ToastPrimitives.Description
-    ref={ref}
-    className={cn("text-sm opacity-90", className)}
-    {...props}
-  />
-))
+>(({ className, children, ...props }, ref) => {
+  // 그룹 점수 초과 토스트인지 확인하고 그룹명을 굵게 표시
+  const isGroupScoreOver = typeof children === 'string' && children.includes('그룹이 총점을 초과했습니다');
+  
+  if (isGroupScoreOver && typeof children === 'string') {
+    // 그룹명 부분을 굵게 표시
+    const parts = children.split(' 그룹이 총점을 초과했습니다');
+    if (parts.length === 2) {
+      const groupNames = parts[0];
+      const rest = parts[1];
+      
+      return (
+        <ToastPrimitives.Description
+          ref={ref}
+          className={cn("text-sm opacity-90", className)}
+          {...props}
+        >
+          <strong>{groupNames}</strong> 그룹이 총점을 초과했습니다{rest}
+        </ToastPrimitives.Description>
+      );
+    }
+  }
+  
+  return (
+    <ToastPrimitives.Description
+      ref={ref}
+      className={cn("text-sm opacity-90", className)}
+      {...props}
+    >
+      {children}
+    </ToastPrimitives.Description>
+  );
+})
 ToastDescription.displayName = ToastPrimitives.Description.displayName
 
 type ToastProps = React.ComponentPropsWithoutRef<typeof Toast>
