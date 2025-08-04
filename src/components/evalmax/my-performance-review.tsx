@@ -234,7 +234,7 @@ export default function MyPerformanceReview({
 
     // S 등급: 화려한 다색 콘페티
     if (latestResult.grade === 'S') {
-      const duration = 3 * 1000;
+      const duration = 2 * 1000;
       const animationEnd = Date.now() + duration;
       
       // 다양한 색상의 콘페티
@@ -270,7 +270,7 @@ export default function MyPerformanceReview({
     
     // A+, A 등급: 노랑/주황 계열 콘페티
     else if (latestResult.grade === 'A+' || latestResult.grade === 'A') {
-      const end = Date.now() + (2.5 * 1000);
+      const end = Date.now() + (2 * 1000);
       const colors = ['#FFD700', '#FFA500', '#FF8C00', '#FF7F50', '#FF6347', '#FBBF24', '#F59E0B'];
       
       (function frame() {

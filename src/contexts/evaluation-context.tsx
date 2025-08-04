@@ -66,6 +66,7 @@ interface EvaluationContextType {
   handleClearEmployeeData: (year: number, month: number) => void;
   handleClearEvaluationData: (year: number, month: number) => void;
   handleClearWorkRateData: (year: number, month: number, type: keyof WorkRateInputs | ShortenedWorkType) => void;
+  handleClearWorkRateDataByYear: (year: number, type: keyof WorkRateInputs | ShortenedWorkType) => void;
   handleWorkRateDataUpload: (year: number, month: number, type: keyof WorkRateInputs, data: any[], isApproved: boolean) => void;
   handleClearMyEvaluations: (year: number, month: number, evaluatorId: string) => void;
   
@@ -76,6 +77,10 @@ interface EvaluationContextType {
   updateEvaluationMemo: (employeeId: string, memo: string, year: number, month: number) => void;
   updateEvaluationGroup: (employeeId: string, groupName: string, year: number, month: number) => void;
   updateEvaluationGrade: (employeeId: string, grade: Grade | null, year: number, month: number) => void;
+  
+  // 데이터 정리 함수
+  clearOldWorkRateData: () => void;
+  cleanupDuplicateWorkRateData: () => void;
 
   allEvaluationResults: EvaluationResult[];
   monthlyEvaluationTargets: (selectedDate: {year: number, month: number}) => EvaluationResult[];
@@ -98,18 +103,164 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
   });
   
 
-  const [workRateInputs, setWorkRateInputs] = React.useState<Record<string, WorkRateInputs>>(() => getFromLocalStorage('workRateInputs', {}));
+  const [workRateInputs, setWorkRateInputs] = React.useState<Record<string, WorkRateInputs>>(() => {
+    const data = getFromLocalStorage('workRateInputs', {});
+    // 초기 로드 시 중복 데이터 정리
+    if (Object.keys(data).length > 0) {
+      console.log('초기 workRateInputs 데이터 로드됨, 중복 정리 필요');
+    }
+    return data;
+  });
   const [attendanceTypes, setAttendanceTypes] = React.useState<AttendanceType[]>(() => MOCK_ATTENDANCE_TYPES);
   const [holidays, setHolidays] = React.useState<Holiday[]>(() => MOCK_HOLIDAYS);
   const [evaluationStatus, setEvaluationStatus] = React.useState<Record<string, 'open' | 'closed'>>(() => getFromLocalStorage('evaluationStatus', {}));
 
-  useDebouncedEffect(() => localStorage.setItem('employees', JSON.stringify(employees)), [employees], 500);
-  useDebouncedEffect(() => localStorage.setItem('evaluations', JSON.stringify(evaluations)), [evaluations], 500);
-  useDebouncedEffect(() => localStorage.setItem('gradingScale', JSON.stringify(gradingScale)), [gradingScale], 500);
-  useDebouncedEffect(() => localStorage.setItem('workRateInputs', JSON.stringify(workRateInputs)), [workRateInputs], 500);
-  useDebouncedEffect(() => localStorage.setItem('attendanceTypes', JSON.stringify(attendanceTypes)), [attendanceTypes], 500);
-  useDebouncedEffect(() => localStorage.setItem('holidays', JSON.stringify(holidays)), [holidays], 500);
-  useDebouncedEffect(() => localStorage.setItem('evaluationStatus', JSON.stringify(evaluationStatus)), [evaluationStatus], 500);
+  // localStorage 저장 함수 (오류 처리 포함)
+  const saveToLocalStorage = (key: string, data: any) => {
+    try {
+      const serialized = JSON.stringify(data);
+      // 데이터 크기 체크 (약 5MB 제한)
+      if (serialized.length > 5 * 1024 * 1024) {
+        console.warn(`데이터가 너무 큽니다: ${key} (${(serialized.length / 1024 / 1024).toFixed(2)}MB)`);
+        
+        // workRateInputs인 경우 데이터 정리 시도
+        if (key === 'workRateInputs') {
+          console.log('workRateInputs 데이터 정리 시도...');
+          clearOldData();
+          return;
+        }
+        return;
+      }
+      localStorage.setItem(key, serialized);
+    } catch (error) {
+      console.error(`localStorage 저장 실패: ${key}`, error);
+      // 스토리지가 가득 찬 경우 오래된 데이터 정리
+      if (error instanceof Error && error.name === 'QuotaExceededError') {
+        console.warn('localStorage 용량 초과, 오래된 데이터 정리 중...');
+        clearOldData();
+        
+        // 정리 후 다시 저장 시도
+        setTimeout(() => {
+          try {
+            const retrySerialized = JSON.stringify(data);
+            if (retrySerialized.length <= 5 * 1024 * 1024) {
+              localStorage.setItem(key, retrySerialized);
+              console.log(`${key} 재저장 성공`);
+            }
+          } catch (retryError) {
+            console.error(`${key} 재저장 실패:`, retryError);
+          }
+        }, 100);
+      }
+    }
+  };
+
+  // 오래된 데이터 정리 함수
+  const clearOldData = () => {
+    try {
+      // workRateInputs에서 오래된 데이터 정리 (최근 3개월만 유지)
+      const currentDate = new Date();
+      const threeMonthsAgo = new Date(currentDate.getFullYear(), currentDate.getMonth() - 3, 1);
+      
+      const cleanedWorkRateInputs = Object.keys(workRateInputs).reduce((acc, key) => {
+        const [year, month] = key.split('-').map(Number);
+        const keyDate = new Date(year, month - 1, 1);
+        
+        if (keyDate >= threeMonthsAgo) {
+          // 데이터 크기 최적화: 불필요한 필드 제거
+          const monthData = workRateInputs[key];
+          if (monthData) {
+            acc[key] = {
+              shortenedWorkHours: monthData.shortenedWorkHours?.slice(-100) || [], // 최근 100개만 유지
+              dailyAttendance: monthData.dailyAttendance?.slice(-500) || [] // 최근 500개만 유지
+            };
+          }
+        }
+        return acc;
+      }, {} as Record<string, WorkRateInputs>);
+      
+      setWorkRateInputs(cleanedWorkRateInputs);
+      console.log('오래된 workRateInputs 데이터 정리 완료 (최근 3개월, 제한된 레코드 수)');
+      
+      // localStorage에서도 정리
+      try {
+        localStorage.removeItem('workRateInputs');
+        localStorage.setItem('workRateInputs', JSON.stringify(cleanedWorkRateInputs));
+      } catch (error) {
+        console.error('localStorage 정리 중 오류:', error);
+      }
+    } catch (error) {
+      console.error('데이터 정리 중 오류:', error);
+    }
+  };
+
+  // 바스켓 방식으로 인한 중복 데이터 정리 함수
+  const cleanupDuplicateData = () => {
+    try {
+      console.log('중복 데이터 정리 시작...');
+      
+      const cleanedWorkRateInputs = Object.keys(workRateInputs).reduce((acc, key) => {
+        const monthData = workRateInputs[key];
+        if (monthData) {
+          // 각 월별로 고유한 데이터만 유지
+          const uniqueShortenedWorkHours = monthData.shortenedWorkHours?.filter((item, index, self) => 
+            index === self.findIndex(t => 
+              t.uniqueId === item.uniqueId && 
+              t.startDate === item.startDate && 
+              t.endDate === item.endDate && 
+              t.type === item.type
+            )
+          ) || [];
+          
+          const uniqueDailyAttendance = monthData.dailyAttendance?.filter((item, index, self) => 
+            index === self.findIndex(t => 
+              t.uniqueId === item.uniqueId && 
+              t.date === item.date && 
+              t.type === item.type
+            )
+          ) || [];
+          
+          acc[key] = {
+            shortenedWorkHours: uniqueShortenedWorkHours,
+            dailyAttendance: uniqueDailyAttendance
+          };
+        }
+        return acc;
+      }, {} as Record<string, WorkRateInputs>);
+      
+      setWorkRateInputs(cleanedWorkRateInputs);
+      console.log('중복 데이터 정리 완료');
+      
+      // localStorage에서도 정리
+      try {
+        localStorage.removeItem('workRateInputs');
+        localStorage.setItem('workRateInputs', JSON.stringify(cleanedWorkRateInputs));
+      } catch (error) {
+        console.error('localStorage 정리 중 오류:', error);
+      }
+    } catch (error) {
+      console.error('중복 데이터 정리 중 오류:', error);
+    }
+  };
+
+  useDebouncedEffect(() => saveToLocalStorage('employees', employees), [employees], 500);
+  useDebouncedEffect(() => saveToLocalStorage('evaluations', evaluations), [evaluations], 500);
+  useDebouncedEffect(() => saveToLocalStorage('gradingScale', gradingScale), [gradingScale], 500);
+  useDebouncedEffect(() => {
+    try {
+      saveToLocalStorage('workRateInputs', workRateInputs);
+    } catch (error) {
+      console.error('workRateInputs 저장 중 오류:', error);
+      toast({
+        title: "데이터 저장 오류",
+        description: "근무 데이터가 너무 많아 저장에 실패했습니다. 오래된 데이터를 정리합니다.",
+        variant: "destructive",
+      });
+    }
+  }, [workRateInputs], 500);
+  useDebouncedEffect(() => saveToLocalStorage('attendanceTypes', attendanceTypes), [attendanceTypes], 500);
+  useDebouncedEffect(() => saveToLocalStorage('holidays', holidays), [holidays], 500);
+  useDebouncedEffect(() => saveToLocalStorage('evaluationStatus', evaluationStatus), [evaluationStatus], 500);
 
   // 결재 승인 시 근무 데이터 업데이트 이벤트 리스너
   React.useEffect(() => {
@@ -376,35 +527,33 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
       if (!isApproved) return;
       
       setWorkRateInputs(prev => {
-          // 모든 월의 데이터를 가져와서 통합
-          const allShortenedWorkHours = Object.values(prev).flatMap(inputs => inputs.shortenedWorkHours || []);
-          const allDailyAttendance = Object.values(prev).flatMap(inputs => inputs.dailyAttendance || []);
+          // 연단위 바스켓 방식: 해당 연도의 모든 월에 동일한 데이터 저장
+          const newState: Record<string, WorkRateInputs> = { ...prev };
           
-          let updatedShortenedWorkHours = allShortenedWorkHours;
-          let updatedDailyAttendance = allDailyAttendance;
-          
-          if (type === 'shortenedWorkHours') {
-              // 개선된 중복 체크: uniqueId|startDate|endDate|type 조합으로 체크
-              const existingKeys = new Set(allShortenedWorkHours.map((r: ShortenedWorkHourRecord) => `${r.uniqueId}|${r.startDate}|${r.endDate}|${r.type}`));
-              const uniqueNewData = (newData as ShortenedWorkHourRecord[]).filter(r => !existingKeys.has(`${r.uniqueId}|${r.startDate}|${r.endDate}|${r.type}`));
-              updatedShortenedWorkHours = [...allShortenedWorkHours, ...uniqueNewData];
-          } else if (type === 'dailyAttendance') {
-              // 개선된 중복 체크: uniqueId|date|type 조합으로 체크 (id+사용일+근태유형)
-              const existingKeys = new Set(allDailyAttendance.map((r: DailyAttendanceRecord) => `${r.uniqueId}|${r.date}|${r.type}`));
-              const uniqueNewData = (newData as DailyAttendanceRecord[]).filter(r => !existingKeys.has(`${r.uniqueId}|${r.date}|${r.type}`));
-              updatedDailyAttendance = [...allDailyAttendance, ...uniqueNewData];
-          }
-          
-          // 모든 월에 대해 동일한 데이터를 설정 (바스켓 방식)
-          const newState: Record<string, WorkRateInputs> = {};
-          for (let y = 2024; y <= 2030; y++) {
-              for (let m = 1; m <= 12; m++) {
-                  const key = `${y}-${m.toString().padStart(2, '0')}`;
-                  newState[key] = {
-                      shortenedWorkHours: updatedShortenedWorkHours,
-                      dailyAttendance: updatedDailyAttendance
-                  };
+          // 해당 연도의 모든 월(1월~12월)에 데이터 저장
+          for (let m = 1; m <= 12; m++) {
+              const key = `${year}-${m.toString().padStart(2, '0')}`;
+              const currentMonthData = prev[key] || { shortenedWorkHours: [], dailyAttendance: [] };
+              
+              let updatedShortenedWorkHours = [...currentMonthData.shortenedWorkHours];
+              let updatedDailyAttendance = [...currentMonthData.dailyAttendance];
+              
+              if (type === 'shortenedWorkHours') {
+                  // 개선된 중복 체크: uniqueId|startDate|endDate|type 조합으로 체크
+                  const existingKeys = new Set(currentMonthData.shortenedWorkHours.map((r: ShortenedWorkHourRecord) => `${r.uniqueId}|${r.startDate}|${r.endDate}|${r.type}`));
+                  const uniqueNewData = (newData as ShortenedWorkHourRecord[]).filter(r => !existingKeys.has(`${r.uniqueId}|${r.startDate}|${r.endDate}|${r.type}`));
+                  updatedShortenedWorkHours = [...currentMonthData.shortenedWorkHours, ...uniqueNewData];
+              } else if (type === 'dailyAttendance') {
+                  // 개선된 중복 체크: uniqueId|date|type 조합으로 체크 (id+사용일+근태유형)
+                  const existingKeys = new Set(currentMonthData.dailyAttendance.map((r: DailyAttendanceRecord) => `${r.uniqueId}|${r.date}|${r.type}`));
+                  const uniqueNewData = (newData as DailyAttendanceRecord[]).filter(r => !existingKeys.has(`${r.uniqueId}|${r.date}|${r.type}`));
+                  updatedDailyAttendance = [...currentMonthData.dailyAttendance, ...uniqueNewData];
               }
+              
+              newState[key] = {
+                  shortenedWorkHours: updatedShortenedWorkHours,
+                  dailyAttendance: updatedDailyAttendance
+              };
           }
           
           return newState;
@@ -447,6 +596,38 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
         }
 
         return { ...prev, [key]: updatedMonthInputs };
+    });
+  };
+
+  // 연간 데이터 초기화 함수
+  const handleClearWorkRateDataByYear = (year: number, type: keyof WorkRateInputs | ShortenedWorkType) => {
+    setWorkRateInputs(prev => {
+        const newState = { ...prev };
+        
+        // 해당 연도의 모든 월(1월~12월)에서 데이터 초기화
+        for (let m = 1; m <= 12; m++) {
+            const key = `${year}-${m.toString().padStart(2, '0')}`;
+            const currentMonthInputs = prev[key];
+            if (!currentMonthInputs) continue;
+            
+            const updatedMonthInputs = { ...currentMonthInputs };
+
+            if (type === '임신' || type === '육아/돌봄') {
+                updatedMonthInputs.shortenedWorkHours = (currentMonthInputs.shortenedWorkHours || []).filter(d => d.type !== type);
+            } else if (type === 'dailyAttendance') {
+                updatedMonthInputs.dailyAttendance = [];
+            } else if (type === 'shortenedWorkHours') {
+                updatedMonthInputs.shortenedWorkHours = [];
+            }
+            
+            if (updatedMonthInputs.shortenedWorkHours.length === 0 && updatedMonthInputs.dailyAttendance.length === 0) {
+                delete newState[key];
+            } else {
+                newState[key] = updatedMonthInputs;
+            }
+        }
+
+        return newState;
     });
   };
 
@@ -863,9 +1044,11 @@ export function EvaluationProvider({ children }: { children: React.ReactNode }) 
     holidays, setHolidays,
     evaluationStatus, setEvaluationStatus,
     handleEmployeeUpload, handleEvaluationUpload, handleClearEmployeeData,
-    handleClearEvaluationData, handleClearWorkRateData, handleWorkRateDataUpload,
+    handleClearEvaluationData, handleClearWorkRateData, handleClearWorkRateDataByYear, handleWorkRateDataUpload,
     handleClearMyEvaluations, handleApplyApproval,
     updateEvaluationMemo, updateEvaluationGroup, updateEvaluationGrade,
+    clearOldWorkRateData: clearOldData,
+    cleanupDuplicateWorkRateData: cleanupDuplicateData,
     allEvaluationResults, 
     monthlyEvaluationTargets: getMonthlyEvaluationTargets,
     monthlyEvaluationTargetsByEvaluator: getMonthlyEvaluationTargetsByEvaluator

@@ -79,16 +79,19 @@ export const calculateWorkRateDetails = (
   
   console.log('선택된 월 정보:', { year, month, selectedMonthKey, selectedMonthStart, selectedMonthEnd });
   
-  // 모든 월의 데이터를 순회하면서 선택된 월에 영향을 미치는 데이터 수집
+  // 연단위 바스켓 방식: 해당 연도의 모든 월에서 데이터 수집
   let allShortenedWorkRecords: ShortenedWorkHourRecord[] = [];
   let allDailyAttendanceRecords: DailyAttendanceRecord[] = [];
   
-  Object.entries(allWorkRateInputs).forEach(([monthKey, monthData]) => {
+  // 해당 연도의 모든 월(1월~12월)에서 데이터 수집
+  for (let m = 1; m <= 12; m++) {
+    const monthKey = `${year}-${m.toString().padStart(2, '0')}`;
+    const monthData = allWorkRateInputs[monthKey] || { shortenedWorkHours: [], dailyAttendance: [] };
+    
     console.log(`월 ${monthKey} 데이터 처리:`, monthData);
     
-    // 단축근로 데이터: 기간이 선택된 월과 겹치는 모든 데이터 수집
+    // 단축근로 데이터: 기간이 선택된 월과 겹치는 데이터만 수집
     monthData.shortenedWorkHours.forEach(record => {
-      // 이미 표준화된 형식 사용 (YYYY-MM-DD)
       const startDate = new Date(record.startDate);
       const endDate = new Date(record.endDate);
       
@@ -99,28 +102,45 @@ export const calculateWorkRateDetails = (
       }
     });
     
-    // 일근태 데이터: 모든 데이터를 수집 (바스켓 방식)
-    console.log(`일근태 데이터 수집:`, monthData.dailyAttendance);
-    allDailyAttendanceRecords.push(...monthData.dailyAttendance);
-  });
+    // 일근태 데이터: 선택된 월의 데이터만 수집
+    if (m === month) {
+      console.log(`일근태 데이터 수집 (선택된 월):`, monthData.dailyAttendance);
+      allDailyAttendanceRecords.push(...monthData.dailyAttendance);
+    }
+  }
   
   console.log('수집된 전체 데이터:', {
-    shortenedWorkRecords: allShortenedWorkRecords.length,
-    dailyAttendanceRecords: allDailyAttendanceRecords.length
+    selectedMonthKey,
+    shortenedWorkRecordsCount: allShortenedWorkRecords.length,
+    dailyAttendanceRecordsCount: allDailyAttendanceRecords.length,
+    shortenedWorkRecords: allShortenedWorkRecords.map(r => ({ uniqueId: r.uniqueId, startDate: r.startDate, endDate: r.endDate })),
+    dailyAttendanceRecords: allDailyAttendanceRecords.map(r => ({ uniqueId: r.uniqueId, date: r.date, type: r.type }))
   });
   
   // 1. Process shortened work details first, as they are needed for daily attendance calculation
-  const shortenedWorkDetails: ShortenedWorkDetail[] = allShortenedWorkRecords
+  // 중복 제거: uniqueId|startDate|endDate|type 조합으로 고유한 데이터만 필터링
+  const uniqueShortenedWorkRecords = allShortenedWorkRecords.filter((record, index, self) => 
+    index === self.findIndex(r => 
+      r.uniqueId === record.uniqueId && 
+      r.startDate === record.startDate && 
+      r.endDate === record.endDate && 
+      r.type === record.type
+    )
+  );
+  
+  console.log('중복 제거 후 단축근로 데이터:', {
+    before: allShortenedWorkRecords.length,
+    after: uniqueShortenedWorkRecords.length,
+    removed: allShortenedWorkRecords.length - uniqueShortenedWorkRecords.length
+  });
+  
+  const shortenedWorkDetails: ShortenedWorkDetail[] = uniqueShortenedWorkRecords
     .map((record, index) => {
       // 이미 표준화된 형식 사용 (YYYY-MM-DD)
       const startDate = new Date(record.startDate);
       const endDate = new Date(record.endDate);
 
-      // Check for overlap with selected month
-      if (endDate < selectedMonthStart || startDate > selectedMonthEnd) {
-        return null;
-      }
-      
+      // 선택된 월과 겹치는 기간만 계산
       const effectiveStartDate = startDate < selectedMonthStart ? selectedMonthStart : startDate;
       const effectiveEndDate = endDate > selectedMonthEnd ? selectedMonthEnd : endDate;
       
@@ -146,8 +166,7 @@ export const calculateWorkRateDetails = (
         businessDays,
         totalDeductionHours,
       };
-    })
-    .filter((r): r is ShortenedWorkDetail => r !== null);
+    });
   
   const shortenedWorkMapByEmployee: Map<string, ShortenedWorkDetail[]> = shortenedWorkDetails.reduce((map, record) => {
     if (!map.has(record.uniqueId)) {
@@ -159,13 +178,30 @@ export const calculateWorkRateDetails = (
 
 
   // 2. Process daily attendance details
-  const dailyAttendanceDetails: DailyAttendanceDetail[] = allDailyAttendanceRecords
+  // 중복 제거: uniqueId|date|type 조합으로 고유한 데이터만 필터링
+  const uniqueDailyAttendanceRecords = allDailyAttendanceRecords.filter((record, index, self) => 
+    index === self.findIndex(r => 
+      r.uniqueId === record.uniqueId && 
+      r.date === record.date && 
+      r.type === record.type
+    )
+  );
+  
+  console.log('중복 제거 후 일근태 데이터:', {
+    before: allDailyAttendanceRecords.length,
+    after: uniqueDailyAttendanceRecords.length,
+    removed: allDailyAttendanceRecords.length - uniqueDailyAttendanceRecords.length
+  });
+  
+  const dailyAttendanceDetails: DailyAttendanceDetail[] = uniqueDailyAttendanceRecords
     .map((record, index) => {
         // 이미 표준화된 형식 사용 (YYYY-MM-DD)
         const recordDate = new Date(record.date);
         
+        // 평가년월 필터링 추가
         if (recordDate.getFullYear() !== year || recordDate.getMonth() !== month - 1) {
-            return null; // Filter out records not in the selected month
+            console.log(`일근태 데이터 필터링됨: ${record.date} (선택된 월: ${year}-${month})`);
+            return null;
         }
         
         let isShortenedDay = false;

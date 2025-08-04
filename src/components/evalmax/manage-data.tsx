@@ -150,6 +150,7 @@ export default function ManageData({
     handleClearEvaluationData,
     handleWorkRateDataUpload,
     handleClearWorkRateData,
+    handleClearWorkRateDataByYear,
     workRateInputs
   } = useEvaluation();
   const { toast } = useToast();
@@ -167,6 +168,35 @@ export default function ManageData({
     const key = `${selectedDate.year}-${selectedDate.month}`;
     return workRateInputs[key] || { shortenedWorkHours: [], dailyAttendance: [] };
   }, [workRateInputs, selectedDate.year, selectedDate.month]);
+
+  // 해당 연도의 모든 월 데이터 확인
+  const yearlyWorkRateData = React.useMemo(() => {
+    const yearData = {
+      pregnancyShortenedWork: false,
+      careShortenedWork: false,
+      dailyAttendance: false
+    };
+    
+    // 해당 연도의 모든 월(1월~12월)에서 데이터 확인
+    for (let m = 1; m <= 12; m++) {
+      const key = `${selectedDate.year}-${m.toString().padStart(2, '0')}`;
+      const monthData = workRateInputs[key];
+      
+      if (monthData) {
+        if (monthData.shortenedWorkHours.some(r => r.type === '임신')) {
+          yearData.pregnancyShortenedWork = true;
+        }
+        if (monthData.shortenedWorkHours.some(r => r.type === '육아/돌봄')) {
+          yearData.careShortenedWork = true;
+        }
+        if (monthData.dailyAttendance.length > 0) {
+          yearData.dailyAttendance = true;
+        }
+      }
+    }
+    
+    return yearData;
+  }, [workRateInputs, selectedDate.year]);
 
   const systemFields = React.useMemo(() => {
     return Array.from(new Set(Object.values(excelHeaderMapping)));
@@ -193,8 +223,8 @@ export default function ManageData({
   
   const handleResetWorkData = () => {
     if (!dialogOpen?.workDataType) return;
-    handleClearWorkRateData(selectedDate.year, selectedDate.month, dialogOpen.workDataType);
-    toast({ title: '초기화 완료', description: '선택한 근무 데이터가 초기화되었습니다.' });
+    handleClearWorkRateDataByYear(selectedDate.year, dialogOpen.workDataType);
+    toast({ title: '연간 초기화 완료', description: `${selectedDate.year}년 전체의 선택한 근무 데이터가 초기화되었습니다.` });
     setDialogOpen(null);
   }
 
@@ -987,7 +1017,7 @@ export default function ManageData({
                 onUpload={(e) => handleFileUpload(e, 'shortenedWork', '임신')}
                 onDownload={() => handleDownloadTemplate('shortenedWork')}
                 onReset={() => setDialogOpen({type: 'resetWorkData', workDataType: '임신'})}
-                isResetDisabled={!currentMonthWorkRateInputs.shortenedWorkHours.some(r => r.type === '임신')}
+                isResetDisabled={!yearlyWorkRateData.pregnancyShortenedWork}
             />
             <Separator />
             <UploadSection
@@ -997,7 +1027,7 @@ export default function ManageData({
                 onUpload={(e) => handleFileUpload(e, 'shortenedWork', '육아/돌봄')}
                 onDownload={() => handleDownloadTemplate('shortenedWork')}
                 onReset={() => setDialogOpen({type: 'resetWorkData', workDataType: '육아/돌봄'})}
-                isResetDisabled={!currentMonthWorkRateInputs.shortenedWorkHours.some(r => r.type === '육아/돌봄')}
+                isResetDisabled={!yearlyWorkRateData.careShortenedWork}
             />
             <Separator />
             <UploadSection
@@ -1007,7 +1037,7 @@ export default function ManageData({
                 onUpload={(e) => handleFileUpload(e, 'dailyAttendance')}
                 onDownload={() => handleDownloadTemplate('dailyAttendance')}
                 onReset={() => setDialogOpen({type: 'resetWorkData', workDataType: 'dailyAttendance'})}
-                isResetDisabled={!currentMonthWorkRateInputs.dailyAttendance.length}
+                isResetDisabled={!yearlyWorkRateData.dailyAttendance}
             />
         </CardContent>
       </Card>
@@ -1019,7 +1049,7 @@ export default function ManageData({
                   <AlertDialogDescription>
                       {dialogOpen?.type === 'deleteEmployees' && `기존 대상자 ${results.length}명의 이력을 모두 삭제합니다. 이 작업은 되돌릴 수 없습니다.`}
                       {dialogOpen?.type === 'resetEvaluations' && `기존 대상자 ${results.filter(r => r.grade).length}명의 평가 데이터를 모두 초기화합니다. 이 작업은 되돌릴 수 없습니다.`}
-                      {dialogOpen?.type === 'resetWorkData' && `선택한 근무 데이터를 초기화합니다. 이 작업은 되돌릴 수 없습니다.`}
+                      {dialogOpen?.type === 'resetWorkData' && `${selectedDate.year}년 전체의 선택한 근무 데이터를 초기화합니다. 이 작업은 되돌릴 수 없습니다.`}
                       {dialogOpen?.type === 'backupData' && `현재 브라우저에 저장된 모든 데이터를 시스템의 초기 데이터로 덮어씁니다. 이 작업은 되돌릴 수 없습니다.`}
                       {dialogOpen?.type === 'restoreData' && `현재 브라우저의 모든 데이터를 서버의 최신 초기 데이터로 덮어씁니다. 저장하지 않은 변경사항은 사라지며, 이 작업은 되돌릴 수 없습니다.`}
                       {dialogOpen?.type === 'resetToMockData' && `현재 브라우저의 모든 데이터를 목업 데이터로 초기화합니다. 저장하지 않은 변경사항은 사라지며, 이 작업은 되돌릴 수 없습니다.`}

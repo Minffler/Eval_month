@@ -292,8 +292,8 @@ export default function WorkRateDetails({ type, data, workRateInputs, selectedDa
                 const dateB = b.lastModified ? new Date(b.lastModified).getTime() : 0;
                 return sortConfig.direction === 'ascending' ? dateA - dateB : dateB - dateA;
             }
-            const aValue = a[sortConfig.key] ?? '';
-            const bValue = b[sortConfig.key] ?? '';
+            const aValue = (a as any)[sortConfig.key] ?? '';
+            const bValue = (b as any)[sortConfig.key] ?? '';
             if (aValue < bValue) {
                 return sortConfig.direction === 'ascending' ? -1 : 1;
             }
