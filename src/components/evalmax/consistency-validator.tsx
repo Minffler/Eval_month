@@ -64,7 +64,7 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
   const [error, setError] = React.useState<string | null>(null);
   const [hasSavedAnalysis, setHasSavedAnalysis] = React.useState(false);
   const [highlightedEvaluator, setHighlightedEvaluator] = React.useState<string | null>(null);
-  const [selectedEvaluatorForComparison, setSelectedEvaluatorForComparison] = React.useState<string>('');
+  const [selectedEvaluatorsForComparison, setSelectedEvaluatorsForComparison] = React.useState<Set<string>>(new Set(['전체분포']));
 
   // 선택된 날짜가 변경될 때 저장된 분석 결과를 자동으로 로드
   React.useEffect(() => {
@@ -305,19 +305,21 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
       });
   }, [results, gradingScale]);
 
-  // 평가자별 등급분포 계산 (evaluatorId 기반)
+  // 평가자별 등급분포 계산 (evaluatorName (evaluatorId) 형태)
   const evaluatorGradeDistribution = React.useMemo(() => {
     const evaluatorData: Record<string, Record<string, number>> = {};
     
     results.forEach(result => {
       const evaluatorId = result.evaluatorId;
+      const evaluatorName = getEvaluatorName(evaluatorId);
+      const evaluatorKey = `${evaluatorName} (${evaluatorId})`;
       
-      if (!evaluatorData[evaluatorId]) {
-        evaluatorData[evaluatorId] = {};
+      if (!evaluatorData[evaluatorKey]) {
+        evaluatorData[evaluatorKey] = {};
       }
       
       if (result.grade) {
-        evaluatorData[evaluatorId][result.grade] = (evaluatorData[evaluatorId][result.grade] || 0) + 1;
+        evaluatorData[evaluatorKey][result.grade] = (evaluatorData[evaluatorKey][result.grade] || 0) + 1;
       }
     });
 
@@ -326,35 +328,55 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
 
   // 비교 차트용 데이터 생성
   const comparisonChartData = React.useMemo(() => {
-    if (!selectedEvaluatorForComparison) {
-      // 전체 분포만 표시
-      const total = overallGradeDistribution.reduce((sum, item) => sum + item.count, 0);
-      return overallGradeDistribution.map(item => ({
+    const total = overallGradeDistribution.reduce((sum, item) => sum + item.count, 0);
+    const selectedEvaluators = Array.from(selectedEvaluatorsForComparison);
+    
+    const data = overallGradeDistribution.map(item => {
+      const baseData = {
         grade: item.grade,
-        overall: item.count,
-        evaluator: 0,
+        overall: selectedEvaluators.includes('전체분포') ? item.count : 0,
         total: item.count,
         overallPercentage: total > 0 ? (item.count / total) * 100 : 0,
-        overallLabel: `${item.count}명 (${total > 0 ? (item.count / total) * 100 : 0}%)`
-      }));
-    }
+        overallLabel: `${item.count}명 (${(total > 0 ? (item.count / total) * 100 : 0).toFixed(1)}%)`
+      };
 
-    // 선택된 평가자와 전체 분포 비교
-    const evaluatorData = evaluatorGradeDistribution[selectedEvaluatorForComparison] || {};
-    const total = overallGradeDistribution.reduce((sum, item) => sum + item.count, 0);
-    const evaluatorTotal = Object.values(evaluatorData).reduce((sum, count) => sum + count, 0);
+      // 선택된 평가자들의 데이터 추가
+      const evaluatorData: Record<string, number> = {};
+      const evaluatorLabels: Record<string, string> = {};
+      
+      selectedEvaluators.forEach(evaluatorKey => {
+        if (evaluatorKey !== '전체분포') {
+          const evaluatorGrades = evaluatorGradeDistribution[evaluatorKey] || {};
+          const evaluatorTotal = Object.values(evaluatorGrades).reduce((sum, count) => sum + count, 0);
+          const count = evaluatorGrades[item.grade] || 0;
+          const percentage = evaluatorTotal > 0 ? (count / evaluatorTotal) * 100 : 0;
+          
+          evaluatorData[evaluatorKey] = count;
+          evaluatorLabels[evaluatorKey] = `${count}명 (${percentage.toFixed(1)}%)`;
+        }
+      });
+
+      return {
+        ...baseData,
+        ...evaluatorData,
+        evaluatorLabels
+      };
+    });
+
+    console.log('comparisonChartData:', data);
+    console.log('selectedEvaluatorsForComparison:', selectedEvaluatorsForComparison);
+    console.log('evaluatorGradeDistribution:', evaluatorGradeDistribution);
+    console.log('overallGradeDistribution:', overallGradeDistribution);
     
-    return overallGradeDistribution.map(item => ({
-      grade: item.grade,
-      overall: item.count,
-      evaluator: evaluatorData[item.grade] || 0,
-      total: item.count,
-      overallPercentage: total > 0 ? (item.count / total) * 100 : 0,
-      evaluatorPercentage: evaluatorTotal > 0 ? ((evaluatorData[item.grade] || 0) / evaluatorTotal) * 100 : 0,
-      overallLabel: `${item.count}명 (${(total > 0 ? (item.count / total) * 100 : 0).toFixed(1)}%)`,
-      evaluatorLabel: evaluatorTotal > 0 ? `${evaluatorData[item.grade] || 0}명 (${((evaluatorData[item.grade] || 0) / evaluatorTotal * 100).toFixed(1)}%)` : ''
-    }));
-  }, [overallGradeDistribution, selectedEvaluatorForComparison, evaluatorGradeDistribution]);
+    // 첫 번째 데이터 객체의 구조 확인
+    if (data.length > 0) {
+      console.log('First data object:', data[0]);
+      console.log('First data keys:', Object.keys(data[0]));
+      console.log('First data values:', Object.values(data[0]));
+    }
+    
+    return data;
+  }, [overallGradeDistribution, selectedEvaluatorsForComparison, evaluatorGradeDistribution]);
 
   const handleHighlightEvaluator = (evaluatorKey: string) => {
     console.log('눈 모양 버튼 클릭:', evaluatorKey);
@@ -403,6 +425,81 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
     );
   };
 
+  // 비교 차트용 라벨 컴포넌트
+  const ComparisonBarLabel = (props: any) => {
+    const { x, y, width, height, index, dataKey } = props;
+    const item = comparisonChartData[index];
+
+    if (!item) return null;
+
+    let countText = '';
+    let percentageText = '';
+    let countFillColor = '';
+    let percentageFillColor = '';
+
+    console.log('ComparisonBarLabel props:', { x, y, width, height, index, dataKey, item });
+
+    if (dataKey === 'overall') {
+      const parts = item.overallLabel.match(/(\d+)명 \(([\d.]+)%\)/);
+      if (parts) {
+        countText = parts[1];
+        percentageText = parts[2] + '%';
+      }
+      countFillColor = '#000000'; // 전체 분포 개수 라벨은 검정색
+      percentageFillColor = height < 30 ? 'hsl(var(--muted-foreground))' : 'hsl(var(--primary-foreground))'; // 전체 분포 비율 라벨은 회색 또는 흰색
+    } else {
+      // 평가자 데이터 (dataKey는 실제 평가자 키)
+      const evaluatorValue = item[dataKey];
+      if (evaluatorValue && evaluatorValue > 0) {
+        countText = evaluatorValue.toString();
+        const evaluatorLabel = item.evaluatorLabels?.[dataKey];
+        if (evaluatorLabel) {
+          const parts = evaluatorLabel.match(/(\d+)명 \(([\d.]+)%\)/);
+          if (parts) {
+            percentageText = parts[2] + '%';
+          }
+        } else {
+          // 백업: 직접 계산
+          const evaluatorTotal = comparisonChartData.reduce((sum, data) => sum + (data[dataKey] || 0), 0);
+          const percentage = evaluatorTotal > 0 ? ((evaluatorValue / evaluatorTotal) * 100).toFixed(1) : '0';
+          percentageText = percentage + '%';
+        }
+        countFillColor = '#ffffff'; // 평가자 분포 개수 라벨은 흰색
+        percentageFillColor = '#ffffff'; // 평가자 분포 비율 라벨은 흰색
+      }
+    }
+
+    console.log('ComparisonBarLabel result:', { countText, percentageText, countFillColor, percentageFillColor });
+
+    if (!countText || parseInt(countText) === 0) return null; // 개수가 0이면 라벨 표시 안 함
+
+    if (height < 30) {
+      // 바가 작을 때: 개수와 비율 모두 바 위에 표시
+      return (
+        <g>
+          <text x={Number(x) + Number(width) / 2} y={Number(y) - 20} textAnchor="middle" fontSize={12} fill={countFillColor} fontWeight="600">
+            {countText}
+          </text>
+          <text x={Number(x) + Number(width) / 2} y={Number(y) - 5} textAnchor="middle" fontSize={11} fill={percentageFillColor}>
+            {percentageText}
+          </text>
+        </g>
+      );
+    } else {
+      // 바가 클 때: 개수는 바 위, 비율은 바 안에 표시
+      return (
+        <g>
+          <text x={Number(x) + Number(width) / 2} y={Number(y) - 5} textAnchor="middle" fontSize={12} fill={countFillColor} fontWeight="600">
+            {countText}
+          </text>
+          <text x={Number(x) + Number(width) / 2} y={Number(y) + 14} textAnchor="middle" fontSize={11} fill={percentageFillColor}>
+            {percentageText}
+          </text>
+        </g>
+      );
+    }
+  };
+
   // 강조된 데이터용 라벨 컴포넌트
   const HighlightedLabel = (props: any) => {
     const { x, y, width, height, index } = props;
@@ -416,13 +513,14 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
     const totalHighlighted = chartData.reduce((sum, data) => sum + data.highlightedValue, 0);
     const percentageText = totalHighlighted > 0 ? `${((countText / totalHighlighted) * 100).toFixed(1)}%` : '0%';
 
+    // 차트 바 크기에 따라 자동으로 라벨 위치 조정
     if (height < 30) {
       return (
         <g>
-          <text x={x + width / 2} y={y - 20} textAnchor="middle" fontSize={12} fill="white">
+          <text x={x + width / 2} y={y - 20} textAnchor="middle" fontSize={12} fill="#f97316" fontWeight="600">
             {countText}
           </text>
-          <text x={x + width / 2} y={y - 5} textAnchor="middle" fontSize={11} fill="white">
+          <text x={x + width / 2} y={y - 5} textAnchor="middle" fontSize={11} fill="hsl(var(--muted-foreground))">
             {percentageText}
           </text>
         </g>
@@ -431,10 +529,10 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
 
     return (
       <g>
-        <text x={x + width / 2} y={y - 5} textAnchor="middle" fontSize={12} fill="white">
+        <text x={x + width / 2} y={y - 5} textAnchor="middle" fontSize={12} fill="#f97316" fontWeight="600">
           {countText}
         </text>
-        <text x={x + width / 2} y={y + 14} textAnchor="middle" fontSize={11} fill="white">
+        <text x={x + width / 2} y={y + 14} textAnchor="middle" fontSize={11} fill="hsl(var(--primary-foreground))">
           {percentageText}
         </text>
       </g>
@@ -472,38 +570,14 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
               <Sparkles className="mr-2 h-4 w-4" />
             )}
                 {hasSavedAnalysis ? "새로 분석하기" : "AI로 평가자별 편향 검토하기"}
-              </Button>
+          </Button>
             </div>
             
             {/* 프론트엔드 등급분포 비교 차트 - AI 분석 결과와 함께 표시 */}
             {report && (
               <div className="space-y-3 pt-4 border-t">
-                <div className="flex items-center justify-between">
+                                <div className="flex items-center justify-between">
                   <h4 className="font-semibold text-sm">등급분포 비교</h4>
-                  <div className="flex items-center gap-2">
-                    <select
-                      value={selectedEvaluatorForComparison}
-                      onChange={(e) => setSelectedEvaluatorForComparison(e.target.value)}
-                      className="text-xs border rounded px-2 py-1 bg-background"
-                    >
-                      <option value="">전체 분포만</option>
-                      {Object.keys(evaluatorGradeDistribution).map(evaluatorKey => (
-                        <option key={evaluatorKey} value={evaluatorKey}>
-                          {evaluatorKey}
-                        </option>
-                      ))}
-                    </select>
-                    {selectedEvaluatorForComparison !== '' && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSelectedEvaluatorForComparison('')}
-                        className="h-6 px-2 text-xs"
-                      >
-                        초기화
-          </Button>
-                    )}
-                  </div>
                 </div>
                 
                 <div className="h-[300px]">
@@ -534,123 +608,265 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
                           cursor={{ fill: 'hsl(var(--muted))' }}
                           content={<ChartTooltipContent />}
                         />
-                        {/* 전체 분포 (주황색) */}
-                        <Bar
-                          dataKey="overall"
-                          fill="#f97316"
-                          radius={[4, 4, 0, 0]}
-                        />
-                        {/* 선택된 평가자 분포 (파란색) */}
-                        {selectedEvaluatorForComparison !== '' && (
-                          <Bar
-                            dataKey="evaluator"
-                            fill="#3b82f6"
-                            radius={[4, 4, 0, 0]}
-                          />
-                        )}
+                                                            {/* 전체 분포 (회색) */}
+                                    {selectedEvaluatorsForComparison.has('전체분포') && (
+                                      <Bar
+                                        dataKey="overall"
+                                        fill="#a4a3a2"
+                                        radius={[4, 4, 0, 0]}
+                                      >
+                                        <LabelList
+                                          dataKey="overall"
+                                          position="top"
+                                          fontSize={12}
+                                          fill="#000000"
+                                          fontWeight="600"
+                                          content={(props) => {
+                                            const { x, y, width, height, index } = props;
+                                            const item = comparisonChartData[index];
+                                            
+                                            if (!item || !item.overall || item.overall <= 0) {
+                                              return null;
+                                            }
+                                            
+                                            const countText = item.overall.toString();
+                                            const percentageText = item.overallPercentage.toFixed(1) + '%';
+                                            
+                                            console.log('Overall label data:', { countText, percentageText, item });
+                                            
+                                            if (height < 30) {
+                                              // 바가 작을 때: 개수와 비율 모두 바 위에 표시
+                                              return (
+                                                <g>
+                                                  <text x={Number(x) + Number(width) / 2} y={Number(y) - 20} textAnchor="middle" fontSize={12} fill="#000000">
+                                                    {countText}
+                                                  </text>
+                                                  <text x={Number(x) + Number(width) / 2} y={Number(y) - 5} textAnchor="middle" fontSize={11} fill="#000000">
+                                                    {percentageText}
+                                                  </text>
+                                                </g>
+                                              );
+                                            } else {
+                                              // 바가 클 때: 개수는 바 위, 비율은 바 안에 표시
+                                              return (
+                                                <g>
+                                                  <text x={Number(x) + Number(width) / 2} y={Number(y) - 5} textAnchor="middle" fontSize={12} fill="#000000">
+                                                    {countText}
+                                                  </text>
+                                                  <text x={Number(x) + Number(width) / 2} y={Number(y) + 14} textAnchor="middle" fontSize={11} fill="#ffffff">
+                                                    {percentageText}
+                                                  </text>
+                                                </g>
+                                              );
+                                            }
+                                          }}
+                                        />
+                                      </Bar>
+                                    )}
                         
-                        {/* 차트 라벨 추가 */}
-                        <LabelList
-                          dataKey="overall"
-                          position="top"
-                          fontSize={12}
-                          fill="#000000"
-                          fontWeight="600"
-                          content={(props) => {
-                            const { value, x, y, width } = props;
-                            if (!value || value === 0) return null;
-                            return (
-                              <text
-                                x={Number(x) + Number(width) / 2}
-                                y={Number(y) - 5}
-                                textAnchor="middle"
+                        {/* 선택된 평가자들 분포 */}
+                        {Array.from(selectedEvaluatorsForComparison)
+                          .filter(key => key !== '전체분포')
+                          .map((evaluatorKey, index) => (
+                            <Bar
+                              key={evaluatorKey}
+                              dataKey={evaluatorKey}
+                              fill={index === 0 ? "#3b82f6" : index === 1 ? "#10b981" : "#f59e0b"}
+                              radius={[4, 4, 0, 0]}
+                            >
+                              <LabelList
+                                dataKey={evaluatorKey}
+                                position="top"
                                 fontSize={12}
-                                fill="#000000"
+                                fill="#ffffff"
                                 fontWeight="600"
-                              >
-                                {value}
-                              </text>
-                            );
-                          }}
-                        />
+                                content={(props) => {
+                                  const { x, y, width, height, index } = props;
+                                  const item = comparisonChartData[index];
+                                  
+                                  if (!item || !item[evaluatorKey] || item[evaluatorKey] <= 0) {
+                                    return null;
+                                  }
+                                  
+                                  const countText = item[evaluatorKey].toString();
+                                  const evaluatorLabel = item.evaluatorLabels?.[evaluatorKey];
+                                  let percentageText = '';
+                                  
+                                  if (evaluatorLabel) {
+                                    const parts = evaluatorLabel.match(/(\d+)명 \(([\d.]+)%\)/);
+                                    if (parts) {
+                                      percentageText = parts[2] + '%';
+                                    }
+                                  } else {
+                                    // 백업: 직접 계산
+                                    const evaluatorTotal = comparisonChartData.reduce((sum, data) => sum + (data[evaluatorKey] || 0), 0);
+                                    const percentage = evaluatorTotal > 0 ? ((item[evaluatorKey] / evaluatorTotal) * 100).toFixed(1) : '0';
+                                    percentageText = percentage + '%';
+                                  }
+                                  
+                                  console.log('Evaluator label data:', { 
+                                    evaluatorKey, 
+                                    countText, 
+                                    percentageText, 
+                                    itemValue: item[evaluatorKey],
+                                    itemKeys: Object.keys(item),
+                                    itemValues: Object.values(item)
+                                  });
+                                  
+                                  // 평가자별 색상 결정 (evaluatorKey 기반)
+                                  let evaluatorColor = "#3b82f6"; // 기본 파란색
+                                  
+                                  // 선택된 평가자들의 순서에 따라 색상 결정
+                                  const selectedEvaluators = Array.from(selectedEvaluatorsForComparison).filter(key => key !== '전체분포');
+                                  const evaluatorIndex = selectedEvaluators.indexOf(evaluatorKey);
+                                  
+                                  if (evaluatorIndex === 0) {
+                                    evaluatorColor = "#3b82f6"; // 첫 번째 평가자: 파란색
+                                  } else if (evaluatorIndex === 1) {
+                                    evaluatorColor = "#10b981"; // 두 번째 평가자: 초록색
+                                  } else if (evaluatorIndex === 2) {
+                                    evaluatorColor = "#f59e0b"; // 세 번째 평가자: 주황색
+                                  }
+                                  
+                                  if (height < 30) {
+                                    // 바가 작을 때: 개수와 비율 모두 바 위에 표시
+                                    return (
+                                      <g>
+                                        <text x={Number(x) + Number(width) / 2} y={Number(y) - 20} textAnchor="middle" fontSize={12} fill={evaluatorColor}>
+                                          {countText}
+                                        </text>
+                                        <text x={Number(x) + Number(width) / 2} y={Number(y) - 5} textAnchor="middle" fontSize={11} fill="hsl(var(--muted-foreground))">
+                                          {percentageText}
+                                        </text>
+                                      </g>
+                                    );
+                                  } else {
+                                    // 바가 클 때: 개수는 바 위, 비율은 바 안에 표시
+                                    return (
+                                      <g>
+                                        <text x={Number(x) + Number(width) / 2} y={Number(y) - 5} textAnchor="middle" fontSize={12} fill={evaluatorColor}>
+                                          {countText}
+                                        </text>
+                                        <text x={Number(x) + Number(width) / 2} y={Number(y) + 14} textAnchor="middle" fontSize={11} fill="#ffffff">
+                                          {percentageText}
+                                        </text>
+                                      </g>
+                                    );
+                                  }
+                                }}
+                              />
+                            </Bar>
+                          ))}
                         
-                        {/* 선택된 평가자 라벨 */}
-                        {selectedEvaluatorForComparison !== '' && (
+                        {/* 전체 분포 라벨 */}
+                        {selectedEvaluatorsForComparison.has('전체분포') && (
                           <LabelList
-                            dataKey="evaluator"
+                            dataKey="overall"
                             position="top"
                             fontSize={12}
-                            fill="#ffffff"
+                            fill="#000000"
                             fontWeight="600"
                             content={(props) => {
-                              const { value, x, y, width } = props;
-                              if (!value || value === 0) return null;
+                              console.log('TEST - Overall label called:', props);
                               return (
                                 <text
-                                  x={Number(x) + Number(width) / 2}
-                                  y={Number(y) - 5}
+                                  x={Number(props.x) + Number(props.width) / 2}
+                                  y={Number(props.y) - 10}
                                   textAnchor="middle"
-                                  fontSize={12}
-                                  fill="#ffffff"
-                                  fontWeight="600"
+                                  fontSize={16}
+                                  fill="#ff0000"
+                                  fontWeight="bold"
                                 >
-                                  {value}
+                                  TEST
                                 </text>
                               );
                             }}
                           />
                         )}
+                        
+                        {/* 선택된 평가자들 라벨 */}
+                        {Array.from(selectedEvaluatorsForComparison)
+                          .filter(key => key !== '전체분포')
+                          .map((evaluatorKey, index) => (
+                            <LabelList
+                              key={evaluatorKey}
+                              dataKey={evaluatorKey}
+                              position="top"
+                              fontSize={12}
+                              fill="#ffffff"
+                              fontWeight="600"
+                            />
+                          ))}
                       </BarChart>
                     </ResponsiveContainer>
                   </ChartContainer>
                 </div>
                 
-                {/* 범례와 통계 정보 */}
+                {/* 평가자 탭 */}
                 <div className="space-y-2">
                   <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                      <div className="w-3 h-3 bg-orange-500 rounded"></div>
-                      <span>전체 분포</span>
-                    </div>
-                    {selectedEvaluatorForComparison !== '' && (
+                    {selectedEvaluatorsForComparison.has('전체분포') && (
                       <div className="flex items-center gap-1">
-                        <div className="w-3 h-3 bg-blue-500 rounded"></div>
-                        <span>{selectedEvaluatorForComparison}</span>
+                        <div className="w-3 h-3 bg-orange-500 rounded"></div>
+                        <span>전체 분포</span>
                       </div>
                     )}
+                    {Array.from(selectedEvaluatorsForComparison)
+                      .filter(key => key !== '전체분포')
+                      .map((evaluatorKey, index) => (
+                        <div key={evaluatorKey} className="flex items-center gap-1">
+                          <div 
+                            className="w-3 h-3 rounded"
+                            style={{ 
+                              backgroundColor: index === 0 ? "#3b82f6" : index === 1 ? "#10b981" : "#f59e0b" 
+                            }}
+                          ></div>
+                          <span>{evaluatorKey}</span>
+                        </div>
+                      ))}
                   </div>
                   
-                  {/* 통계 정보 */}
-                  <div className="grid grid-cols-2 gap-4 text-xs">
-                    <div className="space-y-1">
-                      <div className="font-medium text-muted-foreground">전체 통계</div>
-                      <div className="space-y-0.5">
-                        {overallGradeDistribution.map(item => (
-                          <div key={item.grade} className="flex justify-between">
-                            <span>{item.grade}:</span>
-                            <span>{item.count}명 ({item.percentage.toFixed(1)}%)</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    {selectedEvaluatorForComparison !== '' && (
-                      <div className="space-y-1">
-                        <div className="font-medium text-muted-foreground">{selectedEvaluatorForComparison}</div>
-                        <div className="space-y-0.5">
-                          {Object.entries(evaluatorGradeDistribution[selectedEvaluatorForComparison] || {}).map(([grade, count]) => {
-                            const total = Object.values(evaluatorGradeDistribution[selectedEvaluatorForComparison] || {}).reduce((sum, c) => sum + c, 0);
-                            const percentage = total > 0 ? (count / total) * 100 : 0;
-                            return (
-                              <div key={grade} className="flex justify-between">
-                                <span>{grade}:</span>
-                                <span>{count}명 ({percentage.toFixed(1)}%)</span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
+                  {/* 평가자 탭 목록 */}
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => {
+                        const newSet = new Set(selectedEvaluatorsForComparison);
+                        if (newSet.has('전체분포')) {
+                          newSet.delete('전체분포');
+                        } else {
+                          newSet.add('전체분포');
+                        }
+                        setSelectedEvaluatorsForComparison(newSet);
+                      }}
+                      className={`px-3 py-1 text-xs rounded-md border transition-colors ${
+                        selectedEvaluatorsForComparison.has('전체분포')
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-background text-muted-foreground border-border hover:bg-muted'
+                      }`}
+                    >
+                      전체분포
+                    </button>
+                    {Object.keys(evaluatorGradeDistribution).map(evaluatorKey => (
+                      <button
+                        key={evaluatorKey}
+                        onClick={() => {
+                          const newSet = new Set(selectedEvaluatorsForComparison);
+                          if (newSet.has(evaluatorKey)) {
+                            newSet.delete(evaluatorKey);
+                          } else {
+                            newSet.add(evaluatorKey);
+                          }
+                          setSelectedEvaluatorsForComparison(newSet);
+                        }}
+                        className={`px-3 py-1 text-xs rounded-md border transition-colors ${
+                          selectedEvaluatorsForComparison.has(evaluatorKey)
+                            ? 'bg-primary text-primary-foreground border-primary'
+                            : 'bg-background text-muted-foreground border-border hover:bg-muted'
+                        }`}
+                      >
+                        {evaluatorKey}
+                      </button>
+                    ))}
                   </div>
                 </div>
               </div>

@@ -20,7 +20,7 @@ const ValidateGradeConsistencyInputSchema = z.object({
   expectedDistribution: z
     .string()
     .describe(
-      '조직 전체의 예상 등급 분포를 설명하는 문자열. 예: 대부분의 직원은 B 또는 B+ 등급을 받아야 하며, S 또는 D 등급을 받는 직원은 소수여야 합니다.'
+      '조직 전체의 예상 등급 분포를 설명하는 문자열.'
     ),
 });
 
