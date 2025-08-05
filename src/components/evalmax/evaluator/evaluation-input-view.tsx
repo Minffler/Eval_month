@@ -354,19 +354,26 @@ export default function EvaluationInputView({
     return members.reduce((total, member) => total + (member.score || 0), 0);
   };
 
-  // 2. 그룹 점수 초과 체크 함수
+  // 2. 그룹 점수 초과 체크 함수 (현재 평가자의 데이터만 체크)
   const checkGroupScoreOver = React.useCallback(() => {
     const over: Record<string, number> = {};
     Object.entries(groups).forEach(([groupKey, group]) => {
-      const availableScore = group.members.length * 100;
-      const usedScore = group.members.reduce((acc, curr) => acc + (curr.score || 0), 0);
-      if (usedScore > availableScore) {
-        over[groupKey] = usedScore - availableScore;
+      // 현재 평가자가 담당하는 직원들만 필터링
+      const currentEvaluatorMembers = group.members.filter(member => 
+        member.evaluatorId === evaluatorId
+      );
+      
+      if (currentEvaluatorMembers.length > 0) {
+        const availableScore = currentEvaluatorMembers.length * 100;
+        const usedScore = currentEvaluatorMembers.reduce((acc, curr) => acc + (curr.score || 0), 0);
+        if (usedScore > availableScore) {
+          over[groupKey] = usedScore - availableScore;
+        }
       }
     });
     setOverScoreGroups(over);
     return over;
-  }, [groups]);
+  }, [groups, evaluatorId]);
 
   // 3. 등급 변경, 일괄 적용, 그룹 이동 등 점수 변동 시 체크 및 토스트
   React.useEffect(() => {
@@ -382,7 +389,7 @@ export default function EvaluationInputView({
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [groups]);
+  }, [groups, evaluatorId]);
 
 
   // 평가 그룹 초기화 (입력한 평가등급, 비고는 그대로 유지)
