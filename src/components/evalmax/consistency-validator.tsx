@@ -577,7 +577,7 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
             {report && (
               <div className="space-y-3 pt-4 border-t">
                                 <div className="flex items-center justify-between">
-                  <h4 className="font-semibold text-sm">등급분포 비교</h4>
+                  <h4 className="font-semibold text-sm">평가자별 등급분포 비교</h4>
                 </div>
                 
                 <div className="h-[300px]">
