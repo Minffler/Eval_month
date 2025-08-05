@@ -166,7 +166,7 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
         .join('\n');
 
       const expectedDistribution =
-        '대부분의 직원은 B 또는 B+ 등급을 받아야 하며, S 또는 D 등급을 받는 직원은 소수여야 합니다. 등급 분포는 평가자 간에 비교적 균등해야 하며, 특정 평가자가 유독 후하거나 박한 점수를 주는 경향이 없어야 합니다.';
+        '대부분의 직원은 B 등급을 받아야 하며, S 또는 D 등급을 받는 직원은 소수여야 합니다. 등급 분포는 평가자 간에 비교적 균등해야 하며, 특정 평가자가 유독 후하거나 박한 점수를 주는 경향이 없어야 합니다.';
       
       console.log("AI 분석에 전송할 데이터:");
       console.log("gradeDataString:", gradeDataString);
@@ -638,10 +638,10 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
                                               // 바가 작을 때: 개수와 비율 모두 바 위에 표시
                                               return (
                                                 <g>
-                                                  <text x={Number(x) + Number(width) / 2} y={Number(y) - 20} textAnchor="middle" fontSize={12} fill="#000000">
+                                                  <text x={Number(x) + Number(width) / 2} y={Number(y) - 20} textAnchor="middle" fontSize={12} fill="hsl(var(--muted-foreground))">
                                                     {countText}
                                                   </text>
-                                                  <text x={Number(x) + Number(width) / 2} y={Number(y) - 5} textAnchor="middle" fontSize={11} fill="#000000">
+                                                  <text x={Number(x) + Number(width) / 2} y={Number(y) - 5} textAnchor="middle" fontSize={11} fill="hsl(var(--muted-foreground))">
                                                     {percentageText}
                                                   </text>
                                                 </g>
@@ -650,7 +650,7 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
                                               // 바가 클 때: 개수는 바 위, 비율은 바 안에 표시
                                               return (
                                                 <g>
-                                                  <text x={Number(x) + Number(width) / 2} y={Number(y) - 5} textAnchor="middle" fontSize={12} fill="#000000">
+                                                  <text x={Number(x) + Number(width) / 2} y={Number(y) - 5} textAnchor="middle" fontSize={12} fill="hsl(var(--muted-foreground))">
                                                     {countText}
                                                   </text>
                                                   <text x={Number(x) + Number(width) / 2} y={Number(y) + 14} textAnchor="middle" fontSize={11} fill="#ffffff">
