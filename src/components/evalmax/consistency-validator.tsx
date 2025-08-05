@@ -64,8 +64,14 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
       return '관리자';
     }
     
+    // 실제 평가자 데이터에서 찾기
     const user = mockUsers.find((u: User) => u.uniqueId === evaluatorId);
-    return user ? user.name : evaluatorId;
+    if (user) {
+      return user.name;
+    }
+    
+    // 평가자 ID가 없으면 ID 그대로 반환
+    return evaluatorId;
   };
 
   async function handleAnalyze() {
