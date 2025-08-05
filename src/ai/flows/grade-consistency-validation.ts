@@ -97,7 +97,7 @@ const prompt = ai.definePrompt({
 평가자별 등급: {{{gradeData}}}
 예상 분포: {{{expectedDistribution}}}
 
-모든 텍스트는 한국어로 작성하세요.`,
+모든 텍스트는 한국어로 작성하세요. JSON 형식으로만 응답하세요.`,
 });
 
 const validateGradeConsistencyFlow = ai.defineFlow(
@@ -112,6 +112,11 @@ const validateGradeConsistencyFlow = ai.defineFlow(
       console.log("입력 데이터:", input);
       console.log("API 키 확인:", process.env.GOOGLE_AI_API_KEY ? "설정됨" : "설정되지 않음");
       
+      // Genkit AI 객체 확인
+      console.log("AI 객체 확인:", ai);
+      console.log("Prompt 객체 확인:", prompt);
+      
+      console.log("Prompt 호출 시작...");
       const {output} = await prompt(input);
       
       console.log("AI 응답 받음:", output);
@@ -126,6 +131,7 @@ const validateGradeConsistencyFlow = ai.defineFlow(
        console.error("Error in validateGradeConsistencyFlow: ", error);
        console.error("에러 상세:", error instanceof Error ? error.message : error);
        console.error("에러 스택:", error instanceof Error ? error.stack : "스택 없음");
+       console.error("에러 원본:", error);
        
        // 더 구체적인 오류 메시지 제공
        if (error instanceof Error) {
@@ -135,6 +141,8 @@ const validateGradeConsistencyFlow = ai.defineFlow(
            throw new Error("API 호출 한도를 초과했습니다. 잠시 후 다시 시도해주세요.");
          } else if (error.message.includes('timeout')) {
            throw new Error("AI 분석에 시간이 오래 걸리고 있습니다. 잠시 후 다시 시도해주세요.");
+         } else if (error.message.includes('model')) {
+           throw new Error("AI 모델에 문제가 있습니다. 잠시 후 다시 시도해주세요.");
          }
        }
        
