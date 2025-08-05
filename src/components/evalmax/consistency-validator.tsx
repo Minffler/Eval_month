@@ -134,20 +134,18 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
 
       console.log("분석할 평가 데이터:", results);
       console.log("평가자 ID 목록:", [...new Set(results.map(r => r.evaluatorId))]);
-      
+
       const gradeDataByEvaluator = results.reduce((acc, result) => {
         const evaluatorId = result.evaluatorId || '';
-        const evaluatorName = getEvaluatorName(evaluatorId);
         
-        console.log(`평가자 ID: ${evaluatorId}, 이름: ${evaluatorName}`);
+        console.log(`평가자 ID: ${evaluatorId}`);
         
-        // ID를 기준으로 키 생성 (동명이인 방지)
-        const key = `${evaluatorName} (${evaluatorId})`;
-        if (!acc[key]) {
-          acc[key] = [];
+        // evaluatorId만 사용하여 키 생성
+        if (!acc[evaluatorId]) {
+          acc[evaluatorId] = [];
         }
         if (result.grade) {
-          acc[key].push(result.grade);
+          acc[evaluatorId].push(result.grade);
         }
         return acc;
       }, {} as Record<string, string[]>);
@@ -161,7 +159,10 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
       }
 
       const gradeDataString = Object.entries(gradeDataByEvaluator)
-        .map(([evaluator, grades]) => `${evaluator}: ${grades.join(', ')}`)
+        .map(([evaluatorId, grades]) => {
+          const evaluatorName = getEvaluatorName(evaluatorId);
+          return `${evaluatorName} (${evaluatorId}): ${grades.join(', ')}`;
+        })
         .join('\n');
 
       const expectedDistribution =
@@ -275,7 +276,7 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
         name: item.grade,
         value: item.count,
         percentage: totalCount > 0 ? (item.count / totalCount) * 100 : 0,
-        highlightedValue: highlightedEvaluator ? evaluatorGradeData[highlightedEvaluator]?.[item.grade] || 0 : 0,
+        highlightedValue: highlightedEvaluator && evaluatorGradeData[highlightedEvaluator] ? evaluatorGradeData[highlightedEvaluator][item.grade] || 0 : 0,
     }));
   }, [report, gradingScale, highlightedEvaluator, evaluatorGradeData]);
 
@@ -304,20 +305,19 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
       });
   }, [results, gradingScale]);
 
-  // 평가자별 등급분포 계산 (이름과 ID를 매칭하여 키 생성)
+  // 평가자별 등급분포 계산 (evaluatorId 기반)
   const evaluatorGradeDistribution = React.useMemo(() => {
     const evaluatorData: Record<string, Record<string, number>> = {};
     
     results.forEach(result => {
-      const evaluatorName = getEvaluatorName(result.evaluatorId);
-      const evaluatorKey = `${evaluatorName} (${result.evaluatorId})`;
+      const evaluatorId = result.evaluatorId;
       
-      if (!evaluatorData[evaluatorKey]) {
-        evaluatorData[evaluatorKey] = {};
+      if (!evaluatorData[evaluatorId]) {
+        evaluatorData[evaluatorId] = {};
       }
       
       if (result.grade) {
-        evaluatorData[evaluatorKey][result.grade] = (evaluatorData[evaluatorKey][result.grade] || 0) + 1;
+        evaluatorData[evaluatorId][result.grade] = (evaluatorData[evaluatorId][result.grade] || 0) + 1;
       }
     });
 
@@ -351,13 +351,16 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
       total: item.count,
       overallPercentage: total > 0 ? (item.count / total) * 100 : 0,
       evaluatorPercentage: evaluatorTotal > 0 ? ((evaluatorData[item.grade] || 0) / evaluatorTotal) * 100 : 0,
-      overallLabel: `${item.count}명 (${total > 0 ? (item.count / total) * 100 : 0}%)`,
-      evaluatorLabel: evaluatorTotal > 0 ? `${evaluatorData[item.grade] || 0}명 (${((evaluatorData[item.grade] || 0) / evaluatorTotal) * 100}%)` : ''
+      overallLabel: `${item.count}명 (${(total > 0 ? (item.count / total) * 100 : 0).toFixed(1)}%)`,
+      evaluatorLabel: evaluatorTotal > 0 ? `${evaluatorData[item.grade] || 0}명 (${((evaluatorData[item.grade] || 0) / evaluatorTotal * 100).toFixed(1)}%)` : ''
     }));
   }, [overallGradeDistribution, selectedEvaluatorForComparison, evaluatorGradeDistribution]);
 
-  const handleHighlightEvaluator = (evaluatorName: string) => {
-    setHighlightedEvaluator(highlightedEvaluator === evaluatorName ? null : evaluatorName);
+  const handleHighlightEvaluator = (evaluatorKey: string) => {
+    console.log('눈 모양 버튼 클릭:', evaluatorKey);
+    console.log('현재 highlightedEvaluator:', highlightedEvaluator);
+    console.log('사용 가능한 evaluatorGradeData 키:', Object.keys(evaluatorGradeData));
+    setHighlightedEvaluator(highlightedEvaluator === evaluatorKey ? null : evaluatorKey);
   };
 
   const clearHighlight = () => {
@@ -462,12 +465,12 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
         <CardFooter>
           <div className="w-full space-y-4">
             <div className="space-y-2">
-              <Button onClick={handleAnalyze} disabled={loading || results.length === 0 || error !== null} className="w-full">
-                {loading ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Sparkles className="mr-2 h-4 w-4" />
-                )}
+          <Button onClick={handleAnalyze} disabled={loading || results.length === 0 || error !== null} className="w-full">
+            {loading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Sparkles className="mr-2 h-4 w-4" />
+            )}
                 {hasSavedAnalysis ? "새로 분석하기" : "AI로 평가자별 편향 검토하기"}
               </Button>
             </div>
@@ -498,7 +501,7 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
                         className="h-6 px-2 text-xs"
                       >
                         초기화
-                      </Button>
+          </Button>
                     )}
                   </div>
                 </div>
@@ -754,54 +757,31 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
                 <div className="space-y-3">
                   {report.findings.length > 0 ? (
                     report.findings.map((finding, index) => {
-                      // 평가자 ID 추출 (편향 타입인 경우)
-                      let evaluatorId = null;
+                      // AI 응답에서 평가자 키 추출 ("평가자이름 (평가자ID)" 형태)
+                      let evaluatorKey: string | null = null;
                       
-                      // finding.description에서 평가자 이름 추출
-                      const evaluatorNameMatch = finding.description.match(/([^\s]+)\s+평가자/);
-                      const evaluatorName = evaluatorNameMatch ? evaluatorNameMatch[1] : null;
-                      
-                      // evaluatorGradeData에서 해당 평가자 찾기
-                      let evaluatorKey = evaluatorName ? Object.keys(evaluatorGradeData).find(key => 
-                        key.includes(evaluatorName)
-                      ) : null;
-                      
-                      // evaluatorKey에서 ID 추출
-                      if (evaluatorKey) {
-                        const idMatch = evaluatorKey.match(/\(([^)]+)\)/);
-                        evaluatorId = idMatch ? idMatch[1] : null;
-                      }
-                      
-                      // ID가 있으면 evaluatorKey 다시 찾기 (ID 기준)
-                      if (evaluatorId && !evaluatorKey) {
-                        evaluatorKey = Object.keys(evaluatorGradeData).find(key => 
-                          key.includes(`(${evaluatorId})`)
-                        );
-                      }
-                      
-                      // 새로운 형식으로 표시 텍스트 생성
-                      let displayText = finding.description;
-                      if (finding.type === '편향' && evaluatorId && evaluatorKey) {
-                        // 평가자 이름과 ID 추출 (예: "이O권 (0000011)")
-                        const evaluatorMatch = evaluatorKey.match(/^(.+?)\s*\((\d+)\)$/);
-                        const evaluatorDisplayName = evaluatorMatch ? evaluatorMatch[1].trim() : evaluatorId;
-                        const evaluatorIdFromKey = evaluatorMatch ? evaluatorMatch[2] : evaluatorId;
+                      // "평가자이름 (평가자ID)" 형태 추출 (한글+영문 혼합 가능)
+                      const evaluatorMatch = finding.description.match(/([가-힣a-zA-Z]+)\s*\(([^)]+)\)/);
+                      if (evaluatorMatch) {
+                        const evaluatorName = evaluatorMatch[1]; // "관리자"
+                        const evaluatorId = evaluatorMatch[2];   // "admin"
+                        const fullEvaluatorKey = `${evaluatorName} (${evaluatorId})`; // "관리자 (admin)"
                         
-                        // 편향 유형에 따른 메시지 생성
-                        let biasMessage = '';
-                        if (finding.description.includes('낮은 등급') || finding.description.includes('엄격')) {
-                          biasMessage = '낮은 등급을 과도하게 부여하는 경향이 있습니다.';
-                        } else if (finding.description.includes('높은 등급') || finding.description.includes('관대')) {
-                          biasMessage = '높은 등급을 과도하게 부여하는 경향이 있습니다.';
-                        } else {
-                          biasMessage = '편향이 있는 것으로 보입니다.';
+                        // evaluatorGradeData에 해당 키가 존재하는지 확인
+                        if (evaluatorGradeData[fullEvaluatorKey]) {
+                          evaluatorKey = fullEvaluatorKey;
                         }
-                        
-                        displayText = `${evaluatorDisplayName} (${evaluatorIdFromKey}) : ${biasMessage}`;
-                      } else if (finding.type === '편향') {
-                        // evaluatorId나 evaluatorKey가 없는 경우에도 기본 형식으로 표시
-                        displayText = finding.description;
                       }
+                      
+                      // 디버깅: 매칭 결과 확인
+                      console.log('AI 리포트 - 평가자 매칭:', {
+                        evaluatorMatch: evaluatorMatch ? `${evaluatorMatch[1]} (${evaluatorMatch[2]})` : null,
+                        evaluatorKey,
+                        availableKeys: Object.keys(evaluatorGradeData)
+                      });
+                      
+                      // 원래 AI 문장을 그대로 유지
+                      let displayText = finding.description;
                       
                       return (
                       <div key={index} className="p-3 border rounded-md bg-muted/50">
@@ -810,7 +790,7 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
                           <Badge variant={getBadgeVariant(finding.type)} className="whitespace-nowrap">{finding.type}</Badge>
                               <p className="font-semibold text-sm">{displayText}</p>
                             </div>
-                            {evaluatorId && evaluatorKey && (
+                            {finding.type === '편향' && evaluatorKey && evaluatorGradeData[evaluatorKey] && (
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -820,7 +800,7 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
                                     ? 'text-primary bg-primary/10' 
                                     : 'text-muted-foreground hover:text-white hover:bg-primary'
                                 }`}
-                                title={`${evaluatorId} 평가자의 등급 분포를 차트에서 강조 표시`}
+                                title={`${getEvaluatorName(evaluatorKey)} (${evaluatorKey}) 평가자의 등급 분포를 차트에서 강조 표시`}
                               >
                                 <Eye className="h-4 w-4" />
                               </Button>
