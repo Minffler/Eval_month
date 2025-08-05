@@ -128,6 +128,9 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
       setReport(analysisResult);
     } catch (error) {
       console.error('Error validating consistency:', error);
+      console.error('Error type:', typeof error);
+      console.error('Error message:', error instanceof Error ? error.message : error);
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack');
       
       let errorMessage = '분석 중 오류가 발생했습니다.';
       
@@ -140,6 +143,10 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
           errorMessage = 'AI 서비스 사용량 한도를 초과했습니다. 잠시 후 다시 시도해주세요.';
         } else if (error.message.includes('대체 분석')) {
           errorMessage = 'AI 서비스에 연결할 수 없어 대체 분석을 사용합니다. 일부 기능이 제한될 수 있습니다.';
+        } else if (error.message.includes('AI 모델이 유효한 분석 결과를 생성하지 못했습니다')) {
+          errorMessage = 'AI 분석에 실패했습니다. 잠시 후 다시 시도해주세요.';
+        } else if (error.message.includes('시간이 초과')) {
+          errorMessage = 'AI 분석에 시간이 오래 걸리고 있습니다. 잠시 후 다시 시도해주세요.';
         } else {
           errorMessage = error.message;
         }

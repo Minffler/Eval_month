@@ -110,7 +110,7 @@ const validateGradeConsistencyFlow = ai.defineFlow(
     try {
       console.log("AI 분석 시작...");
       console.log("입력 데이터:", input);
-      console.log("API 키 확인:", process.env.GEMINI_API_KEY ? "설정됨" : "설정되지 않음");
+      console.log("API 키 확인:", process.env.GOOGLE_AI_API_KEY ? "설정됨" : "설정되지 않음");
       
       const {output} = await prompt(input);
       
@@ -126,6 +126,18 @@ const validateGradeConsistencyFlow = ai.defineFlow(
        console.error("Error in validateGradeConsistencyFlow: ", error);
        console.error("에러 상세:", error instanceof Error ? error.message : error);
        console.error("에러 스택:", error instanceof Error ? error.stack : "스택 없음");
+       
+       // 더 구체적인 오류 메시지 제공
+       if (error instanceof Error) {
+         if (error.message.includes('API')) {
+           throw new Error("API 키 설정에 문제가 있습니다. 관리자에게 문의해주세요.");
+         } else if (error.message.includes('rate limit')) {
+           throw new Error("API 호출 한도를 초과했습니다. 잠시 후 다시 시도해주세요.");
+         } else if (error.message.includes('timeout')) {
+           throw new Error("AI 분석에 시간이 오래 걸리고 있습니다. 잠시 후 다시 시도해주세요.");
+         }
+       }
+       
        throw new Error("AI 모델이 유효한 분석 결과를 생성하지 못했습니다. 잠시 후 다시 시도해주세요.");
     }
   }
