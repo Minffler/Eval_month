@@ -5,6 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Sparkles, BarChart3, Eye } from 'lucide-react';
 import { validateGradeConsistency, type ValidateGradeConsistencyOutput } from '@/ai/flows/grade-consistency-validation';
+import { testGoogleAI } from '@/ai/simple-test';
+import { 
+  saveConsistencyAnalysis, 
+  loadConsistencyAnalysis, 
+  hasConsistencyAnalysis,
+  type ConsistencyAnalysisRecord 
+} from '@/lib/consistency-storage';
 import { Badge } from '../ui/badge';
 import type { EvaluationResult, Grade, GradeInfo, User } from '@/lib/types';
 import { mockUsers } from '@/lib/data';
@@ -55,23 +62,42 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
   const [loading, setLoading] = React.useState(false);
   const [report, setReport] = React.useState<ValidateGradeConsistencyOutput | null>(null);
   const [error, setError] = React.useState<string | null>(null);
+  const [hasSavedAnalysis, setHasSavedAnalysis] = React.useState(false);
   const [highlightedEvaluator, setHighlightedEvaluator] = React.useState<string | null>(null);
+  const [selectedEvaluatorForComparison, setSelectedEvaluatorForComparison] = React.useState<string>('');
+
+  // 선택된 날짜가 변경될 때 저장된 분석 결과를 자동으로 로드
+  React.useEffect(() => {
+    if (selectedDate) {
+      const savedAnalysis = loadConsistencyAnalysis(selectedDate.year, selectedDate.month);
+      if (savedAnalysis) {
+        console.log(`저장된 분석 결과 자동 로드: ${selectedDate.year}-${selectedDate.month}`);
+        setReport(savedAnalysis.result);
+        setHasSavedAnalysis(true);
+      } else {
+        setReport(null);
+        setHasSavedAnalysis(false);
+      }
+    } else {
+      setReport(null);
+      setHasSavedAnalysis(false);
+    }
+  }, [selectedDate]);
 
   // 평가자 ID로 이름을 찾는 함수
   const getEvaluatorName = (evaluatorId: string): string => {
+    console.log(`getEvaluatorName 호출: evaluatorId = ${evaluatorId}`);
+    
     // admin의 경우 특별 처리
     if (evaluatorId === 'admin') {
+      console.log('admin 사용자 발견');
       return '관리자';
     }
     
-    // 실제 평가자 데이터에서 찾기
     const user = mockUsers.find((u: User) => u.uniqueId === evaluatorId);
-    if (user) {
-      return user.name;
-    }
+    console.log(`사용자 검색 결과:`, user ? `찾음 - ${user.name}` : `찾지 못함 - ${evaluatorId}`);
     
-    // 평가자 ID가 없으면 ID 그대로 반환
-    return evaluatorId;
+    return user ? user.name : evaluatorId;
   };
 
   async function handleAnalyze() {
@@ -85,14 +111,35 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
     }
 
     try {
+      // 선택된 날짜 확인
+      if (!selectedDate) {
+        throw new Error("분석할 월을 선택해주세요.");
+      }
+
+      const { year, month } = selectedDate;
+
+      // 먼저 Google AI API 직접 테스트
+      console.log("Google AI API 직접 테스트 시작...");
+      const apiTest = await testGoogleAI();
+      console.log("Google AI API 테스트 결과:", apiTest);
+      
+      if (!apiTest.success) {
+        throw new Error(`Google AI API 연결 실패: ${apiTest.error}`);
+      }
+      
       // 데이터가 충분한지 확인
       if (results.length === 0) {
         throw new Error("분석할 평가 데이터가 없습니다.");
       }
 
+      console.log("분석할 평가 데이터:", results);
+      console.log("평가자 ID 목록:", [...new Set(results.map(r => r.evaluatorId))]);
+      
       const gradeDataByEvaluator = results.reduce((acc, result) => {
         const evaluatorId = result.evaluatorId || '';
         const evaluatorName = getEvaluatorName(evaluatorId);
+        
+        console.log(`평가자 ID: ${evaluatorId}, 이름: ${evaluatorName}`);
         
         // ID를 기준으로 키 생성 (동명이인 방지)
         const key = `${evaluatorName} (${evaluatorId})`;
@@ -104,6 +151,8 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
         }
         return acc;
       }, {} as Record<string, string[]>);
+      
+      console.log("평가자별 등급 데이터:", gradeDataByEvaluator);
 
       // 평가자가 충분한지 확인
       const evaluators = Object.keys(gradeDataByEvaluator);
@@ -118,6 +167,10 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
       const expectedDistribution =
         '대부분의 직원은 B 또는 B+ 등급을 받아야 하며, S 또는 D 등급을 받는 직원은 소수여야 합니다. 등급 분포는 평가자 간에 비교적 균등해야 하며, 특정 평가자가 유독 후하거나 박한 점수를 주는 경향이 없어야 합니다.';
       
+      console.log("AI 분석에 전송할 데이터:");
+      console.log("gradeDataString:", gradeDataString);
+      console.log("expectedDistribution:", expectedDistribution);
+      
       // AI 분석 실행 (300초 타임아웃 설정)
       const analysisPromise = validateGradeConsistency({
         gradeData: gradeDataString,
@@ -131,12 +184,12 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
       
       const analysisResult = await Promise.race([analysisPromise, timeoutPromise]);
       
+      // 분석 결과 저장
+      saveConsistencyAnalysis(year, month, analysisResult, gradeDataString, expectedDistribution);
+      
       setReport(analysisResult);
     } catch (error) {
       console.error('Error validating consistency:', error);
-      console.error('Error type:', typeof error);
-      console.error('Error message:', error instanceof Error ? error.message : error);
-      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack');
       
       let errorMessage = '분석 중 오류가 발생했습니다.';
       
@@ -149,10 +202,6 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
           errorMessage = 'AI 서비스 사용량 한도를 초과했습니다. 잠시 후 다시 시도해주세요.';
         } else if (error.message.includes('대체 분석')) {
           errorMessage = 'AI 서비스에 연결할 수 없어 대체 분석을 사용합니다. 일부 기능이 제한될 수 있습니다.';
-        } else if (error.message.includes('AI 모델이 유효한 분석 결과를 생성하지 못했습니다')) {
-          errorMessage = 'AI 분석에 실패했습니다. 잠시 후 다시 시도해주세요.';
-        } else if (error.message.includes('시간이 초과')) {
-          errorMessage = 'AI 분석에 시간이 오래 걸리고 있습니다. 잠시 후 다시 시도해주세요.';
         } else {
           errorMessage = error.message;
         }
@@ -229,6 +278,83 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
         highlightedValue: highlightedEvaluator ? evaluatorGradeData[highlightedEvaluator]?.[item.grade] || 0 : 0,
     }));
   }, [report, gradingScale, highlightedEvaluator, evaluatorGradeData]);
+
+  // 프론트엔드 로직으로 전체 등급분포 계산
+  const overallGradeDistribution = React.useMemo(() => {
+    const gradeCounts: Record<string, number> = {};
+    
+    results.forEach(result => {
+      if (result.grade) {
+        gradeCounts[result.grade] = (gradeCounts[result.grade] || 0) + 1;
+      }
+    });
+
+    const total = Object.values(gradeCounts).reduce((sum, count) => sum + count, 0);
+    
+    return Object.entries(gradeCounts)
+      .map(([grade, count]) => ({
+        grade,
+        count,
+        percentage: total > 0 ? (count / total) * 100 : 0
+      }))
+      .sort((a, b) => {
+        const scoreA = gradingScale[a.grade as Grade]?.score || -1;
+        const scoreB = gradingScale[b.grade as Grade]?.score || -1;
+        return scoreA - scoreB;
+      });
+  }, [results, gradingScale]);
+
+  // 평가자별 등급분포 계산 (이름과 ID를 매칭하여 키 생성)
+  const evaluatorGradeDistribution = React.useMemo(() => {
+    const evaluatorData: Record<string, Record<string, number>> = {};
+    
+    results.forEach(result => {
+      const evaluatorName = getEvaluatorName(result.evaluatorId);
+      const evaluatorKey = `${evaluatorName} (${result.evaluatorId})`;
+      
+      if (!evaluatorData[evaluatorKey]) {
+        evaluatorData[evaluatorKey] = {};
+      }
+      
+      if (result.grade) {
+        evaluatorData[evaluatorKey][result.grade] = (evaluatorData[evaluatorKey][result.grade] || 0) + 1;
+      }
+    });
+
+    return evaluatorData;
+  }, [results]);
+
+  // 비교 차트용 데이터 생성
+  const comparisonChartData = React.useMemo(() => {
+    if (!selectedEvaluatorForComparison) {
+      // 전체 분포만 표시
+      const total = overallGradeDistribution.reduce((sum, item) => sum + item.count, 0);
+      return overallGradeDistribution.map(item => ({
+        grade: item.grade,
+        overall: item.count,
+        evaluator: 0,
+        total: item.count,
+        overallPercentage: total > 0 ? (item.count / total) * 100 : 0,
+        overallLabel: `${item.count}명 (${total > 0 ? (item.count / total) * 100 : 0}%)`
+      }));
+    }
+
+    // 선택된 평가자와 전체 분포 비교
+    const evaluatorData = evaluatorGradeDistribution[selectedEvaluatorForComparison] || {};
+    const total = overallGradeDistribution.reduce((sum, item) => sum + item.count, 0);
+    const evaluatorTotal = Object.values(evaluatorData).reduce((sum, count) => sum + count, 0);
+    
+    return overallGradeDistribution.map(item => ({
+      grade: item.grade,
+      overall: item.count,
+      evaluator: evaluatorData[item.grade] || 0,
+      total: item.count,
+      overallPercentage: total > 0 ? (item.count / total) * 100 : 0,
+      evaluatorPercentage: evaluatorTotal > 0 ? ((evaluatorData[item.grade] || 0) / evaluatorTotal) * 100 : 0,
+      overallLabel: `${item.count}명 (${total > 0 ? (item.count / total) * 100 : 0}%)`,
+      evaluatorLabel: evaluatorTotal > 0 ? `${evaluatorData[item.grade] || 0}명 (${((evaluatorData[item.grade] || 0) / evaluatorTotal) * 100}%)` : ''
+    }));
+  }, [overallGradeDistribution, selectedEvaluatorForComparison, evaluatorGradeDistribution]);
 
   const handleHighlightEvaluator = (evaluatorName: string) => {
     setHighlightedEvaluator(highlightedEvaluator === evaluatorName ? null : evaluatorName);
@@ -326,6 +452,7 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
             <p className="text-sm text-muted-foreground">
               아래 버튼을 클릭하면 {selectedDate ? `${selectedDate.year}년 ${selectedDate.month}월` : '현재'} 평가 데이터를 사용하여 평가자 간 등급 부여의 일관성을 검토합니다. AI는 각 평가자의 등급 분포를 비교하여 유난히 관대하거나 엄격한 평가 경향이 있는지, 특정 그룹에 대한 편향이 있는지 등을 분석합니다.
             </p>
+            
             {error && (
               <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
                 <p className="text-sm text-destructive font-medium">오류: {error}</p>
@@ -333,14 +460,199 @@ export function ConsistencyValidator({ results, gradingScale, selectedDate }: Co
             )}
         </CardContent>
         <CardFooter>
-          <Button onClick={handleAnalyze} disabled={loading || results.length === 0 || error !== null} className="w-full">
-            {loading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Sparkles className="mr-2 h-4 w-4" />
+          <div className="w-full space-y-4">
+            <div className="space-y-2">
+              <Button onClick={handleAnalyze} disabled={loading || results.length === 0 || error !== null} className="w-full">
+                {loading ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="mr-2 h-4 w-4" />
+                )}
+                {hasSavedAnalysis ? "새로 분석하기" : "AI로 평가자별 편향 검토하기"}
+              </Button>
+            </div>
+            
+            {/* 프론트엔드 등급분포 비교 차트 - AI 분석 결과와 함께 표시 */}
+            {report && (
+              <div className="space-y-3 pt-4 border-t">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-semibold text-sm">등급분포 비교</h4>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={selectedEvaluatorForComparison}
+                      onChange={(e) => setSelectedEvaluatorForComparison(e.target.value)}
+                      className="text-xs border rounded px-2 py-1 bg-background"
+                    >
+                      <option value="">전체 분포만</option>
+                      {Object.keys(evaluatorGradeDistribution).map(evaluatorKey => (
+                        <option key={evaluatorKey} value={evaluatorKey}>
+                          {evaluatorKey}
+                        </option>
+                      ))}
+                    </select>
+                    {selectedEvaluatorForComparison !== '' && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSelectedEvaluatorForComparison('')}
+                        className="h-6 px-2 text-xs"
+                      >
+                        초기화
+                      </Button>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="h-[300px]">
+                  <ChartContainer config={chartConfig} className="w-full h-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={comparisonChartData}
+                        margin={{ top: 30, right: 10, left: 10, bottom: 20 }}
+                      >
+                        <XAxis
+                          dataKey="grade"
+                          tickLine={false}
+                          axisLine={false}
+                          tick={<CustomXAxisTick gradingScale={gradingScale} />}
+                          height={35}
+                          interval={0}
+                        />
+                        <YAxis
+                          type="number"
+                          stroke="hsl(var(--muted-foreground))"
+                          fontSize={10}
+                          tickLine={false}
+                          axisLine={false}
+                          tickFormatter={(value) => `${value}`}
+                          allowDecimals={false}
+                        />
+                        <ChartTooltip
+                          cursor={{ fill: 'hsl(var(--muted))' }}
+                          content={<ChartTooltipContent />}
+                        />
+                        {/* 전체 분포 (주황색) */}
+                        <Bar
+                          dataKey="overall"
+                          fill="#f97316"
+                          radius={[4, 4, 0, 0]}
+                        />
+                        {/* 선택된 평가자 분포 (파란색) */}
+                        {selectedEvaluatorForComparison !== '' && (
+                          <Bar
+                            dataKey="evaluator"
+                            fill="#3b82f6"
+                            radius={[4, 4, 0, 0]}
+                          />
+                        )}
+                        
+                        {/* 차트 라벨 추가 */}
+                        <LabelList
+                          dataKey="overall"
+                          position="top"
+                          fontSize={12}
+                          fill="#000000"
+                          fontWeight="600"
+                          content={(props) => {
+                            const { value, x, y, width } = props;
+                            if (!value || value === 0) return null;
+                            return (
+                              <text
+                                x={Number(x) + Number(width) / 2}
+                                y={Number(y) - 5}
+                                textAnchor="middle"
+                                fontSize={12}
+                                fill="#000000"
+                                fontWeight="600"
+                              >
+                                {value}
+                              </text>
+                            );
+                          }}
+                        />
+                        
+                        {/* 선택된 평가자 라벨 */}
+                        {selectedEvaluatorForComparison !== '' && (
+                          <LabelList
+                            dataKey="evaluator"
+                            position="top"
+                            fontSize={12}
+                            fill="#ffffff"
+                            fontWeight="600"
+                            content={(props) => {
+                              const { value, x, y, width } = props;
+                              if (!value || value === 0) return null;
+                              return (
+                                <text
+                                  x={Number(x) + Number(width) / 2}
+                                  y={Number(y) - 5}
+                                  textAnchor="middle"
+                                  fontSize={12}
+                                  fill="#ffffff"
+                                  fontWeight="600"
+                                >
+                                  {value}
+                                </text>
+                              );
+                            }}
+                          />
+                        )}
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </ChartContainer>
+                </div>
+                
+                {/* 범례와 통계 정보 */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <div className="w-3 h-3 bg-orange-500 rounded"></div>
+                      <span>전체 분포</span>
+                    </div>
+                    {selectedEvaluatorForComparison !== '' && (
+                      <div className="flex items-center gap-1">
+                        <div className="w-3 h-3 bg-blue-500 rounded"></div>
+                        <span>{selectedEvaluatorForComparison}</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* 통계 정보 */}
+                  <div className="grid grid-cols-2 gap-4 text-xs">
+                    <div className="space-y-1">
+                      <div className="font-medium text-muted-foreground">전체 통계</div>
+                      <div className="space-y-0.5">
+                        {overallGradeDistribution.map(item => (
+                          <div key={item.grade} className="flex justify-between">
+                            <span>{item.grade}:</span>
+                            <span>{item.count}명 ({item.percentage.toFixed(1)}%)</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {selectedEvaluatorForComparison !== '' && (
+                      <div className="space-y-1">
+                        <div className="font-medium text-muted-foreground">{selectedEvaluatorForComparison}</div>
+                        <div className="space-y-0.5">
+                          {Object.entries(evaluatorGradeDistribution[selectedEvaluatorForComparison] || {}).map(([grade, count]) => {
+                            const total = Object.values(evaluatorGradeDistribution[selectedEvaluatorForComparison] || {}).reduce((sum, c) => sum + c, 0);
+                            const percentage = total > 0 ? (count / total) * 100 : 0;
+                            return (
+                              <div key={grade} className="flex justify-between">
+                                <span>{grade}:</span>
+                                <span>{count}명 ({percentage.toFixed(1)}%)</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             )}
-            AI로 평가자별 편향 검토하기
-          </Button>
+          </div>
         </CardFooter>
       </Card>
 

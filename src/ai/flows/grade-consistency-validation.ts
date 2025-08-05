@@ -46,30 +46,11 @@ export type ValidateGradeConsistencyOutput = z.infer<
   typeof ValidateGradeConsistencyOutputSchema
 >;
 
-export async function validateGradeConsistency(
-  input: ValidateGradeConsistencyInput
-): Promise<ValidateGradeConsistencyOutput> {
-  try {
-    console.log("validateGradeConsistency 시작");
-    console.log("입력:", input);
-    
-    const result = await validateGradeConsistencyFlow(input);
-    
-    console.log("validateGradeConsistency 성공:", result);
-    return result;
-  } catch (error) {
-    console.error("validateGradeConsistency 에러:", error);
-    console.error("에러 타입:", typeof error);
-    console.error("에러 메시지:", error instanceof Error ? error.message : error);
-    console.error("에러 스택:", error instanceof Error ? error.stack : "스택 없음");
-    throw error;
-  }
-}
-
 const prompt = ai.definePrompt({
   name: 'validateGradeConsistencyPrompt',
   input: {schema: ValidateGradeConsistencyInputSchema},
   output: {schema: ValidateGradeConsistencyOutputSchema},
+  model: 'googleai/gemini-2.5-flash',
   prompt: `당신은 HR 분석 전문가입니다. 평가자별 등급 데이터를 분석하여 편향을 찾아주세요.
 
 분석 요구사항:
@@ -97,56 +78,32 @@ const prompt = ai.definePrompt({
 평가자별 등급: {{{gradeData}}}
 예상 분포: {{{expectedDistribution}}}
 
-모든 텍스트는 한국어로 작성하세요. JSON 형식으로만 응답하세요.`,
+모든 텍스트는 한국어로 작성하세요.`,
 });
 
-const validateGradeConsistencyFlow = ai.defineFlow(
-  {
-    name: 'validateGradeConsistencyFlow',
-    inputSchema: ValidateGradeConsistencyInputSchema,
-    outputSchema: ValidateGradeConsistencyOutputSchema,
-  },
-  async input => {
-    try {
-      console.log("AI 분석 시작...");
-      console.log("입력 데이터:", input);
-      console.log("API 키 확인:", process.env.GOOGLE_AI_API_KEY ? "설정됨" : "설정되지 않음");
-      
-      // Genkit AI 객체 확인
-      console.log("AI 객체 확인:", ai);
-      console.log("Prompt 객체 확인:", prompt);
-      
-      console.log("Prompt 호출 시작...");
-      const {output} = await prompt(input);
-      
-      console.log("AI 응답 받음:", output);
-      
-      if (!output) {
-        throw new Error("AI 모델이 유효한 분석 결과를 생성하지 못했습니다. 잠시 후 다시 시도해주세요.");
-      }
-      
-      console.log("분석 완료:", output);
-      return output;
-    } catch (error) {
-       console.error("Error in validateGradeConsistencyFlow: ", error);
-       console.error("에러 상세:", error instanceof Error ? error.message : error);
-       console.error("에러 스택:", error instanceof Error ? error.stack : "스택 없음");
-       console.error("에러 원본:", error);
-       
-       // 더 구체적인 오류 메시지 제공
-       if (error instanceof Error) {
-         if (error.message.includes('API')) {
-           throw new Error("API 키 설정에 문제가 있습니다. 관리자에게 문의해주세요.");
-         } else if (error.message.includes('rate limit')) {
-           throw new Error("API 호출 한도를 초과했습니다. 잠시 후 다시 시도해주세요.");
-         } else if (error.message.includes('timeout')) {
-           throw new Error("AI 분석에 시간이 오래 걸리고 있습니다. 잠시 후 다시 시도해주세요.");
-         } else if (error.message.includes('model')) {
-           throw new Error("AI 모델에 문제가 있습니다. 잠시 후 다시 시도해주세요.");
-         }
-       }
-       
-       throw new Error("AI 모델이 유효한 분석 결과를 생성하지 못했습니다. 잠시 후 다시 시도해주세요.");
+export async function validateGradeConsistency(
+  input: ValidateGradeConsistencyInput
+): Promise<ValidateGradeConsistencyOutput> {
+  try {
+    console.log("validateGradeConsistency 시작");
+    console.log("입력:", input);
+    console.log("AI 프롬프트:", prompt.toString());
+    console.log("AI에 전달되는 gradeDataString:", input.gradeData);
+    console.log("AI에 전달되는 expectedDistribution:", input.expectedDistribution);
+
+    // AI 호출 및 raw 응답 확인
+    const raw = await prompt(input);
+    console.log("AI raw 응답:", raw);
+    const {output} = raw;
+    console.log("AI output:", output);
+
+    if (!output) {
+      console.error("AI output이 없음! raw 전체:", raw);
+      throw new Error("AI 모델이 유효한 분석 결과를 생성하지 못했습니다. 잠시 후 다시 시도해주세요.");
     }
+    return output;
+  } catch (error) {
+    console.error("validateGradeConsistency 에러:", error);
+    throw error;
   }
-);
+}
